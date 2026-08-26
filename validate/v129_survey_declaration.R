@@ -781,6 +781,16 @@ if (!canDrive) {
     #     ""` was false for this literal (it is not the empty string), so
     #     this fixture fell into the "else" branch and printed the bare
     #     internal token into a user-facing sentence.
+    #
+    #     [V1.6, Fix 1, header defect b] .badRawValue$ ITSELF used to keep
+    #     reporting the literal token honestly here (only the SENTENCE was
+    #     scrubbed), which is exactly what left the header ("" for an empty
+    #     endpoint cell) disagreeing with the code for this fixture. This
+    #     round chose to fix the VALUE, not loosen the header: the OUTPUT
+    #     is now forced to "" whenever @eml_classifyCell reads the cell as
+    #     kind 1 ("--undefined--" included), so a caller reading
+    #     .badRawValue$ directly, not just .error$, never sees the token
+    #     either.
     scales12u <- edit_field(clean_scales_lines, 1, "min", "--undefined--")
     p12u <- write_csv_lines(scales12u, "d12u_scales.csv")
     out12u <- drive_validate("stats", committed_data_path, p12u, committed_items_path, "d12u")
@@ -791,10 +801,44 @@ if (!canDrive) {
               num_(out12u, "res", 1), 12, tol = 0)
         check_true("v129", "[refusal 12u] badColumn is \"min\"",
                    identical(str_(out12u, "res", 20), "min"))
-        check_true("v129", "[refusal 12u] badRawValue is the literal token \"--undefined--\" (the RAW declared text, honestly reported -- this field is read by other code, not shown to a user as a sentence, so it is not the class Finding 2 closes)",
-                   identical(str_(out12u, "res", 22), "--undefined--"))
+        check_true("v129", "[refusal 12u] badRawValue is \"\" (V1.6: forced to match the header's own claim -- a round-tripped \"--undefined--\" cell is EMPTY, the same as a genuinely blank one, not a piece of text worth naming, on the OUTPUT itself and not merely on the sentence built from it)",
+                   identical(str_(out12u, "res", 22), ""))
         check_true("v129", "[refusal 12u] .error$ does NOT contain the bare internal token \"--undefined--\" (Finding 2, closed as a class: the message says the value is empty, it does not print the token)",
                    !grepl("--undefined--", str_(out12u, "res", 23), fixed = TRUE))
+        positive_leg_codes <- c(positive_leg_codes, 12)
+    }
+
+    # --- Defect 12w [V1.6, Fix 2]: a subscale's declared min is
+    #     WHITESPACE-ONLY, not exactly empty and not Praat's own missing-
+    #     value token -- a single space in the min cell
+    #     ("Confidence, ,5,ordinal"). Before the fix, @eml_strictNumericColumn
+    #     (eml-extract.praat)'s own pre-scan recognised only "", "--undefined--"
+    #     and "?" as unreadable before its fast path called Praat's own "Get
+    #     all numbers in column:", which a whitespace-only cell reached and
+    #     HALTED: "Table ...: the cell in row 1 of column ""min"" is
+    #     undefined ... cannot get all numbers in column 2" -- proved live,
+    #     reproduced against the pre-fix module before writing this leg,
+    #     and NOT reachable via refusal 11 or any of defects 12/12b/12u
+    #     above (each of those already avoids the exact gap this one lands
+    #     in: a raw cell that is non-empty, is not the literal
+    #     "--undefined--" token, and is not "?", but trims to nothing).
+    scales12w <- edit_field(clean_scales_lines, 1, "min", " ")
+    p12w <- write_csv_lines(scales12w, "d12w_scales.csv")
+    out12w <- drive_validate("stats", committed_data_path, p12w, committed_items_path, "d12w")
+    results$d12w <- out12w
+    check_true("v129", "[refusal 12w] probe ran (NOT a halt -- this is the exact live crash Fix 2 closes)", ran_ok(out12w))
+    if (ran_ok(out12w)) {
+        check("v129", "[refusal 12w] code is 12 (a whitespace-only endpoint is empty, not a number), not a halt",
+              num_(out12w, "res", 1), 12, tol = 0)
+        check_true("v129", "[refusal 12w] badScale is \"Confidence\"",
+                   identical(str_(out12w, "res", 3), "Confidence"))
+        check("v129", "[refusal 12w] badScaleRow is 1", num_(out12w, "res", 15), 1, tol = 0)
+        check_true("v129", "[refusal 12w] badColumn is \"min\"",
+                   identical(str_(out12w, "res", 20), "min"))
+        check_true("v129", "[refusal 12w] badRawValue is \"\" (a whitespace-only endpoint is empty, same treatment as a genuinely blank one and as \"--undefined--\", not literal whitespace text)",
+                   identical(str_(out12w, "res", 22), ""))
+        check_true("v129", "[refusal 12w] .error$ says the endpoint is empty, not a halt message and not the literal whitespace",
+                   grepl("empty", str_(out12w, "res", 23), fixed = TRUE))
         positive_leg_codes <- c(positive_leg_codes, 12)
     }
 
@@ -1356,6 +1400,63 @@ if (!canDrive) {
         '    if .badEndpointError$ <> ""',
         "mutant12", committed_data_path, p12, committed_items_path, 12)
 
+    # -------------------------------------------------------------------
+    # NEGATIVE CONTROL for Fix 2's whitespace-only-endpoint guard -- NOT
+    # the generic run_negative_control() pattern, for the same reason as
+    # refusal 11's and refusal 1's own bespoke halt-controls above:
+    # neutering this guard does not make the module produce a DIFFERENT,
+    # well-formed refusal code -- it reproduces the exact HALT Fix 2's own
+    # header describes. @eml_strictNumericColumn's own pre-scan
+    # (eml-extract.praat) does not recognise a whitespace-only cell as
+    # unreadable, so once this module's own guard is neutered, nothing
+    # stops the fast path from calling Praat's "Get all numbers in
+    # column:" on it, and Praat itself aborts the script. That crash, not
+    # a differing refusal code, IS the proof this guard is load-bearing --
+    # the identical shape refusal 11's own control uses above.
+    #
+    # The needle (the guard's own condition line) appears TWICE in source
+    # -- once for "min", once for "max", both reading identically -- so
+    # this is a bespoke gsub() rather than run_negative_control()'s single
+    # sub() by design: neutering only one of the two would still let the
+    # other catch this fixture's planted min-cell defect, which is exactly
+    # the kind of partial kill this pass's own scope note warns against.
+    # -------------------------------------------------------------------
+    mut12w <- file.path(work, "mutant12w")
+    dir.create(mut12w, showWarnings = FALSE)
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
+                 file.path(mut12w, "eml-extract.praat"))
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
+                 file.path(mut12w, "eml-inferential.praat"))
+    src12w <- readLines(file.path(plug, "stats", "eml-psychometrics.praat"))
+    src12w_txt <- paste(src12w, collapse = "\n")
+    needle12w <- "    if eml_findWhitespaceOnlyCell.found = 1"
+    hit12w <- lengths(regmatches(src12w_txt, gregexpr(needle12w, src12w_txt, fixed = TRUE)))
+    check_true("v129",
+               "[Fix 2] the whitespace-only-endpoint guard line exists in source, exactly twice (min then max) -- negative-control seed site",
+               hit12w == 2)
+    mut12w_txt <- gsub(needle12w, "    if 0 = 1", src12w_txt, fixed = TRUE)
+    writeLines(strsplit(mut12w_txt, "\n", fixed = TRUE)[[1]],
+               file.path(mut12w, "eml-psychometrics.praat"))
+    linkdir12w <- file.path(work, "mutant12w_link")
+    if (!file.exists(linkdir12w)) file.symlink(mut12w, linkdir12w)
+
+    out_mut12w <- drive_validate("mutant12w_link", committed_data_path, p12w,
+                                 committed_items_path, "mutant12w")
+    negative_control_codes <- c(negative_control_codes, 12)
+
+    if (red_mode) {
+        cat("      EML_LANE_RED: running the standard 'refusal 12 fires'\n")
+        cat("      check against the neutered-guard build -- the next check is\n")
+        cat("      EXPECTED to FAIL (the mutant HALTS rather than reports 12).\n")
+        check_true("v129",
+            "[RED] refusal 12 probe runs cleanly and reports code 12 on the whitespace-only-endpoint fixture (must go red once Fix 2's guard is neutered)",
+            ran_ok(out_mut12w) && identical(num_(out_mut12w, "res", 1), 12))
+    } else {
+        check_true("v129",
+            "[Fix 2] whitespace-only-endpoint guard neutered: the mutant HALTS outright on its own seeded defect (a bare space in the min cell) instead of refusing gracefully -- the guard is load-bearing against exactly the script abort Fix 2 closes",
+            !ran_ok(out_mut12w))
+    }
+
     # Refusal 13: a scale name declared more than once (shared guard with
     # refusal 7 -- see note above)
     run_negative_control("mutant13",
@@ -1587,6 +1688,260 @@ if (!canDrive) {
                as.character(derived_codes), as.character(positive_leg_codes))
     eml_census("v129", "refusal code (needs a negative control proving its guard is load-bearing)",
                as.character(derived_codes), as.character(negative_control_codes))
+
+    # -------------------------------------------------------------------
+    # 19. THE OUTPUT CONTRACT, PROVEN EXHAUSTIVELY (V1.6, Fix 1) -- every
+    #    output @emlSurveyValidateDeclaration's own Outputs header documents
+    #    must hold a DEFINED value on EVERY refusal path, not just on the one
+    #    (refusal 11) a prior round happened to probe. Before Fix 1, FOUR of
+    #    the five documented per-scale array outputs (.scaleName$[],
+    #    .scaleType$[], .scaleMin[], .scaleMax[]) were assigned only in the
+    #    scales-population loop, which sits AFTER refusal 11's own exit --
+    #    reading any of them following a refusal-11 return HALTED Praat with
+    #    "Undefined indexed variable", verified live on all four before this
+    #    round wrote a single line of fix.
+    #
+    #    BOTH sides of this leg are DERIVED, never hand-written, so a change
+    #    on either side is caught rather than silently skipped:
+    #      - the OUTPUT list comes from the procedure's own Outputs header
+    #        (19a below) -- an output documented later without a seeded
+    #        default is swept and caught here, not skipped because this file
+    #        never learned its name;
+    #      - the REFUSAL list is the SAME `derived_codes` section 18b already
+    #        scanned from the procedure's own source -- a refusal added
+    #        later is swept here as soon as section 18b's own equality check
+    #        (line ~1685 above) is updated to admit it, not two derivations
+    #        drifting apart.
+    #    Both derivations assert an EXACT floor (18b's KNOWN_REFUSAL_CODE_COUNT
+    #    above; 19a's KNOWN_OUTPUT_COUNT below) rather than a minimum, per
+    #    Finding 3's own closing instruction: fewer than the known count is
+    #    silent shrinkage and goes red on its own, not just when some other
+    #    check happens to notice a missing field.
+    # -------------------------------------------------------------------
+
+    # -------------------------------------------------------------------
+    # 19a. THE OUTPUT LIST, DERIVED FROM THE HEADER. Each documented output
+    #    line reads "#   .name[, .name2] - prose..."; .scaleMin[1..nScales],
+    #    .scaleMax[1..nScales] share ONE line, so the extractor splits on
+    #    "," rather than assuming one name per line -- a naive single-name
+    #    regex would silently derive one fewer output than the header
+    #    actually documents, which is exactly the shrinkage Finding 3 warns
+    #    against, reproduced by the extractor itself rather than by the
+    #    source. An index suffix ("[1..nScales]") is stripped after
+    #    splitting, not before, so it cannot swallow the comma between two
+    #    names on a shared line.
+    # -------------------------------------------------------------------
+    derive_documented_outputs <- function(path) {
+        src <- readLines(path, warn = FALSE)
+        starts <- grep("^# Outputs: @emlSurveyValidateDeclaration\\s*$", src)
+        stopifnot(length(starts) == 1L)
+        ends <- grep("^# Access pattern:", src)
+        ends <- ends[ends > starts]
+        stopifnot(length(ends) >= 1L)
+        body <- src[seq.int(starts[1], ends[1] - 1L)]
+        name_pat <- "\\.[A-Za-z0-9_]+\\$?(?:\\[[^]]*\\])?"
+        line_pat <- sprintf("^#\\s+(%s(?:\\s*,\\s*%s)*)\\s+-", name_pat, name_pat)
+        out <- character(0)
+        for (ln in body) {
+            m <- regmatches(ln, regexec(line_pat, ln, perl = TRUE))[[1]]
+            if (length(m) >= 2 && nzchar(m[2])) {
+                toks <- trimws(strsplit(m[2], ",", fixed = TRUE)[[1]])
+                toks <- sub("\\[[^]]*\\]$", "", toks)
+                out <- c(out, toks)
+            }
+        }
+        out <- unique(out)
+        if (length(out) == 0L) {
+            stop("v129 derive_documented_outputs(): found ZERO documented ",
+                 "outputs in ", path, " -- the derivation itself is broken ",
+                 "(regex, header markers, or the file changed out from ",
+                 "under it). Refusing to let the exhaustive output-contract ",
+                 "sweep run against an empty derived set, which would pass ",
+                 "vacuously instead of failing.")
+        }
+        out
+    }
+
+    # THREE STYLES proven caught, on a synthetic header slice -- mirrors
+    # 18a's own synthetic-body proof for the refusal-code extractor, applied
+    # to this extractor instead:
+    #   A. one name per line (the common case)
+    #   B. TWO names sharing one line, comma-separated (the actual shape
+    #      .scaleMin[1..nScales], .scaleMax[1..nScales] has in the real
+    #      header right now -- a single-name extractor would derive only
+    #      one of the two and never notice)
+    #   C. an indexed array suffix stripped to the bare name
+    synthetic_header <- c(
+        "# Outputs: @emlSurveyValidateDeclaration",
+        "# ============================================================================",
+        "#   .fooBar$          - style A: one name per line",
+        "#   .alpha[1..n], .beta[1..n] - style B: two names, one line, comma-separated",
+        "#   .gamma$[1..n]     - style C: indexed array suffix stripped",
+        "# Access pattern:")
+    synthetic_outputs <- derive_documented_outputs(local({
+        p <- tempfile(fileext = ".praat")
+        writeLines(synthetic_header, p)
+        p
+    }))
+    check_true("v129",
+        "[Fix 1] the output extractor catches a plain one-name-per-line entry (style A, \".fooBar$\")",
+        ".fooBar$" %in% synthetic_outputs)
+    check_true("v129",
+        "[Fix 1] the output extractor catches BOTH names on a shared, comma-separated line (style B, \".alpha[1..n], .beta[1..n]\") -- not just the first",
+        all(c(".alpha", ".beta") %in% synthetic_outputs))
+    check_true("v129",
+        "[Fix 1] the output extractor strips an indexed array suffix down to the bare name (style C, \".gamma$[1..n]\" -> \".gamma$\")",
+        ".gamma$" %in% synthetic_outputs && !(".gamma$[1..n]" %in% synthetic_outputs))
+    check_true("v129",
+        "[Fix 1] the extractor found exactly the four synthetic names and nothing else",
+        setequal(synthetic_outputs, c(".fooBar$", ".alpha", ".beta", ".gamma$")))
+
+    documented_outputs <- derive_documented_outputs(psychometrics_path)
+    # is_array_output: a FIXED (never regex) substring test -- "is <name>["
+    # present anywhere in the header body -- deliberately avoiding regex
+    # metacharacter escaping for names that already contain "." and "$",
+    # which is itself a needless source of the exact silent-miss bug this
+    # whole leg exists to catch.
+    is_array_output <- function(path, name) {
+        src <- readLines(path, warn = FALSE)
+        starts <- grep("^# Outputs: @emlSurveyValidateDeclaration\\s*$", src)
+        ends <- grep("^# Access pattern:", src)
+        ends <- ends[ends > starts[1]]
+        body <- paste(src[seq.int(starts[1], ends[1] - 1L)], collapse = "\n")
+        grepl(paste0(name, "["), body, fixed = TRUE)
+    }
+    output_is_array <- vapply(documented_outputs, is_array_output,
+                              logical(1), path = psychometrics_path)
+
+    # THE KNOWN FLOOR, stated once, same discipline as 18b's
+    # KNOWN_REFUSAL_CODE_COUNT: an EQUALITY check, not just a minimum, so a
+    # documented output silently dropped from the header (fewer) and an
+    # output added to the header without this constant being updated in the
+    # same commit (more) both go red here.
+    KNOWN_OUTPUT_COUNT <- 26L
+    check("v129",
+        sprintf("[Fix 1] the header scan derived exactly the known %d documented outputs (neither fewer -- a definition silently dropped from the header -- nor more -- this constant not updated in the same commit)",
+                KNOWN_OUTPUT_COUNT),
+        length(documented_outputs), KNOWN_OUTPUT_COUNT, tol = 0)
+
+    # -------------------------------------------------------------------
+    # 19b. THE SWEEP -- one probe per refusal code (from `derived_codes`,
+    #    18b's own source-derived list), reading EVERY documented output in
+    #    a single run. An array output is read at index 1 (every fixture
+    #    below declares at least one scale, so index 1 always exists); a
+    #    scalar output is read bare. The probe never inspects VALUES here
+    #    -- correctness of what each refusal reports is asserted by its own
+    #    positive leg above -- it only proves that reading the full
+    #    documented set never halts, which is the one thing no leg above
+    #    checks for anything but .scaleIsKR20[].
+    # -------------------------------------------------------------------
+    drive_output_sweep <- function(stats_dir_rel, data_path, scales_path,
+                                   items_path, tag, outputs, is_array) {
+        probe <- file.path(work, "scripts", paste0("v129-outsweep-", tag, ".praat"))
+        esc <- function(p) gsub('"', '""', p)
+        read_lines <- vapply(seq_along(outputs), function(i) {
+            # outputs[i] already carries its own leading "." (derived
+            # straight from the header, e.g. ".error$", ".scaleName$") --
+            # concatenated directly onto the namespace prefix, not with a
+            # second "." in between.
+            expr <- if (is_array[i]) {
+                paste0("emlSurveyValidateDeclaration", outputs[i], " [1]")
+            } else {
+                paste0("emlSurveyValidateDeclaration", outputs[i])
+            }
+            sprintf('appendInfoLine: "outread|%s|", %s', outputs[i], expr)
+        }, character(1))
+        writeLines(c(
+            paste0("include ../", stats_dir_rel, "/eml-extract.praat"),
+            paste0("include ../", stats_dir_rel, "/eml-inferential.praat"),
+            paste0("include ../", stats_dir_rel, "/eml-psychometrics.praat"),
+            "",
+            sprintf('dataT = Read Table from comma-separated file: "%s"', esc(data_path)),
+            sprintf('scalesT = Read Table from comma-separated file: "%s"', esc(scales_path)),
+            sprintf('itemsT = Read Table from comma-separated file: "%s"', esc(items_path)),
+            "",
+            "@emlSurveyValidateDeclaration: dataT, scalesT, itemsT",
+            'writeInfoLine: "v129-outsweep"',
+            read_lines,
+            'appendInfoLine: "outread|END|1"'),
+            probe)
+        suppressWarnings(system2("env",
+            c("-u", "DISPLAY", shQuote(praat),
+              shQuote(paste0("--pref-dir=", prefs)), "--run", shQuote(probe)),
+            stdout = TRUE, stderr = TRUE))
+    }
+    sweep_ok <- function(out) {
+        !any(grepl("^Error", out)) && any(grepl("^outread\\|END\\|1$", out))
+    }
+
+    # One seeded fixture per refusal code, reusing the SAME triples each
+    # code's own positive leg above already built and proved -- never a
+    # fresh mutation, so this leg cannot introduce a fixture bug of its own
+    # that the positive-leg checks above did not already catch.
+    refusal_fixture_paths <- list(
+        `1`  = list(data = committed_data_path, scales = committed_scales_path, items = p1),
+        `2`  = list(data = p2d,                 scales = committed_scales_path, items = committed_items_path),
+        `3`  = list(data = committed_data_path, scales = committed_scales_path, items = p3),
+        `4`  = list(data = committed_data_path, scales = committed_scales_path, items = p4),
+        `5`  = list(data = committed_data_path, scales = committed_scales_path, items = p5a),
+        `6`  = list(data = committed_data_path, scales = committed_scales_path, items = p6),
+        `7`  = list(data = committed_data_path, scales = committed_scales_path, items = p7),
+        `8`  = list(data = committed_data_path, scales = committed_scales_path, items = p8),
+        `9`  = list(data = committed_data_path, scales = p9,                   items = committed_items_path),
+        `10` = list(data = committed_data_path, scales = p10,                  items = committed_items_path),
+        `11` = list(data = committed_data_path, scales = p11,                  items = committed_items_path),
+        `12` = list(data = committed_data_path, scales = p12w,                 items = committed_items_path),
+        `13` = list(data = p13d,                scales = p13,                  items = committed_items_path),
+        `14` = list(data = committed_data_path, scales = p14,                  items = committed_items_path),
+        `15` = list(data = p15d,                scales = committed_scales_path, items = committed_items_path),
+        `16` = list(data = p16d,                scales = committed_scales_path, items = committed_items_path)
+    )
+
+    # LOUD FAILURE if a refusal the source derivation found has no
+    # registered fixture -- a refusal added later without a fixture entry
+    # here is caught as a named gap, not silently skipped because the sweep
+    # only knows the sixteen codes that existed when it was written.
+    missing_fixture_codes <- setdiff(as.character(derived_codes),
+                                     names(refusal_fixture_paths))
+    check_true("v129",
+        sprintf("[Fix 1] every refusal code the source derivation found (%s) has a registered exhaustive-sweep fixture (missing: %s)",
+                paste(derived_codes, collapse = ", "),
+                if (length(missing_fixture_codes)) paste(missing_fixture_codes, collapse = ", ") else "none"),
+        length(missing_fixture_codes) == 0L)
+
+    swept_codes <- c()
+    for (code_chr in names(refusal_fixture_paths)) {
+        code <- as.integer(code_chr)
+        if (!(code %in% derived_codes)) next
+        fx <- refusal_fixture_paths[[code_chr]]
+        out_sweep <- drive_output_sweep("stats", fx$data, fx$scales, fx$items,
+                                        paste0("sweep", code), documented_outputs,
+                                        output_is_array)
+        ok <- sweep_ok(out_sweep)
+        if (!ok) {
+            cat(sprintf("      v129 output-contract sweep [refusal %d] output: %s\n",
+                        code, paste(utils::tail(out_sweep, 12), collapse = " / ")))
+        }
+        check_true("v129",
+            sprintf("[Fix 1] refusal %d: every documented output is readable without halting Praat", code),
+            ok)
+        swept_codes <- c(swept_codes, code)
+    }
+    # Also the clean (refusal 0) path -- not one of the sixteen refusals,
+    # but every documented output is claimed to hold a defined value there
+    # too (this procedure's own header: .scaleIsKR20[] etc. are only "moot"
+    # once refused, never undefined, on a clean declaration).
+    out_sweep_clean <- drive_output_sweep("stats", committed_data_path,
+                                          committed_scales_path, committed_items_path,
+                                          "sweep-clean", documented_outputs,
+                                          output_is_array)
+    check_true("v129",
+        "[Fix 1] the clean declaration (refusal 0): every documented output is readable without halting Praat",
+        sweep_ok(out_sweep_clean))
+
+    check_true("v129",
+        "[Fix 1] the exhaustive output-contract sweep actually drove all sixteen derived refusal codes (not vacuously fewer)",
+        length(unique(swept_codes)) == length(derived_codes))
 }
 
 if (!exists("EML_SUITE")) { eml_report("v129 survey declaration conformance"); eml_exit() }

@@ -2,7 +2,7 @@
 # EML Stats : Psychometrics
 # ============================================================================
 # Module: eml-psychometrics.praat
-# Version: 1.5
+# Version: 1.6
 # Date: 26 August 2026
 #
 # V1.1: Adds @emlSurveyValidateDeclaration, the survey module's declaration
@@ -102,13 +102,63 @@
 #       scan; 16 via the same "resolves to a declared name" loop refusal
 #       1 already runs, in the opposite direction.
 #
+# V1.6: A fourth adversarial pass closed the output contract as a
+#       structure rather than as a one-off patch, and closed a
+#       whitespace-only halt.
+#         (a) FOUR of the five documented per-scale array outputs
+#       (.scaleName$[], .scaleType$[], .scaleMin[], .scaleMax[]) were
+#       assigned only in the scales-population loop, which sits AFTER
+#       refusal 11's exit -- so a caller reading any of them following a
+#       refusal-11 return HALTED with "Undefined indexed variable",
+#       verified live on all four, exactly the failure .scaleIsKR20[]
+#       alone was already guarded against. All five arrays are now seeded
+#       to a defined placeholder ("" for the two string arrays, undefined
+#       for the three numeric ones) at procedure entry, before refusal 11
+#       or any other refusal can exit, the same way .scaleIsKR20[] already
+#       was; the scales-population loop still overwrites every element
+#       with its real value whenever it runs. The rule this generalizes is
+#       stated once, at the top of the Outputs header below: every
+#       documented output holds a defined value on every return.
+#         (b) Two documentation defects the same header carried, found in
+#       the same pass: .badRawValue$ was documented as "" for an empty
+#       cell but held the literal round-tripped token "--undefined--" on
+#       that same fixture, disagreeing with the header -- fixed by making
+#       the VALUE match the header (forced to "" whenever
+#       @eml_classifyCell reads the cell as kind 1, "empty", which already
+#       folds both spellings together), so a caller reading .badRawValue$
+#       directly, not just .error$'s sentence, never sees the internal
+#       token either. .scaleIsKR20[] was documented as 1 or 0 but is
+#       `undefined` for every scale on the refusal-11 path specifically
+#       (the one path where the scales-population loop that computes it
+#       never runs) -- fixed by documenting that third value rather than
+#       inventing a fake 0/1 for a range refusal 11 never confirmed even
+#       exists.
+#         (c) A whitespace-only declared min or max ("Confidence, ,5,
+#       ordinal") HALTED Praat with "the cell in row 1 of column min is
+#       undefined ... cannot get all numbers in column 2" instead of
+#       refusing. Root cause: @eml_strictNumericColumn's pre-scan
+#       (eml-extract.praat, outside this lane) recognises only "",
+#       "--undefined--" and "?" as unreadable before its fast path calls
+#       Praat's own "Get all numbers in column:", and a whitespace-only
+#       cell matches none of the three. Fixed inside this module, without
+#       touching or duplicating that classifier: the new internal helper
+#       @eml_findWhitespaceOnlyCell classifies "min", then "max", with
+#       @eml_classifyCell (the classifier this procedure already calls
+#       for exactly this kind of question) BEFORE either column is ever
+#       handed to @emlRequireNumericColumn / @emlAuditColumn, because
+#       calling either on a column already carrying the landmine cell IS
+#       the crash, not a defence against it. A whitespace-only endpoint
+#       now refuses as refusal 12's existing "empty" branch, not a new
+#       code.
+#
 # Part of the EML Stats library (EML Praat Tools).
 # License: GPL-3.0-or-later
 #
 # Provides: @emlCronbachAlpha, @emlAlphaInfluence,
 #   @emlSurveyValidateDeclaration
 #
-# Internal helpers: @eml_listwiseComplete, @eml_findDuplicateName
+# Internal helpers: @eml_listwiseComplete, @eml_findDuplicateName,
+#   @eml_findWhitespaceOnlyCell
 #
 # Dependencies: @emlCronbachAlpha and @emlAlphaInfluence use only Praat
 # built-in vector and matrix primitives and the built-in F distribution.
@@ -715,6 +765,60 @@ procedure eml_findDuplicateName: .tableId, .columnName$, .nRows
     endfor
 endproc
 
+# ----------------------------------------------------------------------------
+# @eml_findWhitespaceOnlyCell (V1.6, Fix 2)
+# Internal helper: is any cell of a column whitespace-only text -- non-empty
+# exactly as Praat's Table stores it, but empty once trimmed?
+#
+# WHY THIS EXISTS. @eml_strictNumericColumn (eml-extract.praat)'s own
+# pre-scan, run before its fast path hands a whole column to Praat's own
+# "Get all numbers in column:", recognises only three spellings of
+# "unreadable": "", "--undefined--", and "?". A cell holding nothing but a
+# space matches none of the three, so the fast path proceeds and Praat
+# itself halts -- proved live on a scales file reading
+# "Confidence, ,5,ordinal": "Table ...: the cell in row 1 of column ""min""
+# is undefined ... cannot get all numbers in column 2" -- instead of any of
+# this module's own refusals ever getting a chance to fire.
+# eml-extract.praat is outside this lane's boundary, so the fix lives here
+# instead, with @eml_classifyCell -- the classifier this module already
+# calls for exactly this kind of question (it trims before testing, and
+# already folds a whitespace-only cell into kind 1, "empty", alongside ""
+# and "--undefined--") -- not a second, narrower reimplementation of what
+# "unreadable" means.
+#
+# Called BEFORE @emlRequireNumericColumn / @emlAuditColumn ever see a
+# column, on "min" and "max" alike: calling either on a column already
+# carrying this landmine cell IS the crash, not a defence against it, so
+# there is no error output here to consume -- there is nothing left to ask
+# once this has already returned .found = 1 for that column.
+#
+# Input:  .tableId, .columnName$, .nRows
+# Output: .found - 1 if some cell is whitespace-only, 0 otherwise
+#         .row   - the first such row (only meaningful when .found = 1)
+# ----------------------------------------------------------------------------
+procedure eml_findWhitespaceOnlyCell: .tableId, .columnName$, .nRows
+    .found = 0
+    .row = 0
+    for .i from 1 to .nRows
+        selectObject: .tableId
+        .raw$ = Get value: .i, .columnName$
+        ; Skip the three spellings @eml_strictNumericColumn's own pre-scan
+        ; already recognises (it marks the column unreadable and falls
+        ; through to a per-cell scan safely for those) -- this helper exists
+        ; only for the gap that pre-scan has, not to re-decide what it
+        ; already decides correctly.
+        if .raw$ <> "" and .raw$ <> "--undefined--" and .raw$ <> "?"
+            @eml_classifyCell: .raw$
+            if eml_classifyCell.kind = 1
+                if .found = 0
+                    .found = 1
+                    .row = .i
+                endif
+            endif
+        endif
+    endfor
+endproc
+
 # THE TEACHING-MESSAGE CONTRACT (docs/CHANGE_ORDER_CONFORMANCE_LINT.md): the
 # rule in one sentence, the reason in one line, what to do instead. The rule
 # and the reason are assembled into .error$; the fix is .remedy$, kept as
@@ -987,28 +1091,39 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     @emlStripHeaderQuotes: .scalesTableId
     @emlStripHeaderQuotes: .dataTableId
 
-    # --- .nScales and a safe .scaleIsKR20[] default, before ANYTHING else
-    # can exit this procedure early ---
+    # --- .nScales and a safe default for EVERY per-scale array output,   ---
+    # --- before ANYTHING else can exit this procedure early (V1.6, Fix 1) --
     # "Get number of rows" needs no particular column to exist, so this is
     # safe even when refusal 11 (immediately below) is about to find one
     # missing. It runs before refusal 11 for a narrower reason than
-    # ordering: .scaleIsKR20[] is a Praat INDEXED variable, and reading an
-    # indexed variable that was never assigned ANY value HALTS Praat with
-    # "Undefined indexed variable" -- a harder failure than the plain
-    # `undefined` a caller gets from an ordinary never-assigned scalar.
-    # Before this, a caller that read .scaleIsKR20[1] after ANY refusal
-    # (exactly what this procedure's own "Access pattern" section shows,
-    # and what validate/v129_survey_declaration.R's probe does
-    # unconditionally on every leg) crashed outright on refusal 11 alone,
-    # because refusal 11 is the one refusal that can fire before the
-    # scales-array population loop below ever runs. Every element is
-    # seeded `undefined` here and overwritten with its real value in that
-    # population loop when it runs; a scale that refusal 11 refuses before
-    # reaching keeps its seeded `undefined`, which is a value a caller can
-    # read, not a halt.
+    # ordering: every one of .scaleName$[], .scaleType$[], .scaleMin[],
+    # .scaleMax[] and .scaleIsKR20[] is a Praat INDEXED variable, and
+    # reading an indexed variable that was never assigned ANY value HALTS
+    # Praat with "Undefined indexed variable" -- a harder failure than the
+    # plain `undefined` a caller gets from an ordinary never-assigned
+    # scalar. Before V1.6, only .scaleIsKR20[] was seeded this way; the
+    # other four are assigned solely in the scales-population loop below,
+    # which sits AFTER refusal 11's exit -- so a caller that read any of
+    # THOSE four after a refusal-11 return (exactly what this procedure's
+    # own "Access pattern" section shows doing for .scaleIsKR20[], and
+    # what validate/v129_survey_declaration.R's exhaustive output-contract
+    # sweep now does for every documented output, on every refusal path)
+    # crashed outright, because refusal 11 is the one refusal that can
+    # fire before the scales-array population loop ever runs. Every
+    # element of all five arrays is seeded here -- "" for the two string
+    # arrays, `undefined` for the three numeric ones -- and overwritten
+    # with its real value in that population loop when it runs; a scale
+    # that refusal 11 refuses before reaching keeps its seeded default,
+    # which is a value a caller can read, not a halt. THE RULE THIS
+    # GENERALIZES, stated once in the Outputs header below: every
+    # documented output holds a defined value on every return.
     selectObject: .scalesTableId
     .nScales = Get number of rows
     for .s from 1 to .nScales
+        .scaleName$[.s] = ""
+        .scaleType$[.s] = ""
+        .scaleMin[.s] = undefined
+        .scaleMax[.s] = undefined
         .scaleIsKR20[.s] = undefined
     endfor
 
@@ -1195,10 +1310,54 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # RAW text is then read as a STRING, not re-derived or re-classified,
     # purely to name it in the message without ever printing
     # "--undefined--" (refusal 5, this pass's own header finding).
+    # ----- V1.6, Fix 2: a whitespace-only endpoint, checked BEFORE either -
+    # ----- column is ever handed to @emlRequireNumericColumn             -
+    # @eml_strictNumericColumn (eml-extract.praat)'s own pre-scan recognises
+    # only "", "--undefined--" and "?" as unreadable before its fast path
+    # calls Praat's own "Get all numbers in column:" -- a cell holding only
+    # whitespace (e.g. a single space) matches none of the three, so the
+    # fast path proceeds and PRAAT ITSELF HALTS: "the cell in row R of
+    # column [min|max] is undefined ... cannot get all numbers in column
+    # [N]", proved live on "Confidence, ,5,ordinal". eml-extract.praat is
+    # outside this lane's boundary, so calling @emlRequireNumericColumn (or
+    # @emlAuditColumn) on a column already carrying this landmine cell is
+    # avoided altogether, rather than caught after the fact -- by that
+    # point the halt has already happened. @eml_findWhitespaceOnlyCell
+    # (above) answers the question with @eml_classifyCell, the classifier
+    # this procedure already calls for exactly this kind of question, not a
+    # second, narrower reimplementation of "unreadable". A whitespace-only
+    # endpoint is exactly refusal 12's own "empty" branch below -- the same
+    # message, and the same .badRawValue$ = "" this procedure now uses for
+    # every empty-endpoint spelling (Fix 1, header defect b) -- so it is
+    # built inline here rather than falling through to the shared branch
+    # that only runs once a column has actually been read successfully.
+    @eml_findWhitespaceOnlyCell: .scalesTableId, "min", .nScales
+    if eml_findWhitespaceOnlyCell.found = 1
+        .badScaleRow = eml_findWhitespaceOnlyCell.row
+        .badScale$ = .scaleName$[.badScaleRow]
+        .badColumn$ = "min"
+        .badRawValue$ = ""
+        .error$ = .msg12a$ + .badScale$ + .msg12b$ + .badColumn$ + .msg12eEmpty$
+        .remedy$ = .rem12a$ + .badColumn$ + .rem12b$ + .badScale$ + .rem12c$
+        .refusal = 12
+        goto SURVEY_VALIDATE_DONE
+    endif
+
     @emlRequireNumericColumn: .scalesTableId, "Subscale range", "min", 1
     .badEndpointError$ = emlRequireNumericColumn.error$
     .badEndpointCol$ = "min"
     if .badEndpointError$ = ""
+        @eml_findWhitespaceOnlyCell: .scalesTableId, "max", .nScales
+        if eml_findWhitespaceOnlyCell.found = 1
+            .badScaleRow = eml_findWhitespaceOnlyCell.row
+            .badScale$ = .scaleName$[.badScaleRow]
+            .badColumn$ = "max"
+            .badRawValue$ = ""
+            .error$ = .msg12a$ + .badScale$ + .msg12b$ + .badColumn$ + .msg12eEmpty$
+            .remedy$ = .rem12a$ + .badColumn$ + .rem12b$ + .badScale$ + .rem12c$
+            .refusal = 12
+            goto SURVEY_VALIDATE_DONE
+        endif
         @emlRequireNumericColumn: .scalesTableId, "Subscale range", "max", 1
         .badEndpointError$ = emlRequireNumericColumn.error$
         .badEndpointCol$ = "max"
@@ -1266,6 +1425,17 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
         # spellings would pass.
         @eml_classifyCell: .badRawValue$
         if eml_classifyCell.kind = 1
+            # V1.6 (Fix 1, header defect b): THE VALUE now matches the
+            # Outputs header's own claim -- "" both when the cell is
+            # itself empty and when refusal is not 12 -- rather than the
+            # header being loosened to admit "--undefined--" too. Before
+            # this, a caller reading .badRawValue$ DIRECTLY (not just
+            # .error$'s sentence, which already took this branch) still
+            # saw the literal round-tripped token on this exact fixture.
+            # Forcing it here, once, is the same fix as the message
+            # class this branch already closes, applied to the OUTPUT
+            # rather than only the sentence built from it.
+            .badRawValue$ = ""
             .error$ = .msg12a$ + .badScale$ + .msg12b$ + .badColumn$
             ... + .msg12eEmpty$
         else
@@ -1702,6 +1872,12 @@ endproc
 # ============================================================================
 # Outputs: @emlSurveyValidateDeclaration
 # ============================================================================
+# THE RULE, stated once (V1.6, Fix 1): every output documented below holds a
+# DEFINED value on every return of this procedure -- including every one of
+# the seventeen exit paths (SURVEY_VALIDATE_DONE reached by any of refusals
+# 1-16, or by none) -- never an indexed variable left unassigned for a
+# caller to hit an "Undefined indexed variable" halt by reading it.
+#
 #   .error$           - refusal message (rule + reason), or "" when the
 #                       declaration is sound
 #   .remedy$          - what to do instead, or "" when .error$ is ""
@@ -1758,12 +1934,18 @@ endproc
 #                       or "survey_scales.csv" (refusal 11 only); ""
 #                       otherwise
 #   .badRawValue$     - the literal declared text of the bad endpoint cell
-#                       (refusal 12 only); "" both when that cell is itself
-#                       empty (a missing endpoint, rather than a
-#                       non-numeric one) and when refusal is not 12. Exists
+#                       (refusal 12 only); "" when refusal is not 12, and
+#                       "" (V1.6, Fix 1, header defect b: forced, not just
+#                       reported as-is) whenever that cell reads as EMPTY --
+#                       a genuinely blank cell, Praat's own missing-value
+#                       token "--undefined--", or a whitespace-only cell
+#                       (@eml_classifyCell's kind 1 folds all three
+#                       together) -- rather than a non-numeric one. Exists
 #                       so a caller can name the actual offending text
 #                       without ever printing the internal token
-#                       "--undefined--" for it.
+#                       "--undefined--" for it, including a caller that
+#                       reads this field directly rather than only
+#                       .error$'s sentence.
 #   .scaleName$[1..nScales]  - each declared subscale's name, in
 #                       survey_scales.csv row order
 #   .scaleType$[1..nScales]  - each declared subscale's `type` field, as
@@ -1772,15 +1954,26 @@ endproc
 #   .scaleMin[1..nScales], .scaleMax[1..nScales] - each declared subscale's
 #                       printed response range, as declared
 #   .scaleIsKR20[1..nScales] - 1 when that subscale's declared range spans
-#                       exactly two values (max = min + 1), else 0. THE
-#                       KR-20 naming condition, stated once in this
-#                       procedure and not restated anywhere else -- Stage 2
-#                       reads this rather than re-deriving it from min/max
-#                       itself. Meaningful only once .refusal is confirmed
-#                       0 for the declaration as a whole; a scale that
-#                       fails refusal 9 or 10 still gets an entry here,
-#                       computed from whatever it declared, but that entry
-#                       is moot once the declaration itself is refused.
+#                       exactly two values (max = min + 1), 0 otherwise, OR
+#                       (V1.6, Fix 1, header defect c: documented, not
+#                       patched into a fake 0 or 1) `undefined` for EVERY
+#                       scale specifically on the refusal-11 path -- the
+#                       one path where the scales-population loop that
+#                       computes this from min/max never runs, so there is
+#                       no confirmed range yet to name a naming condition
+#                       about, only the same seeded placeholder the other
+#                       four per-scale array outputs above carry on that
+#                       same path. THE KR-20 naming condition, stated once
+#                       in this procedure and not restated anywhere else --
+#                       Stage 2 reads this rather than re-deriving it from
+#                       min/max itself. Meaningful only once .refusal is
+#                       confirmed 0 for the declaration as a whole; a scale
+#                       that fails refusal 9, 10, or 12 still gets a real
+#                       0/1 entry here (computed from whatever it
+#                       declared), but that entry is moot once the
+#                       declaration itself is refused -- refusal 11 is the
+#                       one exception, where even a real 0/1 was never
+#                       computed at all.
 #   .nScales          - number of declared subscales (length of the four
 #                       arrays immediately above)
 #
