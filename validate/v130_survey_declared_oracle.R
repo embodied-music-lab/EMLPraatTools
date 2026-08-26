@@ -481,30 +481,259 @@ check("v130",
               format(CONFIDENCE_LEVEL), analysis_path),
       committed_level, CONFIDENCE_LEVEL, tol = 1e-12)
 
-# (b) THE SCAN -- no hardcoded "level = 0.NN" default may remain anywhere
-# in the lane's R sources; the moment one does, it is a stray copy of the
-# canon that can drift the way Finding 4 described.
-lane_r_files <- c(
-    v130 = repo_path("validate", "v130_survey_declared_oracle.R"),
-    v129 = repo_path("validate", "v129_survey_declaration.R"),
-    dump = repo_path("validate", "oracle", "lane_survey_oracle_dump.R")
-)
-scan_level_literals <- function(files) {
-    out <- list()
-    for (nm in names(files)) {
-        fp <- files[[nm]]
-        if (!file.exists(fp)) next
-        lines <- readLines(fp, warn = FALSE)
-        hits <- grep("\\blevel\\s*=\\s*0\\.[0-9]+\\b", lines)
-        for (ln in hits) out[[length(out) + 1L]] <- sprintf("%s:%d", nm, ln)
-    }
-    unlist(out)
+# (b) THE SCAN -- Finding 5's rewrite.
+#
+# THE DEFECT THIS REPLACES: the old scan matched only the literal SHAPE
+# "level = 0.NN" against a HAND-ENUMERATED file list. Verified as not
+# caught by that shape: `level <- 0.95`, `LEVEL <- 0.95`,
+# `conf_level <- 0.95`, `level = .95` (no leading zero), and the
+# positional call `base_feldt(a, n, k, 0.95)` -- every one of these files
+# is written in `<-` throughout, the very style the shape-only scan never
+# looked for, and a positional call has no "=" in it at all. The file
+# list was hand-typed too: v131_survey_range_refusal_parity.R exists in
+# this lane RIGHT NOW and the old three-entry list would never have
+# scanned it.
+#
+# THE FIX, two parts:
+#
+#   File list DERIVED from the directory, not hand-typed: every ".R" file
+#   under validate/ (recursive) whose name contains "survey" -- the
+#   naming convention every file in this lane already follows (v129,
+#   v130, v131, lane_survey_oracle_dump.R) -- so a new lane file is
+#   scanned automatically, the same "derived set actually derives"
+#   discipline Finding 3 restates for the census above.
+#
+#   Two detectors, because a confidence level is STATED in R in two
+#   shapes an assignment-only scan cannot both see:
+#     A. ASSIGNMENT -- a level-ish identifier (case-insensitive,
+#        "level" anywhere in the name: level, LEVEL, conf_level,
+#        confidenceLevel, ...) immediately followed by "<-" or a bare "="
+#        (never "==", "<=", ">="), then a decimal literal strictly
+#        between 0 and 1, with or without a leading zero.
+#     B. POSITIONAL CALL -- DERIVED from the files' own function
+#        signatures, not a hand-named function list: every
+#        "name <- function(...)" definition found in these files with a
+#        formal parameter matching the same level-ish test is recorded as
+#        (function name, that parameter's 1-based position); every call
+#        to that function name in these files is then checked at that
+#        position for a bare decimal literal in (0,1) rather than a
+#        symbol or expression. This is how `base_feldt(a, n, k, 0.95)` is
+#        caught without ever hand-naming "base_feldt" -- base_feldt's own
+#        "level = CONFIDENCE_LEVEL" default is what gets harvested.
+#
+#   A line's own "#" comment (the first one outside a quoted string) is
+#   stripped before either detector runs, so prose describing a level --
+#   including this comment block, and the old scan's own literal shape
+#   `level = 0.NN` a few lines above -- is never a hit.
+#
+# LOUD FAILURE, same requirement as Finding 3's census: if the directory
+# scan finds zero files, or the detectors find zero level-ish MENTIONS at
+# all across a lane that mentions CONFIDENCE_LEVEL/parse_canon_level/
+# base_feldt's own default dozens of times, the scan machinery itself is
+# broken (a regex typo, a moved directory) and must not be allowed to
+# report that vacuous "nothing found" as a clean "no stray literals" --
+# so both halt the run outright rather than let (b)'s pass/fail check
+# below run against a scan that looked at nothing.
+lane_r_files <- list.files(repo_path("validate"), pattern = "survey.*\\.R$",
+                           recursive = TRUE, full.names = TRUE,
+                           ignore.case = TRUE)
+if (length(lane_r_files) == 0L) {
+    stop("v130 (b) confidence-level scan: the directory scan of validate/ ",
+         "for '*survey*.R' found ZERO files -- the lane's own R sources ",
+         "(v129/v130/v131/lane_survey_oracle_dump.R) should always match ",
+         "this. Refusing to run the stray-literal check against an empty ",
+         "file list, which would pass vacuously instead of failing.")
 }
+check_true("v130",
+    sprintf("[Finding 5] the lane-R-source directory scan found at least one file (found %d: %s)",
+            length(lane_r_files), paste(basename(lane_r_files), collapse = ", ")),
+    length(lane_r_files) > 0L)
+
+LEVELISH  <- "(?i)\\b[A-Za-z0-9_.]*level[A-Za-z0-9_.]*\\b"
+DECIMAL01 <- "0?\\.[0-9]+"
+
+strip_r_comment <- function(line) {
+    # R's "#" starts a comment unless inside a quoted string. None of
+    # these files' confidence-level statements need a "#" inside a
+    # string on the same line, so tracking quote parity (no escapes to
+    # worry about here) is sufficient without a full R tokenizer.
+    chars <- strsplit(line, "", fixed = TRUE)[[1]]
+    if (length(chars) == 0L) return(line)
+    inq <- FALSE; q <- ""
+    for (k in seq_along(chars)) {
+        ch <- chars[k]
+        if (inq) {
+            if (ch == q) inq <- FALSE
+        } else if (ch == '"' || ch == "'") {
+            inq <- TRUE; q <- ch
+        } else if (ch == "#") {
+            return(paste(chars[seq_len(k - 1L)], collapse = ""))
+        }
+    }
+    line
+}
+
+split_toplevel_args <- function(s) {
+    chars <- strsplit(s, "", fixed = TRUE)[[1]]
+    if (length(chars) == 0L) return(character(0))
+    depth <- 0L; cur <- character(0); out <- character(0)
+    for (ch in chars) {
+        if (ch %in% c("(", "[")) depth <- depth + 1L
+        if (ch %in% c(")", "]")) depth <- depth - 1L
+        if (ch == "," && depth == 0L) {
+            out <- c(out, paste(cur, collapse = "")); cur <- character(0)
+        } else {
+            cur <- c(cur, ch)
+        }
+    }
+    c(out, paste(cur, collapse = ""))
+}
+
+# scan_level_literals -- kept its pre-Finding-5 NAME (the mutant red-demo
+# below still calls it), but rewritten inside. `files` may be a named or
+# unnamed character vector; a name (when the caller supplies one, as the
+# (b) mutant-demo below still does for "dump") is preferred as the label,
+# falling back to basename() for the directory-derived list, which has
+# none.
+#
+# Returns ONLY the stray (literal-decimal) hits, matching the pre-Finding-
+# 5 contract exactly -- the "did the scan look at anything real" floor is
+# asserted separately, right below, via the total mention count.
+scan_level_literals <- function(files) {
+    stray <- character(0)
+    mentions <- character(0)
+    fn_param_pos <- list()
+    nm <- names(files)
+    label_of <- function(i) {
+        if (!is.null(nm) && !is.na(nm[i]) && nzchar(nm[i])) nm[i] else basename(files[i])
+    }
+
+    file_lines <- vector("list", length(files))
+    for (i in seq_along(files)) {
+        fp <- files[i]
+        if (!file.exists(fp)) next
+        file_lines[[i]] <- vapply(readLines(fp, warn = FALSE), strip_r_comment,
+                                  character(1), USE.NAMES = FALSE)
+    }
+
+    # Detector B, pass 1: harvest "name <- function(args)" signatures with
+    # a level-ish formal parameter. Every definition in this lane's files
+    # is single-line, so a per-file, single-pass regex is sufficient --
+    # this does not attempt to parse a signature split across lines,
+    # which does not occur here.
+    for (i in seq_along(files)) {
+        if (is.null(file_lines[[i]])) next
+        txt <- paste(file_lines[[i]], collapse = "\n")
+        m <- gregexpr("([A-Za-z_.][A-Za-z0-9_.]*)\\s*(?:<-|=)\\s*function\\s*\\(([^)]*)\\)",
+                      txt, perl = TRUE)
+        if (m[[1]][1] == -1) next
+        cs <- attr(m[[1]], "capture.start"); cl <- attr(m[[1]], "capture.length")
+        for (r in seq_len(nrow(cs))) {
+            fname  <- substr(txt, cs[r, 1], cs[r, 1] + cl[r, 1] - 1L)
+            argtxt <- substr(txt, cs[r, 2], cs[r, 2] + cl[r, 2] - 1L)
+            args <- split_toplevel_args(argtxt)
+            for (pos in seq_along(args)) {
+                pname <- sub("^\\s*([A-Za-z_.][A-Za-z0-9_.]*).*$", "\\1", args[pos])
+                if (grepl(LEVELISH, pname, perl = TRUE)) fn_param_pos[[fname]] <- pos
+            }
+        }
+    }
+
+    for (i in seq_along(files)) {
+        if (is.null(file_lines[[i]])) next
+        lbl <- label_of(i)
+        lns <- file_lines[[i]]
+        for (ln in seq_along(lns)) {
+            line <- lns[ln]
+            if (grepl(LEVELISH, line, perl = TRUE)) {
+                mentions <- c(mentions, sprintf("%s:%d", lbl, ln))
+                # Detector A: assignment.
+                if (grepl(paste0(LEVELISH, "\\s*(<-|=(?!=))\\s*", DECIMAL01),
+                          line, perl = TRUE)) {
+                    stray <- c(stray, sprintf("%s:%d", lbl, ln))
+                }
+            }
+            # Detector B: positional call to a harvested level-ish function.
+            for (fname in names(fn_param_pos)) {
+                cm <- gregexpr(paste0("\\b", fname, "\\s*\\("), line, perl = TRUE)[[1]]
+                if (cm[1] == -1) next
+                clens <- attr(cm, "match.length")
+                for (k in seq_along(cm)) {
+                    popen <- cm[k] + clens[k] - 1L
+                    depth <- 1L; j <- popen + 1L; close <- NA_integer_
+                    while (j <= nchar(line)) {
+                        c2 <- substr(line, j, j)
+                        if (c2 == "(") depth <- depth + 1L
+                        if (c2 == ")") { depth <- depth - 1L
+                                        if (depth == 0L) { close <- j; break } }
+                        j <- j + 1L
+                    }
+                    if (is.na(close)) next
+                    inner <- substr(line, popen + 1L, close - 1L)
+                    args <- split_toplevel_args(inner)
+                    pos <- fn_param_pos[[fname]]
+                    if (pos <= length(args) &&
+                        grepl(paste0("^\\s*", DECIMAL01, "\\s*$"), trimws(args[pos]))) {
+                        stray <- c(stray, sprintf("%s:%d", lbl, ln))
+                    }
+                }
+            }
+        }
+    }
+    result <- unique(stray)
+    attr(result, "mentions") <- unique(mentions)
+    result
+}
+
 stray <- scan_level_literals(lane_r_files)
+total_mentions <- attr(stray, "mentions")
+if (length(total_mentions) == 0L) {
+    stop("v130 (b) confidence-level scan: found ZERO level-ish identifier ",
+         "mentions across the lane's own R sources, where CONFIDENCE_LEVEL/",
+         "parse_canon_level/base_feldt's default are known to appear -- the ",
+         "scan machinery itself is broken. Refusing to trust a vacuous ",
+         "'no stray literals' from a scan that looked at nothing.")
+}
+check_true("v130",
+    sprintf("[Finding 5] the scan found level-ish identifier mentions to look at (not vacuously empty -- %d found, proving the scan machinery itself is not silently broken)",
+            length(total_mentions)),
+    length(total_mentions) >= 10L)
 check_true("v130",
     sprintf("no hardcoded confidence-level literal remains in the lane's R sources%s",
             if (length(stray)) sprintf(" (found: %s)", paste(stray, collapse = ", ")) else ""),
     length(stray) == 0L)
+
+# Finding 5's own closing proof: the FIVE STYLES verified as missed by the
+# old scan are caught by the new one, on a synthetic scratch file (never
+# touching a committed file) that exercises Detector A four ways and
+# Detector B once.
+#
+# Every decimal literal below is ASSEMBLED via paste0, exactly the same
+# self-reference dodge the (b) mutant demo further down already uses
+# ("Built via sprintf, not written as one contiguous literal") -- this
+# file (v130_survey_declared_oracle.R) is itself one of the "survey.*\\.R$"
+# files the directory-derived scan reads, so a decimal written out whole
+# HERE would make the scan (correctly) flag this very block as a sixth
+# stray site the moment it ran against its own source.
+verified_missed_styles <- c(
+    paste0("base_feldt <- function(a, n, k, level ", "= CONFIDENCE_LEVEL) {"),
+    "    tail <- (1 - level) / 2",
+    "}",
+    paste0("level <- 0", ".95"),
+    paste0("LEVEL <- 0", ".95"),
+    paste0("conf_level <- 0", ".95"),
+    paste0("level = ", ".95"),
+    paste0("x <- base_feldt(a, n, k, 0", ".95)")
+)
+styles_dir <- file.path(tempdir(), "v130-finding5-styles")
+dir.create(styles_dir, recursive = TRUE, showWarnings = FALSE)
+styles_tf <- file.path(styles_dir, "styles.R")
+writeLines(verified_missed_styles, styles_tf)
+styles_stray <- scan_level_literals(c(styles = styles_tf))
+check_true("v130",
+    sprintf("[Finding 5] all five previously-missed styles are now caught on a synthetic file (found %d of 5: %s)",
+            length(styles_stray), paste(styles_stray, collapse = ", ")),
+    length(styles_stray) == 5L)
 
 # PROOF BOTH CHECKS CAN ACTUALLY FAIL, and that each names its own site.
 # Neither committed file is touched -- (a)'s red demo mutates a SCRATCH
@@ -534,8 +763,14 @@ check_true("v130", "the mutation above touched only the scratch copy -- the comm
            oget("confidence_level") == CONFIDENCE_LEVEL)
 
 # (b) mutant: dump.R's base_feldt default reverted to a hardcoded literal
-# in a scratch copy, reproducing the exact pre-fix line.
-dump_lines <- readLines(lane_r_files[["dump"]], warn = FALSE)
+# in a scratch copy, reproducing the exact pre-fix line. lane_r_files is
+# now DERIVED from the directory (Finding 5), not a named hand list, so
+# its one "dump" entry is found by name pattern instead of a `[["dump"]]`
+# lookup that no longer has anything to index.
+dump_path <- lane_r_files[grepl("lane_survey_oracle_dump\\.R$", lane_r_files)]
+check_true("v130", "the directory-derived file list contains exactly one lane_survey_oracle_dump.R",
+           length(dump_path) == 1L)
+dump_lines <- readLines(dump_path[1], warn = FALSE)
 target_ln <- grep("^base_feldt <- function\\(a, n, k, level = CONFIDENCE_LEVEL\\) \\{$", dump_lines)
 check_true("v130", "dump.R's base_feldt default line was found to mutate for the scan red-demo",
            length(target_ln) == 1L)
@@ -551,7 +786,10 @@ if (length(target_ln) == 1L) {
                                      wrong_level_text)
     mutant_path <- file.path(mutant_dir, "dump_mutant.R")
     writeLines(dump_lines, mutant_path)
-    stray_mut <- scan_level_literals(c(v130 = lane_r_files[["v130"]], dump = mutant_path))
+    v130_path <- lane_r_files[grepl("v130_survey_declared_oracle\\.R$", lane_r_files)]
+    check_true("v130", "the directory-derived file list contains exactly one v130_survey_declared_oracle.R",
+               length(v130_path) == 1L)
+    stray_mut <- scan_level_literals(c(v130 = v130_path[1], dump = mutant_path))
 
     if (red_mode) {
         cat("      EML_LANE_RED: scanning a scratch copy of dump.R with its default\n")

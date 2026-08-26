@@ -2,7 +2,7 @@
 # EML Stats : Psychometrics
 # ============================================================================
 # Module: eml-psychometrics.praat
-# Version: 1.3
+# Version: 1.5
 # Date: 26 August 2026
 #
 # V1.1: Adds @emlSurveyValidateDeclaration, the survey module's declaration
@@ -41,6 +41,66 @@
 #       Also fixes refusal 6's message, found in the same pass printing
 #       the internal token "--undefined--" for a non-numeric `reversed`
 #       value instead of the value as declared.
+#
+# V1.4: A verification pass found the SAME "proxy checking" pattern this
+#       module keeps re-exhibiting: an existing classifier called and only
+#       part of its verdict consumed. Refusal 8 (Finding 1) called
+#       @emlAuditColumn on a scale item's data column and read only its
+#       kind-3 ("unreadable") count, discarding kinds 2 (locale-comma), 4
+#       (coerced) and 5 (leading-dot) -- each a cell "Get value:"
+#       mishandles as badly as kind 3, proved live on the committed
+#       fixture (a locale comma silently misreads as a different number;
+#       a leading dot silently vanishes into listwise deletion). All four
+#       now refuse; kind 1 (genuinely empty) stays deliberately exempt,
+#       stated at the call site rather than left implicit. Refusal 12's
+#       message (Finding 2) tested `.badRawValue$ = ""` to decide between
+#       naming a value and saying a cell is empty, which is not Praat's
+#       own missing-value token "--undefined--" -- a round-tripped
+#       declaration containing that token printed it verbatim to the
+#       user; now decided by @eml_classifyCell's kind, which already
+#       folds both spellings of "nothing here" together. Refusal 14
+#       (Finding 6) tested a scale name for exact empty string, not
+#       trimmed, so a whitespace-only or round-tripped-token name
+#       declared a live, unmatchable subscale; now decided the same way.
+#       Every other @eml-prefixed call in this procedure was swept for
+#       the same pattern (Finding 1's closing instruction) and either
+#       already reads its whole verdict or carries a one-line note on why
+#       a given output is deliberately unread (@eml_findDuplicateName's
+#       .firstRow; @emlStripHeaderQuotes's .nStripped/.report$). Also
+#       closes an unrelated gap the same sweep found: refusal 12's own
+#       second @emlAuditColumn call (locating which scale/row a bad
+#       endpoint belongs to) never read that call's .error$, unlike
+#       refusal 8's identical call a few hundred lines below -- not
+#       reachable today (refusal 11 already guarantees "min"/"max" exist)
+#       but guarded rather than left to halt on an unassigned indexed
+#       variable if that ever changed.
+#
+# V1.5: Two unchecked directions on the data table, found the same way
+#       every prior pass in this module has found its gap: something the
+#       schema promises but nothing enforces. (a) Nothing asserted the
+#       data table's own column labels are unique. "Get column index:"
+#       and "Get value:" both resolve to the FIRST match, so a second,
+#       shadowed column of the same name is never read by anything above
+#       -- proved live: a data table with two "Q1" columns, the second
+#       holding 99 (row 3) and "abc" (row 4), with "Q1" declared once in
+#       survey_items.csv, returned refusal 0; the out-of-range 99 and the
+#       unreadable "abc" both escaped, because refusal 2 and refusal 8
+#       only ever see the first "Q1". Now refusal 15. (b) Refusal 5
+#       already holds the scales file and the items file to a two-way
+#       standard (an item names an undeclared scale; a declared scale no
+#       item uses); nothing held the DATA table and the items file to the
+#       same standard in the other direction. The schema says the items
+#       file lists every column of the data table, one row per column --
+#       a data column absent from survey_items.csv was silently neither
+#       scored nor flagged as deliberately ignored. Now refusal 16.
+#       Reused, not rewritten: both new refusals answer "does a name
+#       repeat" or "is a name declared" the same way refusals 1, 5, 7 and
+#       13 already do -- 15 via a one-column scratch Table adapting
+#       @eml_findDuplicateName to the data table's own column labels
+#       (which are metadata, not a column of data, so the existing helper
+#       cannot read them directly) rather than a second nested duplicate
+#       scan; 16 via the same "resolves to a declared name" loop refusal
+#       1 already runs, in the opposite direction.
 #
 # Part of the EML Stats library (EML Praat Tools).
 # License: GPL-3.0-or-later
@@ -461,7 +521,7 @@ endproc
 #
 #   .dataTableId   - one row per respondent, one column per question
 #
-# Fourteen refusals. The first one found wins and stops the checks that
+# Sixteen refusals. The first one found wins and stops the checks that
 # follow it. Refusals 1-5 are Ian's original plan (SURVEY_MODULE_PLAN_2026-
 # 08-25.md, "The validator"); refusals 6-9 are four ways the verification
 # pass proved a declaration passes all five while leaving Stage 2's routing
@@ -473,7 +533,11 @@ endproc
 # file: a missing required column halted Praat outright, and a non-numeric
 # or missing declared min/max endpoint validated clean, on the scales file
 # specifically (the items file's own required columns and its "reversed"
-# and duplicate-name checks already existed).
+# and duplicate-name checks already existed). Refusals 15-16 (V1.5) are a
+# third adversarial pass's finding that the DATA table itself was held to
+# no standard at all: its own column labels were never checked for
+# uniqueness, and it was never checked against the items file in the
+# items-to-data direction refusal 1 does not cover.
 #
 #   1. An item names a column the data table does not have.
 #   2. A data value falls outside its subscale's declared range. A MISSING
@@ -492,13 +556,22 @@ endproc
 #      this, Stage 2 would read that column into its subscale twice -- once
 #      forward, once reversed if so declared -- inflating k and injecting a
 #      perfectly anti-correlated pair.
-#   8. An item resolved to a subscale has a non-numeric data column. Refusal
-#      2's range check reads the same cell through plain "Get value:",
-#      which returns undefined for a non-numeric cell exactly as it does
-#      for a genuinely missing one, so a text column (e.g. a scale item
-#      mistakenly pointed at a free-text column) sails through refusal 2,
-#      every row is excluded by listwise deletion, and the kernel then
-#      blames the sample size for what is really a declaration fault.
+#   8. An item resolved to a subscale has an unusable data column: any of
+#      @emlAuditColumn's kinds 2 (locale-comma), 3 (unreadable), 4
+#      (coerced), or 5 (leading-dot) -- every kind except 1 (genuinely
+#      empty), which stays exempt as ordinary missingness. Refusal 2's
+#      range check reads the same cell through plain "Get value:", which
+#      returns undefined for a non-numeric cell exactly as it does for a
+#      genuinely missing one, and silently MISREADS a locale-comma or
+#      leading-dot cell as a different number rather than dropping it, so
+#      a corrupted or wrong-typed column (e.g. a scale item mistakenly
+#      pointed at a free-text column, or a decimal comma from a
+#      non-English locale) sails through refusal 2 undetected or
+#      misread, and the kernel then either blames the sample size or
+#      silently computes a wrong statistic for what is really a
+#      declaration or data-entry fault. V1.4 widened this from kind 3
+#      alone (Finding 1: refusal 8 was consuming only one fifth of
+#      @emlAuditColumn's verdict on the exact call that decides it).
 #   9. A scale's `type` is neither "ordinal" nor "continuous". The scales
 #      read loop never read the type column before V1.2; Stage 2 branches
 #      on it to choose the ordinal-as-interval disclosure line and would
@@ -542,6 +615,19 @@ endproc
 #      name is never matched against a data column the way an item name
 #      is (refusal 1), so nothing else in this procedure would ever catch
 #      it.
+#  15. [V1.5] Two of the data table's own columns share the same header
+#      label. "Get column index:" and "Get value:" both resolve to the
+#      FIRST match against a duplicated header, so refusal 1's lookup and
+#      every per-row read after it (refusals 2 and 8) silently address
+#      only the first column, and anything wrong in a later, shadowed
+#      column of the same name is never seen at all.
+#  16. [V1.5] A data-table column is not named by any row in
+#      survey_items.csv. Refusal 1 already refuses the opposite direction
+#      (an item names a column the data lacks); nothing before this
+#      checked that every data column is, in turn, accounted for --
+#      scored by a subscale item, or explicitly marked "grouping" or
+#      "ignore". A column present only in the data table is silently
+#      neither.
 #
 # ORDERING, why refusals 6, 7, 9, 10 sit before 2 and 8 rather than after
 # 5, and why 11-14 sit where they do: 6, 7, 9, 10, 11, 12, 13 and 14 are
@@ -550,10 +636,18 @@ endproc
 # all -- while 2 and 8 both read every respondent's data. A declaration
 # fault must be reported before any data-reading refusal has a chance to
 # misreport it (refusal 10's whole reason for existing), so the checked
-# order is: 11, 1, 7, 6, 14, 13, 12, 9, 10, 8, 2, 3, 4, 5. Refusal 11 comes
-# first of all, ahead even of refusal 1: it is the one check that must run
-# before the items- and scales-array population loops themselves, which
-# read every required column with a bare "Get value:" and would otherwise
+# order is: 11, 1, 7, 6, 14, 13, 12, 9, 10, 8, 2, 3, 4, 5. Refusals 15 and
+# 16 (V1.5) are the one exception to "declaration faults before data
+# faults": both are facts about the DATA table itself, but both are more
+# basic than refusal 1 -- 15 because a duplicated header makes refusal 1's
+# own lookup unreliable (it would silently resolve to the first of the
+# two and report nothing wrong), and 16 because it is refusal 1's mirror
+# question about the same table, asked right alongside it. Checked order
+# is therefore: 11, 15, 1, 16, 7, 6, 14, 13, 12, 9, 10, 8, 2, 3, 4, 5.
+# Refusal 11 comes first of all, ahead even of refusal 1: it is the one
+# check that must run before the items- and scales-array population loops
+# themselves, which read every required column with a bare "Get value:"
+# and would otherwise
 # be the thing that halts. Within the remaining declaration-shape faults,
 # the items-table checks (7, 8's precondition aside, then 6) run before
 # the scales-table checks (14, 13, 12, 9, 10) because the items table is
@@ -768,10 +862,10 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     .msg8a$ = "Every item scored as part of a subscale must hold numeric "
     ... + "responses. Item """
     .msg8b$ = """ (subscale """
-    .msg8c$ = """) has a non-numeric value in respondent row "
+    .msg8c$ = """) has an unusable value in respondent row "
     .msg8d$ = ": """
     .msg8e$ = """."
-    .rem8a$ = "Correct or remove the non-numeric cell in column """
+    .rem8a$ = "Correct or remove the unusable cell in column """
     .rem8b$ = """ (row "
     .rem8c$ = "), or change its role in survey_items.csv if the column "
     ... + "is not meant to be a scale item."
@@ -818,6 +912,13 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     .rem12a$ = "Correct the """
     .rem12b$ = """ value for """
     .rem12c$ = """ in survey_scales.csv to a number."
+    ; Finding 7's defensive fallback: the named column itself could not be
+    ; read (unreachable today -- see the call site) so there is no scale
+    ; name to report a row against.
+    .msg12fCol$ = "A subscale's declared """
+    .msg12gCol$ = """ column could not be read."
+    .rem12dCol$ = "Check survey_scales.csv for a missing or misnamed """
+    .rem12eCol$ = """ column."
 
     ; DRAFT LANGUAGE -- awaiting Ian's approval
     # Refusal 13: a scale name declared more than once.
@@ -835,6 +936,24 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     .msg14b$ = " has no scale name."
     .rem14a$ = "Add a scale name to the empty row in survey_scales.csv, "
     ... + "or delete the row if it is not a real subscale."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 15 [V1.5]: two data-table columns share the same header.
+    .msg15a$ = "Every column in the data table must have a unique header. """
+    .msg15b$ = """ is used by more than one column, so only the first one "
+    ... + "can ever be read."
+    .rem15a$ = "Rename or remove the duplicate """
+    .rem15b$ = """ column so the data table's headers are unique."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Refusal 16 [V1.5]: a data-table column is not declared by any item.
+    .msg16a$ = "Every column in the data table must be listed in "
+    ... + "survey_items.csv. Column """
+    .msg16b$ = """ is not."
+    .rem16a$ = "Add a row for """
+    .rem16b$ = """ to survey_items.csv (with role grouping or ignore if "
+    ... + "it is not meant to be scored), or remove the column from the "
+    ... + "data table if it should not be there."
     # ------------------------------------------------------------------------
     # END draft language block.
     # ------------------------------------------------------------------------
@@ -856,6 +975,14 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # rather than adding a quote check at each of the several sites that
     # look a column up. @emlStripHeaderQuotes is idempotent on a table
     # with no quoted labels, so this costs nothing on a clean file.
+    #
+    # Classifier-consumption sweep: @emlStripHeaderQuotes returns
+    # .nStripped and .report$ (which headers it de-quoted); neither is
+    # read at these three call sites, deliberately -- a de-quoted header
+    # is a normalization, not a fault, and none of the fourteen refusals
+    # below is "your header was quoted". Nothing here decides usability
+    # the way @emlAuditColumn's kinds do, so there is no verdict to
+    # partially consume.
     @emlStripHeaderQuotes: .itemsTableId
     @emlStripHeaderQuotes: .scalesTableId
     @emlStripHeaderQuotes: .dataTableId
@@ -989,8 +1116,27 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # V1.3 by the same gap named in this pass's header: an empty scale
     # name is never matched against a data column the way an item name is
     # (refusal 1), so nothing else in this procedure would ever catch it.
+    #
+    # Finding 6: `.scaleName$[.s] = ""` tested EXACT empty, not trimmed --
+    # a scales file whose scale name is a single space validated clean and
+    # declared a live subscale with a whitespace name. Two existing
+    # trimming classifiers could close this: @eml_normalizeLabel
+    # (eml-extract.praat) trims and lower-cases for label COMPARISON, and
+    # @eml_classifyCell (eml-extract.praat, the same classifier refusals 8
+    # and 12 already use above) folds a whitespace-only string AND
+    # Praat's own missing-value token "--undefined--" into one kind (kind
+    # 1, "empty"). @eml_classifyCell is used here, not
+    # @eml_normalizeLabel: a scale name is not being compared against
+    # another label (lower-casing would be pointless work), and a scale
+    # name column round-tripped through Praat can contain the literal
+    # "--undefined--" token exactly as Finding 2 proved a min/max column
+    # can -- @eml_normalizeLabel's plain trim would not catch that
+    # spelling of "no name" at all, where @eml_classifyCell's kind 1
+    # already does.
     for .s from 1 to .nScales
-        if .scaleName$[.s] = ""
+        @eml_classifyCell: .scaleName$[.s]
+        .scaleNameKind = eml_classifyCell.kind
+        if .scaleNameKind = 1
             .error$ = .msg14a$ + string$ (.s) + .msg14b$
             .remedy$ = .rem14a$
             .refusal = 14
@@ -1004,6 +1150,15 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # once, below) via @eml_findDuplicateName: the two ask the same
     # question of two different tables/columns, and V1.3 does not want a
     # second copy of that nested loop.
+    #
+    # Classifier-consumption sweep: @eml_findDuplicateName returns four
+    # outputs (.found, .name$, .firstRow, .dupRow). .firstRow is the ONE
+    # output deliberately not read here or at refusal 7's call site below
+    # -- the message names only .dupRow, the LATER declaration, because
+    # the first occurrence is not itself wrong (nothing to fix there) and
+    # naming the second names the row to delete. This is not a missed
+    # kind the way refusal 8's four discarded kinds were: .found/.name$/
+    # .dupRow already fully decide the refusal and fully name the fix.
     @eml_findDuplicateName: .scalesTableId, "scale", .nScales
     if eml_findDuplicateName.found = 1
         .error$ = .msg13a$ + eml_findDuplicateName.name$ + .msg13b$
@@ -1050,6 +1205,23 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     endif
     if .badEndpointError$ <> ""
         @emlAuditColumn: .scalesTableId, .badEndpointCol$
+        # Finding 7: this call's .error$ was consumed at refusal 8's own
+        # @emlAuditColumn call site, ~170 lines below, but not here --
+        # this pass's rule admits no exception for a call site just
+        # because its error is not reachable today. "min" and "max" are
+        # both guaranteed present by refusal 11, checked earlier in this
+        # same procedure, so .error$ (column not found) cannot actually
+        # be non-empty here -- but if it ever were, indexing
+        # .scaleName$[.badScaleRow] below at row 0 (nothing sets
+        # .badScaleRow when every "first...Row" output stays at its
+        # initialized 0) HALTS with "Undefined indexed variable" rather
+        # than refusing. Guarded, not left to chance.
+        if emlAuditColumn.error$ <> ""
+            .error$ = .msg12fCol$ + .badEndpointCol$ + .msg12gCol$
+            .remedy$ = .rem12dCol$ + .badEndpointCol$ + .rem12eCol$
+            .refusal = 12
+            goto SURVEY_VALIDATE_DONE
+        endif
         .badScaleRow = 0
         if emlAuditColumn.firstEmptyRow > 0
             .badScaleRow = emlAuditColumn.firstEmptyRow
@@ -1078,7 +1250,22 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
         .badColumn$ = .badEndpointCol$
         selectObject: .scalesTableId
         .badRawValue$ = Get value: .badScaleRow, .badEndpointCol$
-        if .badRawValue$ = ""
+        # Finding 2: THE MESSAGE CLASS, closed, not just this one branch.
+        # Praat's own missing-value token in a saved CSV is the literal
+        # 13-character string "--undefined--", never the empty string
+        # (CLAUDE.md / this pass's header) -- so
+        # "Confidence,--undefined--,5,ordinal", the exact shape a
+        # round-tripped declaration can contain (the schema doc: "the
+        # dialog writes both declaration files"), used to fail the old
+        # `.badRawValue$ = ""` test and print the bare internal token to
+        # the user in the "else" branch below. @eml_classifyCell
+        # (eml-extract.praat) is the one place that already folds BOTH
+        # spellings of "nothing here" into its kind 1 ("empty"), so that
+        # classifier decides the branch here instead of a second, narrower
+        # re-implementation of the same test that only one of the two
+        # spellings would pass.
+        @eml_classifyCell: .badRawValue$
+        if eml_classifyCell.kind = 1
             .error$ = .msg12a$ + .badScale$ + .msg12b$ + .badColumn$
             ... + .msg12eEmpty$
         else
@@ -1093,6 +1280,54 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
 
     selectObject: .dataTableId
     .nData = Get number of rows
+
+    # ===== Refusal 15 [V1.5]: two data-table columns share the same =====
+    # ===== header label                                             =====
+    # Checked before refusal 1: a duplicated header makes refusal 1's own
+    # "Get column index:" lookup unreliable (it resolves to the FIRST
+    # match and reports success either way), so this must be settled
+    # before refusal 1's answer can be trusted at all. Proved live
+    # (Finding 4a): a data table with two "Q1" columns, the second holding
+    # 99 in row 3 and "abc" in row 4, with "Q1" declared once in
+    # survey_items.csv, returned refusal 0 -- the out-of-range 99 (refusal
+    # 2's question) and the unreadable "abc" (refusal 8's question) both
+    # escape, because every read of "Q1" below, by name, addresses only
+    # the first column.
+    #
+    # Reused, not rewritten: @eml_findDuplicateName (above) already
+    # answers "does a name repeat" for a table's named COLUMN OF VALUES.
+    # A data table's own column LABELS are metadata, not a column of
+    # values, so they cannot be handed to it directly -- a scratch
+    # one-column Table holding the data table's labels, one per row (built
+    # fresh, then removed), lets the SAME helper answer the identical
+    # question about headers instead of a second nested duplicate scan
+    # written out here.
+    selectObject: .dataTableId
+    .nDataCols = Get number of columns
+    .dataColLabelsTable = Create Table with column names: "eml_dataColLabels",
+        ... 0, "label"
+    for .c from 1 to .nDataCols
+        selectObject: .dataTableId
+        .dataColLabel$ = Get column label: .c
+        selectObject: .dataColLabelsTable
+        Append row
+        Set string value: .c, "label", .dataColLabel$
+    endfor
+    @eml_findDuplicateName: .dataColLabelsTable, "label", .nDataCols
+    removeObject: .dataColLabelsTable
+    ; .dupDataColFound holds the classifier's own verdict in a name unique
+    ; to this call site, kept apart from refusal 7's and 13's identically
+    ; worded "if eml_findDuplicateName.found = 1" guards elsewhere in this
+    ; procedure so a negative control aimed at any one of the three has a
+    ; guard line to target that is not shared text.
+    .dupDataColFound = eml_findDuplicateName.found
+    if .dupDataColFound = 1
+        .error$ = .msg15a$ + eml_findDuplicateName.name$ + .msg15b$
+        .remedy$ = .rem15a$ + eml_findDuplicateName.name$ + .rem15b$
+        .refusal = 15
+        .badItem$ = eml_findDuplicateName.name$
+        goto SURVEY_VALIDATE_DONE
+    endif
 
     # --- V1.2: each item's resolved subscale, computed ONCE -------------
     # An item's role resolves to a declared subscale when it names a value
@@ -1124,6 +1359,42 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
         endif
     endfor
 
+    # ===== Refusal 16 [V1.5]: a data-table column is not declared by =====
+    # ===== any item                                                  =====
+    # Refusal 1, immediately above, establishes the ITEMS -> DATA
+    # direction: every row in survey_items.csv must name a column the
+    # data table has. This is that same discipline in the opposite
+    # direction, the same way refusal 5 already holds the scales file and
+    # the items file to a two-way standard rather than just one. The
+    # schema (evidence/csv/lane_survey_declared_SCHEMA.md) says the items
+    # file lists every column of the data table, one row per column; a
+    # column present in the data and absent from survey_items.csv was
+    # silently neither scored (no item claims it) nor disclosed as
+    # deliberately skipped -- "ignore" is itself a role an item ROW
+    # declares, so a column with no item row was never actually told
+    # apart from one nobody remembered to declare at all.
+    #
+    # .nDataCols is already known from refusal 15's scan, above, and the
+    # data table's columns have not changed since -- recomputing it here
+    # would be exactly the drift this pass's own DRY rule warns against.
+    for .c from 1 to .nDataCols
+        selectObject: .dataTableId
+        .dataColLabel$ = Get column label: .c
+        .dataColDeclared = 0
+        for .i from 1 to .nItems
+            if .itemName$[.i] = .dataColLabel$
+                .dataColDeclared = 1
+            endif
+        endfor
+        if .dataColDeclared = 0
+            .error$ = .msg16a$ + .dataColLabel$ + .msg16b$
+            .remedy$ = .rem16a$ + .dataColLabel$ + .rem16b$
+            .refusal = 16
+            .badItem$ = .dataColLabel$
+            goto SURVEY_VALIDATE_DONE
+        endif
+    endfor
+
     # ===== V1.2 additions: refusals 7, 6, 9, 10, 8 =====
     # All five are inserted HERE -- after refusal 1, before refusal 2 --
     # per the ordering rationale in this procedure's header comment: 7, 6,
@@ -1140,7 +1411,9 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # naming the second occurrence names the row to delete. V1.3:
     # refactored onto @eml_findDuplicateName, shared with refusal 13's
     # identical question about survey_scales.csv's "scale" column --
-    # behavior unchanged, same message fragments, same outputs.
+    # behavior unchanged, same message fragments, same outputs. .firstRow
+    # is deliberately not read here either -- same reason as refusal 13's
+    # call site, above.
     @eml_findDuplicateName: .itemsTableId, "item", .nItems
     if eml_findDuplicateName.found = 1
         .error$ = .msg7a$ + eml_findDuplicateName.name$ + .msg7b$
@@ -1207,34 +1480,87 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
         endif
     endfor
 
-    # ===== Refusal 8: an item resolved to a subscale has a non-numeric =====
-    # ===== data column                                                =====
+    # ===== Refusal 8: an item resolved to a subscale has an unusable =====
+    # ===== data column                                              =====
     # Only items whose role resolves to a declared subscale need numeric
     # data (.itemScaleIndex[.i] > 0, computed once above) -- a grouping or
     # ignore column may legitimately hold text, e.g. Voice holding
     # "Soprano" / "Alto", and is not checked here. @emlAuditColumn
-    # (eml-extract.praat) tells a non-numeric cell (its kind 3,
-    # "unreadable": text that is not a number in any locale) apart from a
-    # genuinely empty one (its kind 1, "empty"); only the former refuses
-    # here, so a real missing cell stays exempt exactly as refusal 2's own
-    # header comment requires.
+    # (eml-extract.praat) classifies every cell of a column into five
+    # kinds: 1 empty, 2 locale-comma, 3 unreadable, 4 coerced, 5
+    # leading-dot. V1.2 (this refusal's own introduction) read only kind
+    # 3. A verification pass (Finding 1) proved that left kinds 2, 4 and 5
+    # live: on the committed fixture, R1 row 2 "71.8" edited to "71,8"
+    # (kind 2) is silently misread by "Get value:" as 71 -- not dropped,
+    # not flagged, a DIFFERENT number -- moving Ease's alpha from
+    # 0.941046 to 0.940856 while this refusal still reported 0; the same
+    # cell edited to ".5" (kind 5) reads `undefined` and is silently
+    # dropped by listwise deletion, again with refusal still 0. Both are
+    # now joined below alongside kind 3 and kind 4 (a percent sign coerces
+    # the same way), so every kind @emlAuditColumn calls unusable-but-not-
+    # missing refuses here.
+    #
+    # Kind 1 (genuinely empty) is the one kind deliberately EXCLUDED from
+    # this refusal, not merely overlooked: an empty respondent cell is
+    # ordinary missingness, already disclosed and handled by listwise
+    # deletion, and is not evidence that the column itself is the wrong
+    # one -- the fault this refusal exists to catch (this procedure's own
+    # header comment for refusal 8, above, and refusal 2's header comment
+    # on the same exemption). A real missing cell stays exempt exactly as
+    # before.
     for .i from 1 to .nItems
         if .itemScaleIndex[.i] > 0
             @emlAuditColumn: .dataTableId, .itemName$[.i]
-            if emlAuditColumn.error$ = "" and emlAuditColumn.nUnreadable > 0
-                .matchedScaleIdx = .itemScaleIndex[.i]
-                .error$ = .msg8a$ + .itemName$[.i] + .msg8b$
-                ... + .scaleName$[.matchedScaleIdx] + .msg8c$
-                ... + string$ (emlAuditColumn.firstUnreadableRow) + .msg8d$
-                ... + emlAuditColumn.firstUnreadableValue$ + .msg8e$
-                .remedy$ = .rem8a$ + .itemName$[.i] + .rem8b$
-                ... + string$ (emlAuditColumn.firstUnreadableRow) + .rem8c$
-                .refusal = 8
-                .badItem$ = .itemName$[.i]
-                .badScale$ = .scaleName$[.matchedScaleIdx]
-                .badRow = emlAuditColumn.firstUnreadableRow
-                .badCellText$ = emlAuditColumn.firstUnreadableValue$
-                goto SURVEY_VALIDATE_DONE
+            if emlAuditColumn.error$ = ""
+                # The smallest nonzero "first row" across the four
+                # unusable-and-not-missing kinds, the same "earliest bad
+                # row wins" rule refusal 12 already applies to the scales
+                # file's min/max columns below -- so a column with more
+                # than one bad kind still reports the row that broke it
+                # first, not whichever kind happened to be tested last.
+                .badAuditRow = 0
+                .badAuditText$ = ""
+                if emlAuditColumn.nLocale > 0
+                    .badAuditRow = emlAuditColumn.firstLocaleRow
+                    .badAuditText$ = emlAuditColumn.firstLocaleValue$
+                endif
+                if emlAuditColumn.nCoerced > 0
+                    if .badAuditRow = 0
+                    ... or emlAuditColumn.firstCoercedRow < .badAuditRow
+                        .badAuditRow = emlAuditColumn.firstCoercedRow
+                        .badAuditText$ = emlAuditColumn.firstCoercedValue$
+                    endif
+                endif
+                if emlAuditColumn.nLeadingDot > 0
+                    if .badAuditRow = 0
+                    ... or emlAuditColumn.firstLeadingDotRow < .badAuditRow
+                        .badAuditRow = emlAuditColumn.firstLeadingDotRow
+                        .badAuditText$ = emlAuditColumn.firstLeadingDotValue$
+                    endif
+                endif
+                if emlAuditColumn.nUnreadable > 0
+                    if .badAuditRow = 0
+                    ... or emlAuditColumn.firstUnreadableRow < .badAuditRow
+                        .badAuditRow = emlAuditColumn.firstUnreadableRow
+                        .badAuditText$ = emlAuditColumn.firstUnreadableValue$
+                    endif
+                endif
+
+                if .badAuditRow > 0
+                    .matchedScaleIdx = .itemScaleIndex[.i]
+                    .error$ = .msg8a$ + .itemName$[.i] + .msg8b$
+                    ... + .scaleName$[.matchedScaleIdx] + .msg8c$
+                    ... + string$ (.badAuditRow) + .msg8d$
+                    ... + .badAuditText$ + .msg8e$
+                    .remedy$ = .rem8a$ + .itemName$[.i] + .rem8b$
+                    ... + string$ (.badAuditRow) + .rem8c$
+                    .refusal = 8
+                    .badItem$ = .itemName$[.i]
+                    .badScale$ = .scaleName$[.matchedScaleIdx]
+                    .badRow = .badAuditRow
+                    .badCellText$ = .badAuditText$
+                    goto SURVEY_VALIDATE_DONE
+                endif
             endif
         endif
     endfor
@@ -1379,16 +1705,20 @@ endproc
 #   .error$           - refusal message (rule + reason), or "" when the
 #                       declaration is sound
 #   .remedy$          - what to do instead, or "" when .error$ is ""
-#   .refusal          - 0 when sound; else 1-14 (see the ordering comment
+#   .refusal          - 0 when sound; else 1-16 (see the ordering comment
 #                       above the procedure for what each is and the order
 #                       they are checked in; refusal 10 is a contract
 #                       repair, not one of Ian's original five or the four
 #                       probed additions; refusals 11-14 are a second
 #                       adversarial pass closing the same class of fault
 #                       on the scales file that 6-10 closed on the items
-#                       file)
+#                       file; refusals 15-16 are a third adversarial pass
+#                       closing two unchecked directions on the data
+#                       table itself)
 #   .badItem$         - the item/column name implicated (refusals 1, 2, 4,
-#                       6, 7, 8, and refusal 5 direction A); "" otherwise
+#                       6, 7, 8, 15 [the repeated data-table header], 16
+#                       [the undeclared data-table column], and refusal 5
+#                       direction A); "" otherwise
 #   .badScale$        - the subscale name implicated (refusals 2, 3, 8, 9,
 #                       10, 12, 13, and refusal 5, either direction); ""
 #                       otherwise (refusal 14 leaves this "" too -- the
@@ -1476,8 +1806,12 @@ endproc
 #     answer as of V1.3 (refusal 7's refactor onto @eml_findDuplicateName
 #     leaves .itemsTableId selected even when 7 itself does not fire, so a
 #     later refusal such as 9 or 10 no longer inherits .dataTableId the
-#     way it did before V1.3). A caller that needs a specific Table
-#     selected should select it itself rather than rely on this
+#     way it did before V1.3; V1.5's refusal 15 goes further still,
+#     briefly selecting and then removing a scratch Table of its own that
+#     never existed before this procedure ran, so a refusal-15 return in
+#     particular may leave nothing meaningful selected at all). A caller
+#     that needs a specific Table selected should select it itself rather
+#     than rely on this
 #     procedure's leftover selection.
 # ============================================================================
 

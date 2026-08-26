@@ -332,6 +332,25 @@ if (!canDrive) {
         lines
     }
 
+    # add_data_column -- appends a NEW column to a data CSV's lines, quoted
+    # header (matching the committed file's own R-write.csv-style quoting)
+    # and one value per data row, defaulting every row to "" (blank, i.e.
+    # missing -- exempt from every value-reading refusal) except the
+    # 1-based rows named in row_values. Used by refusals 15 (a second
+    # column sharing an EXISTING header) and 16 (a column no item
+    # declares).
+    add_data_column <- function(lines, header, row_values = list()) {
+        out <- lines
+        out[1] <- paste0(out[1], ',"', header, '"')
+        n <- length(out) - 1L
+        for (r in seq_len(n)) {
+            v <- row_values[[as.character(r)]]
+            if (is.null(v)) v <- ""
+            out[r + 1L] <- paste0(out[r + 1L], ",", v)
+        }
+        out
+    }
+
     results <- list()
     results$clean <- out_clean
 
@@ -516,6 +535,121 @@ if (!canDrive) {
         positive_leg_codes <- c(positive_leg_codes, 8)
     }
 
+    # --- Defect 8, ALL FIVE @emlAuditColumn KINDS, planted in turn on a
+    #     scale item's data column (Finding 1's own closing instruction) --
+    #     the fixture above (d8) exercises kind 3, unreadable. The other
+    #     four:
+    #       kind 1 (empty)       -- NOT a new fixture: the committed file's
+    #                               own three planted blanks (row5/Q6,
+    #                               row11/Q2, row18/R2) already prove, in
+    #                               section 3b above, that this kind alone
+    #                               does NOT fire this refusal, because it
+    #                               is deliberately excluded (an empty
+    #                               respondent cell is ordinary
+    #                               missingness, not a wrong column).
+    #                               Repeating that assertion here, by
+    #                               refusal-8's own code, rather than
+    #                               relying on 3b's assertion under a
+    #                               different section number, is what
+    #                               closes the "every kind" instruction
+    #                               without contradicting Finding 1's own
+    #                               required exemption.
+    #       kind 2 (locale-comma) -- below (d8_locale)
+    #       kind 4 (coerced)      -- below (d8_coerced)
+    #       kind 5 (leading-dot)  -- below (d8_leaddot)
+    # -------------------------------------------------------------------
+    check_true("v129",
+        "[refusal 8, kind 1] a genuinely empty respondent cell alone does NOT fire refusal 8 (deliberately exempt -- Finding 1's own required exemption, re-asserted at this refusal's own positive-leg site)",
+        ran_ok(out_clean) && num_(out_clean, "res", 1) == 0)
+
+    # kind 2, locale-comma: R1 row 2 (Ease, item R1, committed value
+    # "71.8") edited to "71,8" -- the exact live proof Finding 1 gives.
+    # CSV-quoted ("\"71,8\"") because the raw cell now contains a comma
+    # and this file's CSVs are otherwise unquoted data -- Praat's reader
+    # strips quotes from a quoted DATA cell (this file's own header
+    # comment on the quoted-header quirk, section 0 above), so the
+    # quoting is invisible to the column once read and changes nothing
+    # about what is being tested.
+    data8_locale <- edit_field(clean_data_lines, 2, "R1", "\"71,8\"")
+    p8_locale <- write_csv_lines(data8_locale, "d8_locale_data.csv")
+    out8_locale <- drive_validate("stats", p8_locale, committed_scales_path,
+                                  committed_items_path, "d8-locale")
+    results$d8_locale <- out8_locale
+    check_true("v129", "[refusal 8, kind 2] probe ran", ran_ok(out8_locale))
+    if (ran_ok(out8_locale)) {
+        check("v129", "[refusal 8, kind 2] code is 8 (locale-comma cell is unusable, not silently misread as 71)",
+              num_(out8_locale, "res", 1), 8, tol = 0)
+        check_true("v129", "[refusal 8, kind 2] badItem is \"R1\"",
+                   identical(str_(out8_locale, "res", 2), "R1"))
+        check_true("v129", "[refusal 8, kind 2] badScale is \"Ease\"",
+                   identical(str_(out8_locale, "res", 3), "Ease"))
+        check("v129", "[refusal 8, kind 2] badRow is 2",
+              num_(out8_locale, "res", 4), 2, tol = 0)
+        check_true("v129", "[refusal 8, kind 2] badCellText is \"71,8\"",
+                   identical(str_(out8_locale, "res", 17), "71,8"))
+        positive_leg_codes <- c(positive_leg_codes, 8)
+    }
+
+    # kind 4, coerced (a percent sign): R2 row 5 (Ease, item R2, committed
+    # value "95.6") edited to "95.6%". Planted on R2 rather than R1
+    # specifically because R2 already carries the committed fixture's own
+    # genuine blank cell (row 18) -- @emlAuditColumn's fast path
+    # (eml-extract.praat: @eml_strictNumericColumn) short-circuits to
+    # "every cell valid" on a column that numericises strictly as a WHOLE
+    # via Praat's own "Get all numbers in column:", which "95.6%" alone
+    # would still do (Praat's numericiser accepts a trailing percent sign
+    # and returns a fraction, verified directly against Praat 6.6.30,
+    # exactly the hazard @eml_classifyCell's own header comment names) --
+    # skipping the per-cell classification loop entirely and reporting
+    # the corrupted column clean. R2's own pre-existing blank forces that
+    # fast path to fall through to the per-cell scan on ANY column it
+    # sits in (@eml_strictNumericColumn's own pre-scan finds the blank
+    # before it ever tries the whole-column numeric probe), so this is
+    # the column where kind 4 is actually detectable through
+    # @emlAuditColumn's real behavior, not a hand-picked case that dodges
+    # a limitation of the classifier this pass is not permitted to touch
+    # (eml-extract.praat is out of this lane's boundary).
+    data8_coerced <- edit_field(clean_data_lines, 5, "R2", "95.6%")
+    p8_coerced <- write_csv_lines(data8_coerced, "d8_coerced_data.csv")
+    out8_coerced <- drive_validate("stats", p8_coerced, committed_scales_path,
+                                   committed_items_path, "d8-coerced")
+    results$d8_coerced <- out8_coerced
+    check_true("v129", "[refusal 8, kind 4] probe ran", ran_ok(out8_coerced))
+    if (ran_ok(out8_coerced)) {
+        check("v129", "[refusal 8, kind 4] code is 8 (a percent-coerced cell is unusable, not silently read as a fraction)",
+              num_(out8_coerced, "res", 1), 8, tol = 0)
+        check_true("v129", "[refusal 8, kind 4] badItem is \"R2\"",
+                   identical(str_(out8_coerced, "res", 2), "R2"))
+        check("v129", "[refusal 8, kind 4] badRow is 5",
+              num_(out8_coerced, "res", 4), 5, tol = 0)
+        check_true("v129", "[refusal 8, kind 4] badCellText is \"95.6%\"",
+                   identical(str_(out8_coerced, "res", 17), "95.6%"))
+        positive_leg_codes <- c(positive_leg_codes, 8)
+    }
+
+    # kind 5, leading-dot: R1 row 2 (committed value "71.8") edited to
+    # ".8" -- Finding 1's own second live proof: "Get value:" reads a bare
+    # leading decimal point as `undefined`, so before this fix the row was
+    # silently dropped by listwise deletion, indistinguishable from a
+    # genuinely missing cell, while refusal was still 0.
+    data8_leaddot <- edit_field(clean_data_lines, 2, "R1", ".8")
+    p8_leaddot <- write_csv_lines(data8_leaddot, "d8_leaddot_data.csv")
+    out8_leaddot <- drive_validate("stats", p8_leaddot, committed_scales_path,
+                                   committed_items_path, "d8-leaddot")
+    results$d8_leaddot <- out8_leaddot
+    check_true("v129", "[refusal 8, kind 5] probe ran", ran_ok(out8_leaddot))
+    if (ran_ok(out8_leaddot)) {
+        check("v129", "[refusal 8, kind 5] code is 8 (a bare leading-dot cell is unusable, not silently dropped as though missing)",
+              num_(out8_leaddot, "res", 1), 8, tol = 0)
+        check_true("v129", "[refusal 8, kind 5] badItem is \"R1\"",
+                   identical(str_(out8_leaddot, "res", 2), "R1"))
+        check("v129", "[refusal 8, kind 5] badRow is 2",
+              num_(out8_leaddot, "res", 4), 2, tol = 0)
+        check_true("v129", "[refusal 8, kind 5] badCellText is \".8\"",
+                   identical(str_(out8_leaddot, "res", 17), ".8"))
+        positive_leg_codes <- c(positive_leg_codes, 8)
+    }
+
     # --- Defect 9: a scale type that is neither ordinal nor continuous --
     scales9 <- clean_scales_lines
     scales9[grepl("^Confidence,", scales9)] <- "Confidence,1,5,banana"
@@ -636,6 +770,34 @@ if (!canDrive) {
         positive_leg_codes <- c(positive_leg_codes, 12)
     }
 
+    # --- Defect 12u: a subscale's declared min is Praat's OWN missing-value
+    #     token, "--undefined--", not the empty string and not ordinary
+    #     non-numeric text -- Finding 2's own live proof. THE SCHEMA DOC
+    #     says the dialog writes both declaration files, and "Save as
+    #     comma-separated file" writes exactly this 13-character literal
+    #     for a missing cell (CLAUDE.md; this pass's own header), so a
+    #     round-tripped declaration can contain it even though no CSV
+    #     hand-typed by a person would. Before the fix, `.badRawValue$ =
+    #     ""` was false for this literal (it is not the empty string), so
+    #     this fixture fell into the "else" branch and printed the bare
+    #     internal token into a user-facing sentence.
+    scales12u <- edit_field(clean_scales_lines, 1, "min", "--undefined--")
+    p12u <- write_csv_lines(scales12u, "d12u_scales.csv")
+    out12u <- drive_validate("stats", committed_data_path, p12u, committed_items_path, "d12u")
+    results$d12u <- out12u
+    check_true("v129", "[refusal 12u] probe ran", ran_ok(out12u))
+    if (ran_ok(out12u)) {
+        check("v129", "[refusal 12u] code is 12 (declared min/max missing or not numeric) -- parity with defect 12's hand-typed non-numeric text and 12b's hand-typed blank",
+              num_(out12u, "res", 1), 12, tol = 0)
+        check_true("v129", "[refusal 12u] badColumn is \"min\"",
+                   identical(str_(out12u, "res", 20), "min"))
+        check_true("v129", "[refusal 12u] badRawValue is the literal token \"--undefined--\" (the RAW declared text, honestly reported -- this field is read by other code, not shown to a user as a sentence, so it is not the class Finding 2 closes)",
+                   identical(str_(out12u, "res", 22), "--undefined--"))
+        check_true("v129", "[refusal 12u] .error$ does NOT contain the bare internal token \"--undefined--\" (Finding 2, closed as a class: the message says the value is empty, it does not print the token)",
+                   !grepl("--undefined--", str_(out12u, "res", 23), fixed = TRUE))
+        positive_leg_codes <- c(positive_leg_codes, 12)
+    }
+
     # --- Defect 13: a scale name declared more than once ----------------
     # Confidence's row duplicated with a DIFFERENT max (1-200 instead of
     # 1-5) immediately after itself -- Ian's approved probe, mirroring
@@ -681,6 +843,88 @@ if (!canDrive) {
         check_true("v129", "[refusal 14] badScale is \"\" (the fault IS that the scale has no name)",
                    identical(str_(out14, "res", 3), ""))
         positive_leg_codes <- c(positive_leg_codes, 14)
+    }
+
+    # --- Defect 14b: a scale name is WHITESPACE, not exactly empty ------
+    # Finding 6's own live proof: `.scaleName$[.s] = ""` tested exact
+    # empty, so a scale name of a single space validated clean and
+    # declared a live subscale with a whitespace name -- unmatchable by
+    # eye and unmatchable by any item's role, which the plan's own
+    # relational check (refusal 5) compares by exact string equality too.
+    scales14b <- edit_field(clean_scales_lines, 1, "scale", " ")
+    p14b <- write_csv_lines(scales14b, "d14b_scales.csv")
+    out14b <- drive_validate("stats", committed_data_path, p14b, committed_items_path, "d14b")
+    results$d14b <- out14b
+    check_true("v129", "[refusal 14b] probe ran", ran_ok(out14b))
+    if (ran_ok(out14b)) {
+        check("v129", "[refusal 14b] code is 14 (a whitespace-only scale name is empty, not a real name) -- not 0 (was misreported as clean before this fix), and not 5 (item_unknown_scale, misreported as a relational fault rather than the scale's own missing name)",
+              num_(out14b, "res", 1), 14, tol = 0)
+        check("v129", "[refusal 14b] badScaleRow is 1", num_(out14b, "res", 15), 1, tol = 0)
+        positive_leg_codes <- c(positive_leg_codes, 14)
+    }
+
+    # --- Defect 14u: a scale name is Praat's OWN missing-value token,
+    #     "--undefined--" -- the same round-trip realism as Defect 12u,
+    #     applied to the scale-name column instead of an endpoint column.
+    #     @eml_normalizeLabel (a trim-only classifier) would NOT have
+    #     caught this spelling of "no name" -- only @eml_classifyCell's
+    #     kind 1 folds both spellings together, which is why this refusal
+    #     is built on that classifier and not the other one.
+    scales14u <- edit_field(clean_scales_lines, 1, "scale", "--undefined--")
+    p14u <- write_csv_lines(scales14u, "d14u_scales.csv")
+    out14u <- drive_validate("stats", committed_data_path, p14u, committed_items_path, "d14u")
+    results$d14u <- out14u
+    check_true("v129", "[refusal 14u] probe ran", ran_ok(out14u))
+    if (ran_ok(out14u)) {
+        check("v129", "[refusal 14u] code is 14 (a round-tripped missing-token scale name is empty, not a real name)",
+              num_(out14u, "res", 1), 14, tol = 0)
+        check("v129", "[refusal 14u] badScaleRow is 1", num_(out14u, "res", 15), 1, tol = 0)
+        positive_leg_codes <- c(positive_leg_codes, 14)
+    }
+
+    # --- Defect 15 [V1.5, Finding 4a]: two data-table columns share the
+    #     same header. A second "Q1" column appended, holding 99 (row 3,
+    #     out of Confidence's declared 1-5 range -- refusal 2's question)
+    #     and "abc" (row 4, unreadable -- refusal 8's question), every
+    #     other row left blank. Proves the exact live escape Finding 4a
+    #     demonstrated: before refusal 15 existed, "Get column index:" and
+    #     "Get value:" both resolved to the FIRST "Q1" (the clean,
+    #     committed column), so this fixture returned refusal 0 -- neither
+    #     the 99 nor the "abc" was ever read, because nothing ever reached
+    #     the shadowed second column.
+    data15 <- add_data_column(clean_data_lines, "Q1",
+                              row_values = list(`3` = "99", `4` = "abc"))
+    p15d <- write_csv_lines(data15, "d15_data.csv")
+    out15 <- drive_validate("stats", p15d, committed_scales_path, committed_items_path, "d15")
+    results$d15 <- out15
+    check_true("v129", "[refusal 15] probe ran", ran_ok(out15))
+    if (ran_ok(out15)) {
+        check("v129", "[refusal 15] code is 15 (two data-table columns share a header), not 0 (the shadowed column's 99-out-of-range and \"abc\"-unreadable cells were invisible before this refusal existed) and not 2 or 8 (which never see the shadowed column either)",
+              num_(out15, "res", 1), 15, tol = 0)
+        check_true("v129", "[refusal 15] badItem is \"Q1\" (the repeated header)",
+                   identical(str_(out15, "res", 2), "Q1"))
+        positive_leg_codes <- c(positive_leg_codes, 15)
+    }
+
+    # --- Defect 16 [V1.5, Finding 4b]: a data-table column is not
+    #     declared by any item. A new "Extra" column appended, present in
+    #     the data table and named nowhere in survey_items.csv -- neither
+    #     scored by a subscale item nor disclosed as deliberately
+    #     "grouping" or "ignore". Before this refusal existed, nothing in
+    #     the procedure ever looked at the data table's columns from this
+    #     direction, so this fixture returned refusal 0.
+    data16 <- add_data_column(clean_data_lines, "Extra",
+                              row_values = setNames(as.list(rep("5", 24)), as.character(1:24)))
+    p16d <- write_csv_lines(data16, "d16_data.csv")
+    out16 <- drive_validate("stats", p16d, committed_scales_path, committed_items_path, "d16")
+    results$d16 <- out16
+    check_true("v129", "[refusal 16] probe ran", ran_ok(out16))
+    if (ran_ok(out16)) {
+        check("v129", "[refusal 16] code is 16 (a data-table column is not declared by any item), not 0 (the undeclared \"Extra\" column was silently neither scored nor ignored before this refusal existed)",
+              num_(out16, "res", 1), 16, tol = 0)
+        check_true("v129", "[refusal 16] badItem is \"Extra\" (the undeclared column)",
+                   identical(str_(out16, "res", 2), "Extra"))
+        positive_leg_codes <- c(positive_leg_codes, 16)
     }
 
     # -------------------------------------------------------------------
@@ -851,7 +1095,33 @@ if (!canDrive) {
     #    outcome (a halt on this seeded defect) and reports it as "refusal 1
     #    is load-bearing against a script abort", not as an unexplained
     #    ran_ok() failure indistinguishable from a driver bug.
+    #
+    #    THIS control uses its OWN fixture (items1_nc), a PHANTOM item
+    #    APPENDED to the clean items file, rather than p1 (refusal 1's own
+    #    positive-leg fixture, which RENAMES the real item "Q1" to "Q1x").
+    #    V1.5's refusal 16 (Finding 4b) changed what renaming does: once
+    #    "Q1" is renamed away, the DATA table's own "Q1" column becomes
+    #    undeclared by any item, which is refusal 16's own question -- so
+    #    with refusal 1 neutered, p1 no longer reaches refusal 2's crash at
+    #    all; refusal 16 (checked well before refusal 2) now catches the
+    #    orphaned data column first and refuses gracefully (verified live:
+    #    driving p1 against this same neutered-guard mutant now reports
+    #    refusal 16, "Column \"Q1\" is not [declared]", not a halt). An
+    #    APPENDED phantom item avoids that collision: every real data
+    #    column stays declared by its original, untouched item row (so
+    #    refusal 16 has nothing to catch), while the phantom item itself
+    #    names a column that never existed in the data table at all, which
+    #    is refusal 1's question alone.
     # -------------------------------------------------------------------
+    items1_nc <- c(clean_items_lines, "PhantomCol,Confidence,0")
+    p1_nc <- write_csv_lines(items1_nc, "d1nc_items.csv")
+    out1_nc_clean <- drive_validate("stats", committed_data_path, committed_scales_path,
+                                    p1_nc, "d1nc-clean")
+    check_true("v129",
+        "[refusal 1, negative-control fixture] on the UNNEUTERED build, the appended phantom item (naming a column the data table never had) reports refusal 1, not 16 or anything else -- confirms this fixture isolates refusal 1 cleanly, unlike p1 once refusal 16 exists",
+        ran_ok(out1_nc_clean) && identical(num_(out1_nc_clean, "res", 1), 1) &&
+        identical(str_(out1_nc_clean, "res", 2), "PhantomCol"))
+
     mut1 <- file.path(work, "mutant1")
     dir.create(mut1, showWarnings = FALSE)
     file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
@@ -871,13 +1141,14 @@ if (!canDrive) {
     linkdir1 <- file.path(work, "mutant1_link")
     if (!file.exists(linkdir1)) file.symlink(mut1, linkdir1)
 
-    # Driven on refusal 1's own seeded-defect fixture (p1, "Q1x" -- section 4
-    # above): with the guard neutered, the loop never catches the renamed
-    # item, so the item's name reaches refusal 2's per-respondent loop
-    # unchecked and that loop's bare "Get value:" against the nonexistent
-    # "Q1x" column aborts the script.
+    # Driven on the phantom-item fixture (p1_nc, above), NOT p1: with the
+    # guard neutered, the loop never catches the phantom item, so its name
+    # reaches refusal 2's per-respondent loop unchecked and that loop's
+    # bare "Get value:" against the nonexistent "PhantomCol" column aborts
+    # the script -- without first being intercepted by refusal 16 (which
+    # p1's own renamed-"Q1x" fixture now would be, per the comment above).
     out_mut1 <- drive_validate("mutant1_link", committed_data_path,
-                               committed_scales_path, p1, "mutant1")
+                               committed_scales_path, p1_nc, "mutant1")
     negative_control_codes <- c(negative_control_codes, 1)
 
     if (red_mode) {
@@ -981,9 +1252,17 @@ if (!canDrive) {
         "        if .scaleMin[.s] >= .scaleMax[.s]",
         "mutant10", committed_data_path, p10, committed_items_path, 10)
 
-    # Refusal 8: non-numeric data column on an item resolved to a subscale
+    # Refusal 8: unusable data column on an item resolved to a subscale.
+    # V1.4 (Finding 1) restructured the guard from one combined "and" test
+    # into an outer "column read cleanly" gate wrapping the per-kind scan
+    # -- the needle moves with it, to that outer gate, which is unique in
+    # the source (the inner per-kind "if NNN > 0" tests are not: each kind
+    # word -- locale, coerced, leading-dot, unreadable -- appears only
+    # once each, but neutering just one of the four would still leave the
+    # other three able to fire refusal 8 on this fixture's kind-3 defect,
+    # which is exactly what this control must NOT permit through).
     run_negative_control("mutant8",
-        '            if emlAuditColumn.error$ = "" and emlAuditColumn.nUnreadable > 0',
+        '            if emlAuditColumn.error$ = ""',
         "mutant8", committed_data_path, committed_scales_path, p8, 8)
 
     # -------------------------------------------------------------------
@@ -1083,10 +1362,42 @@ if (!canDrive) {
         "            if .jName$ = .iName$",
         "mutant13", p13d, p13, committed_items_path, 13)
 
-    # Refusal 14: a scale name is empty
+    # Refusal 14: a scale name is empty. V1.4 (Finding 6) moved this guard
+    # onto @eml_classifyCell's kind (via the .scaleNameKind local) so a
+    # whitespace-only or round-tripped "--undefined--" scale name is also
+    # caught, not just the exact empty string -- the needle moves with it.
+    # ".scaleNameKind" is a name coined for this one call site precisely
+    # so this needle stays unique: refusal 12's message-class fix (Finding
+    # 2) tests the identical "eml_classifyCell.kind = 1" condition on a
+    # different cell a few hundred lines away, and a needle built from
+    # that shared text would have matched twice.
     run_negative_control("mutant14",
-        '        if .scaleName$[.s] = ""',
+        '        if .scaleNameKind = 1',
         "mutant14", committed_data_path, p14, committed_items_path, 14)
+
+    # Refusal 15 [V1.5]: two data-table columns share the same header.
+    # ".dupDataColFound" is a name coined for this one call site precisely
+    # so this needle stays unique from refusal 7's and 13's identically
+    # worded "if eml_findDuplicateName.found = 1" guards, which ask the
+    # same underlying question of a different table. Neutering it must
+    # not merely "differ from 15" by accident of some OTHER guard firing
+    # first -- driven on the exact d15 fixture above, where nothing else
+    # in the procedure would refuse (the shadowed 99/"abc" cells are never
+    # read by anything), so the mutant's own refusal, once neutered, is 0.
+    run_negative_control("mutant15",
+        '    if .dupDataColFound = 1',
+        "mutant15", p15d, committed_scales_path, committed_items_path, 15)
+
+    # Refusal 16 [V1.5]: a data-table column is not declared by any item.
+    # ".dataColDeclared" is likewise coined for this one call site so the
+    # needle cannot collide with refusal 1's own, differently-worded
+    # ".colIndex = 0" guard a few lines above it, which asks the mirror
+    # question in the opposite direction. Driven on the d16 fixture above;
+    # neutered, nothing else refuses the undeclared "Extra" column either,
+    # so the mutant's refusal is 0.
+    run_negative_control("mutant16",
+        '        if .dataColDeclared = 0',
+        "mutant16", p16d, committed_scales_path, committed_items_path, 16)
 
     # -------------------------------------------------------------------
     # 17. NO REFUSAL MESSAGE MAY PRINT THE INTERNAL TOKEN "--undefined--".
@@ -1146,6 +1457,95 @@ if (!canDrive) {
     #    negative_control_codes the same way, so a check that stops running
     #    stops claiming its code in the same edit that removed it.
     # -------------------------------------------------------------------
+    # -------------------------------------------------------------------
+    # 18a. THE LINE-LEVEL EXTRACTOR (Finding 3) -- factored out of
+    #    derive_refusal_codes() below so its regex can be proven directly
+    #    against synthetic styles, without needing a whole fake procedure
+    #    body just to exercise it.
+    #
+    #    THE DEFECT THIS REPLACES: the old pattern was
+    #    "^\\s*\\.refusal\\s*=\\s*[0-9]+\\s*$", anchored to END OF LINE. A
+    #    refusal assignment carrying a trailing Praat ";" comment --
+    #    ".refusal = 15  ; probe-only code" -- never matched "$" and was
+    #    INVISIBLE to the scan. Verified live: ".refusal = 15" alone is
+    #    caught (removing it fails 4 checks); the same line with a
+    #    trailing comment appended is not caught AT ALL. The failure
+    #    direction is the worst kind there is: fewer derived codes means
+    #    fewer things eml_census can call orphaned, which means GREEN --
+    #    a shrinking derivation makes the census MORE likely to pass, not
+    #    less.
+    #
+    #    THE FIX strips a trailing ";..." comment from each candidate line
+    #    before matching, not after -- none of these assignment lines ever
+    #    carries a quoted string, so cutting at the first ";" is
+    #    unambiguous, and it also means a comment that happens to CONTAIN
+    #    a lookalike ".refusal = N" is never double-counted: the comment
+    #    text is gone before the regex ever sees it.
+    # -------------------------------------------------------------------
+    extract_refusal_assignment_codes <- function(body_lines) {
+        stripped <- sub(";.*$", "", body_lines)
+        asg <- grep("^\\s*\\.refusal\\s*=\\s*[0-9]+\\s*$", stripped, value = TRUE)
+        nums <- as.integer(sub("^\\s*\\.refusal\\s*=\\s*([0-9]+)\\s*$", "\\1", asg))
+        sort(unique(nums[nums != 0L]))
+    }
+
+    # THREE STYLES NOT ANTICIPATED BY THE OLD PATTERN, proven caught by the
+    # new one, on a synthetic body (never the real 1-16 codes, so this can
+    # never be satisfied by coincidence against the real file):
+    #   A. ".refusal = 97  ; probe-only code"     -- spaced trailing comment
+    #   B. ".refusal = 98;terse, no space at all" -- comment hugging the digit
+    #   C. ".refusal = 99    ;    style C ...      " -- extra internal AND
+    #      trailing whitespace, AND a lookalike ".refusal = 5" written
+    #      INSIDE the comment text itself, proving the fix strips the
+    #      comment before matching rather than merely tolerating trailing
+    #      text after the digits (a fix that tolerated trailing text
+    #      without stripping it first would double-count the 5).
+    # A genuine WHOLE-LINE comment (the shape already live at this
+    # procedure's own refusal-9 comment, "; .refusal = 0 for ...") is
+    # included too, as a regression guard: the fix must not start
+    # matching disabled code just because it now tolerates comments.
+    synthetic_body <- c(
+        "procedure emlSurveyValidateDeclarationSynthetic",
+        "    .refusal = 97  ; probe-only code",
+        "    .refusal = 98;terse, no space at all",
+        "    .refusal = 99    ;    style C: internal .refusal = 5 lookalike, trailing whitespace too    ",
+        "    ; .refusal = 0 for a scale that never reaches this branch",
+        "endproc")
+    synthetic_codes <- extract_refusal_assignment_codes(synthetic_body)
+    check_true("v129",
+        "[Finding 3] the fixed extractor catches a spaced trailing-comment refusal (\".refusal = 97  ; ...\")",
+        97L %in% synthetic_codes)
+    check_true("v129",
+        "[Finding 3] the fixed extractor catches a comment hugging the digit with no space (\".refusal = 98;...\")",
+        98L %in% synthetic_codes)
+    check_true("v129",
+        "[Finding 3] the fixed extractor catches extra internal/trailing whitespace AND does not double-count a lookalike assignment written inside the comment (\".refusal = 99 ... .refusal = 5 ...\")",
+        99L %in% synthetic_codes && !(5L %in% synthetic_codes))
+    check_true("v129",
+        "[Finding 3] a genuine whole-line comment (\"; .refusal = 0 ...\") still contributes nothing (regression guard: tolerating trailing comments must not start matching disabled code)",
+        !(0L %in% synthetic_codes))
+    check_true("v129",
+        "[Finding 3] the extractor found exactly the three synthetic codes and nothing else (97, 98, 99)",
+        identical(synthetic_codes, c(97L, 98L, 99L)))
+
+    # -------------------------------------------------------------------
+    # 18b. THE PROCEDURE-BOUNDED DERIVATION -- bounds the scan to
+    #    @emlSurveyValidateDeclaration's own body (declaration line to its
+    #    first endproc after it -- bounded the same way v105_pitch_
+    #    parity.R bounds @emlPitchArgsFAC's body -- not a whole-file grep,
+    #    so a same-shaped assignment in some other procedure can never be
+    #    miscounted as one of THIS procedure's codes), then hands the body
+    #    to the extractor above. N = 0 is excluded since it names "no
+    #    refusal", not a refusal.
+    #
+    #    LOUD FAILURE ON ZERO, per Finding 3's closing instruction: zero is
+    #    the one count that makes eml_census's orphan comparison below
+    #    pass VACUOUSLY (nothing derived, so nothing can ever be named an
+    #    orphan) -- exactly the silent-shrink failure mode this finding is
+    #    about, taken to its limit. A derivation that finds nothing HALTS
+    #    the run outright rather than letting the census beneath it look
+    #    healthy.
+    # -------------------------------------------------------------------
     derive_refusal_codes <- function(path) {
         src <- readLines(path, warn = FALSE)
         decl <- grep("^\\s*procedure\\s+emlSurveyValidateDeclaration\\b", src)
@@ -1154,15 +1554,34 @@ if (!canDrive) {
         ends <- ends[ends > decl]
         stopifnot(length(ends) >= 1L)
         body <- src[seq.int(decl, ends[1])]
-        asg <- grep("^\\s*\\.refusal\\s*=\\s*[0-9]+\\s*$", body, value = TRUE)
-        nums <- as.integer(sub("^\\s*\\.refusal\\s*=\\s*([0-9]+)\\s*$", "\\1", asg))
-        sort(unique(nums[nums != 0L]))
+        codes <- extract_refusal_assignment_codes(body)
+        if (length(codes) == 0L) {
+            stop("v129 derive_refusal_codes(): found ZERO '.refusal = N' ",
+                 "assignments in ", path, " -- the derivation itself is ",
+                 "broken (regex, procedure bounds, or the file changed out ",
+                 "from under it). Refusing to let the coverage census run ",
+                 "against an empty derived set, which would pass every ",
+                 "orphan/phantom comparison vacuously instead of failing.")
+        }
+        codes
     }
     psychometrics_path <- file.path(plug, "stats", "eml-psychometrics.praat")
     derived_codes <- derive_refusal_codes(psychometrics_path)
-    check_true("v129",
-        "the source scan actually found refusal-code assignments (not vacuously empty)",
-        length(derived_codes) >= 14L)
+
+    # THE KNOWN FLOOR, stated ONCE: refusals 1-16 exist as of this round
+    # (1-14 from the two prior adversarial passes; 15-16 added this round,
+    # Finding 4a/4b). An EQUALITY check, not just a floor, per Finding 3's
+    # closing instruction ("a derivation that yields fewer codes ... must
+    # go red on its own") -- fewer is exactly the silent-shrink failure
+    # this finding is about, and more (a refusal added without updating
+    # this one constant in the same commit) is the DRY rule on the same
+    # finding's own terms, so both directions go red here rather than only
+    # the shrink direction.
+    KNOWN_REFUSAL_CODE_COUNT <- 16L
+    check("v129",
+        sprintf("[Finding 3] the source scan derived exactly the known %d refusal codes (neither fewer -- silent shrinkage -- nor more -- this constant not updated in the same commit)",
+                KNOWN_REFUSAL_CODE_COUNT),
+        length(derived_codes), KNOWN_REFUSAL_CODE_COUNT, tol = 0)
 
     eml_census("v129", "refusal code (needs a positive seeded-defect leg)",
                as.character(derived_codes), as.character(positive_leg_codes))
