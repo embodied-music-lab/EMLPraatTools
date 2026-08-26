@@ -1384,10 +1384,20 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
             .stPMat## = emlPairwiseT.pMatrix##
             .stStatMat## = emlPairwiseT.tMatrix##
             .stEffMat## = emlPairwiseT.dMatrix##
-            ; NO MEAN-DIFFERENCE MATRIX FROM THIS KERNEL. It publishes t, df
-            ; and d and not the raw difference, so the difference is absent
-            ; rather than derived here: a write site that derived would be a
-            ; second analysis with no door of its own.
+            ; STILL THE ABSENT MATRIX, BUT NOT BECAUSE THE KERNEL LACKS THE
+            ; NUMBER ANY MORE. @emlPairwiseT now publishes .diffMatrix##
+            ; (item 2, 26 August work order) -- the mean difference is
+            ; computed on every row, every correction. It is kept out of
+            ; the store here for the same reason it is kept out of the
+            ; Info-window report: D-NODIFF converts from exempt to compared
+            ; once the point differences PRINT
+            ; (docs/RULING_KIT_DELTAS_2026-08-26.md), and they do not print
+            ; until Ian's en-bloc language approval lands. Publishing the
+            ; real matrix here, ahead of that, would surface the drafted
+            ; number through the result store and any figure or export that
+            ; reads it -- a second door for language that is supposed to
+            ; stay dark behind the one door the report itself controls.
+            ; Revisit alongside the language batch, not before.
             @emlPublishAbsentMatrix: .recGroups
             .stDiffMat## = emlPublishAbsentMatrix.m##
             ; .stN -- THE TOTAL COMPLETE-CASE N THE ANALYSIS CONSUMED, per
@@ -1911,6 +1921,20 @@ endproc
 # Arguments:
 #   .tableId — the table the test ran on. Required for the per-group
 #              descriptives, which re-read the column.
+#
+# Output (welch/student branch only; DARK -- computed, never printed):
+#   .meanDiffFlat# — mean difference per pair, C(k,2) length, in the same
+#                    pair order as .rawP# / .adjustedP#. Computed on every
+#                    row regardless of correction, per Fable's 26 August
+#                    work order, but not yet reported: the language it
+#                    would print is drafted and gated on Ian's en-bloc
+#                    approval (docs/RULING_INTERVALS_2026-08-26.md).
+#   .lowFlat#, .highFlat# — the interval per pair, or undefined where the
+#                    correction in force does not define one. Populated
+#                    only when .adjMethod$ is "bonferroni" (level
+#                    1 - alpha/m per pair); undefined for holm and bh,
+#                    which define no such level. Not yet reported, for the
+#                    same reason as .meanDiffFlat# above.
 # ============================================================================
 
 procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupCol$, .test$, .adjMethod$
@@ -1984,6 +2008,33 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
         .hdr$ = .hdr$ + "d"
         appendInfoLine: .hdr$
 
+        ; ----------------------------------------------------------------
+        ; ITEM 2 -- THE INTERVAL PLUMBING, BUILT DARK.
+        ;
+        ; Fable's 26 August work order (docs/WORK_ORDER_INTERVALS_2026-08-26.md)
+        ; requires every pairwise arm to compute the point estimate (the mean
+        ; difference) on every row, every correction, and the interval
+        ; whenever the correction in force defines one -- Bonferroni here, at
+        ; .level = 1 - alpha/m per pair. Holm and BH define no such level, so
+        ; no interval is computed for them at all, not merely left unprinted.
+        ;
+        ; THE REPORT STRINGS THAT WOULD PRINT THESE ARE NOT YET APPROVED.
+        ; "Mean difference (C1 - C2): x.xx", the "[low, high]" rendering and
+        ; the block header naming the level are drafted into the language
+        ; batch and print only after Ian's en-bloc approval
+        ; (docs/RULING_INTERVALS_2026-08-26.md, "Language"). So this computes
+        ; and stores every value below and PRINTS NONE OF THEM -- no
+        ; appendInfoLine anywhere in this procedure reads .meanDiffFlat#,
+        ; .lowFlat# or .highFlat#. They exist as outputs of this procedure
+        ; (readable as emlReportPairwiseComparison.meanDiffFlat# etc.) so a
+        ; check can confirm the numbers without the report ever showing them.
+        ; Approval adds the print calls against these already-computed
+        ; arrays; nothing in this computation needs to change or be rebuilt.
+        ; ----------------------------------------------------------------
+        .meanDiffFlat# = zero# (emlPairwiseT.nPairs)
+        .lowFlat# = zero# (emlPairwiseT.nPairs)
+        .highFlat# = zero# (emlPairwiseT.nPairs)
+
         .pair = 0
         for .iGroup from 1 to .nGroups - 1
             for .jGroup from .iGroup + 1 to .nGroups
@@ -2018,6 +2069,23 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                     @eml_fixed: .dVal, 3
                     .dTxt$ = eml_fixed.result$
                 endif
+
+                ; THE POINT ESTIMATE, every row, every correction --
+                ; descriptive footing, the same as .dVal above. Captured
+                ; from @emlPairwiseT's own .diffMatrix##, not recomputed.
+                .meanDiffFlat# [.pair] = emlPairwiseT.diffMatrix## [.iGroup, .jGroup]
+
+                ; THE INTERVAL, ONLY WHEN THE CORRECTION IN FORCE DEFINES ONE.
+                .lowFlat# [.pair] = undefined
+                .highFlat# [.pair] = undefined
+                if .adjMethod$ = "bonferroni"
+                    .pairLevel = 1 - .alpha / emlPairwiseT.nPairs
+                    @emlTTestInterval: .meanDiffFlat# [.pair], .tVal, .dfVal,
+                        ... .pairLevel
+                    .lowFlat# [.pair] = emlTTestInterval.low
+                    .highFlat# [.pair] = emlTTestInterval.high
+                endif
+
                 @emlSigMark: .adjP, .alpha
                 @emlPadCell: .cmp$, 26
                 .row$ = "  " + emlPadCell.result$

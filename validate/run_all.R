@@ -1753,6 +1753,24 @@ scripts <- c(
                                  # length()-sum oracle. READ RED BEFORE THIS
                                  # COMMIT: .stN was initialised to undefined
                                  # at entry and never assigned.
+    ,
+    "v144_pairwise_t_interval.R" # @emlTTestInterval + the 3.6 wiring, per the
+                                 # 26 August work order. 60 Welch + 60 Student
+                                 # cells (5 fixtures x C(4,2) pairs x 2 alphas)
+                                 # against t.test(var.equal =, conf.level =
+                                 # 1 - alpha/m); a Holm canary showing the
+                                 # estimate computed and the interval not.
+                                 # THE NUMBERS ARE COMPUTED BUT NEVER PRINTED:
+                                 # Ian's en-bloc language approval has not
+                                 # landed, so this also greps every driven
+                                 # Info window for the drafted strings and
+                                 # asserts none appear. Three red demos, each
+                                 # a one-line mutant of the shipped source:
+                                 # a Holm row printing an interval; a Student
+                                 # interval computed on the Welch df and the
+                                 # mirror (the failure that looks right); a
+                                 # Bonferroni interval at 1 - alpha in place
+                                 # of 1 - alpha/m.
 )
 
 # ---------------------------------------------------------------------------

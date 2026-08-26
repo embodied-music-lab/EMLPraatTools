@@ -530,6 +530,63 @@ endproc
 
 
 # ============================================================================
+# @emlTTestInterval
+# ============================================================================
+# Confidence interval for a t-test mean difference, at whatever degrees
+# of freedom the CALLING VARIANT already computed. Never recomputes the
+# df: @emlTTest.df is Welch-Satterthwaite or pooled n1 + n2 - 2
+# depending on how the caller ran it, and @emlTTestPaired.df is n - 1.
+# Welch and Student take different degrees of freedom, and an interval
+# built on the wrong one looks entirely plausible -- there is no wrong
+# answer here that looks wrong, which is why the df is taken as an
+# argument rather than derived.
+#
+# SE is recovered as .meanDiff / .t. That recovers the calling variant's
+# OWN standard error -- Welch's or Student's, automatically, because
+# .t was computed as .meanDiff / SE by that same variant. Nothing here
+# recomputes an SE a second way.
+#
+# Follows @emlCI's guard shape (@emlDescriptive, stats/eml-core-
+# descriptive.praat): a degenerate input sets every numeric output to
+# undefined and .error$ to a message, and invStudentQ is reached only
+# on the clean path. invStudentQ (0, df) never converges -- it hangs
+# the script with no error -- so this guards .t = 0 (no SE can be
+# recovered from a zero t: .meanDiff / 0) and .df = undefined (nothing
+# to build a Student distribution on) BEFORE the call, not after, and
+# invStudentQ (0, df) is never reached from here under any input.
+#
+# Arguments:
+#   .meanDiff - the mean difference the calling test reported
+#   .t        - that same test's t statistic
+#   .df       - that same test's own degrees of freedom (not recomputed)
+#   .level    - confidence level as a proportion (e.g. 0.95, or a
+#               correction's own level such as 1 - alpha/m)
+#
+# Output:
+#   .low, .high - interval bounds, or undefined on refusal
+#   .error$     - "" when computed, else why not
+# ============================================================================
+
+procedure emlTTestInterval: .meanDiff, .t, .df, .level
+    .low = undefined
+    .high = undefined
+    .error$ = ""
+
+    if .t = 0
+        .error$ = "Cannot recover a standard error from t = 0"
+    elsif .df = undefined
+        .error$ = "Degrees of freedom are undefined"
+    else
+        .se = .meanDiff / .t
+        .tCrit = invStudentQ ((1 - .level) / 2, .df)
+        .halfWidth = abs (.tCrit) * .se
+        .low = .meanDiff - .halfWidth
+        .high = .meanDiff + .halfWidth
+    endif
+endproc
+
+
+# ============================================================================
 # @emlPearsonCorrelation
 # ============================================================================
 # Pearson product-moment correlation coefficient.
@@ -4157,6 +4214,12 @@ endproc
 #                    .pMatrix## was computed from, so a report can
 #                    print t(df). Undefined wherever .tMatrix## is.
 #   .dMatrix##     - k x k Cohen's d (antisymmetric, diagonal = 0)
+#   .diffMatrix##  - k x k mean difference (antisymmetric, diagonal = 0),
+#                    the point estimate every row states regardless of
+#                    which correction is in force -- descriptive footing,
+#                    the same as .dMatrix##. Captured from @emlTTest's own
+#                    .meanDiff, never recomputed. Undefined wherever
+#                    .tMatrix## is.
 #   .rawP#         - unadjusted p-values, C(k,2) length
 #   .adjustedP#    - adjusted p-values, C(k,2) length
 #   .groupName$[i] - group label for group i
@@ -4296,6 +4359,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
         .tFlat# = zero# (.nPairs)
         .dfFlat# = zero# (.nPairs)
         .dFlat# = zero# (.nPairs)
+        .diffFlat# = zero# (.nPairs)
 
         .pairIdx = 0
         .pairError$ = ""
@@ -4322,6 +4386,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                     .tFlat#[.pairIdx] = undefined
                     .dfFlat#[.pairIdx] = undefined
                     .rawP#[.pairIdx] = undefined
+                    .diffFlat#[.pairIdx] = undefined
                     .nSkipped = .nSkipped + 1
                     if .skipReason$ = ""
                         .skipReason$ = emlTTest.error$
@@ -4337,6 +4402,10 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                     # from .eqVar, so no branch is needed here.
                     .dfFlat#[.pairIdx] = emlTTest.df
                     .rawP#[.pairIdx] = emlTTest.p
+                    # The point estimate every row states regardless of
+                    # correction -- captured from @emlTTest's own
+                    # .meanDiff, not recomputed.
+                    .diffFlat#[.pairIdx] = emlTTest.meanDiff
                 endif
 
                 # Cohen's d
@@ -4368,6 +4437,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
         .tMatrix## = zero## (.nGroups, .nGroups)
         .dfMatrix## = zero## (.nGroups, .nGroups)
         .dMatrix## = zero## (.nGroups, .nGroups)
+        .diffMatrix## = zero## (.nGroups, .nGroups)
 
         for .g from 1 to .nGroups
             .pMatrix##[.g, .g] = 1
@@ -4387,6 +4457,10 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                 .dfMatrix##[.j, .i] = .dfFlat#[.pairIdx]
                 .dMatrix##[.i, .j] = .dFlat#[.pairIdx]
                 .dMatrix##[.j, .i] = -.dFlat#[.pairIdx]
+                # Point estimate, same antisymmetric convention as t and
+                # d: [row, col] is row's mean minus col's.
+                .diffMatrix##[.i, .j] = .diffFlat#[.pairIdx]
+                .diffMatrix##[.j, .i] = -.diffFlat#[.pairIdx]
             endfor
         endfor
     endif
