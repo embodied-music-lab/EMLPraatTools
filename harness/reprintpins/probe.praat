@@ -10,6 +10,40 @@
 ; result-affecting edit -- must print the one announcement line, the updated
 ; brackets, and no second report block).
 ;
+; ITEM 1.2, AMENDED 26 AUGUST BY FABLE -- THE MINIMAL RENDERER. Two further
+; legs, and they are the two halves of Ian's rule of 24 August that "THE
+; REPORT COMPARISON, NOT THE KEY, DECIDES WHAT THE USER SEES":
+;
+;   changed_data_same_report   one cell moves from 10.1 to 10.2. It is still
+;                              the smallest value in the Zebra group and
+;                              still above every value in every other group,
+;                              so not one rank moves and the Kruskal-Wallis
+;                              report is the same report character for
+;                              character. The KEY sees the edit -- it is a
+;                              digest of every cell -- so the figure re-runs;
+;                              and because the re-run reproduces the stored
+;                              report exactly, it must print NOTHING. Not a
+;                              second report, and not the "Data changed"
+;                              line above it either. THIS LEG IS THE DEFECT:
+;                              before item 1.2 it printed that line and a
+;                              second complete 62-line report.
+;
+;   changed_data_new_report    one cell moves from 8.4 to 12.0, which lifts a
+;                              Mid observation above every Zebra one. Ranks
+;                              move, the report is a different report, and
+;                              the figure prints the 24 August line and
+;                              exactly one new report. This is the leg that
+;                              stops the fix above being "never print
+;                              anything again", which a comparison that
+;                              always answered "identical" would also pass.
+;
+; THE MENU DOOR IS RE-RUN BEFORE THE FIRST OF THEM, deliberately: leg B's
+; changed-setting draw recomputed and printed ONE LINE rather than a report,
+; so it published emlStoreReport$ = "" -- no report was printed for that
+; result -- and a stored "" never matches. Re-running the analysis door is
+; how the store gets back a report a reader has actually seen, which is the
+; only thing the comparison is allowed to fall silent against.
+;
 ; docs/MEMO_TO_FABLE_unification.md's own scenario: "Ian ran a Kruskal-Wallis
 ; on a three-group table, then drew a violin plot. The Info window carried
 ; TWO complete Kruskal-Wallis reports ... The second is the graph door
@@ -59,6 +93,17 @@ procedure note: .leg$, .field$, .value$
     appendFileLine: tsv$, .leg$, tab$, .field$, tab$, .value$
 endproc
 
+; ITEM 1.2 -- .notePending is new with the minimal renderer. Read through
+; variableExists so this probe drives the PRE-ITEM tree as well and records
+; "absent" there rather than aborting: the red demonstration for the new legs
+; is this same file run against a tree that does not have the item.
+procedure readPending
+    .v$ = "absent"
+    if variableExists ("emlBridgeGroupComparison.notePending")
+        .v$ = string$ (emlBridgeGroupComparison.notePending)
+    endif
+endproc
+
 ; ---------------------------------------------------------------------------
 ; The fixture: Ian's own scenario, a three-group table for a Kruskal-Wallis.
 ; ---------------------------------------------------------------------------
@@ -98,10 +143,17 @@ appendInfoLine: "=== SENTINEL: MENU ANALYSIS ENDS ==="
 appendInfoLine: "=== SENTINEL: NO-CHANGE FIGURE BEGINS ==="
 @emlBridgeGroupComparison: tableId, "value", "group", 0.05, "both", 1, 1,
 ... "nonparametric", 1
+; THE REPRINT GATE, WHICH IS WHAT THE GRAPHS FORM CALLS. Without it this
+; probe could never print a second report however broken the tree, and every
+; "no second report" pin below would pass vacuously. It is inside the
+; sentinels because whatever it prints belongs to this draw.
+@emlGraphsReportBridgeIfNew: tableId, "value", "group"
 appendInfoLine: "=== SENTINEL: NO-CHANGE FIGURE ENDS ==="
 @note: "no_change", "verdict", emlBridgeGroupComparison.verdict$
 @note: "no_change", "note", emlBridgeGroupComparison.note$
 @note: "no_change", "printReport", string$ (emlBridgeGroupComparison.printReport)
+@readPending
+@note: "no_change", "notePending", readPending.v$
 @note: "no_change", "error", emlBridgeGroupComparison.error$
 
 ; ===========================================================================
@@ -113,10 +165,68 @@ annotCorrectionMethod$ = "bonferroni"
 appendInfoLine: "=== SENTINEL: CHANGED-SETTING FIGURE BEGINS ==="
 @emlBridgeGroupComparison: tableId, "value", "group", 0.05, "both", 1, 1,
 ... "nonparametric", 1
+@emlGraphsReportBridgeIfNew: tableId, "value", "group"
 appendInfoLine: "=== SENTINEL: CHANGED-SETTING FIGURE ENDS ==="
 @note: "changed_setting", "verdict", emlBridgeGroupComparison.verdict$
 @note: "changed_setting", "note", emlBridgeGroupComparison.note$
 @note: "changed_setting", "printReport", string$ (emlBridgeGroupComparison.printReport)
+@readPending
+@note: "changed_setting", "notePending", readPending.v$
 @note: "changed_setting", "error", emlBridgeGroupComparison.error$
+
+; ===========================================================================
+; ITEM 1.2 -- LEG C. CHANGED DATA, SAME REPORT. The correction goes back to
+; the one the menu door will run under, the analysis door is re-run so the
+; store carries the text of a report a reader has actually seen, one cell
+; moves inside its own rank position, and the figure is drawn again.
+; ===========================================================================
+annotCorrectionMethod$ = "holm"
+appendInfoLine: "=== SENTINEL: LEG C MENU ANALYSIS BEGINS ==="
+@emlRunKWAnalysis: tableId, "value", "group", 1, "holm"
+appendInfoLine: "=== SENTINEL: LEG C MENU ANALYSIS ENDS ==="
+
+; 10.1 -> 10.2. Row 1 is the Zebra group's smallest value; the next value up
+; in that group is 10.4 and the largest value in any other group is 8.4, so
+; the edited value keeps its rank and every other value keeps its own.
+selectObject: tableId
+Set numeric value: 1, "value", 10.2
+@note: "changed_data_same_report", "edit", "row 1 value 10.1 -> 10.2"
+
+appendInfoLine: "=== SENTINEL: SAME-REPORT FIGURE BEGINS ==="
+@emlBridgeGroupComparison: tableId, "value", "group", 0.05, "both", 1, 1,
+... "nonparametric", 1
+@emlGraphsReportBridgeIfNew: tableId, "value", "group"
+appendInfoLine: "=== SENTINEL: SAME-REPORT FIGURE ENDS ==="
+@note: "changed_data_same_report", "verdict", emlBridgeGroupComparison.verdict$
+@note: "changed_data_same_report", "note", emlBridgeGroupComparison.note$
+@note: "changed_data_same_report", "printReport",
+... string$ (emlBridgeGroupComparison.printReport)
+@readPending
+@note: "changed_data_same_report", "notePending", readPending.v$
+@note: "changed_data_same_report", "error", emlBridgeGroupComparison.error$
+
+; ===========================================================================
+; ITEM 1.2 -- LEG D. CHANGED DATA, DIFFERENT REPORT. The anti-vacuity half:
+; a comparison that answered "identical" to everything would pass leg C and
+; fail here.
+; ===========================================================================
+; 8.4 -> 12.0. Row 8 is the Mid group's largest value; 12.0 puts it above
+; every Zebra value, so the pooled ranking really does change.
+selectObject: tableId
+Set numeric value: 8, "value", 12.0
+@note: "changed_data_new_report", "edit", "row 8 value 8.4 -> 12.0"
+
+appendInfoLine: "=== SENTINEL: NEW-REPORT FIGURE BEGINS ==="
+@emlBridgeGroupComparison: tableId, "value", "group", 0.05, "both", 1, 1,
+... "nonparametric", 1
+@emlGraphsReportBridgeIfNew: tableId, "value", "group"
+appendInfoLine: "=== SENTINEL: NEW-REPORT FIGURE ENDS ==="
+@note: "changed_data_new_report", "verdict", emlBridgeGroupComparison.verdict$
+@note: "changed_data_new_report", "note", emlBridgeGroupComparison.note$
+@note: "changed_data_new_report", "printReport",
+... string$ (emlBridgeGroupComparison.printReport)
+@readPending
+@note: "changed_data_new_report", "notePending", readPending.v$
+@note: "changed_data_new_report", "error", emlBridgeGroupComparison.error$
 
 appendInfoLine: "=== SENTINEL: PROBE COMPLETE ==="

@@ -413,6 +413,28 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     ; tree's one answer to "significant against what". A literal .05 here
     ; would be the frozen-choice defect the lint in validate/v116 exists for.
     ; ---------------------------------------------------------------------
+    ; ------------------------------------------------------------------
+    ; ITEM 1.2 — THE CANONICAL REPORT TEXT, HANDED TO THE WRITE SITE.
+    ;
+    ; emlEmitText$ is what the shared reporter above rendered through the
+    ; minimal renderer (@emlEmit, stats/eml-output.praat): the FACTUAL and
+    ; DISCLOSURE lines of the report that has this moment been printed, with
+    ; no explanation line, no two-tab gloss, no timestamp and no provenance
+    ; line in it. It is read HERE, immediately before the publication,
+    ; because the buffer holds the most recent rendering and nothing between
+    ; the reporter and this line renders a report.
+    ;
+    ; ONLY ON A RUN THAT COMPUTED. A refusal jumps to the label above without
+    ; printing a report at all, so the buffer would still hold an EARLIER
+    ; analysis's text — a stored report about a different result, which is
+    ; the one thing a text comparison must never be handed. "" is the honest
+    ; answer there, and "" means "no report was printed for this result".
+    ; ------------------------------------------------------------------
+    emlPublishInReport$ = ""
+    if .error$ = ""
+        emlPublishInReport$ = emlEmitText$
+    endif
+
     @emlReportAlpha
     @emlPublishAnalysisResult: "emlRunTwoGroupAnalysis", "menu", "group",
     ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
@@ -682,6 +704,28 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     ; tree's single answer to "significant against what", and it is the alpha
     ; the report above was written against.
     ; ---------------------------------------------------------------------
+    ; ------------------------------------------------------------------
+    ; ITEM 1.2 — THE CANONICAL REPORT TEXT, HANDED TO THE WRITE SITE.
+    ;
+    ; emlEmitText$ is what the shared reporter above rendered through the
+    ; minimal renderer (@emlEmit, stats/eml-output.praat): the FACTUAL and
+    ; DISCLOSURE lines of the report that has this moment been printed, with
+    ; no explanation line, no two-tab gloss, no timestamp and no provenance
+    ; line in it. It is read HERE, immediately before the publication,
+    ; because the buffer holds the most recent rendering and nothing between
+    ; the reporter and this line renders a report.
+    ;
+    ; ONLY ON A RUN THAT COMPUTED. A refusal jumps to the label above without
+    ; printing a report at all, so the buffer would still hold an EARLIER
+    ; analysis's text — a stored report about a different result, which is
+    ; the one thing a text comparison must never be handed. "" is the honest
+    ; answer there, and "" means "no report was printed for this result".
+    ; ------------------------------------------------------------------
+    emlPublishInReport$ = ""
+    if .error$ = ""
+        emlPublishInReport$ = emlEmitText$
+    endif
+
     @emlReportAlpha
     @emlPublishAnalysisResult: "emlRunAnovaAnalysis", "menu", "group",
     ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
@@ -1091,6 +1135,28 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
     ; tree's single answer to "significant against what", and it is the alpha
     ; the report above was written against.
     ; ---------------------------------------------------------------------
+    ; ------------------------------------------------------------------
+    ; ITEM 1.2 — THE CANONICAL REPORT TEXT, HANDED TO THE WRITE SITE.
+    ;
+    ; emlEmitText$ is what the shared reporter above rendered through the
+    ; minimal renderer (@emlEmit, stats/eml-output.praat): the FACTUAL and
+    ; DISCLOSURE lines of the report that has this moment been printed, with
+    ; no explanation line, no two-tab gloss, no timestamp and no provenance
+    ; line in it. It is read HERE, immediately before the publication,
+    ; because the buffer holds the most recent rendering and nothing between
+    ; the reporter and this line renders a report.
+    ;
+    ; ONLY ON A RUN THAT COMPUTED. A refusal jumps to the label above without
+    ; printing a report at all, so the buffer would still hold an EARLIER
+    ; analysis's text — a stored report about a different result, which is
+    ; the one thing a text comparison must never be handed. "" is the honest
+    ; answer there, and "" means "no report was printed for this result".
+    ; ------------------------------------------------------------------
+    emlPublishInReport$ = ""
+    if .error$ = ""
+        emlPublishInReport$ = emlEmitText$
+    endif
+
     @emlReportAlpha
     @emlPublishAnalysisResult: "emlRunKWAnalysis", "menu", "group",
     ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
@@ -1384,6 +1450,23 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     ; tree's one answer to "significant against what". A literal .05 here
     ; would be the frozen-choice defect the lint in validate/v116 exists for.
     ; ---------------------------------------------------------------------
+    ; ------------------------------------------------------------------
+    ; ITEM 1.2 — THIS DOOR PUBLISHES NO CANONICAL REPORT TEXT, AND SAYS SO.
+    ; Fable's amendment puts the minimal renderer on THE TWO STORE-WIRED
+    ; DOORS ONLY, and @emlReportPairwiseComparison is not one of the three
+    ; reporters those two doors share. Its report is therefore not canonical,
+    ; and handing over a half-rendered text would let a later run fall silent
+    ; on a match against text that is not the report anybody read. "" is the
+    ; honest answer and it means exactly that: the reprint comparison never
+    ; fires against a stored "".
+    ;
+    ; NOTHING IS LOST TODAY. A figure asking the store about this result finds
+    ; a pairwise family in emlStoreTestType$ against the graph door's own
+    ; "one-way anova + tukey", so the verdict is "settings" and no report is
+    ; reprinted on that path at all.
+    ; ------------------------------------------------------------------
+    emlPublishInReport$ = ""
+
     @emlReportAlpha
     @emlPublishAnalysisResult: "emlRunPairwiseAnalysis", "menu", "group",
     ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
@@ -1526,11 +1609,21 @@ procedure emlPostHocCaution: .omnibusP
     if .omnibusP <> undefined
         if .omnibusP >= emlReportAlpha.value
             if emlShowExplanations
+                ; ITEM 1.2 — THIS LINE IS AN EXPLANATION AND MUST NOT BUFFER.
+                ; The header above already says why it is routed as one (the
+                ; FACT is the omnibus p, printed on every path). What is new
+                ; is that it now goes through @emlExplainLine rather than
+                ; @emlReportBlank/@emlReportNote, both of which are canonical
+                ; printers: buffered, this caution would put the explanations
+                ; toggle inside the stored report text and make two identical
+                ; reports compare as different. Same bytes on the page — the
+                ; blank line, then the note wrapped at the report's 68-column
+                ; body width, which is the width @emlReportNote uses.
                 .level$ = replace$ (emlReportAlpha.text$, "0.", ".", 1)
-                @emlReportBlank
-                @emlReportNote: "The overall test did not reach significance "
+                @emlExplainLine: "", 0
+                @emlExplainLine: "The overall test did not reach significance "
                 ... + "at the " + .level$ + " level; interpret individual "
-                ... + "pairwise results with caution."
+                ... + "pairwise results with caution.", 68
                 .printed = 1
             endif
         endif
@@ -1579,10 +1672,16 @@ procedure emlEffectMatrixCaption
         endif
     endif
     if .pairwiseFollows = 0
+        ; ITEM 1.2 — THE TWO SENTENCES SPLIT HERE THE WAY THEY ALWAYS DID,
+        ; and now the split is structural rather than a matter of which `if`
+        ; they sit in. The DISCLOSURE keeps @emlReportNote, so it is in the
+        ; canonical text; the EXPLANATION goes through @emlExplainLine, which
+        ; never buffers, so toggling explanations cannot change one character
+        ; of the stored report. Both print exactly as before, wrapped at 68.
         @emlReportNote: "No pairwise significance tests were run."
         if emlShowExplanations
-            @emlReportNote: "Effect sizes estimate the size of each pairwise "
-            ... + "difference."
+            @emlExplainLine: "Effect sizes estimate the size of each pairwise "
+            ... + "difference.", 68
         endif
     endif
 endproc

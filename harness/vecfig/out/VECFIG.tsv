@@ -1,5 +1,5 @@
 meta_praat_found	1
-meta_output_code_sha256	ff7841c4b144d5e277c58fb8d3c56724723fee2266742c34b160b58b699359f3
+meta_output_code_sha256	906f0e72e1fac92b3c8c38ecdc74769bf6832df7a2f502e76bf2f22c42eed44e
 meta_record_code_sha256	96cba56cbfb507ee2232bc48bb036f4602148e78794ab78574897ff78c288d9c
 all_attempt_pdf_lines	1
 all_attempt_eps_lines	1
@@ -204,23 +204,23 @@ rec_same_abort	0
 rec_same_savedir	/home/claude/repo/harness/vecfig/out/files/replay
 rec_same_receipt_line	EML: replayed save -- wrote 3 file(s) to
 rec_same_receipt_line	/home/claude/repo/harness/vecfig/out/files/replay
-rec_same_receipt_line	base name figA_20260826_134913
+rec_same_receipt_line	base name figA_20260826_175725
 rec_same_receipt_n	3
 rec_same_receipt_folder	/home/claude/repo/harness/vecfig/out/files/replay
-rec_same_receipt_stem	figA_20260826_134913
+rec_same_receipt_stem	figA_20260826_175725
 rec_same_receipt_line	EML: replayed save -- wrote 3 file(s) to
 rec_same_receipt_line	/home/claude/repo/harness/vecfig/out/files/replay
-rec_same_receipt_line	base name figB_20260826_134913
+rec_same_receipt_line	base name figB_20260826_175725
 rec_same_receipt_n	3
 rec_same_receipt_folder	/home/claude/repo/harness/vecfig/out/files/replay
-rec_same_receipt_stem	figB_20260826_134913
+rec_same_receipt_stem	figB_20260826_175725
 rec_same_receipts	2
-rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figA_20260826_134913.eps
-rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figA_20260826_134913.png
-rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figA_20260826_134913_report.txt
-rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figB_20260826_134913.pdf
-rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figB_20260826_134913.png
-rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figB_20260826_134913_report.txt
+rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figA_20260826_175725.eps
+rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figA_20260826_175725.png
+rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figA_20260826_175725_report.txt
+rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figB_20260826_175725.pdf
+rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figB_20260826_175725.png
+rec_same_file	/home/claude/repo/harness/vecfig/out/files/replay_same/figB_20260826_175725_report.txt
 rec_same_figA_png	1
 rec_same_figA_eps	1
 rec_same_figA_pdf	0
@@ -232,23 +232,23 @@ rec_edited_abort	0
 rec_edited_savedir	/home/claude/repo/harness/vecfig/out/files/replay
 rec_edited_receipt_line	EML: replayed save -- wrote 3 file(s) to
 rec_edited_receipt_line	/home/claude/repo/harness/vecfig/out/files/replay
-rec_edited_receipt_line	base name figA_20260826_134914
+rec_edited_receipt_line	base name figA_20260826_175726
 rec_edited_receipt_n	3
 rec_edited_receipt_folder	/home/claude/repo/harness/vecfig/out/files/replay
-rec_edited_receipt_stem	figA_20260826_134914
+rec_edited_receipt_stem	figA_20260826_175726
 rec_edited_receipt_line	EML: replayed save -- wrote 3 file(s) to
 rec_edited_receipt_line	/home/claude/repo/harness/vecfig/out/files/replay
-rec_edited_receipt_line	base name figB_20260826_134914
+rec_edited_receipt_line	base name figB_20260826_175726
 rec_edited_receipt_n	3
 rec_edited_receipt_folder	/home/claude/repo/harness/vecfig/out/files/replay
-rec_edited_receipt_stem	figB_20260826_134914
+rec_edited_receipt_stem	figB_20260826_175726
 rec_edited_receipts	2
-rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figA_20260826_134914.eps
-rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figA_20260826_134914.png
-rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figA_20260826_134914_report.txt
-rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figB_20260826_134914.eps
-rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figB_20260826_134914.png
-rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figB_20260826_134914_report.txt
+rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figA_20260826_175726.eps
+rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figA_20260826_175726.png
+rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figA_20260826_175726_report.txt
+rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figB_20260826_175726.eps
+rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figB_20260826_175726.png
+rec_edited_file	/home/claude/repo/harness/vecfig/out/files/replay_edited/figB_20260826_175726_report.txt
 rec_edited_figA_png	1
 rec_edited_figA_eps	1
 rec_edited_figA_pdf	0

@@ -2,8 +2,22 @@ leg	field	value
 no_change	verdict	consume
 no_change	note	
 no_change	printReport	0
+no_change	notePending	0
 no_change	error	
 changed_setting	verdict	settings
 changed_setting	note	Recomputed: adjustment method holm -> bonferroni.
 changed_setting	printReport	0
+changed_setting	notePending	0
 changed_setting	error	
+changed_data_same_report	edit	row 1 value 10.1 -> 10.2
+changed_data_same_report	verdict	data
+changed_data_same_report	note	Data changed since this analysis was last run; re-measured.
+changed_data_same_report	printReport	0
+changed_data_same_report	notePending	0
+changed_data_same_report	error	
+changed_data_new_report	edit	row 8 value 8.4 -> 12.0
+changed_data_new_report	verdict	data
+changed_data_new_report	note	Data changed since this analysis was last run; re-measured.
+changed_data_new_report	printReport	1
+changed_data_new_report	notePending	1
+changed_data_new_report	error	

@@ -385,21 +385,107 @@ on every run" requires.
 
 STILL OPEN, AND EACH IS NAMED WHERE IT BITES:
 
-- THE CANONICAL REPORT COMPARISON (punch item 1.2's remaining half). The
-  24 August rule says a re-run reproducing the stored report EXACTLY prints
-  nothing at all. That needs a reporter that can RENDER without printing, and
-  every reporter in this plugin prints. Built instead is the conservative
-  direction: a key mismatch prints the report WITH the line. A reader is told
-  too often, never too rarely.
-- THE EXPORT BUFFER ON THE CHANGED-SETTING PATH. Suppressing the report also
-  suppresses `@emlReportBridgeStats`' `@emlCSVInit` and its three-file
-  declaration. On the consume path that is correct -- the analysis door
-  declared this very result. On the changed-setting path the bridge recomputed
-  and the export buffer still holds the older run, so a Save then writes the
-  settings the figure does not draw. Closing it needs the same
-  render-without-printing capability as 1.2 above; one mechanism closes both.
-  The alternative available today is printing the second report, which the
-  ruling forbids.
+- **PUNCH ITEM 1.2 — BUILT, NOT YET COMMITTED (26 Aug), to the
+  minimal-renderer shape Fable ruled.** The capture approach was REJECTED and
+  is not what was built. WHAT EXISTS NOW:
+  - `@emlEmit: .line$, .explain$` in `stats/eml-output.praat` — THE ONE
+    DUAL-MODE EMIT HELPER. It buffers `.line$` into `emlEmitText$` always and
+    prints only when `emlEmitPrint = 1`; `@emlEmitMode: .print` is its mode
+    switch and touches no buffer. The two-tab gloss travels as the SECOND
+    ARGUMENT and is appended at PRINT time, so it cannot reach the buffer.
+  - `@emlExplainLine: .text$, .wrap` — THE EXPLAIN HELPER, WHICH NEVER
+    BUFFERS. Every whole line of explanation goes through it: the six "Why:"
+    headers in the three shared comparison reporters, `@emlPostHocCaution`'s
+    caution and `@emlEffectMatrixCaption`'s second sentence. `.wrap = 0`
+    prints verbatim, `.wrap > 0` wraps at that column with `@emlReportNote`'s
+    two-space indent — one helper, because the two shapes of explanation line
+    in this tree print differently and always did.
+  - THAT IS WHAT MAKES THE BUFFER CANONICAL WITHOUT A STRIP LIST. An
+    explanation never enters it in the first place, so the explanations
+    toggle cannot move one character of the stored text, and no list of
+    which lines an explanation is has to be kept right against lane 6.
+  - THE REPORT FRAME IS ROUTED (`@emlReportHeader`, `Footer`, `Section`,
+    `Line`, `LineString`, `Blank`, `Note`, `GroupOrderLine`,
+    `DescriptiveHeader`, `DescriptiveRow`) and so are all 36 raw
+    `appendInfoLine` sites inside the three reporters the two store-wired
+    doors share. THE TIMESTAMP AND THE PROVENANCE LINE ARE DELIBERATELY NOT
+    CANONICAL — `date$ ()` differs on every run and the provenance names the
+    door, so either in the buffer would make "identical → print nothing"
+    unreachable, which is exactly why capture was rejected.
+  - THE STORE KEEPS THE TEXT: `emlStoreReport$`, written at the one write
+    site from the declared hand-off `emlPublishInReport$` (the shape
+    `emlPublishInLabel$[]` already uses), unconditionally, like every other
+    published name. `""` MEANS NO REPORT WAS PRINTED FOR THIS RESULT and is
+    not an empty report — the changed-setting path publishes `""`, and a
+    stored `""` never matches, so a later run cannot fall silent against a
+    report nobody has read.
+  - THE PRE-PRINT COMPARISON IS IN `@emlBridgeGroupComparison`, not in
+    `@emlGraphsReportBridgeIfNew`, because that procedure's own header
+    forbids it a rule of its own. On a `data` verdict the bridge renders
+    buffer-only, compares against `emlStoreReport$` AS IT STANDS BEFORE ITS
+    OWN PUBLICATION, and on a match lowers both `.printReport` and the new
+    `.notePending`. ONLY THE `data` VERDICT CAN GO SILENT: reaching it means
+    the store's publication is already known to be about this table and this
+    pair of columns.
+  - THE 24 AUGUST LINE IS NOW PRINTED BY THE GATE, not by the bridge, on
+    the data path only — whether it is said at all depends on a comparison
+    that is not finished when that verdict is taken. The settings line is
+    still printed where it is decided, because it is the whole of what that
+    path says.
+  - **Acceptance, driven:** `harness/reprintpins` gains two legs and now
+    calls the reprint gate (without that call no "second report" pin in
+    `v140` could ever have failed). `changed_data_same_report` moves 10.1 to
+    10.2 inside its own rank position: verdict `data`, `printReport = 0`,
+    `notePending = 0`, and the figure's whole contribution to the Info
+    window is zero lines. `changed_data_new_report` moves 8.4 to 12.0 across
+    a rank boundary: verdict `data`, one line, exactly one report, line
+    above report. `v140` is 43/43.
+  - **Red demonstration, measured, not argued:** the same probe against the
+    pre-item tree (`git worktree add --detach <dir> 2bccd8e`) prints the
+    24 August line and A SECOND COMPLETE 62-LINE REPORT which diffs
+    byte-identical against the first, timestamp line aside; the amended
+    `v140` reports **13 FAILED of 43** there against 43/43 here.
+  - **`v138`** classifies `emlStoreReport$`. **`v112`** gains six entries
+    (`emlPairwiseFollows`, `emlResult_MAXCOL`, `emlResult_MAXROW`,
+    `emlVocabTidy$`, `emlVocabGlance$`, `emlVocabAugment$`) — see the note
+    below.
+- **STILL OPEN AFTER 1.2, AND NAMED RATHER THAN LEFT IMPLIED:**
+  - **THE PAIRWISE MENU DOOR PUBLISHES NO CANONICAL TEXT, ON PURPOSE.**
+    `@emlReportPairwiseComparison` is not one of the three reporters the two
+    store-wired doors share, so it is not routed and
+    `@emlRunPairwiseAnalysis` hands over `""`. Nothing is lost today: a
+    figure asking the store about that result finds a pairwise family
+    against the graph door's `one-way anova + tukey`, so the verdict is
+    `settings` and no report is reprinted on that path. It becomes real work
+    the day the graphs door can offer a pairwise family (8.2 / 1.6).
+  - **THE REPORTER RUNS TWICE ON THE PATH THAT PRINTS**, once buffer-only
+    and once printing. The buffer cannot be flushed instead: it holds no
+    explanation lines by construction, so printing it would silently drop
+    every gloss. On the path that stays silent it runs once and nothing
+    prints.
+  - **`v112`'S CENSUS GREW BY SIX, and the reason is the render moving
+    inside the door.** `@emlBridgeGroupComparison`'s closure now reaches
+    `@emlReportBridgeStats` and the result writer. THE DRAW PATH ALWAYS RAN
+    THAT CODE — the graphs form has always called
+    `@emlGraphsReportBridgeIfNew` right after the bridge — but the form is
+    not a door the census walks, so the walk was blind to it. All six are
+    DISPLAY_ONLY with stated reasons; two of them (`emlResult_MAXCOL`,
+    `emlResult_MAXROW`) are fixed capacity constants and say so.
+- THE EXPORT BUFFER ON THE CHANGED-SETTING PATH — NARROWED BY 1.2, NOT
+  CLOSED. Suppressing the report also suppresses `@emlReportBridgeStats`'
+  `@emlCSVInit` and its three-file declaration. On the consume path that is
+  correct -- the analysis door declared this very result. ON THE DATA PATH IT
+  IS NOW CLOSED as a side effect of the canonical rendering: the bridge runs
+  the reporter buffer-only before publishing, so the export buffer describes
+  the run the figure draws even when nothing is printed. ON THE
+  CHANGED-SETTING PATH IT IS UNCHANGED: `.printReport` is 0 from the moment
+  that verdict is taken, so no rendering happens, the bridge recomputed and
+  the export buffer still holds the analysis door's older run, and a Save
+  then writes the settings the figure does not draw. Closing it is now one
+  decision, not a missing mechanism: whether the settings path should render
+  buffer-only too. It must NOT publish that text as `emlStoreReport$` if it
+  does -- the reader has not seen that report -- so the two uses of the
+  rendering come apart there and it wants a ruling rather than a patch.
 - ALPHA AND THE GROUP ORDER ARE STILL NOT ON THE FIGURE. The bracket caption
   carries the test and the adjustment, set on BOTH paths now so a consumed
   figure cannot wear the last figure's caption. It does not carry alpha or the
@@ -407,7 +493,9 @@ STILL OPEN, AND EACH IS NAMED WHERE IT BITES:
   the Info window's history" wants them. Adding a third clause changes strings
   v69 pins verbatim and geometry harness/bracketcap photographs; it needs a
   coordinated re-drive and is not done here. THIS GAP PREDATES THE STORE.
-- THE SCATTER DOOR IS NOT WIRED. Ruling section (e) names two doors for 1.0;
+- ITEM 1.6 — SCATTER STORE WIRING. Ruled by Fable, 26 Aug: its sequencing
+  behind the census fixtures STANDS — it is not started. THE SCATTER DOOR
+  IS NOT WIRED. Ruling section (e) names two doors for 1.0;
   this is the first. `@emlDrawScatterPlot` still computes r and p at draw time
   from `annotCorrType$` (in `graphs/eml-draw-procedures.praat`, not
   `eml-graphs-form.praat` as the census's line numbers suggest -- those point
@@ -438,12 +526,57 @@ coverage question is worth settling before the store lands rather than after.
   Praat launch that runs `setup.praat` from this tree, so those five reds
   reappear after any GUI harness drive. Standing hazard, same family as the
   bracketcap rig deleting sibling break logs.
-- **`v127`'s leg1 and leg3 are green while the disagreement they describe
-  still exists.** The bridge passes a hard literal `1` for `doTukey` at
-  `graphs/eml-annotation-procedures.praat:4042` and `:4649`. `v127`'s own
-  header says those legs are "closed by 1.6 per punch-list 8.2", and 1.6 is
-  the result store. The store landed; the sites did not close; a green suite
-  hides it.
+- **ITEM 3.5 (Fable's 26 Aug ruling) — the two `doTukey` literals. BUILT,
+  NOT YET COMMITTED.** The two sites named in the ruling
+  (`graphs/eml-annotation-procedures.praat:4042` and `:4649`) now take a
+  resolved `.doTukey`, and the value comes from the launching dialog: the
+  graphs form's shared Comparison menu carries an **"ANOVA only, no pairwise
+  tests"** row (the wizard's own language-batch item-4 wording, punch list
+  4.2), all six annotate-capable pages commit it to a new `annotPostHoc`
+  global, and `@emlBridgeGroupComparison` reads that global on the same
+  channel `annotCorrectionMethod$` uses. `@emlReportBridgeStats` reads the
+  bridge's resolved flag rather than restating it, so the report and the
+  three broom declarations under it follow the same one answer. A ROW AND
+  NOT A NEW FIELD, deliberately: the Comparison menu exists precisely so a
+  test family and its correction cannot be expressed inconsistently, a
+  tickbox beside it could contradict a row naming a post-hoc, and a row
+  costs no tab stop — so no page's tab order moved.
+  - **Acceptance, as ruled:** `v127`'s leg1 and leg3, which were themselves
+    the defect — they were written as "the literal is present" and so passed
+    while the disagreement stood. They now assert the chain and the driven
+    behaviour. Against the pre-item tree the amended `v127` reports **10
+    FAILED of 68**; against the tree with the item built, **68/68**. The
+    probe (`harness/doorcensus/probe.praat`) drives
+    `@emlBridgeGroupComparison` twice on the leg1 fixture: pre-item both
+    drives give `hasPairwise = 1`, `matrix rows = 3`; after, the opt-out
+    drive gives `0`/`0` with the omnibus line unchanged.
+  - **`v112`** gains `annotPostHoc` as RESULT-AFFECTING, with that
+    measurement quoted. **`v61`** gains two checks that the Comparison
+    menu's emitted rows and its decode/inverse agree on which rows are
+    category headings — the row insertion moved every index below it, and
+    nothing in Praat notices a decode left behind.
+  - **STILL OPEN, and NOT closed by 3.5:** leg1's other half. The graphs
+    door offers Tukey or nothing, so a user who chose Student t with
+    Bonferroni at the Pairwise dialog still cannot make the figure show that
+    test, and no sentence reconciles the two doors' pairwise verdicts. That
+    is punch-list 8.2 / item 1.6, and `v127` now pins it open by name.
+  - **FOLLOW-ON, opened by 3.5 and deliberately not built in it — the
+    recorder does not capture `annotPostHoc`.**
+    `@emlRecordCaptureStats` (`stats/eml-record.praat`) emits
+    `annotCorrectionMethod$`, `annotAlpha`, `emlGroupSortAlphabetical` and
+    `emlShowExplanations` into every recorded analysis or draw step, for the
+    stated reason that a setting read from a global is invisible to a
+    recorded call. `annotPostHoc` is read the same way and is classified
+    result-affecting, so a recorded figure drawn with the post-hoc declined
+    replays with a full Tukey matrix and a post-hoc table in its report.
+    NOT BUILT HERE because that capture set is evidenced by a driven
+    two-value leg in `harness/settingspub` plus four `v115` checks, and
+    adding a fifth captured global without its leg makes `v115` describe an
+    artefact that does not contain it. Build: one `posthoc_on`/`posthoc_off`
+    leg pair in `harness/settingspub/settingspub.sh` and
+    `settingspub_drive.praat`, `annotPostHoc` into `v115`'s `SETTINGS`, then
+    the capture line. The capture line was written and reverted in the 3.5
+    unit; it reddens `v115` on its own and is one line.
 - **`v112` does not see the store's names.** Its derivation walks 71
   settings over 166 procedure bodies and finds zero `emlStore*`,
   `emlSettings*` or `emlPublishIn*` among them, because the walk drops any
@@ -452,7 +585,7 @@ coverage question is worth settling before the store lands rather than after.
   It does not. Coverage comes from `v138` instead (60/60, asserting
   single-writer on the `emlStore` prefix). Either re-point the ruling's
   sentence at `v138` or extend `v112`.
-- **Section (e)'s second door is not wired.** `@emlDrawScatterPlot` computes
+- **Section (e)'s second door is not wired (ITEM 1.6).** `@emlDrawScatterPlot` computes
   Pearson and Spearman at draw time in seven places in
   `graphs/eml-draw-procedures.praat` — lines 4644, 4677, 4769, 5081, 5098,
   5164 and 5257 — with zero store references. The ruling wires both doors in
@@ -463,6 +596,25 @@ coverage question is worth settling before the store lands rather than after.
   batch; the batch changed `eml-graphs-form.praat` again, so the
   transcripts are now stale for a second reason. Needs a coordinated
   re-drive before the tag.
+
+### RULED 26 Aug (Fable) — process instruction, and two punch-list items new to this file
+
+**EVERY DIFF NAMES ITS ITEM.** A commit that changes behaviour states which
+numbered item it serves, so the end inspection can tie changes to numbers.
+A change that names no item cannot be tied. Applies to every diff in this
+repo from 26 Aug on.
+
+- **LANE 6 — the explanations default.** Not started. Ruled: built as
+  ROUTING, never as a bare global flip — the menu seeds OFF, the wizard
+  forces ON, and the graphs door inherits by launch path. See
+  `PUNCH_LIST_DOORS_UNIFICATION_2026-08-25.md` lane 6 (6.1 toggle, 6.2
+  wiring, 6.3 recording) for the full build.
+- **ITEM 2.2 — the two-group "Group order:" line.** Already the remaining
+  ordering clause of item 2.2 (not a new item). HALF BUILT: the direction
+  half is done (`095dddb`). REMAINING: one line stating the group order in
+  force ("Group order: table order (pre, post)") on grouped comparison
+  reports, through menu, wizard, and graph doors. Red demo: a signed
+  statistic with no named subtraction.
 
 ## B. Form and dialog work
 

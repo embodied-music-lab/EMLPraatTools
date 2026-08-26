@@ -341,6 +341,22 @@ RESULT_AFFECTING <- c(
               "MEASURED: Zebra-Mid p = .1027 under holm, .1540 under",
               "bonferroni, and the figure's adjustment caption changes with",
               "it"),
+    # ITEM 3.5. The Comparison menu's post-hoc row, carried to the bridge on
+    # the same channel annotCorrectionMethod$ uses and for the same reason --
+    # @emlBridgeGroupComparison takes it as a global, not as an argument.
+    # RESULT-AFFECTING is not a judgement call here: it decides whether
+    # @emlOneWayAnova runs Tukey at all, so it decides whether a pairwise
+    # p-value EXISTS on the figure, which is the strongest form of affecting a
+    # result there is. It cannot move a number it leaves in place: the omnibus
+    # is computed and drawn either way.
+    "annotPostHoc" =
+        paste("whether the figure runs the pairwise post-hoc its user asked",
+              "for; read from the global, not passed as an argument.",
+              "MEASURED, harness/doorcensus/out/DOORCENSUS.tsv on the leg1",
+              "fixture: at 1 the bridge reports hasPairwise = 1 and fills a",
+              "3-row matrix panel; at 0 it reports 0 and fills none, while",
+              "the omnibus line is the same characters both times",
+              "(One-way ANOVA: F(2, 15) = 53.39, p < .001)"),
     "emlBridgeGroupComparison.alpha" =
         paste("the threshold the significance verdict is taken at. It moves",
               "no p-value, it moves the VERDICT.",
@@ -531,7 +547,50 @@ DISPLAY_ONLY <- c(
     "prev_gvShowJitter" =
         "recorder transcript only: the grouped violin's jitter switch",
     "prev_violinShowJitter" =
-        "recorder transcript only: the violin's jitter switch"
+        "recorder transcript only: the violin's jitter switch",
+
+    # -- ITEM 1.2 (Fable, 26 Aug -- the minimal renderer). READ ONLY BY THE
+    #    REPORT THE DOOR NOW RENDERS, and they are in this list for the same
+    #    reason the recorder's captures above are: the door does that work on
+    #    every draw, so the walk finds them in its call graph.
+    #
+    #    WHAT CHANGED, SAID PLAINLY. @emlBridgeGroupComparison now renders its
+    #    report BUFFER-ONLY and compares it against the stored one before
+    #    deciding whether to print it, so @emlReportBridgeStats and the result
+    #    writer under it are inside the door. THE DRAW PATH ALWAYS RAN THAT
+    #    CODE -- the graphs form has always called
+    #    @emlGraphsReportBridgeIfNew immediately after the bridge -- but the
+    #    form is not a door this census walks, so the walk could not see it.
+    #    These six are therefore not new reads at draw time; they are reads
+    #    this census was blind to until the render moved inside the door.
+    #
+    #    NONE OF THEM CAN MOVE A NUMBER, so the store must not re-run for any
+    #    of them, which is what puts them here rather than in the first list.
+    "emlPairwiseFollows" =
+        paste("whether the caller is about to print a pairwise table below",
+              "this report, which is how @emlEffectMatrixCaption decides",
+              "between saying no pairwise test was run and saying nothing.",
+              "Only the wizard raises it. It moves no number: it chooses",
+              "between one DISCLOSURE sentence and none, in a report whose",
+              "statistics are identical either way. NOTE for the store: it",
+              "does move the CANONICAL TEXT, so a run under a different",
+              "value of it reprints -- which is correct, because the reader",
+              "is being shown a different sentence"),
+    "emlResult_MAXCOL" =
+        paste("a fixed capacity constant of the result writer (40 columns),",
+              "declared at load in stats/eml-result-writer.praat. Not a user",
+              "setting at all; in the census because the door's report",
+              "declares its export frames"),
+    "emlResult_MAXROW" =
+        "the same writer's row capacity constant (4000); see emlResult_MAXCOL",
+    "emlVocabTidy$" =
+        paste("the broom `tidy` frame's column vocabulary, a fixed string",
+              "declared at load. It names export columns; it computes",
+              "nothing"),
+    "emlVocabGlance$" =
+        "the `glance` frame's column vocabulary; see emlVocabTidy$",
+    "emlVocabAugment$" =
+        "the `augment` frame's column vocabulary; see emlVocabTidy$"
 )
 
 # ---------------------------------------------------------------------------

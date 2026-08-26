@@ -1276,6 +1276,35 @@ endproc
 # ----------------------------------------------------------------------------
 procedure emlComparisonMenuRows
     option: "-- Parametric --"
+    ; ITEM 3.5 -- THE POST-HOC OPT-OUT, AS A ROW.
+    ;
+    ; WHAT IT CLOSES. @emlBridgeGroupComparison decides, on every parametric
+    ; k >= 3 figure, whether to run a pairwise post-hoc. That decision belongs
+    ; to the user, and a page with no way to state it hands the bridge a
+    ; literal instead -- a figure showing Tukey whatever was asked for, and
+    ; disagreeing in silence with the analysis door on the same data
+    ; (validate/v127, legs 1 and 3). Fable's 26 Aug ruling: the fix is THIS
+    ; DIALOG'S ACTUAL POST-HOC CHOICE reaching the bridge, adding the field if
+    ; none exists, never a different literal. This row is that field.
+    ;
+    ; A ROW AND NOT A SECOND CONTROL, and the reason is the reason this menu
+    ; exists at all. ONE CONTROL, NO EXPRESSIBLE MISMATCH, above: a Praat
+    ; dialog is static once drawn, so a "run a post-hoc" tickbox beside a menu
+    ; whose rows NAME a post-hoc would be one press behind it, and a page
+    ; reading "Tukey HSD" with the box unticked would say two things at once.
+    ; Stating it as a row removes the possibility instead of guarding against
+    ; it, and it is the shape the wizard's own k-group menu already uses --
+    ; "ANOVA only, no pairwise tests", punch list 4.2, verbatim below
+    ; (scripts/eml-wizard.praat, @emlWizard3GroupTestRows).
+    ;
+    ; AND IT COSTS NO TAB STOP. An optionmenu is ONE field however many rows
+    ; it carries, so no page's tab order moves and no transcript driven by tab
+    ; index has to be re-driven. What DOES move is the row INDEX: the
+    ; nonparametric header and its three rows all shift down by one, which is
+    ; why @emlComparisonFromMenu and @emlComparisonToMenu below are amended in
+    ; the same breath and why nothing outside this registry may hardcode a row
+    ; number (v61 pins that all six pages come through it).
+    option: "ANOVA only, no pairwise tests"
     option: "Tukey HSD (family-wise; no separate correction)"
     option: "-- Nonparametric --"
     option: "Dunn, Holm (step-down; more power than Bonferroni)"
@@ -1288,43 +1317,70 @@ endproc
 # Outputs: .isHeader (1 = a category header, not a choice)
 #          .testType  (1 = parametric, 2 = nonparametric)
 #          .adjustIdx (1 = bonferroni, 2 = holm, 3 = bh — as @emlAdjustMethodName)
+#          .doPostHoc (ITEM 3.5. 1 = run the pairwise post-hoc, 0 = omnibus
+#                      only. This is the value the pages commit to
+#                      annotPostHoc, which is the ONLY channel it has to
+#                      @emlBridgeGroupComparison — that procedure reads the
+#                      global, exactly as it reads annotCorrectionMethod$,
+#                      because its argument list is fixed by four call sites
+#                      in this file and by every user script that calls it.)
 # The parametric row carries holm as its adjustment so that switching to a
 # nonparametric row later starts from the same default the old two-control
 # page did. Tukey ignores it.
+#
+# ITEM 3.5 -- THE ROW NUMBERS BELOW ALL MOVED BY ONE from row 3 down, because
+# "ANOVA only, no pairwise tests" was inserted as row 2. They are written out
+# rather than computed so that this decode and @emlComparisonMenuRows can be
+# read against each other line by line; v61 pins that all six pages come
+# through this one registry, so this is the only place that has to know.
 # ----------------------------------------------------------------------------
 procedure emlComparisonFromMenu: .row
     .isHeader = 0
     .testType = 1
     .adjustIdx = 2
-    if .row = 1 or .row = 3
+    .doPostHoc = 1
+    if .row = 1 or .row = 4
         .isHeader = 1
-    elsif .row = 4
-        .testType = 2
-        .adjustIdx = 2
+    elsif .row = 2
+        ; ANOVA only, no pairwise tests. The omnibus still runs; what the
+        ; user has declined is the pairwise table under it.
+        .doPostHoc = 0
     elsif .row = 5
         .testType = 2
-        .adjustIdx = 1
+        .adjustIdx = 2
     elsif .row = 6
+        .testType = 2
+        .adjustIdx = 1
+    elsif .row = 7
         .testType = 2
         .adjustIdx = 3
     endif
 endproc
 
 # ----------------------------------------------------------------------------
-# @emlComparisonToMenu: .testType, .adjustIdx
+# @emlComparisonToMenu: .testType, .adjustIdx, .doPostHoc
 # The inverse, for seeding the menu from what the page last used. Never
 # returns a header row: a seed that landed on one would re-show the page the
 # user just left.
+#
+# ITEM 3.5 -- .doPostHoc IS AN ARGUMENT AND NOT A DEFAULT, so a page the user
+# left on "ANOVA only" opens on "ANOVA only". A seed that dropped it would
+# re-tick a post-hoc the user had just declined, which is the same class of
+# defect as the literal this item removes, arriving one dialog later.
+# .doPostHoc is read on the parametric side only: a nonparametric row is
+# already a named pairwise test and the Dunn opt-out is not this item.
 # ----------------------------------------------------------------------------
-procedure emlComparisonToMenu: .testType, .adjustIdx
-    .row = 2
+procedure emlComparisonToMenu: .testType, .adjustIdx, .doPostHoc
+    .row = 3
     if .testType = 2
-        .row = 4
+        .row = 5
         if .adjustIdx = 1
-            .row = 5
-        elsif .adjustIdx = 3
             .row = 6
+        elsif .adjustIdx = 3
+            .row = 7
         endif
+    elsif .doPostHoc = 0
+        .row = 2
     endif
 endproc
 
@@ -3453,6 +3509,14 @@ prev_histAnnotStyle = 1
 # annotate-capable dialog). 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg.
 prev_annotAdjustIdx = 2
 
+# ITEM 3.5 -- post-hoc persistence, the same shape and the same scope as the
+# adjustment above: shared by every annotate-capable dialog, seeded into the
+# Comparison menu by @emlComparisonToMenu, written back from
+# @emlComparisonFromMenu.doPostHoc. 1 = run the pairwise post-hoc (the
+# behaviour before this item, so a session that never touches the row is
+# unchanged), 0 = omnibus only.
+prev_annotPostHoc = 1
+
 # THE ADJUSTMENT GATE IS GONE, AND SO IS THE CONDITION IT GUARDED.
 # It existed because the correction field was only put on the dialog when the
 # PREVIOUS run had been nonparametric, so the commit sites had to ask whether
@@ -3572,6 +3636,12 @@ annotShowNS = 0
 annotShowEffect = 0
 annotAlpha = 0.05
 annotCorrectionMethod$ = "holm"
+; ITEM 3.5 -- the channel the Comparison menu's post-hoc row reaches
+; @emlBridgeGroupComparison through. Initialised here, beside
+; annotCorrectionMethod$ and for the same reason: the bridge is also called
+; by scripts that never open this form, and a global nothing has set stops
+; Praat dead. 1 is the behaviour every caller had before this item.
+annotPostHoc = 1
 annotLayoutMode = 1
 
 # Scatter plot column names (initialized to prevent undefined errors)
@@ -6515,7 +6585,7 @@ repeat
                     # variable and not a re-test of tmpBarTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: tmpBarTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: tmpBarTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpBarAnnotStyle
@@ -6660,6 +6730,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_bar_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_bar_annotStyle = significance_style
                     prev_adv_bar_VMin$ = string$ (left_Value_range)
@@ -6795,6 +6869,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -6999,7 +7080,7 @@ repeat
                     # variable and not a re-test of tmpViolinTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: tmpViolinTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: tmpViolinTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpViolinAnnotStyle
@@ -7147,6 +7228,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_vio_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_vio_annotStyle = significance_style
                     prev_adv_vio_showJitter = show_jittered_points
@@ -7286,6 +7371,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -8109,7 +8201,7 @@ repeat
                     # variable and not a re-test of tmpBoxTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: tmpBoxTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: tmpBoxTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpBoxAnnotStyle
@@ -8257,6 +8349,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_box_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_box_annotStyle = significance_style
                     prev_adv_box_showJitter = show_jittered_points
@@ -8396,6 +8492,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -8612,7 +8715,7 @@ repeat
                     # variable and not a re-test of prev_histAnnotTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: prev_histAnnotTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: prev_histAnnotTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_histAnnotStyle
@@ -8777,6 +8880,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_his_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_his_annotStyle = significance_style
                     prev_adv_his_VMin$ = string$ (left_Value_range)
@@ -8949,6 +9056,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -9197,7 +9311,7 @@ repeat
                     # variable and not a re-test of prev_gvAnnotTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: prev_gvAnnotTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: prev_gvAnnotTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_gvAnnotStyle
@@ -9356,6 +9470,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_gv_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_gv_annotStyle = significance_style
                     prev_adv_gv_showJitter = show_jittered_points
@@ -9504,6 +9622,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -9694,7 +9819,7 @@ repeat
                     # variable and not a re-test of prev_gbAnnotTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: prev_gbAnnotTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: prev_gbAnnotTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_gbAnnotStyle
@@ -9853,6 +9978,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_gbTestType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_gbAnnotStyle = significance_style
                     prev_adv_gbShowJitter = show_jittered_points
@@ -9999,6 +10128,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else

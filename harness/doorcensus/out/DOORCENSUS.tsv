@@ -21,9 +21,18 @@ leg3	anova_F	53.390668601448
 leg3	anova_p	0.000000150949
 leg3	posthoc_ran	0
 leg3	door2	draw_bridge
-leg3	posthoc_ran_door2	1
 leg3	tukey_p_CA	0.000000147302
 leg3	tukey_p_CB	0.000007208528
+leg1	bridge_error_optin	
+leg1	posthoc_ran_door2_optin	1
+leg1	bridge_dotukey_optin	1
+leg1	matrix_groups_door2_optin	3
+leg3	bridge_error_optout	
+leg3	posthoc_ran_door2	0
+leg3	bridge_dotukey_optout	0
+leg3	matrix_groups_door2_optout	0
+leg3	omnibus_still_shown_door2	1
+leg3	omnibus_line_door2	One-way ANOVA: F(2, 15) = 53.39, p < .001
 leg2	bf_p	0.033176232075
 leg2	door	analysis_supplement
 leg2	welch_F	5.410359404865

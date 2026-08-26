@@ -19,10 +19,15 @@
 # THE SIX LEGS, each an intent named in punch-list item 8.1:
 #
 #   leg1  pairwise comparisons      -- Pairwise dialog (Student t,
-#         vs draw's annotation         Bonferroni) vs the bridge's
-#                                       hardcoded Tukey HSD
-#                                       (eml-annotation-procedures.praat
-#                                       :3543-3544, literal "1")
+#         vs draw's annotation         Bonferroni) vs the bridge's own
+#                                       Tukey HSD. ITEM 3.5: the bridge's
+#                                       post-hoc argument was a hard
+#                                       literal 1 and is now the launching
+#                                       dialog's answer, so this leg's
+#                                       door 2 is DRIVEN (see the two
+#                                       @emlBridgeGroupComparison calls at
+#                                       the foot of the leg 3 block) rather
+#                                       than restated
 #   leg2  unequal-spread ANOVA      -- the SAME shared reporter,
 #         vs draw                      @emlReportAnovaComparison, called
 #                                       from both the analysis door
@@ -34,8 +39,13 @@
 #                                       calls when Brown-Forsythe rejects
 #   leg3  post-hoc opt-out          -- Compare k Groups with "Tukey HSD
 #         vs draw                      post hoc" UNCHECKED (doTukey = 0)
-#                                       vs the same hardcoded "1" leg1
-#                                       names
+#                                       vs the figure drawn with the
+#                                       Comparison menu's own "ANOVA only,
+#                                       no pairwise tests" row picked.
+#                                       ITEM 3.5: both sides are now
+#                                       measured, and before that item they
+#                                       disagreed -- the figure ran and drew
+#                                       Tukey whatever the row said
 #   leg4  paired comparison         -- Compare Paired Observations
 #         vs spaghetti's own door       (@emlTTestPaired) vs the plugin's
 #                                       own independent-samples kernel
@@ -89,6 +99,19 @@ include ../../plugin/stats/eml-core-descriptive.praat
 include ../../plugin/stats/eml-extract.praat
 include ../../plugin/stats/eml-output.praat
 include ../../plugin/stats/eml-inferential.praat
+; ITEM 3.5 -- THE BRIDGE ITSELF, NOT A HAND-COPY OF WHAT IT DOES.
+;
+; Legs 1 and 3 are about whether the DRAW door honours the post-hoc choice
+; the launching dialog carries. A probe that named door 2 by hand -- calling
+; @emlOneWayAnova and @emlTukeyHSD the way the bridge calls them, and then
+; emitting door 2's post-hoc behaviour as a literal -- would restate the
+; answer it is meant to measure, and would read identically whether item 3.5
+; is built or not. @emlBridgeGroupComparison is driven below instead, on the
+; same fixture, with the dialog's post-hoc answer in force, twice: that
+; difference is the only thing that can tell the two trees apart.
+; It draws nothing: the bridge fills the annotation arrays and this probe
+; reads their counts. Verified headless on Praat 6.6.30.
+include ../../plugin/graphs/eml-annotation-procedures.praat
 
 outPath$ = environment$ ("EML_DOORCENSUS_OUT")
 if outPath$ = ""
@@ -147,9 +170,12 @@ selectObject: leg1tab
 @emitNum: "leg1", "t_AB", emlPairwiseT.tMatrix## [1, 2]
 @emitNum: "leg1", "df_AB", emlPairwiseT.dfMatrix## [1, 2]
 
-# Door B: the figure's own annotation -- @emlBridgeGroupComparison's
-# parametric k-group branch always runs @emlOneWayAnova with .tukey = 1
-# (eml-annotation-procedures.praat:3543-3544, the literal argument).
+# Door B: the figure's own annotation -- the numbers the figure carries when
+# the figure was asked for a post-hoc. @emlBridgeGroupComparison's parametric
+# k-group branch runs @emlOneWayAnova with the post-hoc the launching dialog
+# asked for (ITEM 3.5); the kernel call below is that branch with the answer
+# set to "yes", which is what leg 1's comparison is about. The two drives of
+# the bridge itself, opt-in and opt-out, are at the foot of the leg 3 block.
 selectObject: leg1tab
 @emlOneWayAnova: leg1tab, "value", "group", 1
 @emit: "leg1", "door2", "draw_bridge"
@@ -180,13 +206,84 @@ selectObject: leg1tab
 @emitNum: "leg3", "anova_p", emlOneWayAnova.p
 @emit: "leg3", "posthoc_ran", "0"
 
-# Door B: the figure's own annotation -- identical call to leg1's door2,
-# named again here because it is THIS leg's comparator: the bridge never
-# reads doTukey at all.
+# Door B: the figure's own annotation.
 @emit: "leg3", "door2", "draw_bridge"
-@emit: "leg3", "posthoc_ran_door2", "1"
 @emitNum: "leg3", "tukey_p_CA", emlTukeyHSD.pMatrix## [1, 3]
 @emitNum: "leg3", "tukey_p_CB", emlTukeyHSD.pMatrix## [2, 3]
+
+# ============================================================================
+# ITEM 3.5 -- THE DRAW DOOR, DRIVEN TWICE, WITH THE DIALOG'S ANSWER IN FORCE
+# ============================================================================
+# LAST IN THIS SECTION ON PURPOSE. @emlBridgeGroupComparison re-runs
+# @emlOneWayAnova, @emlTukeyHSD and @emlCountGroups internally, so every
+# emission above that reads those procedures' outputs has already been made
+# by the time these two drives start. Praat procedure outputs survive only
+# until the same procedure runs again; this is that rule, applied to a whole
+# section rather than to one line.
+#
+# annotPostHoc IS THE LAUNCHING DIALOG'S ANSWER. The graphs form's Comparison
+# menu commits it from the row the user picked -- "ANOVA only, no pairwise
+# tests" is 0, "Tukey HSD" is 1 -- and the bridge reads the global, exactly
+# as it reads annotCorrectionMethod$. Setting it here is therefore the same
+# act as picking that row, which is what makes these two drives a measurement
+# of the door and not of a private flag.
+#
+# WHAT IS EMITTED IS A COUNT THE BRIDGE FILLED, NOT A CLAIM ABOUT IT.
+# annotMatrixN is the number of groups the matrix panel will draw -- 0 when
+# there is no pairwise result on the figure -- and .hasPairwise is the
+# bridge's own statement that it has a pairwise result to publish. Before
+# item 3.5 both read the same on the two drives, because the post-hoc
+# argument was a hard literal 1 at eml-annotation-procedures.praat:4042 and
+# a second literal at :4649. Measured on the pre-item tree they are
+# matrix=3/pairwise=1 on BOTH drives; that is the red demonstration.
+@emlClearAnnotations
+annotPostHoc = 1
+selectObject: leg1tab
+@emlBridgeGroupComparison: leg1tab, "value", "group", 0.05, "p-value", 0, 0,
+... "parametric", 3
+optin_pairwise = emlBridgeGroupComparison.hasPairwise
+; READ THROUGH variableExists SO THIS PROBE RUNS ON BOTH TREES. Before item
+; 3.5 the bridge had no .doTukey to publish -- the argument was a literal --
+; so an unguarded read stops Praat dead and there is no artefact to compare
+; the red demonstration against. "absent" is the pre-item answer and it is a
+; fact worth recording, not an error.
+optin_dotukey$ = "absent"
+if variableExists ("emlBridgeGroupComparison.doTukey")
+    optin_dotukey$ = string$ (emlBridgeGroupComparison.doTukey)
+endif
+optin_matrix = annotMatrixN
+optin_err$ = emlBridgeGroupComparison.error$
+
+@emlClearAnnotations
+annotPostHoc = 0
+selectObject: leg1tab
+@emlBridgeGroupComparison: leg1tab, "value", "group", 0.05, "p-value", 0, 0,
+... "parametric", 3
+optout_pairwise = emlBridgeGroupComparison.hasPairwise
+optout_dotukey$ = "absent"
+if variableExists ("emlBridgeGroupComparison.doTukey")
+    optout_dotukey$ = string$ (emlBridgeGroupComparison.doTukey)
+endif
+optout_matrix = annotMatrixN
+optout_text = annotTextN
+optout_omnibus$ = emlBridgeGroupComparison.omnibus$
+optout_err$ = emlBridgeGroupComparison.error$
+
+# The opt-IN drive, on leg 1: the figure still shows Tukey when the figure
+# was asked for Tukey. Item 3.5 withholds nothing from a user who asked.
+@emit: "leg1", "bridge_error_optin", optin_err$
+@emit: "leg1", "posthoc_ran_door2_optin", string$ (optin_pairwise)
+@emit: "leg1", "bridge_dotukey_optin", optin_dotukey$
+@emit: "leg1", "matrix_groups_door2_optin", string$ (optin_matrix)
+
+# The opt-OUT drive, on leg 3: the same figure, the same data, the post-hoc
+# declined at the dialog. posthoc_ran_door2 is now MEASURED off that drive.
+@emit: "leg3", "bridge_error_optout", optout_err$
+@emit: "leg3", "posthoc_ran_door2", string$ (optout_pairwise)
+@emit: "leg3", "bridge_dotukey_optout", optout_dotukey$
+@emit: "leg3", "matrix_groups_door2_optout", string$ (optout_matrix)
+@emit: "leg3", "omnibus_still_shown_door2", string$ (optout_text)
+@emit: "leg3", "omnibus_line_door2", optout_omnibus$
 
 # ============================================================================
 # LEG 2 -- unequal-spread ANOVA vs draw

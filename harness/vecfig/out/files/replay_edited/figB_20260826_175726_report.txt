@@ -1,5 +1,5 @@
 
 EML: replayed save -- wrote 3 file(s) to
 /home/claude/repo/harness/vecfig/out/files/replay
-base name figA_20260826_134913
+base name figA_20260826_175726
 

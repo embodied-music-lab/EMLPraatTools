@@ -388,6 +388,63 @@ check("v61", "the comparison registry is defined exactly once",
       sum(grepl("^procedure emlComparisonToMenu:", fcode)),
       tol = 0)
 
+# ITEM 3.5 -- THE ROW NUMBERS IN THE DECODE ARE THE ROW NUMBERS IN THE LIST.
+# ---------------------------------------------------------------------------
+# @emlComparisonMenuRows emits the options; @emlComparisonFromMenu decodes a
+# row number back into a test family, an adjustment and a post-hoc answer.
+# The two agree by POSITION and by nothing else -- Praat's optionmenu hands
+# back an index, not a string -- so inserting the "ANOVA only, no pairwise
+# tests" row that item 3.5 needs moved every row under it by one. Nothing in
+# the language notices if the decode is left behind: a page would simply
+# report a nonparametric Dunn run when the user picked a category heading, and
+# the figure would be drawn with the wrong test and no complaint anywhere.
+#
+# THIS IS THE CLAUDE.md DRY RULE APPLIED TO A MENU: state the canon once, in
+# the emitting procedure, and add a text check that the copy agrees. The
+# canon here is "which emitted rows are headings"; the copy is the
+# `if .row = A or .row = B` line in the decode.
+.rowsStart <- grep("^procedure emlComparisonMenuRows\\s*$", fcode)
+.fromStart <- grep("^procedure emlComparisonFromMenu:", fcode)
+.hdrEmitted <- integer(0)
+.hdrDecoded <- integer(0)
+if (length(.rowsStart) == 1L) {
+    .end <- .rowsStart + which(grepl("^endproc\\s*$", fcode[.rowsStart:length(fcode)]))[1] - 1L
+    .opts <- grep('^\\s*option: "', fcode[.rowsStart:.end], value = TRUE)
+    .hdrEmitted <- which(grepl('^\\s*option: "--', .opts))
+}
+if (length(.fromStart) == 1L) {
+    .end2 <- .fromStart + which(grepl("^endproc\\s*$", fcode[.fromStart:length(fcode)]))[1] - 1L
+    .guard <- grep("^\\s*if \\.row = \\d+( or \\.row = \\d+)*\\s*$",
+                   fcode[.fromStart:.end2], value = TRUE)
+    if (length(.guard)) {
+        .hdrDecoded <- as.integer(regmatches(.guard[1],
+                                             gregexpr("\\d+", .guard[1]))[[1]])
+    }
+}
+check_true("v61",
+           sprintf("the comparison decode's header rows are the rows the list actually emits (list says %s; decode says %s)",
+                   paste(.hdrEmitted, collapse = "/"),
+                   if (length(.hdrDecoded)) paste(.hdrDecoded, collapse = "/") else "nothing readable"),
+           length(.hdrEmitted) > 0 && identical(.hdrEmitted, .hdrDecoded))
+
+# AND THE INVERSE NEVER LANDS ON ONE. @emlComparisonToMenu seeds a page from
+# what it last used; a seed that returned a heading would re-show the page the
+# user just left, for ever. Its `.row = N` constants are read out and held to
+# the same emitted list.
+.toStart <- grep("^procedure emlComparisonToMenu:", fcode)
+.seedRows <- integer(0)
+if (length(.toStart) == 1L) {
+    .end3 <- .toStart + which(grepl("^endproc\\s*$", fcode[.toStart:length(fcode)]))[1] - 1L
+    .assign <- grep("^\\s*\\.row = \\d+\\s*$", fcode[.toStart:.end3], value = TRUE)
+    .seedRows <- as.integer(sub("^\\s*\\.row = (\\d+)\\s*$", "\\1", .assign))
+}
+check_true("v61",
+           sprintf("the comparison seed map never returns a category heading (seeds %s; headings %s)",
+                   if (length(.seedRows)) paste(sort(unique(.seedRows)), collapse = "/") else "none readable",
+                   paste(.hdrEmitted, collapse = "/")),
+           length(.seedRows) > 0 && !any(.seedRows %in% .hdrEmitted) &&
+               all(.seedRows <= length(grep('^\\s*option: "', fcode[.rowsStart:(.rowsStart + 40)]))))
+
 # THE HEADER GUARD, ON EVERY PAGE. The list carries category headings as rows,
 # because Praat has no other way to group a menu, so a user can land on one.
 # Six guards, and each one refuses only the Draw button -- refusing the

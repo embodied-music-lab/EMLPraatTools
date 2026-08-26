@@ -37,14 +37,18 @@
 # THE SIX LEGS AND WHERE EACH ONE LANDS, decided by reading the source
 # each door actually calls (cited inline below), not by assumption:
 #
-#   leg1  pairwise vs draw        SILENT DISAGREEMENT (current defect).
-#         The bridge hardcodes Tukey HSD regardless of what test/
-#         adjustment the user chose at the Pairwise dialog
-#         (eml-annotation-procedures.praat:3543-3544, literal ".doTukey"
-#         argument "1"). Modelled on Sol's p=.052->.037 seed fixture.
-#         Named in punch-list 8.2 as a draw-handoff site closed by the
-#         result-store bridge (1.6), not here -- this leg is that fix's
-#         acceptance instrument, expected red until it lands.
+#   leg1  pairwise vs draw        HALF CLOSED, and the halves are named.
+#         The bridge used to hardcode Tukey HSD regardless of what the user
+#         chose, at two literal sites (eml-annotation-procedures.praat:4042
+#         and :4649). ITEM 3.5, ruled by Fable on 26 August, closes the half
+#         that matters most: the figure no longer runs a post-hoc NOBODY
+#         ASKED FOR, because the launching dialog now carries the choice and
+#         the bridge reads it. THE OTHER HALF IS STILL OPEN -- the graphs
+#         door offers Tukey or nothing, so a user who chose Student t with
+#         Bonferroni at the Pairwise dialog still cannot have the figure show
+#         that test, and no sentence reconciles the two doors. That residue
+#         is punch-list 8.2 / item 1.6 and it is pinned open below.
+#         Modelled on Sol's p=.052->.037 seed fixture.
 #   leg2  unequal-spread ANOVA    AGREE. Both doors call the SAME shared
 #         vs draw                 reporter, @emlReportAnovaComparison,
 #                                  from stats/eml-analysis.praat:379 and
@@ -52,13 +56,17 @@
 #                                  :3543-3544 -- architecturally one call
 #                                  site, not two implementations that
 #                                  happen to match today.
-#   leg3  post-hoc opt-out        SILENT DISAGREEMENT (current defect).
-#         vs draw                 The SAME mechanism as leg1, probed from
-#                                  the analysis side: Compare k Groups
-#                                  with Tukey unchecked (doTukey = 0)
-#                                  prints no post-hoc table; the bridge
-#                                  shows Tukey anyway, unconditionally.
-#                                  Also a draw-handoff site per 8.2.
+#   leg3  post-hoc opt-out        AGREE, as of ITEM 3.5. The SAME mechanism
+#         vs draw                  as leg1, probed from the analysis side:
+#                                  Compare k Groups with Tukey unchecked
+#                                  (doTukey = 0) prints no post-hoc table,
+#                                  and the graphs door's own "ANOVA only, no
+#                                  pairwise tests" row now produces the same
+#                                  figure and the same report. Before item
+#                                  3.5 the bridge showed Tukey anyway,
+#                                  unconditionally; the probe drives both
+#                                  answers and the pre-item artefact is the
+#                                  red demonstration.
 #   leg4  paired vs spaghetti      SILENT DISAGREEMENT (current defect).
 #         The spaghetti plot itself prints no inferential statistic at
 #         all (graphs/eml-draw-procedures.praat:3417-3462 -- N/Mean/SD
@@ -122,11 +130,17 @@
 #                                  own existing self-label, which both
 #                                  doors already clear.
 #
-# So four of six legs read RED at this commit, and that is the correct,
-# expected reading of this file today -- not a bug in the check. Punch-
-# list item 1.6 ("the store must not enshrine an unaudited door") and
-# item 8.2 name legs 1/3/5 explicitly as the acceptance instruments for
-# work sequenced AFTER this file; leg4 documents a real hazard with an
+# HOW THIS FILE READS ITS OWN LEGS, AMENDED 26 AUGUST. Until that date the
+# leg1 and leg3 verdicts were written as "the defect is present", so they
+# PASSED while the disagreement they describe stood, and the header called
+# that "expected red" while the runner counted it green. The 26 August
+# verification pass found it; Fable ruled item 3.5 and named this leg its
+# acceptance instrument, with "the red demonstration is the current literal".
+# Every assertion in this file now holds when the tree is RIGHT, which is how
+# the rest of the suite is written, and a check that pins a gap OPEN says so
+# in its own text (leg1's residual, leg4's hazard). Punch-list item 1.6 ("the
+# store must not enshrine an unaudited door") and item 8.2 still own leg1's
+# residual half and leg5's history; leg4 documents a real hazard with an
 # honest caveat about its second door's reachability. Legs 2 and 6 read
 # GREEN because they are, architecturally, ONE call site wearing two
 # names -- which this file demonstrates by calling that one procedure
@@ -297,23 +311,141 @@ check_true(V, "leg1 door labels are present and distinct (Student t-test/bonferr
            identical(val("leg1", "test_label"), "Student t-test") &&
                identical(val("leg1", "adjust_label"), "bonferroni") &&
                identical(val("leg1", "door2_label"), "Tukey HSD"))
-# STRUCTURAL EVIDENCE, not assumed: the bridge's post-hoc call is a LITERAL
-# "1", so it cannot ever vary with what the user chose at the Pairwise
-# dialog, and no sentence anywhere in the bridge acknowledges that the two
-# doors can print different pairwise verdicts on the same pair.
+# ===========================================================================
+# ITEM 3.5 -- THE TWO doTukey LITERALS. THIS IS THE ACCEPTANCE INSTRUMENT.
+# ===========================================================================
+# WHAT THESE CHECKS USED TO SAY, AND WHY THAT WAS WRONG. Until 26 August this
+# leg and leg 3 below each ended in one check that PASSED WHILE THE DEFECT
+# STOOD: the assertion was "the bridge's post-hoc call is a hard literal and
+# nothing reconciles it", so a tree with the literal in it read green, and the
+# header called that "expected red" while the runner counted it a pass. The
+# 26 August verification pass found it (docs/OPEN_ITEMS.md, FOUND BY
+# VERIFICATION); Fable ruled the fix and named this leg its acceptance
+# instrument, with "the red demonstration is the current literal". So the
+# assertions below are stated the way every other check in this suite is
+# stated -- they hold when the tree is RIGHT -- and against the tree as it
+# stood before item 3.5 they go red, which is that demonstration.
+#
+# THE FIX FABLE RULED, AND WHAT IT IS NOT. "The launching dialog's actual
+# post-hoc choice reaching the bridge, adding the field if none exists. Never
+# a different literal." So a 0 in place of the 1 would not close this, and
+# neither would a computed default: what is asserted below is a CHAIN, from a
+# row on the Comparison menu, through the annotPostHoc global, into
+# @emlOneWayAnova's post-hoc argument and into @emlReportBridgeStats' report
+# and declarations. Every link is read out of the source here; the two ends
+# are measured by the probe.
 bridge_src <- readLines(file.path(PLUGIN_DIR, "graphs", "eml-annotation-procedures.praat"), warn = FALSE)
+form_src <- readLines(file.path(PLUGIN_DIR, "graphs", "eml-graphs-form.praat"), warn = FALSE)
+
+# SITE 1 of 2 -- eml-annotation-procedures.praat:4042 as the ruling cites it,
+# the bridge's own @emlOneWayAnova call. Matched by TEXT, not by line number:
+# a line number in a check drifts exactly as a line number in a comment does.
+site1_literal <- any(grepl("^\\s*@emlOneWayAnova:\\s*\\.tableId, \\.dataCol\\$, \\.factorCol\\$, 1\\s*$",
+                           bridge_src))
+site1_wired <- any(grepl("^\\s*@emlOneWayAnova:\\s*\\.tableId, \\.dataCol\\$, \\.factorCol\\$, \\.doTukey\\s*$",
+                         bridge_src))
+
+# SITE 2 of 2 -- :4649, @emlReportBridgeStats' @emlReportAnovaComparison call.
 leg1_hardcoded_line <- grep("@emlReportAnovaComparison:\\s*\\.tableName\\$, \\.dataCol\\$, \\.groupCol\\$,",
                             bridge_src, fixed = FALSE)
-leg1_literal_one <- length(leg1_hardcoded_line) > 0 &&
+site2_literal <- length(leg1_hardcoded_line) > 0 &&
     any(grepl("^\\s*\\.\\.\\.\\s*\\.tableId, \\.nGroups, 1\\s*$",
               bridge_src[leg1_hardcoded_line[1] + 0:2]))
+site2_wired <- length(leg1_hardcoded_line) > 0 &&
+    any(grepl("^\\s*\\.\\.\\.\\s*\\.tableId, \\.nGroups, \\.doTukey\\s*$",
+              bridge_src[leg1_hardcoded_line[1] + 0:2]))
+
+check_true(V,
+           sprintf("ITEM 3.5 site 1 of 2 (@emlOneWayAnova in @emlBridgeGroupComparison) is no longer a literal: %s",
+                   if (site1_literal) "STILL THE LITERAL 1 -- this is the red demonstration"
+                   else if (site1_wired) "takes .doTukey" else "neither form found -- re-check the call"),
+           !site1_literal && site1_wired)
+check_true(V,
+           sprintf("ITEM 3.5 site 2 of 2 (@emlReportAnovaComparison in @emlReportBridgeStats) is no longer a literal: %s",
+                   if (site2_literal) "STILL THE LITERAL 1 -- this is the red demonstration"
+                   else if (site2_wired) "takes .doTukey" else "neither form found -- re-check the call"),
+           !site2_literal && site2_wired)
+
+# THE CHAIN, LINK BY LINK. A .doTukey at the two sites is worth nothing if it
+# is set from another literal a few lines up, which is the shortcut the ruling
+# names and forbids. So the source of the value is asserted too.
+bridge_reads_global <- any(grepl('^\\s*if variableExists \\("annotPostHoc"\\)\\s*$', bridge_src)) &&
+    any(grepl("^\\s*if annotPostHoc = 0\\s*$", bridge_src))
+reporter_reads_bridge <- any(grepl('^\\s*if variableExists \\("emlBridgeGroupComparison\\.doTukey"\\)\\s*$',
+                                   bridge_src)) &&
+    any(grepl("^\\s*\\.doTukey = emlBridgeGroupComparison\\.doTukey\\s*$", bridge_src))
+check_true(V,
+           "ITEM 3.5 the bridge takes its post-hoc answer from the annotPostHoc global, not from a second literal",
+           bridge_reads_global)
+check_true(V,
+           "ITEM 3.5 the reporter takes it from the bridge's own resolved flag, so one run has one answer",
+           reporter_reads_bridge)
+
+# THE DIALOG END OF THE CHAIN. "Adding the field if none exists" -- there was
+# no post-hoc control on any of the six annotate-capable column-mapping pages,
+# and there is now: a row on the shared Comparison menu, decoded by the one
+# registry all six come through (v61 pins that), carrying the wizard's own
+# language-batch item-4 wording. A row rather than a second control because a
+# Praat dialog is static once drawn, so a tickbox beside a menu whose rows
+# NAME a post-hoc could say two things at once; and because a row costs no tab
+# stop, so no page's tab order moved and no tab-indexed transcript needs
+# re-driving for this item.
+menu_row <- any(grepl('^\\s*option: "ANOVA only, no pairwise tests"\\s*$', form_src))
+decoder_out <- any(grepl("^\\s*\\.doPostHoc = 0\\s*$", form_src))
+n_commit <- sum(grepl("^\\s*annotPostHoc = emlComparisonFromMenu\\.doPostHoc\\s*$", form_src))
+n_persist <- sum(grepl("^\\s*prev_annotPostHoc = emlComparisonFromMenu\\.doPostHoc\\s*$", form_src))
+n_seed <- sum(grepl("@emlComparisonToMenu:.*prev_annotPostHoc\\s*$", form_src))
+check_true(V,
+           sprintf("ITEM 3.5 the launching dialog has the field it lacked: the Comparison menu carries an omnibus-only row (%s) and the registry decodes it to .doPostHoc (%s)",
+                   if (menu_row) "present" else "ABSENT -- this is the red demonstration",
+                   if (decoder_out) "present" else "ABSENT"),
+           menu_row && decoder_out)
+# TWELVE PERSIST SITES AND NOT SIX, and the doubling is the point rather than
+# a miscount: each page writes prev_annotPostHoc twice, once on its Draw arm
+# beside annotPostHoc itself, and once on the beginner/advanced mode toggle
+# beside prev_annotAdjustIdx. The toggle one is what stops a page the user left
+# on "ANOVA only" from re-opening with the post-hoc silently re-ticked -- the
+# same defect this item removes, arriving one dialog later. Six commits, twelve
+# persists, six seeds; any other triple means a page was missed.
+check_true(V,
+           sprintf("ITEM 3.5 all six annotate-capable pages commit that answer to annotPostHoc (%d of 6), persist it across Draw and the mode toggle (%d of 12) and seed the menu back from it (%d of 6)",
+                   n_commit, n_persist, n_seed),
+           n_commit == 6L && n_persist == 12L && n_seed == 6L)
+
+# DRIVEN, NOT ONLY READ. harness/doorcensus/probe.praat runs
+# @emlBridgeGroupComparison twice on this leg's own fixture, once with the
+# dialog's answer set to "yes". Item 3.5 withholds nothing from a user who
+# asked for a post-hoc, and this is the check that says so.
+check_true(V,
+           sprintf("ITEM 3.5 driven, opt-IN: the figure still runs and draws Tukey when the dialog asked for it (pairwise=%s, matrix rows=%s)",
+                   val("leg1", "posthoc_ran_door2_optin"), val("leg1", "matrix_groups_door2_optin")),
+           identical(val("leg1", "posthoc_ran_door2_optin"), "1") &&
+               identical(val("leg1", "matrix_groups_door2_optin"), "3") &&
+               identical(val("leg1", "bridge_dotukey_optin"), "1"))
+
+# THE RESIDUE, AND IT IS NOT ITEM 3.5's. What item 3.5 closes is the figure
+# running a post-hoc NOBODY ASKED FOR. What it does not close is this leg's
+# other half: the graphs door's Comparison menu offers Tukey or nothing, so a
+# user who chose Student t with Bonferroni at the Pairwise dialog and then
+# draws a figure still cannot make the figure show THAT pairwise test, and no
+# sentence anywhere reconciles the two doors' different pairwise verdicts on
+# the same pair. That is punch-list 8.2 / item 1.6 and it is still open. This
+# check pins the gap OPEN -- it passes because the gap is there, and it is
+# meant to fail the day the gap closes, which is the same contract every
+# defect-pinning check in this suite carries.
 leg1_reconciled <- any(grepl("differs from the (test|pairwise (test|comparison)) you (chose|selected)",
                              bridge_src, ignore.case = TRUE))
+form_offers_student <- any(grepl('option: "(Pairwise )?Student t', form_src))
 check_true(V,
-           sprintf("leg1 VERDICT: SILENT DISAGREEMENT -- the bridge's post-hoc call is a hard literal (%s), and no line reconciles it with the Pairwise dialog's own choice (%s); closed by 1.6 per punch-list 8.2, FAILS on purpose until the store bridge lands",
-                   if (leg1_literal_one) "confirmed" else "NOT CONFIRMED -- re-check the line reference",
+           sprintf("leg1 RESIDUAL, still open and NOT item 3.5: the graphs door offers no Student-t pairwise row (%s) and no line reconciles the two doors' pairwise verdicts (%s) -- punch-list 8.2 / item 1.6",
+                   if (form_offers_student) "one was found -- re-check this leg" else "confirmed absent",
                    if (leg1_reconciled) "one was found -- re-check this leg" else "none found"),
-           leg1_literal_one && !leg1_reconciled)
+           !form_offers_student && !leg1_reconciled)
+
+check_true(V,
+           "leg1 VERDICT: the post-hoc the figure runs is now the one the launching dialog asked for (item 3.5, closed); the pairwise TEST the two doors name still differs with nothing reconciling it (8.2 / 1.6, open)",
+           !site1_literal && site1_wired && !site2_literal && site2_wired &&
+               bridge_reads_global && reporter_reads_bridge && menu_row)
 
 # ===========================================================================
 # LEG 3 -- post-hoc opt-out (Compare k Groups, Tukey unchecked) vs draw
@@ -324,20 +456,53 @@ check(V, "leg3 ANOVA F, doTukey = 0", num("leg3", "anova_F"), anova_off["g", "F 
 check(V, "leg3 ANOVA p, doTukey = 0", num("leg3", "anova_p"), anova_off["g", "Pr(>F)"], tol = 1e-8)
 check_true(V, "leg3 door A (post-hoc opted out) prints no post-hoc table",
            identical(val("leg3", "posthoc_ran"), "0"))
-check_true(V, "leg3 door B (the figure) runs the post-hoc unconditionally",
-           identical(val("leg3", "posthoc_ran_door2"), "1"))
-check(V, "leg3 Tukey p(C,A) shown on the figure regardless", num("leg3", "tukey_p_CA"),
-      tk1["C-A", "p adj"], tol = 1e-6)
-check(V, "leg3 Tukey p(C,B) shown on the figure regardless", num("leg3", "tukey_p_CB"),
-      tk1["C-B", "p adj"], tol = 1e-6)
+
+# THE NUMBERS THE FIGURE SHOWS WHEN THE POST-HOC *IS* ASKED FOR. Held to the
+# oracle here so that the opt-out check below is a check about a CHOICE and
+# not about a broken Tukey: these are real, correct, strongly significant
+# p-values, and the point of the leg is that a user who declined the post-hoc
+# must not be shown them.
+check(V, "leg3 Tukey p(C,A), the value the figure carries when Tukey was asked for",
+      num("leg3", "tukey_p_CA"), tk1["C-A", "p adj"], tol = 1e-6)
+check(V, "leg3 Tukey p(C,B), the value the figure carries when Tukey was asked for",
+      num("leg3", "tukey_p_CB"), tk1["C-B", "p adj"], tol = 1e-6)
 check_true(V,
-           sprintf("leg3 fixture is ADVERSARIAL: the figure prints Tukey p(C,A) = %.2e and p(C,B) = %.2e -- both far below .05 -- on a run where the user explicitly declined a post-hoc",
+           sprintf("leg3 fixture is ADVERSARIAL: the post-hoc at stake is p(C,A) = %.2e and p(C,B) = %.2e -- both far below .05 -- so a figure that shows it to a user who declined it is unmistakable, not a near-miss",
                    num("leg3", "tukey_p_CA"), num("leg3", "tukey_p_CB")),
            is.finite(num("leg3", "tukey_p_CA")) && num("leg3", "tukey_p_CA") < 0.001)
+
+# ITEM 3.5, DRIVEN. The probe runs @emlBridgeGroupComparison on this same
+# table with the launching dialog's post-hoc answer set to "no" -- which is
+# what picking the Comparison menu's "ANOVA only, no pairwise tests" row does,
+# because that row is the only thing that writes annotPostHoc. Measured on the
+# tree as it stood before this item, both of the values below read as though
+# the row had never been touched (pairwise = 1, matrix rows = 3); that is the
+# red demonstration Fable asked for, and it is an artefact, not an assertion.
 check_true(V,
-           sprintf("leg3 VERDICT: SILENT DISAGREEMENT -- the SAME hard literal (%s) that governs leg1 means the figure cannot honour doTukey = 0 either, and no line reconciles it; closed by 1.6 per punch-list 8.2, FAILS on purpose until the store bridge lands",
-                   if (leg1_literal_one) "confirmed" else "NOT CONFIRMED -- re-check the line reference"),
-           leg1_literal_one && !leg1_reconciled)
+           sprintf("ITEM 3.5 driven, opt-OUT: the figure honours the declined post-hoc (pairwise=%s, matrix rows=%s, bridge flag=%s)",
+                   val("leg3", "posthoc_ran_door2"),
+                   val("leg3", "matrix_groups_door2_optout"),
+                   val("leg3", "bridge_dotukey_optout")),
+           identical(val("leg3", "posthoc_ran_door2"), "0") &&
+               identical(val("leg3", "matrix_groups_door2_optout"), "0") &&
+               identical(val("leg3", "bridge_dotukey_optout"), "0"))
+
+# AND IT WITHHOLDS THE POST-HOC, NOT THE RESULT. Declining a pairwise table is
+# not declining the analysis: the omnibus still ran and the figure still
+# carries it, which is exactly what the Compare k Groups dialog's own opt-out
+# produces on the other door. A silent figure would be a different defect.
+check_true(V,
+           sprintf("ITEM 3.5 the omnibus is still on the figure after the opt-out, in the same words the analysis door uses: \"%s\"",
+                   val("leg3", "omnibus_line_door2")),
+           identical(val("leg3", "omnibus_still_shown_door2"), "1") &&
+               grepl("^One-way ANOVA: F\\(2, 15\\) = ", val("leg3", "omnibus_line_door2")))
+
+check_true(V,
+           "leg3 VERDICT: AGREE -- the analysis door's post-hoc opt-out and the graph door's now produce the same figure and the same report, through the same resolved flag (item 3.5)",
+           identical(val("leg3", "posthoc_ran"), "0") &&
+               identical(val("leg3", "posthoc_ran_door2"), "0") &&
+               !site1_literal && !site2_literal &&
+               bridge_reads_global && reporter_reads_bridge)
 
 # ===========================================================================
 # LEG 2 -- unequal-spread ANOVA supplement: analysis door vs draw door
@@ -515,7 +680,8 @@ check_true(V,
 
 if (!exists("EML_SUITE")) {
     eml_report("v127 -- the door-agreement census (punch-list 8.1)")
-    cat("\n  LEDGER: leg1 SILENT (1.6) | leg2 AGREE | leg3 SILENT (1.6) |\n",
+    cat("\n  LEDGER: leg1 HALF CLOSED (3.5 done; test-name residue open, 8.2/1.6) |\n",
+        "         leg2 AGREE | leg3 AGREE (3.5, post-hoc opt-out honoured) |\n",
         "         leg4 SILENT (documented hazard) | leg5 AGREE (4.5, ported) |\n",
         "         leg6 AGREE, labelled\n", sep = "")
     eml_exit()

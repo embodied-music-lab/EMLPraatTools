@@ -2436,4 +2436,199 @@ if (ok_tsv && "timeswitch" %in% lt_legs()) {
                !is.na(trv("timeswitch", "fig_png_md5")))
 }
 
+# ============================================================================
+# 18. THE ROW TARGETS -- PINNED
+# ============================================================================
+# ITEM: line-chart row targets, docs/RULING_FABLE_2026-08-26.md.
+#
+# Fable, 26 Aug 2026, adopting the actuals proposed for these three pages:
+# "What the lines are" 4; "Column Mapping" 23 advanced / 11 beginner;
+# "Right-Hand Axis" 7. Her own words on what this pins: "these are the
+# approved targets the checks pin; I verify rendered counts under Xvfb at
+# inspection, and a mismatch reopens the number, not the page."
+#
+# THE TARGETS ARE DATA, DECLARED ONCE, HERE. Nowhere below this point does a
+# bare 4, 11, 23 or 7 stand for a row count -- every assertion reads its
+# number out of LINE_ROW_TARGETS, so a target that changes is a one-line
+# edit and every check that reads it moves with it.
+LINE_ROW_TARGETS <- list(
+    what_the_lines_are      = 4L,
+    column_mapping_beginner = 11L,
+    column_mapping_advanced = 23L,
+    right_hand_axis         = 7L
+)
+
+# A "row" is RULING_DIALOG_COMPACTION's own unit: one comment: heading/prose
+# line, or one field-declaring line, with a left/right PAIR -- one numeric or
+# sentence box beside its twin -- counted as the single row Praat renders it
+# as (section 4B above pins the same convention for the axis-label pair on
+# this very page: "Praat renders a left/right pair as one row of two boxes").
+# option: lines are sub-choices of the field above them, not rows of their
+# own; script comments (leading ";" or "#") are prose about the code, not
+# text Praat ever draws, and are excluded the same way trv()/shown() above
+# excludes them from what a user sees.
+LT_FIELD_KEYWORDS <- c("real", "positive", "integer", "natural", "boolean",
+                       "sentence", "word", "text", "optionmenu", "choice",
+                       "infile", "outfile", "folder")
+lt_is_comment_row <- function(ln) grepl('^\\s*comment:\\s*"', ln)
+lt_is_field_row <- function(ln) {
+    grepl(paste0("^\\s*(", paste(LT_FIELD_KEYWORDS, collapse = "|"),
+                "):\\s*\""), ln)
+}
+lt_field_label <- function(ln) sub('^.*?"([^"]*)".*$', "\\1", ln)
+
+# THE ONE LOOP THAT ADDS ROWS. Every numeric column gets its own tickbox
+# (section 2's "one tickbox per numeric column, no ceiling"), so the single
+# `boolean: "Series " + ...` line inside `for iN from 1 to tsNNum` stands for
+# tsNNum rows on the rendered page, not one -- expanded here rather than
+# counted once, or a table with four subject columns would be undercounted
+# by three. The two `for` loops that build optionmenu OPTIONS (columns to
+# choose the time column from, text columns to name the series) do not need
+# this: an option: line is never a row.
+lt_expand_series_loop <- function(lines, tsNNum) {
+    out <- character(0)
+    i <- 1L
+    n <- length(lines)
+    while (i <= n) {
+        if (grepl("^\\s*for iN from 1 to tsNNum\\s*$", lines[i])) {
+            body <- lines[i + 1L]
+            j <- i + 2L
+            while (j <= n && !grepl("^\\s*endfor\\s*$", lines[j])) j <- j + 1L
+            out <- c(out, rep(body, tsNNum))
+            i <- j + 1L
+        } else {
+            out <- c(out, lines[i])
+            i <- i + 1L
+        }
+    }
+    out
+}
+
+# WHICH GUARDED ARMS ARE OPEN, for one scenario -- matched by the exact
+# condition text after "if "/"elsif ", because evaluating Praat's own
+# expression syntax is out of scope for a static count and the block below
+# has exactly the four guards this resolves. Nesting is a stack so a guard's
+# ancestors all have to be open too, the same as Praat's own if/elsif/endif.
+lt_resolve_block <- function(block, open) {
+    stack <- list()
+    kept <- character(0)
+    for (ln in block) {
+        t <- trimws(ln)
+        if (grepl("^if\\s", t)) {
+            cond <- trimws(sub("^if\\s+", "", t))
+            parent <- if (length(stack)) stack[[length(stack)]]$active else TRUE
+            hit <- parent && (cond %in% open)
+            stack[[length(stack) + 1L]] <- list(taken = hit, active = hit)
+        } else if (grepl("^elsif\\s", t)) {
+            fr <- stack[[length(stack)]]
+            parent <- if (length(stack) > 1L) stack[[length(stack) - 1L]]$active else TRUE
+            cond <- trimws(sub("^elsif\\s+", "", t))
+            hit <- parent && !fr$taken && (cond %in% open)
+            stack[[length(stack)]] <- list(taken = fr$taken || hit, active = hit)
+        } else if (identical(t, "else")) {
+            fr <- stack[[length(stack)]]
+            parent <- if (length(stack) > 1L) stack[[length(stack) - 1L]]$active else TRUE
+            stack[[length(stack)]] <- list(taken = TRUE, active = parent && !fr$taken)
+        } else if (identical(t, "endif")) {
+            stack[[length(stack)]] <- NULL
+        } else {
+            active <- if (length(stack)) stack[[length(stack)]]$active else TRUE
+            if (active) kept <- c(kept, ln)
+        }
+    }
+    kept
+}
+
+lt_count_rows <- function(lines) {
+    n <- 0L
+    pending_left <- FALSE
+    for (ln in lines) {
+        if (lt_is_comment_row(ln)) {
+            n <- n + 1L
+            pending_left <- FALSE
+        } else if (lt_is_field_row(ln)) {
+            lbl <- lt_field_label(ln)
+            if (pending_left && grepl("^right ", lbl)) {
+                pending_left <- FALSE          # the twin of the row just counted
+            } else {
+                n <- n + 1L
+                pending_left <- grepl("^left ", lbl)
+            }
+        }
+    }
+    n
+}
+
+# THE THREE PAGES' SOURCE, SLICED BY THEIR OWN beginPause/endPause -- page_b
+# is section 4B's own extraction, reused rather than re-sliced so the two
+# checks cannot disagree about where the page starts and ends.
+pa_from <- grep('^\\s*beginPause: "Line Chart -- What the lines are"\\s*$', form_src)
+pa_to   <- grep('^\\s*clicked = endPause: "Go Back", "Quit", "Continue", 3, 1\\s*$',
+                form_src)
+page_a <- if (length(pa_from) == 1L && length(pa_to) == 1L) {
+    form_src[pa_from:pa_to]
+} else character(0)
+
+pc_from <- grep('^\\s*beginPause: "Line Chart -- The Right-Hand Axis"\\s*$', form_src)
+pc_to   <- grep('^\\s*clicked = endPause: "Go Back", "Draw", 2, 1\\s*$', form_src)
+page_c <- if (length(pc_from) == 1L && length(pc_to) == 1L) {
+    form_src[pc_from:pc_to]
+} else character(0)
+
+check_true(V, "all three of the line chart's own pages were found in the source",
+           length(page_a) > 0L && length(page_b) > 0L && length(page_c) > 0L)
+
+# "WHAT THE LINES ARE" HAS NO GUARD ON IT AT ALL -- one heading, one
+# optionmenu, two comments naming the two answers -- so there is no scenario
+# to resolve, only to count.
+check("v97", "[What the lines are] renders the pinned row count",
+      LINE_ROW_TARGETS$what_the_lines_are, lt_count_rows(page_a), tol = 0)
+
+# "COLUMN MAPPING", BEGINNER -- subjects4's own walk (section 2): several
+# numeric columns (tsShape = 1, four of them), no repeats to offer an
+# interval over (tsCIOffer never opens), config_showAdvanced off, and the
+# lone beginner-only field this branch's absence of a labelled axis makes
+# necessary (section 4B: "shown, on the beginner page for the one case that
+# cannot do without it").
+beginner_open <- c("tsShape = 1",
+                   "tsSeriesRole = 1 and tsNNum >= 2 and config_showAdvanced = 0")
+beginner_rows <- lt_expand_series_loop(lt_resolve_block(page_b, beginner_open),
+                                       tsNNum = 4L)
+check("v97", "[Column Mapping, beginner] renders the pinned row count",
+      LINE_ROW_TARGETS$column_mapping_beginner, lt_count_rows(beginner_rows),
+      tol = 0)
+
+# "COLUMN MAPPING", ADVANCED -- subjects_ci's advanced round trip (section
+# 4B): one measurement column and a name column (tsShape = 2), repeats found
+# so the interval offer opens (tsCIOffer = 1), and config_showAdvanced on,
+# which is what opens the axes group, the paired axis-label row and the six
+# extra Layout rows -- and what closes the beginner-only Y-axis field.
+advanced_open <- c("tsShape = 2", "tsCIOffer = 1", "config_showAdvanced")
+advanced_rows <- lt_resolve_block(page_b, advanced_open)
+check("v97", "[Column Mapping, advanced] renders the pinned row count",
+      LINE_ROW_TARGETS$column_mapping_advanced, lt_count_rows(advanced_rows),
+      tol = 0)
+
+# "THE RIGHT-HAND AXIS" HAS NO GUARD ON IT EITHER -- two comments, one
+# heading, the measurement menu, the paired range, the axis name and the
+# pen. Section 6 walks this page by its words; this walks it by its rows.
+check("v97", "[The Right-Hand Axis] renders the pinned row count",
+      LINE_ROW_TARGETS$right_hand_axis, lt_count_rows(page_c), tol = 0)
+
+# THE COUNTER ITSELF IS NOT VACUOUS: a parser that stopped matching anything
+# would report 0 for every page and 0 would never equal a target that is
+# never itself 0 -- but a parser that matched EVERYTHING as one giant row
+# would be just as wrong and only the first failure mode is caught above by
+# construction. So the beginner and advanced slices are also required to
+# differ from each other and from the two unguarded pages, which a counter
+# that ignored the guards entirely (same page, same total, every time) could
+# not satisfy.
+check_true(V, "the four pinned counts are not four copies of one number",
+           length(unique(c(LINE_ROW_TARGETS$what_the_lines_are,
+                           LINE_ROW_TARGETS$column_mapping_beginner,
+                           LINE_ROW_TARGETS$column_mapping_advanced,
+                           LINE_ROW_TARGETS$right_hand_axis))) == 4L)
+check_true(V, "and the beginner/advanced split actually came from the guards",
+           length(beginner_rows) != length(advanced_rows))
+
 if (!exists("EML_SUITE")) { eml_report("v97 -- the line chart's question tree"); eml_exit() }

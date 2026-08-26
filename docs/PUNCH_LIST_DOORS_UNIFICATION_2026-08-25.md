@@ -36,11 +36,18 @@ end. Author is never verifier throughout.
   cell edit → reprint with the line; explanations toggled between draws →
   silent. Red demo: reprint on identical canonical report.
 
-  STATUS: the reprint rule as ruled is BUILT (`21c651d`) — but it predates
-  the canonical-form amendment above, which exists because lane 6's
-  explainer wiring would otherwise cause false "data changed" reprints.
-  The canonical comparison is the remaining build on this item and must
-  land with or before lane 6.
+  STATUS: the reprint rule as ruled is BUILT (`21c651d`), and THE CANONICAL
+  COMPARISON IS NOW BUILT TOO, 26 Aug, to the shape Fable ruled that day —
+  which is NOT the strip-list canonicalisation this entry above describes.
+  Her amendment: one dual-mode emit helper (print-and-buffer / buffer-only)
+  carrying the factual and disclosure lines on the two store-wired doors
+  only, with explanation lines going through an explain helper that never
+  buffers, so the canonical text is the buffer and no strip list exists to
+  go stale against lane 6. The acceptance this entry names is driven by
+  `harness/reprintpins`' two new legs and pinned by `validate/v140`
+  (43/43 here, 13 FAILED of 43 against the pre-item tree). See
+  `docs/OPEN_ITEMS.md` section A, PUNCH ITEM 1.2, for what was built and
+  for the three things it deliberately did not close.
 - **1.3 Two-way stays keyless. BUILT and pushed** — stated refusal naming
   the columns confirmed in the fingerprint merge. Verification leg only.
 - **1.4 Stored-result identity.** A stored result carries, beside the key:

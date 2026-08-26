@@ -8,13 +8,16 @@
 # Part of the EML Stats library (EML Stats & Graphs).
 # License: GPL-3.0-or-later
 #
-# Provides: 60 procedures. THE COUNTING RULE, so the number can be checked
+# Provides: 87 procedures. THE COUNTING RULE, so the number can be checked
 # rather than believed:
 #     grep -c "^procedure " plugin/stats/eml-output.praat
-# Six of the 60 are private and are named with an underscore after the prefix
-# (@eml_csvQuote, @eml_csvAppend, @eml_auditLabelColumn,
-# @eml_saveSafeBaseName, @eml_saveFolderWritable, @eml_saveReceiptLines);
-# the other 54 are public.
+# Sixteen of the 87 are private and are named with an underscore after the
+# prefix, which is the rule rather than a list to keep current:
+#     grep -c "^procedure eml_" plugin/stats/eml-output.praat
+# the other 71 are public. THE HEADER STATED 60 AND SIX, AND BOTH NUMBERS
+# WERE WRONG BY THE TIME ANYBODY LOOKED: a hand-kept count of a growing file
+# is a fact with no check behind it, which is why the two grep lines above
+# are now the statement and the numbers are only their answer today.
 #
 # By family:
 #
@@ -41,8 +44,11 @@
 #     @eml_saveFolderWritable and its receipt builder @eml_saveReceiptLines
 #     (all three private; the panel owns the naming contract, so the panel
 #     owns the characters, the target check and the receipt's line breaks)
-#   Wizard glosses — @emlResetExplanations plus the 17 @emlWizardExplain*
+#   Wizard glosses — @emlResetExplanations plus the @emlWizardExplain*
 #     helpers (grep -c "^procedure emlWizardExplain")
+#   ITEM 1.2, the minimal renderer — @emlEmit (the one dual-mode emit
+#     helper), @emlEmitMode (its mode switch) and @emlExplainLine (the
+#     explain helper, which never buffers). See THE MINIMAL RENDERER below.
 #   Errors — @emlErrorDialog
 #
 # All procedures use the "eml" prefix (EML Stats).
@@ -134,6 +140,141 @@ endproc
 emlSkewThreshold = 2
 emlKurtosisThreshold = 7
 emlWizardExplain$ = ""
+
+
+# ============================================================================
+# ITEM 1.2 — THE MINIMAL RENDERER: ONE DUAL-MODE EMIT HELPER
+# ============================================================================
+# WHAT THIS IS, AND WHY IT IS NOT A CAPTURE. Fable's ruling of 26 August
+# amends punch item 1.2 to this shape and rejects the capture approach by
+# name: under capture the report text exists only BY PRINTING, so
+# "identical -> print nothing" is unreachable, and a strip list that
+# canonicalises printed text is fragile against lane 6, which is about to
+# change which lines print.
+#
+# THE SHAPE, IN HER WORDS: one dual-mode emit helper — print-and-buffer, or
+# buffer-only — carrying the FACTUAL and DISCLOSURE lines, on THE TWO
+# STORE-WIRED DOORS ONLY. Explanation lines keep going through the explain
+# helper, which never buffers. The canonical text IS the buffer. The
+# pre-print comparison runs buffer-only.
+#
+# WHAT THAT BUYS, AND IT IS THE WHOLE REASON FOR THE SHAPE: an explanation
+# never enters the buffer in the first place. Not the whole "Why:" lines,
+# which go through @emlExplainLine below; not @emlPostHocCaution's caution
+# or @emlEffectMatrixCaption's second sentence, which go through it too; and
+# not the two-tab gloss column, which @emlEmit appends AT PRINT TIME and
+# never at buffer time. So the explanations toggle cannot move one character
+# of the canonical text, and nothing downstream has to hold a list of which
+# lines an explanation is. A strip list would have had to be right about
+# every line lane 6 adds; this is right about lines nobody has written yet.
+#
+# THE TWO MODES.
+#   emlEmitPrint = 1   print and buffer. Every ordinary run.
+#   emlEmitPrint = 0   buffer only. NOTHING reaches the Info window —
+#                      explanation lines included — and the rendering exists
+#                      as text in emlEmitText$ and nowhere else.
+#
+# THE BUFFER IS CLEARED BY @emlReportHeader AND NOWHERE ELSE, because a
+# report starts at its header and one session holds many reports one after
+# another. A caller reads emlEmitText$ IMMEDIATELY after the reporter
+# returns; anything that renders in between overwrites it, exactly as a
+# Praat procedure's outputs are overwritten by the next call.
+#
+# WHAT IS DELIBERATELY NOT IN THE BUFFER, and a reader has to know this one:
+# the header's TIMESTAMP and its provenance line. date$() differs on every
+# run by construction, and the provenance names the DOOR — so either one in
+# the canonical text would make two identical reports compare as different
+# for ever, which is the same failure that sank the capture approach.
+#
+# THIS IS NOT THE STORE. The buffer is a rendering scratchpad; the store's
+# copy of the canonical text is emlStoreReport$, written once at
+# @emlPublishAnalysisResult (stats/eml-extract.praat) from the declared
+# hand-off emlPublishInReport$, the same way emlPublishInLabel$[] hands over
+# the level labels.
+# ============================================================================
+emlEmitText$ = ""
+emlEmitPrint = 1
+
+# ----------------------------------------------------------------------------
+# @emlEmitMode: .print
+# ----------------------------------------------------------------------------
+# ITEM 1.2. Switch the emit helper between its two modes. It does NOT touch
+# emlEmitText$: a caller that has just rendered buffer-only has to be able to
+# put the mode back and still read what it rendered.
+#
+# Arguments:
+#   .print — 1 print and buffer, 0 buffer only
+# ----------------------------------------------------------------------------
+procedure emlEmitMode: .print
+    emlEmitPrint = .print
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlEmit: .line$, .explain$
+# ----------------------------------------------------------------------------
+# ITEM 1.2. THE ONE DUAL-MODE EMIT HELPER. Every FACTUAL and DISCLOSURE line
+# of the two store-wired doors' reports comes through here and nowhere else.
+#
+# .line$ is the canonical line and the only thing that reaches the buffer.
+# .explain$ is the two-tab gloss column, "" on all but the statistic rows;
+# it is appended when PRINTING and is never buffered, which is what keeps the
+# canonical text free of the explanations toggle without a strip list.
+#
+# ASSIGNED UNDOTTED ON PURPOSE. Inside a procedure an undotted name is the
+# main-script global for read AND write, and emlEmitText$ IS the shared
+# rendering state — the same way emlWizardExplain$ is cleared from inside
+# @emlReportLine a few procedures below.
+# ----------------------------------------------------------------------------
+procedure emlEmit: .line$, .explain$
+    emlEmitText$ = emlEmitText$ + .line$ + newline$
+    if emlEmitPrint = 1
+        if .explain$ = ""
+            appendInfoLine: .line$
+        else
+            appendInfoLine: .line$ + tab$ + tab$ + .explain$
+        endif
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlExplainLine: .text$, .wrap
+# ----------------------------------------------------------------------------
+# ITEM 1.2. THE EXPLAIN HELPER, AND IT NEVER BUFFERS. Every whole line of
+# explanation prose — the "Why:" headers in the three shared comparison
+# reporters, @emlPostHocCaution's caution, @emlEffectMatrixCaption's second
+# sentence — comes through here, so none of them can reach emlEmitText$.
+#
+# IT IS SILENT IN BUFFER-ONLY MODE for the same reason every other line is:
+# buffer-only means nothing is printed at all. It is silent with the toggle
+# off for the reason it always was.
+#
+# THE WRAP IS A PARAMETER RATHER THAN A SECOND PROCEDURE, because the two
+# kinds of explanation line in this tree are printed differently and always
+# were: the "Why:" headers print verbatim on one long line, and the two
+# caption sentences print through @emlWrapText at the report's 68-column body
+# width. A second helper for the second shape would be a second thing to
+# keep in step, and Fable's ruling names ONE explain helper.
+#
+# Arguments:
+#   .text$ — the line, already carrying its own indent when .wrap is 0
+#   .wrap  — 0 print .text$ verbatim; > 0 wrap at that column and indent each
+#            resulting line by two spaces, which is @emlReportNote's shape
+# ----------------------------------------------------------------------------
+procedure emlExplainLine: .text$, .wrap
+    if emlShowExplanations
+        if emlEmitPrint = 1
+            if .wrap = 0
+                appendInfoLine: .text$
+            else
+                @emlWrapText: .text$, .wrap
+                for .el from 1 to emlWrapText.nLines
+                    appendInfoLine: "  " + emlWrapText.line$ [.el]
+                endfor
+            endif
+        endif
+    endif
+endproc
+
 
 
 # ============================================================================
@@ -262,17 +403,34 @@ procedure emlReportHeader: .title$
         endif
     endif
 
+    ; ITEM 1.2 — THE CANONICAL RENDERING STARTS HERE. A report starts at its
+    ; header, so this is the ONE place emlEmitText$ is cleared; see THE
+    ; MINIMAL RENDERER at the top of this file. A caller that wants the text
+    ; reads emlEmitText$ immediately after the reporter returns.
+    emlEmitText$ = ""
+
     .sep$ = ""
-    appendInfoLine: .sep$
-    appendInfoLine: .border$
-    appendInfoLine: .titleLine$
-    appendInfoLine: .timestamp$
-    if .context$ <> ""
-        appendInfoLine: .context$
+    @emlEmit: .sep$, ""
+    @emlEmit: .border$, ""
+    @emlEmit: .titleLine$, ""
+
+    ; ITEM 1.2 — THE TIMESTAMP AND THE PROVENANCE LINE ARE NOT CANONICAL.
+    ; date$ () differs on every run by construction and the provenance names
+    ; the DOOR, so either one inside the canonical text would make two
+    ; identical reports compare as different for ever — the exact failure
+    ; that sank the capture approach. They still print; they are silent in
+    ; buffer-only mode because in that mode nothing prints at all, which is
+    ; why the guard is here and not inside @emlEmit.
+    if emlEmitPrint = 1
+        appendInfoLine: .timestamp$
+        if .context$ <> ""
+            appendInfoLine: .context$
+        endif
     endif
-    appendInfoLine: .border$
+
+    @emlEmit: .border$, ""
     .sep2$ = ""
-    appendInfoLine: .sep2$
+    @emlEmit: .sep2$, ""
 
     ; Consumed. A context declared for this report must not leak onto the
     ; next one, or a stale adjustment appears on a report that has no
@@ -307,10 +465,12 @@ procedure emlReportFooter
     .border$ = "══════════════════════════════════════════════"
     .conv1$ = "  Conventions: quartiles R type 7 · SD & variance n-1"
     .conv2$ = "  · rank tests average tied ranks (tie-corrected)."
-    appendInfoLine: .empty$
-    appendInfoLine: .conv1$
-    appendInfoLine: .conv2$
-    appendInfoLine: .border$
+    ; ITEM 1.2 — factual: the estimator conventions the numbers above were
+    ; computed under. Canonical, so through the emit helper.
+    @emlEmit: .empty$, ""
+    @emlEmit: .conv1$, ""
+    @emlEmit: .conv2$, ""
+    @emlEmit: .border$, ""
 endproc
 
 
@@ -318,7 +478,8 @@ procedure emlReportSection: .title$
     # Print section divider with title
     # Format: ── [title] ──────────────────────────────
     .empty$ = ""
-    appendInfoLine: .empty$
+    ; ITEM 1.2 — the section frame is canonical; through the emit helper.
+    @emlEmit: .empty$, ""
     .indent$ = "  "
     .prefix$ = "── "
     .spacer$ = " "
@@ -336,7 +497,7 @@ procedure emlReportSection: .title$
         .i = .i + 1
     endwhile
     .line$ = .indent$ + .prefix$ + .title$ + .spacer$ + .dashes$
-    appendInfoLine: .line$
+    @emlEmit: .line$, ""
 endproc
 
 
@@ -626,13 +787,20 @@ procedure emlReportLine: .label$, .value, .decimals
     .paddedLabel$ = emlPadRight.result$
     @eml_fixed: .value, .decimals
     .formattedValue$ = eml_fixed.result$
+    ; ITEM 1.2 — THE ROW IS FACTUAL AND THE GLOSS IS NOT. The line built here
+    ; is the canonical one; the two-tab explanation column travels beside it
+    ; as @emlEmit's second argument and is appended at PRINT time only, so
+    ; the explanations toggle cannot move one character of the buffer. The
+    ; gloss is consumed on exactly the condition it was consumed on before —
+    ; shown and non-empty — so a caller that set it for a row that never
+    ; printed still finds it cleared, or still finds it standing, as before.
+    .line$ = .indent$ + .paddedLabel$ + .formattedValue$
+    .explain$ = ""
     if emlShowExplanations and emlWizardExplain$ <> ""
-        .line$ = .indent$ + .paddedLabel$ + .formattedValue$ + tab$ + tab$ + emlWizardExplain$
+        .explain$ = emlWizardExplain$
         emlWizardExplain$ = ""
-    else
-        .line$ = .indent$ + .paddedLabel$ + .formattedValue$
     endif
-    appendInfoLine: .line$
+    @emlEmit: .line$, .explain$
 endproc
 
 
@@ -642,13 +810,15 @@ procedure emlReportLineString: .label$, .value$
     .indent$ = "  "
     @emlPadRight: .label$, 20
     .paddedLabel$ = emlPadRight.result$
+    ; ITEM 1.2 — same split as @emlReportLine above: the row is canonical,
+    ; the two-tab gloss is printed beside it and never buffered.
+    .line$ = .indent$ + .paddedLabel$ + .value$
+    .explain$ = ""
     if emlShowExplanations and emlWizardExplain$ <> ""
-        .line$ = .indent$ + .paddedLabel$ + .value$ + tab$ + tab$ + emlWizardExplain$
+        .explain$ = emlWizardExplain$
         emlWizardExplain$ = ""
-    else
-        .line$ = .indent$ + .paddedLabel$ + .value$
     endif
-    appendInfoLine: .line$
+    @emlEmit: .line$, .explain$
 endproc
 
 # ----------------------------------------------------------------------------
@@ -673,7 +843,9 @@ endproc
 procedure emlReportGroupOrderLine: .groupList$
     @emlGroupOrderName: emlGroupSortAlphabetical
     .orderLabel$ = emlGroupOrderName.result$
-    appendInfoLine: "  Group order: " + .orderLabel$ + " (" + .groupList$ + ")."
+    ; ITEM 1.2 — a DISCLOSURE line (punch item 2.2): it prints on every path
+    ; and it is canonical, so it goes through the emit helper.
+    @emlEmit: "  Group order: " + .orderLabel$ + " (" + .groupList$ + ").", ""
 endproc
 
 
@@ -722,8 +894,11 @@ endproc
 
 procedure emlReportBlank
     # Print empty line
+    ; ITEM 1.2 — canonical: a blank line is part of the report's shape, and a
+    ; blank that appeared on one door and not the other would make two
+    ; identical reports compare as different.
     .empty$ = ""
-    appendInfoLine: .empty$
+    @emlEmit: .empty$, ""
 endproc
 
 
@@ -1431,7 +1606,8 @@ procedure emlReportDescriptiveHeader
     @emlPadRight: "Median", 10
     .medianCol$ = emlPadRight.result$
     .headerLine$ = .indent$ + .groupCol$ + .nCol$ + .meanCol$ + .sdCol$ + .medianCol$
-    appendInfoLine: .headerLine$
+    ; ITEM 1.2 — factual table frame; canonical.
+    @emlEmit: .headerLine$, ""
 endproc
 
 
@@ -1462,7 +1638,8 @@ procedure emlReportDescriptiveRow: .label$, .n, .mean, .sd, .median
     .medianCol$ = emlPadRight.result$
     
     .rowLine$ = .indent$ + .groupCol$ + .nCol$ + .meanCol$ + .sdCol$ + .medianCol$
-    appendInfoLine: .rowLine$
+    ; ITEM 1.2 — factual table row; canonical.
+    @emlEmit: .rowLine$, ""
 endproc
 
 
@@ -4770,9 +4947,15 @@ endproc
 # the lines without printing them, still uses it directly.
 # ────────────────────────────────────────────────────────────────────────────
 procedure emlReportNote: .s$
+    ; ITEM 1.2 — @emlReportNote IS THE DISCLOSURE PRINTER AND IT BUFFERS. A
+    ; note states what was or was not computed and prints on every path, so
+    ; it belongs in the canonical text. The two notes in this tree that are
+    ; EXPLANATIONS rather than disclosures — @emlPostHocCaution's caution and
+    ; @emlEffectMatrixCaption's second sentence — do not come through here
+    ; any more; they go through @emlExplainLine, which never buffers.
     @emlWrapText: .s$, 68
     for .nl from 1 to emlWrapText.nLines
-        appendInfoLine: "  ", emlWrapText.line$ [.nl]
+        @emlEmit: "  " + emlWrapText.line$ [.nl], ""
     endfor
 endproc
 

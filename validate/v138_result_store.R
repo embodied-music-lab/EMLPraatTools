@@ -186,6 +186,18 @@ PUBLISHED <- c(
     "emlStoreKeyError$"   = "why no key could be taken, in the fingerprint's own words",
     "emlStoreTableId"     = "the Table the result was computed on",
     "emlStoreTableName$"  = "its object name, for the Info window",
+    # ITEM 1.2, Fable 26 Aug -- the canonical report text, rendered by the
+    # minimal renderer (@emlEmit, stats/eml-output.praat) and handed to the
+    # write site through emlPublishInReport$. "" means NO REPORT WAS
+    # PRINTED for this result, which is not an empty report: it is what the
+    # changed-setting path publishes, and a stored "" never matches, so a
+    # later run can never fall silent against a report nobody has read.
+    "emlStoreReport$"     = paste("the text of the report printed for this",
+                                  "result -- factual and disclosure lines",
+                                  "only, no explanations, no timestamp;",
+                                  "\"\" when no report was printed. The 24",
+                                  "August reprint rule is decided against",
+                                  "this name, not against the key."),
     "emlStoreDataCol$"    = "IDENTITY (1.4): the value column",
     "emlStoreGroupCol$"   = "IDENTITY (1.4): the grouping column",
     "emlStoreTestType$"   = "IDENTITY (1.4): the test that ran",

@@ -4026,6 +4026,24 @@ endproc
 #   emlStoreTableId        the Table the run read
 #   emlStoreTableName$     its object name, for the Info window
 #
+# THE CANONICAL REPORT TEXT (punch item 1.2, amended 26 Aug by Fable)
+#   emlStoreReport$        THE TEXT OF THE REPORT THAT WAS PRINTED FOR THIS
+#                          RESULT, as the minimal renderer rendered it
+#                          (stats/eml-output.praat, @emlEmit) — factual and
+#                          disclosure lines only, with every explanation line
+#                          and every two-tab gloss absent by construction, and
+#                          without the header's timestamp or provenance line.
+#                          "" MEANS NO REPORT WAS PRINTED FOR THIS RESULT and
+#                          is not an empty report: the changed-setting path
+#                          recomputes and prints one line rather than a
+#                          report, and it publishes "" so that a later run
+#                          cannot fall silent by matching a report no reader
+#                          has seen. The 24 August rule — "a re-run that
+#                          reproduces the stored report exactly prints
+#                          nothing" — is decided against this name, which is
+#                          why the ruling says THE REPORT COMPARISON, NOT THE
+#                          KEY, DECIDES WHAT THE USER SEES.
+#
 # THE IDENTITY (punch list 1.4) — compared as identity, never as text
 #   emlStoreDataCol$       the value column
 #   emlStoreGroupCol$      the grouping column
@@ -4266,6 +4284,25 @@ endproc
 #   .m## - a k x k matrix, every cell undefined. Read it on the next line:
 #          this procedure runs again for the next absent quantity.
 # ============================================================================
+# ----------------------------------------------------------------------------
+# emlPublishInReport$ — the canonical report text hand-off (punch item 1.2)
+# ----------------------------------------------------------------------------
+# PRAAT CANNOT PASS A LONG BLOCK OF TEXT ANY MORE CHEAPLY THAN A LABEL ARRAY,
+# and this is the same hand-off shape emlPublishInLabel$[] already uses: the
+# publisher fills it immediately before the call, and the write site copies it
+# into the store.
+#
+# IT IS CONSUMED, NOT MERELY READ, and that is the difference from the label
+# array. A publisher whose reporter is not routed through the minimal renderer
+# has no canonical text to hand over, and if this name kept its last value
+# such a publisher would publish the PREVIOUS door's report text beside its
+# own result — a stored report about another analysis, which is the one thing
+# a text comparison must never be handed. Clearing it at the write site makes
+# "said nothing" and "" the same thing, which is exactly what "" means here.
+# The same discipline @emlReportContext applies to the provenance line.
+# ----------------------------------------------------------------------------
+emlPublishInReport$ = ""
+
 procedure emlPublishAbsentMatrix: .k
     .m## = zero## (.k, .k)
     for .i from 1 to .k
@@ -4304,6 +4341,10 @@ endproc
 #   .error$       the producer's refusal text, "" when the run computed
 #   .key$         the key from @emlStoreKeyTake, taken at the read
 #   .keyError$    that call's own error text, "" when a key was taken
+#                 (the canonical report text is NOT an argument: it arrives
+#                 through emlPublishInReport$, declared above, because
+#                 Praat's argument list is already thirty-seven long and
+#                 every call site would have to move)
 #   .tableId      the Table the run read
 #   .tableName$   its object name
 #   .dataCol$     identity: the value column
@@ -4373,6 +4414,20 @@ procedure emlPublishAnalysisResult: .producer$, .door$, .kind$, .error$,
     emlStoreKeyError$ = .keyError$
     emlStoreTableId = .tableId
     emlStoreTableName$ = .tableName$
+
+    ; -- the canonical report text (punch item 1.2) -----------------------
+    ; TAKEN FROM THE DECLARED HAND-OFF, AND THE HAND-OFF IS THEN CLEARED; see
+    ; emlPublishInReport$ above for why the clearing is the load-bearing half.
+    ;
+    ; UNCONDITIONAL, LIKE EVERY OTHER PUBLISHED NAME, AND NOT GUARDED THROUGH
+    ; variableExists. THERE IS NO BRANCH IN IT AROUND A PUBLICATION is a rule
+    ; of this procedure, not a stylistic preference: it is what lets a reader
+    ; guard on emlStoreFormat$ alone and know the rest are there. The hand-off
+    ; is declared at load in this same file, a few procedures up, so it exists
+    ; wherever this procedure exists — exactly the guarantee emlStoreFormat$
+    ; itself rests on.
+    emlStoreReport$ = emlPublishInReport$
+    emlPublishInReport$ = ""
 
     ; -- the identity (punch list 1.4) -----------------------------------
     emlStoreDataCol$ = .dataCol$

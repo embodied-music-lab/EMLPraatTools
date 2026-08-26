@@ -65,9 +65,22 @@ discipline that answers their invisibility: ONE write site
 (@emlPublishAnalysisResult, or your name), which states the whole result —
 test type, correction, alpha, statistics, matrices (matrix globals carry
 the Dunn/z/effect matrices fine), and the §a fingerprint — on every
-analysis run, the way the pens are stated on every press. Readers consume
-only published names; the recorder emits from the publication; the §b
-census covers the store's names. Published state under a single-writer
+analysis run, the way the pens are stated on every press.
+
+**AMENDED 26 Aug (item 1.6 / result-store census, Fable's ruling):** the
+sentence above about the census was wrong and is replaced, verbatim, by
+Fable's text — do not restore the superseded sentence from an older copy
+of this document:
+
+> Readers consume only published names; the recorder emits from the
+> publication; the store's published names are censused by v138 — the §b
+> census (v112) cannot see them by design, since it excludes any global
+> assigned inside the doors' own closure, which is where the single write
+> site lives.
+
+DO NOT EXTEND v112. Instead, v138 is held to v112's anti-vacuity standard
+at inspection: resolver counts, plus a red demonstration seeding one
+published-but-uncensused name. Published state under a single-writer
 contract with a validator census is not hidden state — that is this
 week's theorem, applied a third time.
 
