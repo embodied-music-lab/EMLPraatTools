@@ -42,17 +42,27 @@
 #         implementation; agreement is evidence.
 #
 #   [LH]  longhand re-implementation — the reference is computed in this
-#         file from the textbook formula. The `effsize` and `effectsize`
-#         packages are NOT installed and CRAN is unreachable in this
-#         environment, so Cohen's d, the pooled SD, Hedges' J and g have no
-#         external referent available. Writing the formula out a second time
-#         catches transcription and arithmetic slips; it does NOT catch a
-#         shared misunderstanding of the estimator. Treat [LH] checks as
+#         file from the textbook formula. Cohen's d and the pooled SD have
+#         no external referent available (no package implements the raw
+#         pooled-SD standardizer alone). Writing the formula out a second
+#         time catches transcription and arithmetic slips; it does NOT catch
+#         a shared misunderstanding of the estimator. Treat [LH] checks as
 #         weaker evidence than [EXT] ones and say so in any write-up.
 #
-# 31 [EXT] + 9 [LH] = 40 checks; 17 counted skips; 57 total, matching the
-# 57 assertions in test-inferential-batch1.praat exactly. The coverage
-# assertion at the bottom enforces that arithmetic, so a silently deleted
+# As of 26 August 2026, `effectsize` IS installed in this environment, so
+# Hedges' g's correction factor J has a genuine [EXT] referent —
+# `effectsize::hedges_g` — added below, requireNamespace-guarded so the run
+# degrades to a registered skip rather than an error where it is absent.
+# `cohen_d()`'s own J is also no longer an approximation: it is the exact
+# gamma-ratio form (Hedges, 1981) via base R's `lgamma`, which is CORE and
+# always runs regardless of what packages are installed.
+#
+# 31 [EXT] + 9 [LH] = 40 checks + 2 added Hedges' g oracle checks (either
+# [EXT], with effectsize installed, or counted skips without it) = 42;
+# 17 base counted skips; 59 total, matching the 57 assertions in
+# test-inferential-batch1.praat plus the 2 oracle checks added here beyond
+# the literal-for-literal Praat mapping. The coverage assertion at the
+# bottom enforces that arithmetic, so a silently deleted
 # check fails the run.
 #
 # WHAT IS SKIPPED, AND WHY
@@ -287,17 +297,28 @@ check_true("3.7 Larger paired significant [EXT]",
 # ----------------------------------------------------------------------------
 # TEST GROUP 4: @emlCohenD
 # ----------------------------------------------------------------------------
-# All checks in this group are [LH]. `effsize` and `effectsize` are not
-# installed and CRAN is unreachable, so there is no external referent for
-# Cohen's d or Hedges' g here. The formulas are written out from Hedges &
-# Olkin (1985): pooled SD from the two sample variances, d as the raw mean
-# difference over the pooled SD, and the small-sample correction
-# J = 1 - 3/(4*df - 1) with g = J*d. R's own var() and mean() do supply the
-# inputs, so an arithmetic slip in the library is still caught; a shared
-# misconception about the estimator is not.
+# Cohen's d is [LH]: pooled SD from the two sample variances, d as the raw
+# mean difference over the pooled SD (Hedges & Olkin, 1985). R's own var()
+# and mean() do supply the inputs, so an arithmetic slip in the library is
+# still caught; a shared misconception about the estimator is not.
+#
+# Hedges' g's correction factor J is the EXACT form (Hedges, 1981), not an
+# approximation:
+#   J = exp(lnGamma(df/2) - 0.5*ln(df/2) - lnGamma((df-1)/2))
+# `lgamma`/`log` are base R — CORE, always runs, no package required — so
+# `cohen_d()` below computes J this way directly; that is [LH] in the sense
+# that the formula is written out a second time, but it is the textbook
+# EXACT definition rather than a large-sample approximation of it.
+#
+# A genuine [EXT] check follows once `cohen_d()` returns: `effectsize::
+# hedges_g()`, requireNamespace-guarded, is an independent implementation by
+# a package a statistician would actually call, and it agrees with the exact
+# form to the tolerance below (both give 0.9027033337 / 1.4443253339 on the
+# 4.1/4.2 fixture) — which is itself the fact that moved Fable to rule out
+# the approximate correction on 26 August 2026.
 # ----------------------------------------------------------------------------
 
-cat("\n--- TG4: @emlCohenD  [LH — no external effect-size package available] ---\n")
+cat("\n--- TG4: @emlCohenD ---\n")
 
 cohen_d <- function(x, y) {
   nx <- length(x)
@@ -306,7 +327,8 @@ cohen_d <- function(x, y) {
   pooled_var <- ((nx - 1) * var(x) + (ny - 1) * var(y)) / df
   pooled_sd <- sqrt(pooled_var)
   d <- (mean(x) - mean(y)) / pooled_sd
-  j <- 1 - 3 / (4 * df - 1)
+  # Exact form (Hedges, 1981), base R lgamma — CORE, always runs.
+  j <- exp(lgamma(df / 2) - 0.5 * log(df / 2) - lgamma((df - 1) / 2))
   list(pooledSD = pooled_sd, d = d, J = j, g = j * d, df = df)
 }
 
@@ -319,10 +341,29 @@ check("4.1 Mean2 [EXT]",         10,  mean(g2),    EXACT_TOL)
 register_skip("4.1 No error",
               "library error-string contract; no R counterpart")
 
-check("4.2 Hedges g correction factor [LH]",
-      0.9032258065, cd$J, TEN_DP)
-check("4.2 Hedges g [LH]",
-      1.4451612903, cd$g, TEN_DP)
+check("4.2 Hedges g correction factor (exact, base-R lgamma) [LH]",
+      0.9027033337, cd$J, TEN_DP)
+check("4.2 Hedges g (exact, base-R lgamma) [LH]",
+      1.4443253339, cd$g, TEN_DP)
+
+# --- Genuine external oracle: effectsize::hedges_g, requireNamespace-guarded ---
+# `effectsize` is installed in this environment (per the memo to Fable, 26
+# August 2026), so this runs as a full [EXT] check here; where it is not
+# installed the row is a registered skip, never a silent pass.
+HAVE_EFFECTSIZE <- requireNamespace("effectsize", quietly = TRUE)
+if (HAVE_EFFECTSIZE) {
+  hg_fwd <- effectsize::hedges_g(g1, g2, verbose = FALSE)
+  hg_rev <- effectsize::hedges_g(g2, g1, verbose = FALSE)
+  check("4.2 Hedges g vs effectsize::hedges_g [EXT]",
+        cd$g, hg_fwd$Hedges_g[1], TEN_DP)
+  check("4.2 Hedges g vs effectsize::hedges_g, reversed sign [EXT]",
+        -cd$g, hg_rev$Hedges_g[1], TEN_DP)
+} else {
+  register_skip("4.2 Hedges g vs effectsize::hedges_g [EXT]",
+                "effectsize package not installed")
+  register_skip("4.2 Hedges g vs effectsize::hedges_g, reversed sign [EXT]",
+                "effectsize package not installed")
+}
 
 check_true("4.3 g < d [LH]",
            cd$g < cd$d,
@@ -359,8 +400,14 @@ register_skip("4.8 Zero pooled SD: error",
 #      (34 AssertEqualNum + 2 AssertEqualStr + 16 AssertTrue
 #       + 5 AssertUndefined). If a check above is deleted or an assertion is
 #      added to the Praat suite without a counterpart here, this fails.
+# + 2 = the effectsize::hedges_g oracle checks added 26 August 2026 (Fable's
+#       exact-correction ruling). These have no Praat-assertion counterpart
+#       by design — they are a stronger, package-based oracle layered on top
+#       of the existing 4.2 literal checks, not a new literal — and they
+#       always contribute to `performed`, as a check when effectsize is
+#       installed or as a registered skip when it is not.
 
-EXPECTED_CHECKS <- 57
+EXPECTED_CHECKS <- 57 + 2
 performed <- pass + fail + skipped
 if (performed != EXPECTED_CHECKS) {
   fail <- fail + 1

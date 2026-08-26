@@ -465,21 +465,9 @@ endproc
 # Cohen's d uses the pooled standard deviation as the standardizer.
 # Hedges' g applies a correction factor J for small-sample bias.
 #
-# The correction factor uses the standard approximation:
-#   J = 1 - 3 / (4 * df - 1)
-# where df = n1 + n2 - 2. This is the formula used by most statistical
-# software. It approximates the exact factor
-#   J = gamma(df/2) / (sqrt(df/2) * gamma((df-1)/2))
-# from above; the approximation error is largest at the smallest df and
-# decays monotonically:
-#   df =  2 -> J 0.571429 vs exact 0.564190 (1.28% high)
-#   df =  4 -> J 0.800000 vs exact 0.797885 (0.27% high)
-#   df = 10 -> J 0.923077 vs exact 0.922746 (0.04% high)
-#   df = 20 -> J 0.962025 vs exact 0.961945 (0.01% high)
-# So the worst case is 1.28% at df = 2, not 0.27%; the earlier claim of
-# "3+ decimal places for df >= 4" was wrong (the df = 4 absolute error
-# is 0.0021). Accuracy reaches 3 decimal places at df >= 6.
-# Verified against scipy.special.gammaln.
+# The correction factor is the exact form (Hedges, 1981):
+#   J = exp(lnGamma(df/2) - 0.5*ln(df/2) - lnGamma((df-1)/2))
+# where df = n1 + n2 - 2. Agrees with effectsize::hedges_g.
 #
 # Arguments:
 #   .v1# - numeric vector, group 1
@@ -532,10 +520,9 @@ procedure emlCohenD: .v1#, .v2#
             # Cohen's d
             .d = (.mean1 - .mean2) / .pooledSD
 
-            # Hedges' g correction factor (approximation; overestimates
-            # the exact gamma-ratio J by at most 1.28%, at df = 2)
-            # J = 1 - 3 / (4 * df - 1)
-            .correctionFactor = 1 - 3 / (4 * .df - 1)
+            # Hedges' g correction factor, exact form (Hedges, 1981):
+            # J = exp(lnGamma(df/2) - 0.5*ln(df/2) - lnGamma((df-1)/2))
+            .correctionFactor = exp(lnGamma(.df / 2) - 0.5 * ln(.df / 2) - lnGamma((.df - 1) / 2))
             .g = .d * .correctionFactor
         endif
     endif

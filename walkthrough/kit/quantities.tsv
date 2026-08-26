@@ -169,7 +169,7 @@ emlRunKWAnalysis	df	cell	always	both	stats/eml-inferential.praat:3656 @emlKruska
 emlRunKWAnalysis	p	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .p	
 emlRunKWAnalysis	n	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .n	
 emlRunKWAnalysis	epsilon_squared	cell	always	both	stats/eml-inferential.praat:3593 @emlEpsilonSquared .result	
-emlRunKWAnalysis	eta_squared	cell	always	r	run_analyses.R rstatix::kruskal_effsize	R side alone. eta-squared[H]; the plugin reports epsilon-squared only. A coverage gap, not an error. See D-KW-ETA.
+emlRunKWAnalysis	eta_squared	cell	always	r	run_analyses.R rstatix::kruskal_effsize	R side alone. eta-squared[H]; the plugin reports epsilon-squared only. RULED 26 Aug 2026 (Fable, docs/RULING_KIT_DELTAS_2026-08-26.md): a DOCUMENTED ABSENCE under the quantity contract -- a decided non-quantity with the decision cited here, never an exemption. See D-KW-ETA and docs/OPEN_ITEMS.md.
 emlRunKWAnalysis	posthoc_<PAIR>_padj	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .pMatrix##	Post-hoc axis.
 emlRunKWAnalysis	posthoc_<PAIR>_p	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .rawP#	Post-hoc axis.
 emlRunKWAnalysis	posthoc_<PAIR>_z	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .zMatrix##	Post-hoc axis.

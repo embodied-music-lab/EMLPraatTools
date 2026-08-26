@@ -616,6 +616,28 @@ repo from 26 Aug on.
   reports, through menu, wizard, and graph doors. Red demo: a signed
   statistic with no named subtraction.
 
+### RULED 26 Aug (Fable) — D-KW-ETA is a documented absence, not an exemption
+
+`docs/RULING_KIT_DELTAS_2026-08-26.md`. The Kruskal-Wallis eta-squared[H] row
+(`walkthrough/kit/quantities.tsv`, `emlRunKWAnalysis` / `eta_squared`, 80 kit
+rows) reads as a coverage gap in `compare.R`'s current `DECLARED[]` text — "a
+coverage gap, not an error." Fable's ruling recharacterises it: the plugin
+reports epsilon-squared only, by decision, and that decision is now recorded
+rather than merely tolerated. Under the quantity contract's balance invariant
+(`compared + documented-absent + tolerance-bounded = total`), these 80 rows
+move into the DOCUMENTED-ABSENT bucket, cited to this ruling — never counted
+as an exemption or left as an unexplained one-sided row.
+
+The approved explainer line, gated on Ian's language-batch approval and NOT
+to print before then:
+
+    Epsilon-squared is reported; it corrects a small-sample bias in
+    eta-squared.
+
+`quantities.tsv`'s `D-KW-ETA` note now cites this ruling directly. `compare.R`'s
+own `DECLARED[]` entry and its accounting categories are a separate, already-
+queued change — not touched here, by the by-file rule.
+
 ## B. Form and dialog work
 
 The ruling arrived 19-20 Aug and the block is lifted:
