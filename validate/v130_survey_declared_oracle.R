@@ -807,4 +807,366 @@ if (length(target_ln) == 1L) {
     }
 }
 
+# ---------------------------------------------------------------------------
+# 8. LIVE PRAAT DRIVE -- @emlSurveyScoreScales (Stage 2's own wiring,
+#    plugin_EML_StatsGraphs/stats/eml-psychometrics.praat) vs the SAME
+#    committed oracle CSV every section above already reproduces in base R.
+#
+# Everything above this line is oracle-side only -- this file's own
+# original header said so plainly ("nothing in this file drives Praat"),
+# because Stage 2 did not exist yet. It exists now. This section drives it
+# LIVE on the three committed declaration files (unmodified) and checks
+# every quantity the oracle CSV records for the four declared subscales:
+# alpha, Feldt bounds, alpha-if-deleted, n, nExcluded, item-rest,
+# item-total, and the scale-score summaries (mean/SD/min/max) -- the exact
+# list the task itself names.
+#
+# @emlSurveyScoreScales reads @emlSurveyValidateDeclaration's own leftover
+# output rather than re-deriving the declaration, so every probe below
+# calls both, in that order, on the SAME dataT -- exactly the access
+# pattern @emlSurveyScoreScales's own header documents.
+# ---------------------------------------------------------------------------
+
+praat8 <- Sys.getenv("PRAAT", unset = "")
+if (!nzchar(praat8)) {
+    for (cand in c(repo_path("..", "praat"), Sys.which("praat_barren"),
+                   Sys.which("praat"))) {
+        if (nzchar(cand) && file.exists(cand)) { praat8 <- cand; break }
+    }
+}
+pv8 <- NA_character_; pvnum8 <- 0
+if (nzchar(praat8) && file.exists(praat8)) {
+    pv8 <- suppressWarnings(system2(praat8, "--version", stdout = TRUE, stderr = TRUE))[1]
+    m8 <- regmatches(pv8, regexpr("[0-9]+\\.[0-9]+\\.[0-9]+", pv8))
+    if (length(m8)) {
+        p8 <- as.integer(strsplit(m8, ".", fixed = TRUE)[[1]])
+        pvnum8 <- p8[1] * 1000 + p8[2] * 100 + p8[3]
+    }
+}
+canDrive8 <- pvnum8 >= 6630
+
+if (!canDrive8) {
+    cat(paste0("      SKIP: v130 section 8 needs Praat >= 6.6.30 to drive\n",
+               "            @emlSurveyScoreScales; found ",
+               if (is.na(pv8)) "none" else pv8, ".\n"))
+    check_true("v130",
+        sprintf("a Praat at or above the plugin's floor is available for the live Stage-2 drive (found %s)",
+                if (is.na(pv8)) "none" else pv8),
+        FALSE)
+} else {
+
+    work8 <- file.path(tempdir(), "v130-stage2-drive")
+    unlink(work8, recursive = TRUE)
+    dir.create(file.path(work8, "scripts"), recursive = TRUE, showWarnings = FALSE)
+    prefs8 <- file.path(work8, "prefs")
+    dir.create(prefs8, showWarnings = FALSE)
+    unlink(file.path(prefs8, c("pid", "message")))
+
+    plug8 <- Sys.getenv("EML_PLUGIN_DIR", unset = "")
+    if (!nzchar(plug8)) plug8 <- repo_path("plugin_EML_StatsGraphs")
+    statsdir8 <- file.path(plug8, "stats")
+
+    # link_stats8: symlinks the three untouched dependencies and either
+    # symlinks the real eml-psychometrics.praat (the "clean" build) or
+    # copies in a MUTATED scratch text (a mutant build, section 9 below) --
+    # never editing the committed file itself either way.
+    link_stats8 <- function(dirpath, psych_text = NULL) {
+        dir.create(dirpath, recursive = TRUE, showWarnings = FALSE)
+        file.symlink(normalizePath(file.path(statsdir8, "eml-extract.praat")),
+                     file.path(dirpath, "eml-extract.praat"))
+        file.symlink(normalizePath(file.path(statsdir8, "eml-inferential.praat")),
+                     file.path(dirpath, "eml-inferential.praat"))
+        file.symlink(normalizePath(file.path(statsdir8, "eml-analysis.praat")),
+                     file.path(dirpath, "eml-analysis.praat"))
+        if (is.null(psych_text)) {
+            file.symlink(normalizePath(file.path(statsdir8, "eml-psychometrics.praat")),
+                         file.path(dirpath, "eml-psychometrics.praat"))
+        } else {
+            writeLines(psych_text, file.path(dirpath, "eml-psychometrics.praat"))
+        }
+    }
+
+    clean_dir8 <- file.path(work8, "clean")
+    link_stats8(clean_dir8)
+
+    esc8 <- function(p) gsub('"', '""', p)
+    data_path8   <- file.path(csvdir, "lane_survey_declared_data.csv")
+    scales_path8 <- file.path(csvdir, "lane_survey_declared_scales.csv")
+    items_path8  <- file.path(csvdir, "lane_survey_declared_items.csv")
+
+    # drive_score8: writes a probe script that validates the declaration,
+    # confirms refusal = 0 (exactly @emlSurveyScoreScales's own documented
+    # precondition), then calls @emlSurveyScoreScales once and dumps a
+    # tagged line per subscale ("SC|...") and per subscale item ("IT|...").
+    # Scale/item names never contain "|" in this fixture (same assumption
+    # v129's own driver already relies on for the identical reason).
+    drive_score8 <- function(dirlabel, tag) {
+        probe <- file.path(work8, "scripts", paste0("v130-", tag, ".praat"))
+        writeLines(c(
+            paste0("include ../", dirlabel, "/eml-extract.praat"),
+            paste0("include ../", dirlabel, "/eml-inferential.praat"),
+            paste0("include ../", dirlabel, "/eml-analysis.praat"),
+            paste0("include ../", dirlabel, "/eml-psychometrics.praat"),
+            "",
+            sprintf('dataT = Read Table from comma-separated file: "%s"', esc8(data_path8)),
+            sprintf('scalesT = Read Table from comma-separated file: "%s"', esc8(scales_path8)),
+            sprintf('itemsT = Read Table from comma-separated file: "%s"', esc8(items_path8)),
+            "",
+            "@emlSurveyValidateDeclaration: dataT, scalesT, itemsT",
+            'writeInfoLine: "refusal|", emlSurveyValidateDeclaration.refusal, "|END"',
+            "if emlSurveyValidateDeclaration.refusal = 0",
+            "    @emlSurveyScoreScales: dataT",
+            '    appendInfoLine: "CONF|", emlSurveyScoreScales.confidence, "|END"',
+            "    for s from 1 to emlSurveyScoreScales.nScales",
+            '        name$ = emlSurveyValidateDeclaration.scaleName$[s]',
+            '        appendInfoLine: "SC|", name$, "|",',
+            "        ... emlSurveyScoreScales.subK[s], \"|\",",
+            "        ... emlSurveyScoreScales.subAlpha[s], \"|\",",
+            "        ... emlSurveyScoreScales.subCiLow[s], \"|\",",
+            "        ... emlSurveyScoreScales.subCiHigh[s], \"|\",",
+            "        ... emlSurveyScoreScales.subN[s], \"|\",",
+            "        ... emlSurveyScoreScales.subNExcluded[s], \"|\",",
+            "        ... length (emlSurveyScoreScales.subAlphaError$[s]), \"|\",",
+            "        ... emlSurveyScoreScales.subScoredN[s], \"|\",",
+            "        ... emlSurveyScoreScales.subScoredNone[s], \"|\",",
+            "        ... emlSurveyScoreScales.subScoreMean[s], \"|\",",
+            "        ... emlSurveyScoreScales.subScoreSD[s], \"|\",",
+            "        ... emlSurveyScoreScales.subScoreMin[s], \"|\",",
+            "        ... emlSurveyScoreScales.subScoreMax[s], \"|\",",
+            "        ... emlSurveyScoreScales.subIsKR20[s], \"|END\"",
+            "        for j from 1 to emlSurveyScoreScales.subK[s]",
+            "            origIdx = emlSurveyScoreScales.subItemOrigIdx[s,j]",
+            '            iname$ = emlSurveyValidateDeclaration.itemName$[origIdx]',
+            '            appendInfoLine: "IT|", name$, "|", iname$, "|",',
+            "            ... emlSurveyScoreScales.subAlphaIfDeleted[s,j], \"|\",",
+            "            ... emlSurveyScoreScales.subItemRest[s,j], \"|\",",
+            "            ... emlSurveyScoreScales.subItemTotal[s,j], \"|\",",
+            "            ... emlSurveyScoreScales.subItemFlag[s,j], \"|END\"",
+            "        endfor",
+            "    endfor",
+            "endif"),
+            probe)
+        suppressWarnings(system2("env",
+            c("-u", "DISPLAY", shQuote(praat8),
+              shQuote(paste0("--pref-dir=", prefs8)), "--run", shQuote(probe)),
+            stdout = TRUE, stderr = TRUE))
+    }
+
+    fld8 <- function(out, tag) {
+        h <- grep(paste0("^", tag, "\\|"), out, value = TRUE)
+        if (!length(h)) return(character(0))
+        strsplit(sub(paste0("^", tag, "\\|"), "", h[1]), "|", fixed = TRUE)[[1]]
+    }
+    # sc_field8/it_field8: locate the ONE "SC|<scale>|..." / "IT|<scale>|<item>|..."
+    # line matching the given scale (and item) name, then return field i
+    # (1-based, counting AFTER the name column(s)).
+    sc_line8 <- function(out, scale) {
+        h <- grep(paste0("^SC\\|", scale, "\\|"), out, value = TRUE)
+        if (!length(h)) return(character(0))
+        strsplit(sub(paste0("^SC\\|", scale, "\\|"), "", h[1]), "|", fixed = TRUE)[[1]]
+    }
+    it_line8 <- function(out, scale, item) {
+        h <- grep(paste0("^IT\\|", scale, "\\|", item, "\\|"), out, value = TRUE)
+        if (!length(h)) return(character(0))
+        strsplit(sub(paste0("^IT\\|", scale, "\\|", item, "\\|"), "", h[1]), "|", fixed = TRUE)[[1]]
+    }
+    numf8 <- function(v, i) {
+        if (length(v) < i) return(NA_real_)
+        x <- v[i]
+        if (is.na(x) || identical(x, "--undefined--")) return(NA_real_)
+        suppressWarnings(as.numeric(x))
+    }
+
+    out_clean8 <- drive_score8("clean", "clean")
+    ran_clean8 <- !any(grepl("^Error", out_clean8)) && length(fld8(out_clean8, "refusal")) >= 1
+    check_true("v130", "[Stage 2] the live probe ran on the committed declaration",
+               ran_clean8)
+    check_true("v130", "[Stage 2] the live probe's own declaration refusal is 0",
+               ran_clean8 && numf8(fld8(out_clean8, "refusal"), 1) == 0)
+
+    if (ran_clean8) {
+        check("v130", "[Stage 2] @emlSurveyScoreScales.confidence vs @emlReportAlpha (this file's own parse)",
+              numf8(fld8(out_clean8, "CONF"), 1), CONFIDENCE_LEVEL, tol = 1e-12)
+
+        # SC field order: 1 k, 2 alpha, 3 ciLow, 4 ciHigh, 5 n, 6 nExcluded,
+        # 7 length(alphaError$), 8 scoredN, 9 scoredNone, 10 scoreMean,
+        # 11 scoreSD, 12 scoreMin, 13 scoreMax, 14 isKR20.
+        # IT field order (after scale, item): 1 alphaIfDeleted, 2 itemRest,
+        # 3 itemTotal, 4 itemFlag.
+        for (sname in decl_scales$scale) {
+            sc <- sc_line8(out_clean8, sname)
+            check_true("v130", sprintf("[Stage 2, %s] the live probe printed an SC line", sname),
+                       length(sc) >= 14)
+            if (length(sc) < 14) next
+
+            check("v130", sprintf("[Stage 2, %s] LIVE alpha vs committed oracle", sname),
+                  numf8(sc, 2), oget(sprintf("declared_%s_alpha", sname)),
+                  tol = otolf(sprintf("declared_%s_alpha", sname)))
+            check("v130", sprintf("[Stage 2, %s] LIVE Feldt lower vs committed oracle", sname),
+                  numf8(sc, 3), oget(sprintf("declared_%s_feldt_lo", sname)),
+                  tol = otolf(sprintf("declared_%s_feldt_lo", sname), 1e-8))
+            check("v130", sprintf("[Stage 2, %s] LIVE Feldt upper vs committed oracle", sname),
+                  numf8(sc, 4), oget(sprintf("declared_%s_feldt_hi", sname)),
+                  tol = otolf(sprintf("declared_%s_feldt_hi", sname), 1e-8))
+            check("v130", sprintf("[Stage 2, %s] LIVE n vs committed oracle", sname),
+                  numf8(sc, 5), oget(sprintf("declared_%s_n", sname)), tol = 0)
+            check("v130", sprintf("[Stage 2, %s] LIVE nExcluded vs committed oracle", sname),
+                  numf8(sc, 6), oget(sprintf("declared_%s_nExcluded", sname)), tol = 0)
+            check_true("v130", sprintf("[Stage 2, %s] LIVE alphaError$ empty (kernel did not refuse)", sname),
+                       numf8(sc, 7) == 0)
+            check("v130", sprintf("[Stage 2, %s] LIVE scoredN vs committed oracle", sname),
+                  numf8(sc, 8), oget(sprintf("declared_%s_scoredN", sname)), tol = 0)
+            check("v130", sprintf("[Stage 2, %s] LIVE scoredNone vs committed oracle", sname),
+                  numf8(sc, 9), oget(sprintf("declared_%s_scoredNone", sname)), tol = 0)
+            check("v130", sprintf("[Stage 2, %s] LIVE scale-score mean vs committed oracle", sname),
+                  numf8(sc, 10), oget(sprintf("declared_%s_scoreMean", sname)),
+                  tol = otolf(sprintf("declared_%s_scoreMean", sname)))
+            check("v130", sprintf("[Stage 2, %s] LIVE scale-score sd vs committed oracle", sname),
+                  numf8(sc, 11), oget(sprintf("declared_%s_scoreSD", sname)),
+                  tol = otolf(sprintf("declared_%s_scoreSD", sname)))
+            check("v130", sprintf("[Stage 2, %s] LIVE scale-score min vs committed oracle", sname),
+                  numf8(sc, 12), oget(sprintf("declared_%s_scoreMin", sname)),
+                  tol = otolf(sprintf("declared_%s_scoreMin", sname)))
+            check("v130", sprintf("[Stage 2, %s] LIVE scale-score max vs committed oracle", sname),
+                  numf8(sc, 13), oget(sprintf("declared_%s_scoreMax", sname)),
+                  tol = otolf(sprintf("declared_%s_scoreMax", sname)))
+
+            expectKR20 <- if (sname == "Knowledge") 1 else 0
+            check("v130", sprintf("[Stage 2, %s] LIVE isKR20 (carried, not recomputed) vs the declared range's own span", sname),
+                  numf8(sc, 14), expectKR20, tol = 0)
+
+            ritems <- subscale_rows(sname)
+            for (cn in ritems$item) {
+                it <- it_line8(out_clean8, sname, cn)
+                check_true("v130", sprintf("[Stage 2, %s] LIVE probe printed an IT line for item %s", sname, cn),
+                           length(it) >= 4)
+                if (length(it) < 4) next
+                if (nrow(ritems) >= 3) {
+                    check("v130", sprintf("[Stage 2, %s] LIVE alpha-if-deleted, item %s vs committed oracle", sname, cn),
+                          numf8(it, 1), oget(sprintf("declared_%s_drop_%s", sname, cn)),
+                          tol = otolf(sprintf("declared_%s_drop_%s", sname, cn)))
+                }
+                check("v130", sprintf("[Stage 2, %s] LIVE item-rest, item %s vs committed oracle", sname, cn),
+                      numf8(it, 2), oget(sprintf("declared_%s_itemrest_%s", sname, cn)),
+                      tol = otolf(sprintf("declared_%s_itemrest_%s", sname, cn)))
+                check("v130", sprintf("[Stage 2, %s] LIVE item-total, item %s vs committed oracle", sname, cn),
+                      numf8(it, 3), oget(sprintf("declared_%s_itemtotal_%s", sname, cn)),
+                      tol = otolf(sprintf("declared_%s_itemtotal_%s", sname, cn)))
+                check_true("v130", sprintf("[Stage 2, %s] LIVE misdeclared-reversal flag, item %s (item-rest strictly below zero)", sname, cn),
+                           numf8(it, 4) == as.numeric(oget(sprintf("declared_%s_itemrest_%s", sname, cn)) < 0))
+            }
+        }
+    }
+
+    # -------------------------------------------------------------------
+    # 9. NEGATIVE CONTROLS, v90-mutant style -- one seeded source defect
+    #    per quantity named in the task, each isolating ONE wiring line in
+    #    @eml_reverseScoreMatrix / @emlSurveyScoreScales (never re-testing
+    #    @emlCronbachAlpha / @emlAlphaInfluence's OWN arithmetic, which is
+    #    v90/v93's job, not this section's). DRIVEN FROM A TABLE, not eight
+    #    hand-written blocks (CLAUDE.md: "Where a structure repeats, drive
+    #    it from an indexed array"): every mutant shares one runner that
+    #    substitutes ONE needle for ONE replacement in a scratch copy of
+    #    eml-psychometrics.praat, drives it on the committed declaration,
+    #    and compares ONE named field against the correct value the clean
+    #    drive above already fetched (Confidence, chosen throughout only
+    #    because every quantity below is non-trivial on it: k = 4, no zero
+    #    item-rest, alpha != feldt bounds != item-rest != item-total).
+    # -------------------------------------------------------------------
+    src8 <- readLines(file.path(statsdir8, "eml-psychometrics.praat"))
+    conf_sc8 <- if (ran_clean8) sc_line8(out_clean8, "Confidence") else character(0)
+    conf_it_q18 <- if (ran_clean8) it_line8(out_clean8, "Confidence", "Q1") else character(0)
+
+    mutants8 <- list(
+        list(id = "sign",
+             what = "reversal sign flipped (a reversed item is scored as forward) -- covers alpha, Feldt bounds, and alpha-if-deleted, which all move together because they are pure functions of the covariance matrix and the sign is the one thing about the transform they can see",
+             needle = ".sign# [.j] = -1", repl = ".sign# [.j] = 1",
+             correct = function() numf8(conf_sc8, 2), field = function(o) numf8(sc_line8(o, "Confidence"), 2),
+             tol = 1e-10),
+        list(id = "feldt_swap",
+             what = "Feldt lower/upper bounds swapped at the passthrough -- covers the Feldt bounds specifically (distinct from alpha moving, which the sign mutant above already covers)",
+             needle = ".subCiLow[.s] = emlCronbachAlpha.ciLow\n            .subCiHigh[.s] = emlCronbachAlpha.ciHigh",
+             repl = ".subCiLow[.s] = emlCronbachAlpha.ciHigh\n            .subCiHigh[.s] = emlCronbachAlpha.ciLow",
+             correct = function() numf8(conf_sc8, 3), field = function(o) numf8(sc_line8(o, "Confidence"), 3),
+             tol = 1e-10),
+        list(id = "drop_index",
+             what = "alpha-if-deleted always reads the LAST item's slot instead of the item's own -- covers alpha-if-deleted specifically",
+             needle = ".subAlphaIfDeleted[.s,.j] = emlCronbachAlpha.alphaIfDeleted# [.j]",
+             repl = ".subAlphaIfDeleted[.s,.j] = emlCronbachAlpha.alphaIfDeleted# [.k]",
+             correct = function() numf8(conf_it_q18, 1), field = function(o) numf8(it_line8(o, "Confidence", "Q1"), 1),
+             tol = 1e-10),
+        list(id = "n_field",
+             what = "n reads the wrong kernel field (item count k, not complete-case n) -- covers n specifically",
+             needle = ".subN[.s] = emlCronbachAlpha.n", repl = ".subN[.s] = emlCronbachAlpha.k",
+             correct = function() numf8(conf_sc8, 5), field = function(o) numf8(sc_line8(o, "Confidence"), 5),
+             tol = 0),
+        list(id = "nexcluded_swap",
+             what = "nExcluded reads @emlCronbachAlpha.n (the complete-case count) instead of its own .nExcluded field -- covers nExcluded specifically, distinct from the n_field mutant above (which targets .subN[], reading .k instead of .n)",
+             needle = ".subNExcluded[.s] = emlCronbachAlpha.nExcluded",
+             repl = ".subNExcluded[.s] = emlCronbachAlpha.n",
+             correct = function() numf8(conf_sc8, 6), field = function(o) numf8(sc_line8(o, "Confidence"), 6),
+             tol = 0),
+        list(id = "itemrest_reads_total",
+             what = "item-rest is computed against the FULL total (including itself) instead of against the rest -- covers item-rest specifically, leaving item-total (computed by the very next, untouched line) at its own correct value",
+             needle = "@emlPearsonCorrelation: .colJ#, .rest#, 2",
+             repl = "@emlPearsonCorrelation: .colJ#, .total#, 2",
+             correct = function() numf8(conf_it_q18, 2), field = function(o) numf8(it_line8(o, "Confidence", "Q1"), 2),
+             tol = 1e-10),
+        list(id = "scoremean_sum",
+             what = "the scale score is the SUM of the subscale's items, not the mean -- covers the scale-score summaries (mean/sd/min/max all move by the same factor of k); the task's own stated reason for using the mean (\"so scores compare across subscales of different lengths\") is exactly what this defect breaks",
+             needle = ".scores# = .total# * (1 / .k)", repl = ".scores# = .total#",
+             correct = function() numf8(conf_sc8, 10), field = function(o) numf8(sc_line8(o, "Confidence"), 10),
+             tol = 1e-6),
+        list(id = "kr20_recompute",
+             what = "isKR20 is recomputed inline (with a deliberately wrong condition, max < min) instead of carried from @emlSurveyValidateDeclaration.scaleIsKR20[] -- covers the \"carry it, do not recompute it\" ruling directly: Knowledge (the one declared subscale that IS KR-20) is checked, expecting the wrong condition to report 0 where the carried value reports 1",
+             needle = ".subIsKR20[.s] = emlSurveyValidateDeclaration.scaleIsKR20[.s]",
+             repl = ".subIsKR20[.s] = (emlSurveyValidateDeclaration.scaleMax[.s] < emlSurveyValidateDeclaration.scaleMin[.s])",
+             correct = function() 1, field = function(o) numf8(sc_line8(o, "Knowledge"), 14),
+             tol = 0)
+    )
+
+    for (mu in mutants8) {
+        hits8 <- sum(grepl(mu$needle, src8, fixed = TRUE))
+        # The Feldt-swap needle spans two lines; grepl per-line never
+        # matches it, so that one mutant is located and substituted on the
+        # PASTED whole-file text instead of line-by-line, and its own
+        # occurrence count is taken on that same pasted text.
+        if (grepl("\n", mu$needle, fixed = TRUE)) {
+            whole8 <- paste(src8, collapse = "\n")
+            hits8 <- lengths(regmatches(whole8, gregexpr(mu$needle, whole8, fixed = TRUE)))
+        }
+        check_true("v130", sprintf("[Stage 2 mutant %s] the negative-control seed site exists exactly once in source", mu$id),
+                   hits8 == 1)
+        if (hits8 != 1) next
+
+        if (grepl("\n", mu$needle, fixed = TRUE)) {
+            mut_text8 <- sub(mu$needle, mu$repl, paste(src8, collapse = "\n"), fixed = TRUE)
+            mut_src8 <- strsplit(mut_text8, "\n", fixed = TRUE)[[1]]
+        } else {
+            mut_src8 <- sub(mu$needle, mu$repl, src8, fixed = TRUE)
+        }
+
+        mut_dir8 <- file.path(work8, paste0("mutant_", mu$id))
+        link_stats8(mut_dir8, psych_text = mut_src8)
+        out_mut8 <- drive_score8(paste0("mutant_", mu$id), paste0("mutant-", mu$id))
+        mut_ran8 <- !any(grepl("^Error", out_mut8)) && length(fld8(out_mut8, "refusal")) >= 1
+        check_true("v130", sprintf("[Stage 2 mutant %s] the mutant probe ran", mu$id), mut_ran8)
+        if (!mut_ran8) next
+
+        mut_val8 <- mu$field(out_mut8)
+        correct_val8 <- mu$correct()
+
+        if (red_mode) {
+            cat(sprintf("      EML_LANE_RED: driving mutant '%s' (%s) -- the next\n      check is EXPECTED to FAIL.\n",
+                        mu$id, mu$what))
+            check("v130", sprintf("[RED] mutant %s vs the correct live value (must go red)", mu$id),
+                  mut_val8, correct_val8, tol = mu$tol)
+        } else {
+            check("v130",
+                  sprintf("seeded defect '%s' DIFFERS from the correct live value (%s)", mu$id, mu$what),
+                  mut_val8, correct_val8, tol = mu$tol, expect = "differ")
+        }
+    }
+}
+
 if (!exists("EML_SUITE")) { eml_report("v130 declared-survey oracle"); eml_exit() }

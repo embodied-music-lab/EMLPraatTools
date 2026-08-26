@@ -221,7 +221,19 @@ if (!canDrive) {
             '... emlSurveyValidateDeclaration.badRawValue$, "|",',
             '... emlSurveyValidateDeclaration.error$, "|",',
             '... emlSurveyValidateDeclaration.remedy$, "|",',
-            # Field 25: a constant, non-empty sentinel, NOT a real output.
+            # Fields 25-29 [V1.7 cell ruling]: the disclosure branch's own
+            # structured facts, appended after the previous 24 for the same
+            # reason as every earlier extension -- nothing above is
+            # renumbered. Field 29 carries .disclosure$ VERBATIM, same
+            # rule as .error$/.remedy$ above (23-24): a length alone cannot
+            # be searched for a specific promise (the "not yet included"
+            # whitespace sentence a later leg checks for).
+            '... emlSurveyValidateDeclaration.disclosureCount, "|",',
+            '... emlSurveyValidateDeclaration.disclosureSpellingCount, "|",',
+            '... emlSurveyValidateDeclaration.disclosureItemCount, "|",',
+            '... length (emlSurveyValidateDeclaration.disclosure$), "|",',
+            '... emlSurveyValidateDeclaration.disclosure$, "|",',
+            # Field 30: a constant, non-empty sentinel, NOT a real output.
             # .error$/.remedy$ are BOTH "" on the clean run, and R's
             # strsplit(x, "|", fixed = TRUE) silently drops the trailing
             # field when the string being split ENDS in the delimiter --
@@ -231,7 +243,23 @@ if (!canDrive) {
             # from fld()'s result on exactly the run this file's own
             # section 3 depends on. The sentinel guarantees the line never
             # ends in the delimiter, so nothing after it is ever dropped.
-            '... "END"'),
+            '... "END"',
+            # [V1.7 cell ruling] a SEPARATE, GUARDED line for the two
+            # per-entry disclosure arrays -- .disclosureSpelling$[1] and
+            # .disclosureItem$[1] cannot be read unconditionally the way
+            # every field above is (CLAUDE.md: reading an unassigned
+            # indexed variable HALTS), so this reads element 1 of each
+            # ONLY when its own count field (27/28 above) confirms at
+            # least one entry exists. Absent from the output entirely on
+            # every leg that plants no placeholder -- fld()/str_() below
+            # already return NA for a tag that never printed, so no leg
+            # needs to special-case its absence.
+            'if emlSurveyValidateDeclaration.disclosureSpellingCount > 0',
+            '    appendInfoLine: "resdisc|",',
+            '    ... emlSurveyValidateDeclaration.disclosureSpelling$[1], "|",',
+            '    ... emlSurveyValidateDeclaration.disclosureItem$[1], "|",',
+            '    ... "END"',
+            'endif'),
             probe)
         suppressWarnings(system2("env",
             c("-u", "DISPLAY", shQuote(praat),
@@ -532,6 +560,11 @@ if (!canDrive) {
               num_(out8, "res", 4), 1, tol = 0)
         check_true("v129", "[refusal 8] badCellText is \"Soprano\"",
                    identical(str_(out8, "res", 17), "Soprano"))
+        # [V1.7, cell ruling] LEG UPDATED: "Soprano" is not one of
+        # @emlRepairClassify's recognised missing-value spellings, so this
+        # leg now also asserts the disclosure path stayed silent for it.
+        check("v129", "[cell ruling] \"Soprano\" cell: disclosureCount is 0 (not a recognised placeholder)",
+              num_(out8, "res", 25), 0, tol = 0)
         positive_leg_codes <- c(positive_leg_codes, 8)
     }
 
@@ -587,6 +620,12 @@ if (!canDrive) {
               num_(out8_locale, "res", 4), 2, tol = 0)
         check_true("v129", "[refusal 8, kind 2] badCellText is \"71,8\"",
                    identical(str_(out8_locale, "res", 17), "71,8"))
+        # [V1.7, cell ruling] LEG UPDATED: a locale-comma cell is untouched
+        # by the ruling (it is not in the "unreadable" bucket at all --
+        # @eml_classifyCell classifies it as its own kind 2), so it never
+        # reaches @emlRepairClassify; asserted here directly.
+        check("v129", "[cell ruling] locale-comma cell: disclosureCount is 0 (never asked the placeholder question)",
+              num_(out8_locale, "res", 25), 0, tol = 0)
         positive_leg_codes <- c(positive_leg_codes, 8)
     }
 
@@ -624,6 +663,11 @@ if (!canDrive) {
               num_(out8_coerced, "res", 4), 5, tol = 0)
         check_true("v129", "[refusal 8, kind 4] badCellText is \"95.6%\"",
                    identical(str_(out8_coerced, "res", 17), "95.6%"))
+        # [V1.7, cell ruling] LEG UPDATED: a percent-coerced cell is
+        # untouched by the ruling (@eml_classifyCell's own kind 4, not the
+        # "unreadable" bucket), so it never reaches @emlRepairClassify.
+        check("v129", "[cell ruling] percent-coerced cell: disclosureCount is 0 (never asked the placeholder question)",
+              num_(out8_coerced, "res", 25), 0, tol = 0)
         positive_leg_codes <- c(positive_leg_codes, 8)
     }
 
@@ -647,6 +691,11 @@ if (!canDrive) {
               num_(out8_leaddot, "res", 4), 2, tol = 0)
         check_true("v129", "[refusal 8, kind 5] badCellText is \".8\"",
                    identical(str_(out8_leaddot, "res", 17), ".8"))
+        # [V1.7, cell ruling] LEG UPDATED: a bare leading-dot cell is
+        # untouched by the ruling (@eml_classifyCell's own kind 5, not the
+        # "unreadable" bucket), so it never reaches @emlRepairClassify.
+        check("v129", "[cell ruling] leading-dot cell: disclosureCount is 0 (never asked the placeholder question)",
+              num_(out8_leaddot, "res", 25), 0, tol = 0)
         positive_leg_codes <- c(positive_leg_codes, 8)
     }
 
@@ -678,7 +727,125 @@ if (!canDrive) {
               num_(out8_ws, "res", 4), 2, tol = 0)
         check_true("v129", "[refusal 8, whitespace-only] badCellText is a single space (the raw cell, not the empty string a genuinely blank cell would print)",
                    identical(str_(out8_ws, "res", 17), " "))
+        # [V1.7, cell ruling] LEG UPDATED: a whitespace-only cell is the
+        # one candidate this lane's own ruling text singles out by name
+        # ("Whitespace-only cells join branch 1 once a classifier fix
+        # lands... Until it lands, keep today's behaviour for
+        # whitespace"), so this is the leg that changes -- not deleted,
+        # not its refusal-code assertions touched, but now ALSO asserting
+        # the disclosure path does NOT fire for it: @emlRepairClassify
+        # trims a whitespace-only cell to "" and returns ITS OWN kind 0
+        # ("nothing to do"), never kind 3, so it is not a recognised
+        # placeholder today and contributes nothing to the disclosure.
+        # (None of refusal 8's five pre-existing kind fixtures above --
+        # "Soprano", "71,8", "95.6%", ".8", or this single space -- ever
+        # planted an actual @emlRepairClassify kind-3 spelling; the three
+        # legs immediately below are what actually exercises branches 1
+        # and 2 of the ruling, since nothing above them did.)
+        check("v129", "[cell ruling] whitespace-only cell: disclosureCount is 0 (not a recognised placeholder today)",
+              num_(out8_ws, "res", 25), 0, tol = 0)
         positive_leg_codes <- c(positive_leg_codes, 8)
+    }
+
+    # -------------------------------------------------------------------
+    # 4a-cell-ruling. THE SUPERSEDING CELL RULING's three required red
+    #    demos, each its own leg. Refusal 8's five kind fixtures above
+    #    (kind 2 locale, kind 3 "Soprano", kind 4 coerced, kind 5
+    #    leading-dot, whitespace-only) are all left exactly as they were:
+    #    none of them is a recognised missing-value placeholder, so branch
+    #    3 (refuse, now also routing to "Check & repair data") is the
+    #    correct, unchanged answer for every one of them, reasserted just
+    #    above for the whitespace leg. These three are new.
+    # -------------------------------------------------------------------
+
+    # Demo 1 [branch 1 + 2]: a seeded "NA" cell alone. R1 row 2 (Ease,
+    # committed value "71.8") edited to "NA" -- one of @emlRepairClassify's
+    # own kind-3 spellings (eml-extract.praat:2665), case-insensitive,
+    # NOT restated here. Expected: refusal STAYS 0 (the cell is treated as
+    # ordinary missingness, exactly like a blank), and the disclosure
+    # fires -- one cell, spelling "NA", item "R1".
+    data_cr_na <- edit_field(clean_data_lines, 2, "R1", "NA")
+    p_cr_na <- write_csv_lines(data_cr_na, "dcr_na_data.csv")
+    out_cr_na <- drive_validate("stats", p_cr_na, committed_scales_path,
+                                committed_items_path, "cr-na")
+    results$cr_na <- out_cr_na
+    check_true("v129", "[cell ruling, demo 1: NA] probe ran", ran_ok(out_cr_na))
+    if (ran_ok(out_cr_na)) {
+        check("v129", "[cell ruling, demo 1: NA] refusal stays 0 (a recognised placeholder is missingness, not a refusal)",
+              num_(out_cr_na, "res", 1), 0, tol = 0)
+        check("v129", "[cell ruling, demo 1: NA] disclosureCount is 1",
+              num_(out_cr_na, "res", 25), 1, tol = 0)
+        check("v129", "[cell ruling, demo 1: NA] disclosureSpellingCount is 1",
+              num_(out_cr_na, "res", 26), 1, tol = 0)
+        check("v129", "[cell ruling, demo 1: NA] disclosureItemCount is 1",
+              num_(out_cr_na, "res", 27), 1, tol = 0)
+        check_true("v129", "[cell ruling, demo 1: NA] disclosureSpelling[1] is \"NA\"",
+                   identical(str_(out_cr_na, "resdisc", 1), "NA"))
+        check_true("v129", "[cell ruling, demo 1: NA] disclosureItem[1] is \"R1\"",
+                   identical(str_(out_cr_na, "resdisc", 2), "R1"))
+        check_true("v129", "[cell ruling, demo 1: NA] disclosure$ is non-empty (the disclosure was actually printed, not just counted)",
+                   nzchar(str_(out_cr_na, "res", 29)))
+    }
+
+    # Demo 2 [branch 1 + 2, mixed with branch 3]: a seeded "NA" cell (R1
+    # row 2) AND a seeded whitespace-only cell (R2 row 5) in the SAME
+    # fixture, different items. Proves the ruling's own "ALWAYS PRINTED"
+    # requirement literally: the disclosure for the NA placeholder still
+    # fires even though this declaration goes on to refuse anyway, for
+    # the UNRELATED whitespace-only cell -- because the disclosure pass
+    # runs in full, ahead of refusal 8's own cascade, and is never cut
+    # short by a `goto`. Expected: refusal is 8 (the whitespace cell,
+    # kept refusing per this ruling's own instruction), badItem is "R2",
+    # yet disclosureCount is still 1, naming the NA cell in "R1".
+    data_cr_mix <- edit_field(clean_data_lines, 2, "R1", "NA")
+    data_cr_mix <- edit_field(data_cr_mix, 5, "R2", " ")
+    p_cr_mix <- write_csv_lines(data_cr_mix, "dcr_mix_data.csv")
+    out_cr_mix <- drive_validate("stats", p_cr_mix, committed_scales_path,
+                                 committed_items_path, "cr-mix")
+    results$cr_mix <- out_cr_mix
+    check_true("v129", "[cell ruling, demo 2: NA + whitespace] probe ran", ran_ok(out_cr_mix))
+    if (ran_ok(out_cr_mix)) {
+        check("v129", "[cell ruling, demo 2: NA + whitespace] refusal is 8 (the whitespace cell, kept refusing)",
+              num_(out_cr_mix, "res", 1), 8, tol = 0)
+        check_true("v129", "[cell ruling, demo 2: NA + whitespace] badItem is \"R2\" (the whitespace cell, not the NA one)",
+                   identical(str_(out_cr_mix, "res", 2), "R2"))
+        check("v129", "[cell ruling, demo 2: NA + whitespace] badRow is 5",
+              num_(out_cr_mix, "res", 4), 5, tol = 0)
+        check("v129", "[cell ruling, demo 2: NA + whitespace] disclosureCount is STILL 1 -- the NA cell's disclosure fires despite the later whitespace refusal, proving the pass is not cut short by refusal 8's own `goto`",
+              num_(out_cr_mix, "res", 25), 1, tol = 0)
+        check_true("v129", "[cell ruling, demo 2: NA + whitespace] disclosureItem[1] is \"R1\" (the NA cell's item, not R2's)",
+                   identical(str_(out_cr_mix, "resdisc", 2), "R1"))
+        check_true("v129", "[cell ruling, demo 2: NA + whitespace] disclosure$ is non-empty (printed despite the run refusing)",
+                   nzchar(str_(out_cr_mix, "res", 29)))
+    }
+
+    # Demo 3 [branch 3]: a seeded "approx 4" cell -- NOT one of
+    # @emlRepairClassify's kind-3 spellings, so it stays genuinely
+    # unreadable and refuses exactly as any other unreadable cell always
+    # has. R1 row 2 edited to "approx 4".
+    data_cr_bad <- edit_field(clean_data_lines, 2, "R1", "approx 4")
+    p_cr_bad <- write_csv_lines(data_cr_bad, "dcr_bad_data.csv")
+    out_cr_bad <- drive_validate("stats", p_cr_bad, committed_scales_path,
+                                 committed_items_path, "cr-bad")
+    results$cr_bad <- out_cr_bad
+    check_true("v129", "[cell ruling, demo 3: approx 4] probe ran", ran_ok(out_cr_bad))
+    if (ran_ok(out_cr_bad)) {
+        check("v129", "[cell ruling, demo 3: approx 4] refusal is 8 (genuinely unreadable, not a recognised placeholder)",
+              num_(out_cr_bad, "res", 1), 8, tol = 0)
+        check_true("v129", "[cell ruling, demo 3: approx 4] badItem is \"R1\"",
+                   identical(str_(out_cr_bad, "res", 2), "R1"))
+        check("v129", "[cell ruling, demo 3: approx 4] badRow is 2",
+              num_(out_cr_bad, "res", 4), 2, tol = 0)
+        check_true("v129", "[cell ruling, demo 3: approx 4] badCellText is \"approx 4\"",
+                   identical(str_(out_cr_bad, "res", 17), "approx 4"))
+        check("v129", "[cell ruling, demo 3: approx 4] disclosureCount is 0 (nothing to disclose -- this cell was never treated as missing)",
+              num_(out_cr_bad, "res", 25), 0, tol = 0)
+        # Message WORDING is deliberately not asserted here (this file's own
+        # header, section 0: only the empty-exactly-when-.refusal-is-0
+        # shape is asserted about .error$/.remedy$); the routing sentence
+        # is DRAFT, awaiting Ian's approval, like every other message this
+        # procedure builds. The refusal code, badItem, badRow and
+        # badCellText above are what this demo actually proves.
     }
 
     # --- Defect 9: a scale type that is neither ordinal nor continuous --
@@ -1975,7 +2142,10 @@ if (!canDrive) {
     # documented output silently dropped from the header (fewer) and an
     # output added to the header without this constant being updated in the
     # same commit (more) both go red here.
-    KNOWN_OUTPUT_COUNT <- 26L
+    # V1.7 (cell ruling) adds six documented outputs: .disclosureCount,
+    # .disclosureSpellingCount, .disclosureItemCount, .disclosureSpelling$,
+    # .disclosureItem$, .disclosure$ -- was 26, now 32.
+    KNOWN_OUTPUT_COUNT <- 32L
     check("v129",
         sprintf("[Fix 1] the header scan derived exactly the known %d documented outputs (neither fewer -- a definition silently dropped from the header -- nor more -- this constant not updated in the same commit)",
                 KNOWN_OUTPUT_COUNT),

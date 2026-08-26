@@ -2,8 +2,87 @@
 # EML Stats : Psychometrics
 # ============================================================================
 # Module: eml-psychometrics.praat
-# Version: 1.6
+# Version: 1.9
 # Date: 26 August 2026
+#
+# V1.9: THE ONE COMPUTATIONAL ADDITION THE PRESENTATION HALF OF STAGE 2
+#       NEEDS THAT WASN'T ALREADY SITTING IN V1.8'S OUTPUT ARRAYS. Adds
+#       @emlSurveySubscaleDisclosure, which answers "which of THIS
+#       subscale's own items carried a recognised missing-value
+#       placeholder cell" -- @emlSurveyValidateDeclaration's own
+#       .disclosureCount/.disclosureItem$[]/.disclosureSpelling$[] (V1.7)
+#       already answer that question for the DECLARATION AS A WHOLE and
+#       already print the run-wide sentence unconditionally, but do not
+#       keep the per-item cell count or which spelling landed on which
+#       item -- exactly the granularity a per-subscale report block
+#       (scripts/eml-survey.praat) needs and the run-wide aggregate
+#       discards. Rather than widen @emlSurveyValidateDeclaration's own
+#       output contract a second time (V1.6's own header explains why that
+#       is fraught: v129's exhaustive sweep enforces an exact output count
+#       against every one of its seventeen exit paths, and the last
+#       attempt to add fields inside that block broke it on refusals
+#       11/13/14/15), the new procedure independently RE-CALLS
+#       @eml_scanColumnForPlaceholders -- the same composed classifier
+#       @emlSurveyValidateDeclaration itself already calls once per item,
+#       V1.7 -- scoped to one subscale's own items, in the exact order
+#       @emlSurveyScoreScales (V1.8) already assembled them in. Read-only,
+#       calls no new classifier, restates no spelling list, and is safe to
+#       call after @emlSurveyValidateDeclaration has moved on to whatever
+#       it does next, since it touches nothing that procedure left behind.
+#       No report text lives here either -- see @emlSurveyScoreScales's
+#       own header, below, for why this module stops at raw values and
+#       leaves formatting to the next stage.
+#
+# V1.8: THE COMPUTATIONAL HALF OF STAGE 2. Adds @eml_reverseScoreMatrix
+#       (the reversal transform, y = min + max - x on a subscale's declared
+#       printed range, matrix in matrix out, vectorized) and
+#       @emlSurveyScoreScales (per-subscale routing driven entirely by
+#       @emlSurveyValidateDeclaration's own leftover output -- assembles
+#       each subscale's item matrix in declared order, reverse-scores it,
+#       and drives @emlCronbachAlpha and @emlAlphaInfluence per subscale,
+#       plus item-rest/item-total via @emlPearsonCorrelation and the
+#       per-respondent complete-case scale-score mean). A subscale whose
+#       kernel refuses (e.g. fewer than three complete respondents) carries
+#       that refusal verbatim in its own output slot; every other subscale
+#       is unaffected, by construction -- the per-subscale loop runs the
+#       identical sequence of steps for every subscale with no branch on
+#       an earlier one's result, and both kernels already leave their own
+#       outputs safely `undefined` with .error$ named on refusal. The
+#       confidence level is read from @emlReportAlpha (eml-analysis.praat),
+#       never a literal; no report text and no dialog are built here --
+#       see @emlSurveyScoreScales's own header, below, for the full design
+#       notes (why the transform is vectorized, why item-rest/item-total
+#       share alpha's own complete-case matrix, why the KR-20 condition is
+#       a copy and not a recomputation).
+#
+# V1.7: THE SUPERSEDING CELL RULING. Refusal 8 used to refuse on every
+#       cell it could not read as a number, with no further question
+#       asked. That is superseded, in three branches. (1) A cell matching
+#       one of @emlRepairClassify's own kind-3 missing-value spellings
+#       (na, n/a, n.a., nan, null, nil, -, --, ., ?, missing --
+#       case-insensitive; that list lives ONLY at @emlRepairClassify,
+#       eml-extract.praat:2665, and is not restated here) is no longer
+#       refused: it is treated as ordinary missingness, exactly like a
+#       blank cell. (2) Whenever any such placeholder was found, a
+#       disclosure is printed (appendInfoLine) and returned
+#       (.disclosureCount / .disclosureSpelling$[] / .disclosureItem$[] /
+#       .disclosure$), unconditionally on that fact alone -- even when the
+#       declaration goes on to refuse for an unrelated reason. (3) Any
+#       OTHER cell refusal 8 could not read still refuses, at first find,
+#       now also naming "Check & repair data" (Objects > New > EML Stats &
+#       Graphs > Check & repair data...) by name and menu location; no
+#       second inventory of bad cells is built here, since that screen
+#       already is one. A whitespace-only data cell is NOT reclassified as
+#       a placeholder yet -- @emlRepairClassify does not itself recognise
+#       whitespace as kind 3 (a filed, not-yet-landed fix in the other
+#       lane) -- so it keeps refusing under refusal 8's existing Fix 3
+#       pre-check, unchanged, until that fix lands. New internal helper
+#       @eml_scanColumnForPlaceholders composes @eml_classifyCell (which
+#       kinds are even "unreadable") with @emlRepairClassify (which of
+#       those are a recognised placeholder); no new classifier or
+#       placeholder list is written in this module. All new user-facing
+#       wording stays DRAFT, awaiting Ian's approval, in the same
+#       DRAFT LANGUAGE block as refusals 1-16's own messages.
 #
 # V1.1: Adds @emlSurveyValidateDeclaration, the survey module's declaration
 #       validator. It checks a data Table against a scales Table and an
@@ -155,10 +234,12 @@
 # License: GPL-3.0-or-later
 #
 # Provides: @emlCronbachAlpha, @emlAlphaInfluence,
-#   @emlSurveyValidateDeclaration
+#   @emlSurveyValidateDeclaration, @emlSurveyScoreScales,
+#   @emlSurveySubscaleDisclosure
 #
 # Internal helpers: @eml_listwiseComplete, @eml_findDuplicateName,
-#   @eml_findWhitespaceOnlyCell
+#   @eml_findWhitespaceOnlyCell, @eml_scanColumnForPlaceholders,
+#   @eml_reverseScoreMatrix
 #
 # Dependencies: @emlCronbachAlpha and @emlAlphaInfluence use only Praat
 # built-in vector and matrix primitives and the built-in F distribution.
@@ -172,6 +253,10 @@
 #   V1.2's refusal 8 additionally calls @emlAuditColumn, also from
 #   eml-extract.praat -- no new include is needed beyond the one above.
 #
+#   V1.7's cell ruling additionally calls @emlRepairClassify (via the new
+#   internal helper @eml_scanColumnForPlaceholders), also from
+#   eml-extract.praat -- no new include is needed beyond the one above.
+#
 #   V1.3's refusal 11 additionally calls @emlRequireColumnPresent and
 #   refusal 12 calls @emlRequireNumericColumn, both from
 #   eml-inferential.praat. The calling script must include inferential
@@ -179,6 +264,19 @@
 #     include eml-extract.praat
 #     include eml-inferential.praat
 #     include eml-psychometrics.praat
+#
+#   V1.8's @emlSurveyScoreScales additionally calls @emlPearsonCorrelation
+#   (eml-inferential.praat, already required above) and @emlReportAlpha
+#   (eml-analysis.praat, a NEW dependency this module did not previously
+#   have). @emlReportAlpha has no further dependency of its own beyond
+#   Praat built-ins, so no other module needs including alongside it. A
+#   caller that uses @emlSurveyScoreScales needs:
+#     include eml-extract.praat
+#     include eml-inferential.praat
+#     include eml-analysis.praat
+#     include eml-psychometrics.praat
+#   A caller that only uses @emlSurveyValidateDeclaration (Stage 1) still
+#   needs no more than the three-include list above it.
 #
 # All procedures use the "eml" prefix (EML Stats) to avoid
 # namespace collisions with user scripts.
@@ -607,21 +705,47 @@ endproc
 #      forward, once reversed if so declared -- inflating k and injecting a
 #      perfectly anti-correlated pair.
 #   8. An item resolved to a subscale has an unusable data column: any of
-#      @emlAuditColumn's kinds 2 (locale-comma), 3 (unreadable), 4
-#      (coerced), or 5 (leading-dot) -- every kind except 1 (genuinely
-#      empty), which stays exempt as ordinary missingness. Refusal 2's
-#      range check reads the same cell through plain "Get value:", which
-#      returns undefined for a non-numeric cell exactly as it does for a
-#      genuinely missing one, and silently MISREADS a locale-comma or
-#      leading-dot cell as a different number rather than dropping it, so
-#      a corrupted or wrong-typed column (e.g. a scale item mistakenly
-#      pointed at a free-text column, or a decimal comma from a
-#      non-English locale) sails through refusal 2 undetected or
-#      misread, and the kernel then either blames the sample size or
+#      @emlAuditColumn's kinds 2 (locale-comma), 4 (coerced), or 5
+#      (leading-dot), or a kind-3 ("unreadable") cell that is NOT a
+#      recognised missing-value placeholder -- every kind except 1
+#      (genuinely empty), which stays exempt as ordinary missingness.
+#      Refusal 2's range check reads the same cell through plain
+#      "Get value:", which returns undefined for a non-numeric cell
+#      exactly as it does for a genuinely missing one, and silently
+#      MISREADS a locale-comma or leading-dot cell as a different number
+#      rather than dropping it, so a corrupted or wrong-typed column (e.g.
+#      a scale item mistakenly pointed at a free-text column, or a decimal
+#      comma from a non-English locale) sails through refusal 2 undetected
+#      or misread, and the kernel then either blames the sample size or
 #      silently computes a wrong statistic for what is really a
 #      declaration or data-entry fault. V1.4 widened this from kind 3
 #      alone (Finding 1: refusal 8 was consuming only one fifth of
 #      @emlAuditColumn's verdict on the exact call that decides it).
+#
+#      [V1.7, THE SUPERSEDING CELL RULING] Before this, refusal 8 refused
+#      on EVERY kind-3 ("unreadable") cell with no further question asked
+#      -- including a cell reading "na", "n/a", or any other spelling
+#      @emlRepairClassify (eml-extract.praat:2665) already recognises as a
+#      missing-value placeholder. That is superseded: a cell matching
+#      @emlRepairClassify's own kind-3 list is no longer refused here. It
+#      is treated as ordinary missingness -- listwise deletion handles it
+#      exactly as a blank cell -- and its presence is disclosed instead
+#      (.disclosureCount / .disclosureSpelling$[] / .disclosureItem$[] /
+#      .disclosure$, a pass that runs BEFORE this refusal's own cascade
+#      and is never skipped by a `goto`, documented at this procedure's
+#      own Outputs header, below). Any OTHER kind-3 cell -- one
+#      @emlRepairClassify does not recognise either -- still refuses here,
+#      unchanged in effect, now also routing the user by name to
+#      "Check & repair data" (Objects > New > EML Stats & Graphs > Check &
+#      repair data...), which already lists and can fix cells like it; no
+#      second inventory of every bad cell is built here. A whitespace-only
+#      data cell is the one case deliberately NOT reclassified as a
+#      placeholder yet: @emlRepairClassify does not itself fold whitespace
+#      into kind 3 (a filed fix in the other lane, not yet landed), so it
+#      stays under this refusal's existing Fix 3 pre-check, unchanged,
+#      until that fix lands and this procedure's consumption of
+#      @emlRepairClassify's whole verdict picks the change up with no
+#      further edit needed here.
 #   9. A scale's `type` is neither "ordinal" nor "continuous". The scales
 #      read loop never read the type column before V1.2; Stage 2 branches
 #      on it to choose the ordinal-as-interval disclosure line and would
@@ -845,6 +969,93 @@ procedure eml_findWhitespaceOnlyCell: .tableId, .columnName$, .nRows
     endfor
 endproc
 
+# ----------------------------------------------------------------------------
+# @eml_scanColumnForPlaceholders (V1.7)
+# Internal helper: THE SUPERSEDING CELL RULING's own classifier composition,
+# in one place, called once per subscale item's data column.
+#
+# @emlAuditColumn (eml-extract.praat) sorts every cell of a column into
+# kinds 0 (valid), 1 (empty), 2 (locale-comma), 4 (coerced), 5 (leading-dot),
+# or its "else" bucket -- everything @eml_classifyCell cannot place in the
+# first five, which this module has always called "unreadable". Refusal 8
+# used to refuse on every cell in that bucket, with no further question
+# asked of it. The cell ruling splits the bucket in two: a cell whose text
+# is one of @emlRepairClassify's OWN kind-3 missing-value spellings (na,
+# n/a, n.a., nan, null, nil, -, --, ., ?, missing -- case-insensitive; that
+# list lives ONLY at @emlRepairClassify, eml-extract.praat:2665, and is not
+# restated here) is a recognised placeholder, not a wrong answer, and is
+# treated as ordinary missingness; any other cell in the bucket is still
+# genuinely unreadable and still refuses. This helper answers, for one
+# column, which cells are which -- it does not itself refuse or disclose
+# anything; the caller (@emlSurveyValidateDeclaration) does both, in two
+# separate passes, below.
+#
+# Kinds 0, 1, 2, 4 and 5 of @eml_classifyCell are NOT re-examined here --
+# they keep whatever handling refusal 8 already gives them elsewhere in
+# this module, untouched by the cell ruling, which is only about the
+# "unreadable" bucket. Within that bucket, every @emlRepairClassify kind
+# OTHER than 3 (0 "nothing recognised", or the rarer 1/2/4 a comma- or
+# percent- or point-bearing piece of otherwise-unreadable text can still
+# trigger, e.g. "approx,4") is treated alike, as NOT a recognised
+# placeholder: only kind 3 is the ruling's stated authority, and a cell
+# @eml_classifyCell already could not read as a number in any locale does
+# not become one just because @emlRepairClassify also notices a stray
+# comma in it. Whole verdict consumed, one kind excluded, stated here.
+#
+# Whitespace-only cells are the one case deliberately NOT reached by the
+# placeholder branch below, and deliberately not specially handled here
+# either: @eml_classifyCell already folds a whitespace-only cell into kind
+# 1 ("empty", the same bucket a genuinely blank cell falls into), so it
+# never reaches the "unreadable" test at all and this helper never asks
+# @emlRepairClassify about it. That is exactly today's classifier
+# behaviour kept as the cell ruling requires -- @emlRepairClassify itself
+# does not yet fold whitespace into its own kind 3 (a filed, not yet
+# landed, fix in the other lane) -- so whitespace-only data cells stay
+# under refusal 8's existing @eml_findWhitespaceOnlyCell pre-check, below,
+# entirely unchanged, rather than being pulled into this helper's question
+# ahead of that fix actually landing.
+#
+# Reads every row with a plain "Get value:", never "Get all numbers in
+# column:" -- so, like @eml_findWhitespaceOnlyCell above, it is safe to
+# run on a column that already carries the whitespace-only landmine cell
+# Fix 3 exists to route around, without needing that pre-check itself
+# first.
+#
+# Input:  .tableId, .columnName$, .nRows
+# Output: .nPlaceholder                     - count of recognised
+#                       missing-value placeholder cells in this column
+#         .placeholderRow[1..nPlaceholder]      - each one's row number
+#         .placeholderText$[1..nPlaceholder]    - each one's raw text,
+#                       trimmed (@eml_classifyCell's .trimmed$)
+#         .firstGenuineBadRow    - first row whose text is unreadable AND
+#                       not a recognised placeholder; 0 if none
+#         .firstGenuineBadText$  - that row's raw text, trimmed; "" if
+#                       .firstGenuineBadRow is 0
+# ----------------------------------------------------------------------------
+procedure eml_scanColumnForPlaceholders: .tableId, .columnName$, .nRows
+    .nPlaceholder = 0
+    .firstGenuineBadRow = 0
+    .firstGenuineBadText$ = ""
+    for .i from 1 to .nRows
+        selectObject: .tableId
+        .raw$ = Get value: .i, .columnName$
+        @eml_classifyCell: .raw$
+        if eml_classifyCell.kind <> 0 and eml_classifyCell.kind <> 1
+        ... and eml_classifyCell.kind <> 2 and eml_classifyCell.kind <> 4
+        ... and eml_classifyCell.kind <> 5
+            @emlRepairClassify: .raw$
+            if emlRepairClassify.kind = 3
+                .nPlaceholder = .nPlaceholder + 1
+                .placeholderRow[.nPlaceholder] = .i
+                .placeholderText$[.nPlaceholder] = eml_classifyCell.trimmed$
+            elsif .firstGenuineBadRow = 0
+                .firstGenuineBadRow = .i
+                .firstGenuineBadText$ = eml_classifyCell.trimmed$
+            endif
+        endif
+    endfor
+endproc
+
 # THE TEACHING-MESSAGE CONTRACT (docs/CHANGE_ORDER_CONFORMANCE_LINT.md): the
 # rule in one sentence, the reason in one line, what to do instead. The rule
 # and the reason are assembled into .error$; the fix is .remedy$, kept as
@@ -889,6 +1100,30 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     .badColumn$ = ""
     .badFile$ = ""
     .badRawValue$ = ""
+    ; V1.7 addition (cell ruling, branches 1/2): seeded here, ahead of
+    ; every refusal, for the same reason as everything above -- the
+    ; disclosure pass that sets these for real does not run until after
+    ; refusals 11, 15, 1, 16, 7, 6, 14, 13, 12 and 10 have all already
+    ; passed, so any of THEIR exits would otherwise leave these four
+    ; undefined.
+    .disclosureCount = 0
+    .disclosureSpellingCount = 0
+    .disclosureItemCount = 0
+    .disclosure$ = ""
+    ; .disclosureSpelling$[] / .disclosureItem$[] are INDEXED outputs, so
+    ; the same halt V1.6 Fix 1 closed for the five per-scale arrays
+    ; applies here too (CLAUDE.md: reading an unassigned indexed variable
+    ; HALTS) -- but unlike .nScales, the real length of these two is not
+    ; knowable this early (it depends on what the data actually holds, not
+    ; on a row count "Get number of rows" can supply up front). Index 1
+    ; alone is seeded to a defined placeholder ("", meaning "no
+    ; placeholder found") because that is the one index
+    ; validate/v129_survey_declaration.R's exhaustive output-contract
+    ; sweep (Fix 1) reads on every leg, including the many that plant no
+    ; placeholder at all; the disclosure pass below overwrites it with the
+    ; real first spelling/item only when one is actually found.
+    .disclosureSpelling$[1] = ""
+    .disclosureItem$[1] = ""
 
     # --- Canon keyword sets (V1.2), stated ONCE here -- every check below
     # that needs to know a legal `reversed` value or a legal `type` keyword
@@ -999,6 +1234,42 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     .rem8b$ = """ (row "
     .rem8c$ = "), or change its role in survey_items.csv if the column "
     ... + "is not meant to be a scale item."
+    ; V1.7, cell ruling branch 3: appended to EVERY refusal-8 remedy (both
+    ; call sites share .rem8a$/.rem8b$/.rem8c$/.rem8d$, so this one
+    ; addition reaches the whitespace-only pre-check below as well as the
+    ; main unreadable-cell check, with nothing duplicated at either call
+    ; site). Names the door by the same two names the plugin already uses
+    ; for it: the command ("Check & repair data...", setup.praat) and the
+    ; menu it lives in (Objects > New > EML Stats & Graphs > Check & repair
+    ; data..., same file). This module builds no inventory of every bad
+    ; cell in the Table -- that screen already lists and can fix every one
+    ; of them; refusal 8 only ever needs to route there by name.
+    .rem8d$ = " Open ""Check & repair data"" (Objects > New > EML Stats "
+    ... + "& Graphs > Check & repair data...) on this Table -- it already "
+    ... + "finds and can fix cells like this one."
+
+    ; DRAFT LANGUAGE -- awaiting Ian's approval
+    # Cell ruling, branch 2: the disclosure printed whenever ANY recognised
+    # missing-value placeholder cell was found among the subscale items'
+    # data columns (@eml_scanColumnForPlaceholders, above; the kind-3 list
+    # it consumes lives only at @emlRepairClassify, eml-extract.praat:2665,
+    # and is not restated here or in this sentence). One aggregated block,
+    # not one line per item: the three facts required -- how many cells,
+    # which spellings, which items -- are properties of the RUN, and
+    # @emlAuditColumn's own .note$ (eml-extract.praat) already sets the
+    # precedent of one block naming several kinds of altered cell rather
+    # than one block per row. Whitespace-only cells are never named here
+    # (see @eml_scanColumnForPlaceholders's own header on why) -- until the
+    # filed classifier fix lands, this sentence may promise that it will,
+    # but must not claim it already does.
+    .msgDiscA$ = " cell(s) held a recognized missing-value placeholder "
+    ... + "instead of a response, and were treated as missing data, "
+    ... + "exactly like a blank cell -- not guessed at. Spelling(s) "
+    ... + "found: "
+    .msgDiscB$ = ". Item(s) affected: "
+    .msgDiscC$ = ". (A whitespace-only cell is not yet included here; a "
+    ... + "filed fix will add it once it lands. Until then it is refused "
+    ... + "like any other unreadable cell, below.)"
 
     ; DRAFT LANGUAGE -- awaiting Ian's approval
     # Refusal 9: a scale type that is neither ordinal nor continuous.
@@ -1676,6 +1947,98 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
         endif
     endfor
 
+    # ===== V1.7, cell ruling, branches 1 and 2: missing-value placeholder =====
+    # ===== disclosure -- a FULL pass, run before refusal 8's own cascade =====
+    # Superseding refusal 8's old behaviour: before this pass existed,
+    # refusal 8 (below) refused on EVERY cell it could not read as a
+    # number, with no further question asked. Under the cell ruling, a
+    # cell @emlRepairClassify (eml-extract.praat:2665) recognises as one of
+    # its own kind-3 missing-value spellings is no longer refused -- it is
+    # treated as ordinary missingness, exactly like a blank cell, and its
+    # presence is disclosed rather than silently reinterpreted. Any OTHER
+    # cell refusal 8 could not read still refuses there, unchanged.
+    #
+    # This pass never exits early with a `goto`: it runs over EVERY
+    # subscale item's column in full, so a placeholder found in one
+    # item's column is disclosed even when a LATER item's column is what
+    # actually makes this declaration refuse (a whitespace-only cell kept
+    # under refusal 8's own Fix 3 pre-check, below, or any later refusal).
+    # "The disclosure is ALWAYS PRINTED when any placeholder was found" (the
+    # cell ruling) means unconditionally on that fact alone, not
+    # conditionally on the run's eventual verdict -- v129's [cell ruling,
+    # mixed] leg seeds exactly this: a recognised placeholder in one
+    # item's column and a whitespace-only cell in another's, and asserts
+    # the disclosure still fires despite the whitespace refusal that
+    # follows it.
+    #
+    # @eml_scanColumnForPlaceholders (above) does the per-cell work, once
+    # per item; its .firstGenuineBadRow$ / .firstGenuineBadText$ are
+    # cached here, into .itemFirstGenuineBadRow[.i] /
+    # .itemFirstGenuineBadText$[.i], so refusal 8's own cascade, below,
+    # reuses them instead of scanning the same column a second time.
+    # (.disclosureCount / .disclosureSpellingCount / .disclosureItemCount
+    # are already 0 from the seeding block at procedure entry; not
+    # re-zeroed here, so this pass only ever adds to them.)
+    for .i from 1 to .nItems
+        .itemFirstGenuineBadRow[.i] = 0
+        .itemFirstGenuineBadText$[.i] = ""
+        if .itemScaleIndex[.i] > 0
+            @eml_scanColumnForPlaceholders: .dataTableId, .itemName$[.i], .nData
+            .itemFirstGenuineBadRow[.i] = eml_scanColumnForPlaceholders.firstGenuineBadRow
+            .itemFirstGenuineBadText$[.i] = eml_scanColumnForPlaceholders.firstGenuineBadText$
+            if eml_scanColumnForPlaceholders.nPlaceholder > 0
+                .itemHasPlaceholder = 0
+                for .p from 1 to eml_scanColumnForPlaceholders.nPlaceholder
+                    .disclosureCount = .disclosureCount + 1
+                    .pText$ = eml_scanColumnForPlaceholders.placeholderText$[.p]
+                    .seenSpelling = 0
+                    for .q from 1 to .disclosureSpellingCount
+                        if .disclosureSpelling$[.q] = .pText$
+                            .seenSpelling = 1
+                        endif
+                    endfor
+                    if .seenSpelling = 0
+                        .disclosureSpellingCount = .disclosureSpellingCount + 1
+                        .disclosureSpelling$[.disclosureSpellingCount] = .pText$
+                    endif
+                    .itemHasPlaceholder = 1
+                endfor
+                if .itemHasPlaceholder = 1
+                    .disclosureItemCount = .disclosureItemCount + 1
+                    .disclosureItem$[.disclosureItemCount] = .itemName$[.i]
+                endif
+            endif
+        endif
+    endfor
+
+    # THE DISCLOSURE ITSELF, ASSEMBLED FROM THE THREE FACTS THE CELL RULING
+    # NAMES -- how many cells, which spellings, which items -- and PRINTED
+    # (appendInfoLine) UNCONDITIONALLY whenever .disclosureCount > 0, never
+    # gated behind .refusal staying 0: see the header comment above this
+    # pass for why. .disclosure$ is also returned as an output, "" exactly
+    # when .disclosureCount is 0, the same empty-exactly-when-nothing-to-
+    # say contract this procedure's .error$/.remedy$ already keep.
+    .disclosure$ = ""
+    if .disclosureCount > 0
+        .spellList$ = ""
+        for .q from 1 to .disclosureSpellingCount
+            if .q > 1
+                .spellList$ = .spellList$ + ", "
+            endif
+            .spellList$ = .spellList$ + """" + .disclosureSpelling$[.q] + """"
+        endfor
+        .itemList$ = ""
+        for .q from 1 to .disclosureItemCount
+            if .q > 1
+                .itemList$ = .itemList$ + ", "
+            endif
+            .itemList$ = .itemList$ + .disclosureItem$[.q]
+        endfor
+        .disclosure$ = string$ (.disclosureCount) + .msgDiscA$ + .spellList$
+        ... + .msgDiscB$ + .itemList$ + .msgDiscC$
+        appendInfoLine: .disclosure$
+    endif
+
     # ===== Refusal 8: an item resolved to a subscale has an unusable =====
     # ===== data column                                              =====
     # Only items whose role resolves to a declared subscale need numeric
@@ -1749,6 +2112,19 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
             # avoided. Reporting the whitespace-only row itself is the one
             # answer available without it -- the same trade-off Fix 2
             # already accepts on the scales file.
+            # V1.7, cell ruling: NOT reclassified as a placeholder here.
+            # @emlRepairClassify, the ruling's stated authority for what
+            # counts as a recognised missing-value spelling, trims a
+            # whitespace-only cell to "" and returns its OWN kind 0
+            # ("nothing to do"), never kind 3 -- so consuming its whole
+            # verdict on this exact text leaves this branch exactly where
+            # it already was, refusing, without this module inventing a
+            # whitespace exception of its own. The filed classifier fix
+            # that would fold whitespace into kind 3 lives in the other
+            # lane and has not landed; once it does, this cell joins
+            # branch 1 above with no further change needed here, because
+            # this block asks @emlRepairClassify's real verdict rather
+            # than restating a list.
             @eml_findWhitespaceOnlyCell: .dataTableId, .itemName$[.i], .nData
             if eml_findWhitespaceOnlyCell.found = 1
                 .matchedScaleIdx = .itemScaleIndex[.i]
@@ -1760,7 +2136,7 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
                 ... + string$ (.badAuditRow) + .msg8d$
                 ... + .badAuditText$ + .msg8e$
                 .remedy$ = .rem8a$ + .itemName$[.i] + .rem8b$
-                ... + string$ (.badAuditRow) + .rem8c$
+                ... + string$ (.badAuditRow) + .rem8c$ + .rem8d$
                 .refusal = 8
                 .badItem$ = .itemName$[.i]
                 .badScale$ = .scaleName$[.matchedScaleIdx]
@@ -1797,11 +2173,25 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
                         .badAuditText$ = emlAuditColumn.firstLeadingDotValue$
                     endif
                 endif
-                if emlAuditColumn.nUnreadable > 0
+                # V1.7, cell ruling: this candidate no longer comes from
+                # emlAuditColumn.nUnreadable / .firstUnreadableRow /
+                # .firstUnreadableValue$ -- that bucket counts EVERY cell
+                # @eml_classifyCell could not read as a number, including a
+                # recognised missing-value placeholder, which branch 1 of
+                # the cell ruling now exempts from refusal entirely.
+                # .itemFirstGenuineBadRow[.i] / .itemFirstGenuineBadText$[.i]
+                # (cached above, ahead of this loop, by
+                # @eml_scanColumnForPlaceholders on this same column) already
+                # exclude every placeholder, so they replace the
+                # emlAuditColumn candidate here rather than filtering its
+                # output a second time -- the classifier's whole verdict is
+                # still consumed, just by the call site that now owns the
+                # "unreadable" question for THIS column, not restated.
+                if .itemFirstGenuineBadRow[.i] > 0
                     if .badAuditRow = 0
-                    ... or emlAuditColumn.firstUnreadableRow < .badAuditRow
-                        .badAuditRow = emlAuditColumn.firstUnreadableRow
-                        .badAuditText$ = emlAuditColumn.firstUnreadableValue$
+                    ... or .itemFirstGenuineBadRow[.i] < .badAuditRow
+                        .badAuditRow = .itemFirstGenuineBadRow[.i]
+                        .badAuditText$ = .itemFirstGenuineBadText$[.i]
                     endif
                 endif
 
@@ -1812,7 +2202,7 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
                     ... + string$ (.badAuditRow) + .msg8d$
                     ... + .badAuditText$ + .msg8e$
                     .remedy$ = .rem8a$ + .itemName$[.i] + .rem8b$
-                    ... + string$ (.badAuditRow) + .rem8c$
+                    ... + string$ (.badAuditRow) + .rem8c$ + .rem8d$
                     .refusal = 8
                     .badItem$ = .itemName$[.i]
                     .badScale$ = .scaleName$[.matchedScaleIdx]
@@ -2065,6 +2455,54 @@ endproc
 #                       computed at all.
 #   .nScales          - number of declared subscales (length of the four
 #                       arrays immediately above)
+#   .disclosureCount  - [V1.7, cell ruling] count of respondent cells, in
+#                       ANY subscale item's data column, that hold a
+#                       recognised missing-value placeholder
+#                       (@emlRepairClassify's own kind-3 spellings,
+#                       eml-extract.praat:2665 -- not restated here); 0
+#                       when none were found. Set by a pass that always
+#                       runs before refusal 8 and is NEVER skipped by a
+#                       `goto` out of it, so this is meaningful even when
+#                       .refusal ends up nonzero (refusal 8 itself, on a
+#                       DIFFERENT cell in the same or another item's
+#                       column, or refusal 2 below it) -- a placeholder
+#                       found earlier in this same pass is disclosed
+#                       regardless of what the declaration is ultimately
+#                       refused for. 0 on every exit BEFORE this pass runs
+#                       (refusals 1, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16 --
+#                       all pure declaration-shape faults decided before
+#                       any subscale item's data column is read here).
+#   .disclosureSpellingCount, .disclosureItemCount - [V1.7] length of the
+#                       two arrays immediately below; both 0 exactly when
+#                       .disclosureCount is 0
+#   .disclosureSpelling$[1..disclosureSpellingCount] - [V1.7] each DISTINCT
+#                       placeholder spelling found, trimmed, in first-
+#                       encountered order (case preserved as declared --
+#                       "NA" and "na" are two entries, not one). Index 1
+#                       specifically is DEFINED on every return, even when
+#                       .disclosureSpellingCount is 0 -- seeded to "" at
+#                       procedure entry (the same reason .scaleName$[1] is
+#                       never left to halt a reader on the refusal-11
+#                       path: an unassigned indexed variable HALTS), and
+#                       overwritten with the real first spelling only when
+#                       one is found. Reading index 1 is therefore always
+#                       safe; "" at index 1 means no placeholder was found.
+#   .disclosureItem$[1..disclosureItemCount] - [V1.7] each subscale item
+#                       (data column name) that had at least one
+#                       placeholder cell, in first-encountered order. Index
+#                       1 carries the same always-defined guarantee as
+#                       .disclosureSpelling$[1], above, for the same
+#                       reason.
+#   .disclosure$      - [V1.7] the assembled sentence naming all three
+#                       facts above, already PRINTED (appendInfoLine)
+#                       whenever .disclosureCount > 0; "" exactly when
+#                       .disclosureCount is 0, the same empty-exactly-
+#                       when-nothing-to-say contract .error$/.remedy$
+#                       already keep. DRAFT wording, awaiting Ian's
+#                       approval like every other message this procedure
+#                       builds -- callers should read .disclosureCount /
+#                       .disclosureSpelling$[] / .disclosureItem$[]
+#                       directly rather than parse this sentence.
 #
 # Access pattern:
 #   @emlSurveyValidateDeclaration: dataTable, scalesTable, itemsTable
@@ -2095,7 +2533,517 @@ endproc
 #     that needs a specific Table selected should select it itself rather
 #     than rely on this
 #     procedure's leftover selection.
+#   - [V1.8] .nItems, .itemName$[], .itemRole$[], .itemReversed[], and
+#     .itemScaleIndex[] are internal working state, NOT part of the
+#     guaranteed-output contract above (they are deliberately left out of
+#     the "# Outputs:" block v129_survey_declaration.R's exhaustive
+#     output-contract sweep enforces on EVERY refusal path, Gate 1's own
+#     verified scope, which this addition does not reopen) -- they are
+#     populated only from the items-table read loop onward, so they are
+#     UNDEFINED / UNSAFE on a refusal-11 return specifically, and
+#     .itemScaleIndex[] is unsafe on a refusal-15 return too (both exit
+#     before the loop that fills it). @emlSurveyScoreScales (below) is the
+#     one caller that reads them, and only under its own documented
+#     precondition (.refusal confirmed 0), where the items-table read loop
+#     and the .itemScaleIndex[] loop have both already run unconditionally
+#     -- so they are always safely populated at the one point Stage 2 ever
+#     reads them, without this module promising more than that.
 # ============================================================================
+
+# ============================================================================
+# @eml_reverseScoreMatrix (V1.8)
+# ============================================================================
+# THE REVERSAL TRANSFORM, in one place: y = min + max - x, applied to every
+# item whose declared `reversed` is 1; every other item passes through
+# unchanged. min/max are the SUBSCALE's declared printed range (not the
+# observed range -- v130's own header explains why alpha cannot tell the
+# two apart, but the scale-score MEAN can and does, which is the reason the
+# declared range still has to be threaded all the way through here).
+#
+# Matrix in, matrix out, vectorized (CLAUDE.md: a per-element Get/Set loop
+# is 100-400x slower, not untidy): each reversed column is `sign = -1`,
+# `offset = min + max`; each forward column is `sign = 1`, `offset = 0`;
+# the whole matrix is built in one elementwise multiply and one elementwise
+# add, broadcasting the two per-column vectors down every row with
+# `outer##` -- the same broadcasting idiom @emlCronbachAlpha already uses
+# to center a matrix by its column means, a few hundred lines above. An
+# undefined cell (already-missing, or a placeholder the declaration
+# validator's cell ruling folded into ordinary missingness) stays
+# undefined: arithmetic with undefined propagates in Praat (the same fact
+# @eml_listwiseComplete's own header already leans on), so no special case
+# is needed here for a missing cell in a reversed column.
+#
+# Input:  .raw##         - numeric matrix, rows = respondents, columns =
+#                           items, in the subscale's declared item order
+#         .min, .max      - the subscale's declared printed range
+#         .reversedFlag#  - numeric vector, length = numberOfColumns(.raw##);
+#                           1 for a reversed item, 0 otherwise, in the SAME
+#                           column order as .raw##
+# Output: .scored##       - the reverse-scored matrix, same shape as .raw##
+# ----------------------------------------------------------------------------
+procedure eml_reverseScoreMatrix: .raw##, .min, .max, .reversedFlag#
+    .nRows = numberOfRows (.raw##)
+    .nCols = numberOfColumns (.raw##)
+    .sign# = zero# (.nCols)
+    .offset# = zero# (.nCols)
+    for .j from 1 to .nCols
+        if .reversedFlag# [.j] = 1
+            .sign# [.j] = -1
+            .offset# [.j] = .min + .max
+        else
+            .sign# [.j] = 1
+            .offset# [.j] = 0
+        endif
+    endfor
+    .ones# = zero# (.nRows) + 1
+    .scored## = .raw## * outer## (.ones#, .sign#) + outer## (.ones#, .offset#)
+endproc
+
+# ============================================================================
+# @emlSurveyScoreScales (V1.8)
+# ============================================================================
+# THE COMPUTATIONAL HALF OF STAGE 2: per-subscale routing, the reversal
+# transform, both reliability kernels, item-rest/item-total, and the
+# per-respondent scale scores -- driven entirely by the declaration
+# @emlSurveyValidateDeclaration already produced, not by re-deriving it. No
+# report text and no dialog live here; the next stage owns presentation.
+#
+# PRECONDITION, NOT RE-CHECKED HERE: the caller has already run
+#   @emlSurveyValidateDeclaration: dataTableId, scalesTableId, itemsTableId
+# on the SAME .dataTableId passed in below, and confirmed
+# emlSurveyValidateDeclaration.refusal = 0. This procedure reads that call's
+# own leftover namespace directly -- .nScales, .scaleName$[], .scaleMin[],
+# .scaleMax[], .scaleIsKR20[], .nItems, .itemName$[], .itemRole$[],
+# .itemReversed[], .itemScaleIndex[], .nData -- exactly the "driven by the
+# declaration the validator already produces" the task describes, rather
+# than re-reading the three Tables and re-resolving which item belongs to
+# which subscale a second time (@emlSurveyValidateDeclaration's own
+# .itemScaleIndex[] already answers that, refusal 8's own call site). A
+# caller that has not just run a clean declaration over .dataTableId gets
+# whatever @emlSurveyValidateDeclaration last left behind, which is exactly
+# the same "outputs survive only until that procedure runs again" contract
+# every other @eml-prefixed call in this codebase already carries
+# (CLAUDE.md) -- nothing new is being risked here that a caller does not
+# already have to respect for @emlAuditColumn, @eml_classifyCell, or any
+# other helper this module calls.
+#
+# THE CONFIDENCE LEVEL, from @emlReportAlpha (eml-analysis.praat), NEVER A
+# LITERAL, structurally: this procedure takes no .confidence argument at
+# all, so there is no parameter for a caller to pass a hardcoded number
+# into. It calls @emlReportAlpha itself, once, at the top, and every
+# subscale's Feldt interval is computed at the SAME resulting level
+# (.confidence, echoed as this procedure's own output) -- one call, one
+# level, applied uniformly by the indexed loop below rather than re-read
+# per subscale.
+#
+# ONE SUBSCALE FAILING DOES NOT KILL THE RUN, structurally, not as a
+# special case: the loop below runs the IDENTICAL sequence of steps for
+# every subscale s = 1 to .nScales, with no branch anywhere on "did an
+# earlier subscale fail". @emlCronbachAlpha and @emlAlphaInfluence already
+# guarantee their own contract -- every numeric output stays a safely
+# readable `undefined` and .error$ names the reason whenever their own
+# preconditions (k >= 2, n >= 3 after listwise deletion) are not met -- so
+# a subscale with, say, only two complete respondents simply leaves
+# .subAlpha[s] / .subCiLow[s] / .subCiHigh[s] / .subAlphaIfDeleted[s,*] at
+# their seeded `undefined` and .subAlphaError$[s] non-empty, while every
+# OTHER subscale's iteration of this same for-loop is untouched: nothing
+# here `goto`s out of the loop, and nothing conditions later iterations on
+# an earlier one's result. THE REFUSAL IS A RESULT: it is carried
+# VERBATIM, in .subAlphaError$[s] / .subInfluenceError$[s], exactly as
+# @emlCronbachAlpha / @emlAlphaInfluence wrote it, never reworded here.
+#
+# THE REVERSAL TRANSFORM uses the subscale's DECLARED printed range
+# (@eml_reverseScoreMatrix, above), matching "Alpha and its whole family
+# are invariant to the declared endpoints" (v130's own algebraic proof:
+# alpha is a pure function of the covariance matrix, and Cov(c - x, y) =
+# -Cov(x, y) for any constant c = min + max, so only the SIGN of the
+# transform -- whether an item is reversed at all -- reaches alpha,
+# alpha-if-deleted, item-rest, or item-total). The declared range reaches
+# a result only through the validator's own range refusal and through the
+# scale-score MEAN below, which sits on the printed response scale rather
+# than in the covariance structure.
+#
+# ITEM-REST AND ITEM-TOTAL, both through @emlPearsonCorrelation
+# (eml-inferential.praat), computed on the SAME reverse-scored,
+# listwise-complete matrix @emlCronbachAlpha itself works from (built once,
+# here, via the same @eml_listwiseComplete this module's own alpha kernel
+# calls -- not a second, differently-cleaned copy): item-rest is item j
+# against the sum of the OTHER items in its subscale (row total minus
+# column j); item-total is item j against the row total, uncorrected
+# (including j). Both are carried as raw values; the strictly-below-zero
+# item-rest flag (the misdeclared-reversal ruling) is computed here too,
+# .subItemFlag[s,j], but printing it is the report layer's job, not this
+# one's. @emlPearsonCorrelation's own preconditions (n >= 3 pairs, nonzero
+# variance in both variables) are consumed by reading its .error$: an item
+# column that happens to be constant within an otherwise-scorable subscale
+# leaves that one item's two correlations at their seeded `undefined`
+# without disturbing any other item or the subscale's alpha.
+#
+# SCALE SCORES: a respondent's subscale score is the MEAN (not the sum --
+# "so scores compare across subscales of different lengths", the task's
+# own words) of that subscale's reverse-scored items, complete-case: a
+# respondent missing ANY item in the subscale gets no score for it. This
+# uses the identical complete-case mask alpha and the correlations use
+# (@eml_listwiseComplete's .clean##), so .subScoredN[s] always equals
+# .subN[s] when the alpha kernel succeeds, and is meaningful on its own
+# even when it does not (a two-respondent subscale still scores those two
+# respondents; it is @emlCronbachAlpha's n >= 3 floor that refuses, not
+# this computation's own). .subScoredNone[s] carries the count with no
+# score, for disclosure, per the task's own wording ("the count with no
+# score is carried for disclosure").
+#
+# THE KR-20 CONDITION is carried, not recomputed: .subIsKR20[s] is a plain
+# copy of emlSurveyValidateDeclaration.scaleIsKR20[s], assigned once per
+# subscale alongside every other seeded output, never re-derived from
+# min/max a second time in this procedure.
+#
+# Input:  .dataTableId - the SAME data Table just validated (see
+#                         PRECONDITION above)
+#
+# Output (all seeded to a defined placeholder for every subscale before any
+# subscale is processed -- V1.6 Fix 1's rule, restated: every documented
+# output holds a defined value once this procedure returns):
+#   .confidence            - the Feldt/scale-score confidence level, from
+#                             @emlReportAlpha, applied to every subscale
+#   .nScales                - convenience echo of
+#                             emlSurveyValidateDeclaration.nScales; every
+#                             array below is indexed 1..nScales unless
+#                             stated otherwise
+#   .subK[1..nScales]       - item count actually assembled for that
+#                             subscale (equals .scaleItemCount's live
+#                             analogue; always >= 2, refusal 3's own floor)
+#   .subAlpha[], .subCiLow[], .subCiHigh[] - @emlCronbachAlpha's own
+#                             outputs, or `undefined` when it refused
+#   .subN[], .subNExcluded[] - complete-case n and rows dropped, from
+#                             @emlCronbachAlpha (equal to .subScoredN[] /
+#                             .subScoredNone[] below, since both read the
+#                             same listwise-complete matrix)
+#   .subAlphaError$[]       - @emlCronbachAlpha.error$ VERBATIM; "" when it
+#                             did not refuse
+#   .subAlphaIfDeleted[s, 1..subK[s]] - @emlCronbachAlpha's own
+#                             .alphaIfDeleted#, one column per subscale
+#                             item in declared order; `undefined` for
+#                             every item when subK[s] = 2 (no alpha to
+#                             drop to) or when the subscale's kernel
+#                             refused
+#   .subDeltaMax[], .subDeltaMaxRow[] - @emlAlphaInfluence's own outputs
+#                             (ORIGINAL row number within THIS subscale's
+#                             own complete-case matrix -- listwise
+#                             deletion differs per subscale, so the same
+#                             respondent can carry a different original
+#                             row number in two different subscales'
+#                             influence output)
+#   .subInfluenceError$[]   - @emlAlphaInfluence.error$ VERBATIM; "" when
+#                             it did not refuse
+#   .subAlphaWithout[s, 1..subN[s]], .subDelta[s, 1..subN[s]],
+#   .subRowIndex[s, 1..subN[s]] - @emlAlphaInfluence's own per-respondent
+#                             vectors, re-indexed [subscale, surviving
+#                             respondent position]; `undefined` beyond
+#                             subN[s] and for every entry when the
+#                             subscale's influence kernel refused
+#   .subItemRest[s, 1..subK[s]], .subItemTotal[s, 1..subK[s]] - each
+#                             item's item-rest and uncorrected item-total
+#                             correlation (raw r); `undefined` when that
+#                             one item's correlation could not be computed
+#                             (@emlPearsonCorrelation's own preconditions)
+#   .subItemFlag[s, 1..subK[s]] - 1 when that item's item-rest is strictly
+#                             below zero (the misdeclared-reversal
+#                             ruling), 0 otherwise; `undefined` exactly
+#                             when .subItemRest[s, j] is
+#   .subItemOrigIdx[s, 1..subK[s]] - the ORIGINAL index into
+#                             emlSurveyValidateDeclaration.itemName$[] /
+#                             .itemReversed[] for subscale-position j, so
+#                             a caller reads the item's name/reversed flag
+#                             from the declaration's own arrays rather
+#                             than a second copy kept here
+#   .subScoredN[], .subScoredNone[] - respondents scored / with no score
+#                             for that subscale (counts only -- never the
+#                             individual scores, per the task's own
+#                             wording)
+#   .subScoreMean[], .subScoreSD[], .subScoreMin[], .subScoreMax[] -
+#                             summary statistics of the per-respondent
+#                             scale score (the MEAN of that respondent's
+#                             reverse-scored items), complete-case;
+#                             `undefined` when .subScoredN[s] is 0
+#                             (Mean/Min/Max) or below 2 (SD, which needs
+#                             at least two respondents to have a spread)
+#   .subIsKR20[]            - plain copy of
+#                             emlSurveyValidateDeclaration.scaleIsKR20[s];
+#                             not recomputed
+#
+# Access pattern:
+#   @emlSurveyValidateDeclaration: dataT, scalesT, itemsT
+#   if emlSurveyValidateDeclaration.refusal = 0
+#       @emlSurveyScoreScales: dataT
+#       a3 = emlSurveyScoreScales.subAlpha[3]
+#       flaggedQ3 = emlSurveyScoreScales.subItemFlag[1, 3]
+#   endif
+#
+# Notes:
+#   - Read-only on .dataTableId: no cell is written, no Table object is
+#     created or removed (unlike @emlSurveyValidateDeclaration's refusal
+#     15, which briefly creates and removes a scratch Table).
+#   - Requires @emlReportAlpha (eml-analysis.praat) in addition to this
+#     module's existing Dependencies (eml-extract.praat, eml-inferential.
+#     praat). @emlReportAlpha itself has no further dependency of its own
+#     (built-ins only), so this is the one additional include a caller of
+#     THIS procedure needs beyond @emlSurveyValidateDeclaration's own list:
+#       include eml-extract.praat
+#       include eml-inferential.praat
+#       include eml-analysis.praat
+#       include eml-psychometrics.praat
+# ============================================================================
+procedure emlSurveyScoreScales: .dataTableId
+    @emlReportAlpha
+    .confidence = 1 - emlReportAlpha.value
+
+    .nScales = emlSurveyValidateDeclaration.nScales
+    .nItemsDeclared = emlSurveyValidateDeclaration.nItems
+    .nData = emlSurveyValidateDeclaration.nData
+
+    # --- Every per-subscale / per-item output, seeded before any subscale
+    # is processed (V1.6 Fix 1's rule, restated for Stage 2): a subscale
+    # whose kernel refuses must leave every array a caller can still read,
+    # never an unassigned indexed variable. .maxK bounds the per-item
+    # arrays' second index; .nData bounds the per-respondent ones.
+    .maxK = 2
+    for .s from 1 to .nScales
+        .kCount = 0
+        for .i from 1 to .nItemsDeclared
+            if emlSurveyValidateDeclaration.itemScaleIndex[.i] = .s
+                .kCount = .kCount + 1
+            endif
+        endfor
+        if .kCount > .maxK
+            .maxK = .kCount
+        endif
+    endfor
+
+    for .s from 1 to .nScales
+        .subK[.s] = 0
+        .subAlpha[.s] = undefined
+        .subCiLow[.s] = undefined
+        .subCiHigh[.s] = undefined
+        .subN[.s] = undefined
+        .subNExcluded[.s] = undefined
+        .subAlphaError$[.s] = ""
+        .subInfluenceError$[.s] = ""
+        .subDeltaMax[.s] = undefined
+        .subDeltaMaxRow[.s] = undefined
+        .subIsKR20[.s] = emlSurveyValidateDeclaration.scaleIsKR20[.s]
+        .subScoredN[.s] = 0
+        .subScoredNone[.s] = .nData
+        .subScoreMean[.s] = undefined
+        .subScoreSD[.s] = undefined
+        .subScoreMin[.s] = undefined
+        .subScoreMax[.s] = undefined
+        for .j from 1 to .maxK
+            .subItemOrigIdx[.s,.j] = 0
+            .subAlphaIfDeleted[.s,.j] = undefined
+            .subItemRest[.s,.j] = undefined
+            .subItemTotal[.s,.j] = undefined
+            .subItemFlag[.s,.j] = undefined
+        endfor
+        for .r from 1 to .nData
+            .subAlphaWithout[.s,.r] = undefined
+            .subDelta[.s,.r] = undefined
+            .subRowIndex[.s,.r] = undefined
+        endfor
+    endfor
+
+    # --- Per-subscale routing: the SAME sequence of steps for every
+    # subscale, indexed by .s -- no per-case code, no branch on an earlier
+    # subscale's result (the "make this structural" requirement).
+    for .s from 1 to .nScales
+        # Assemble this subscale's items, in survey_items.csv row order
+        # (the "declared order" the task asks for), via
+        # emlSurveyValidateDeclaration.itemScaleIndex[] -- already computed
+        # by the validator; not re-derived from .itemRole$[] here.
+        .k = 0
+        for .i from 1 to .nItemsDeclared
+            if emlSurveyValidateDeclaration.itemScaleIndex[.i] = .s
+                .k = .k + 1
+                .subItemOrigIdx[.s,.k] = .i
+            endif
+        endfor
+        .subK[.s] = .k
+
+        .sMin = emlSurveyValidateDeclaration.scaleMin[.s]
+        .sMax = emlSurveyValidateDeclaration.scaleMax[.s]
+        .reversedFlag# = zero# (.k)
+        .raw## = zero## (.nData, .k)
+        for .j from 1 to .k
+            .origIdx = .subItemOrigIdx[.s,.j]
+            .reversedFlag# [.j] = emlSurveyValidateDeclaration.itemReversed[.origIdx]
+            .colName$ = emlSurveyValidateDeclaration.itemName$[.origIdx]
+            for .r from 1 to .nData
+                selectObject: .dataTableId
+                .raw## [.r,.j] = Get value: .r, .colName$
+            endfor
+        endfor
+
+        @eml_reverseScoreMatrix: .raw##, .sMin, .sMax, .reversedFlag#
+        .reversed## = eml_reverseScoreMatrix.scored##
+
+        # The complete-case matrix @emlCronbachAlpha itself would build
+        # internally -- built once, here, so item-rest/item-total and the
+        # scale scores read exactly the same rows alpha did, not a second,
+        # separately-cleaned copy.
+        @eml_listwiseComplete: .reversed##
+        .work## = eml_listwiseComplete.clean##
+        .nKept = eml_listwiseComplete.nKept
+        .nExcl = eml_listwiseComplete.nExcluded
+
+        @emlCronbachAlpha: .reversed##, .confidence
+        .subAlphaError$[.s] = emlCronbachAlpha.error$
+        .subN[.s] = emlCronbachAlpha.n
+        .subNExcluded[.s] = emlCronbachAlpha.nExcluded
+        if emlCronbachAlpha.error$ = ""
+            .subAlpha[.s] = emlCronbachAlpha.alpha
+            .subCiLow[.s] = emlCronbachAlpha.ciLow
+            .subCiHigh[.s] = emlCronbachAlpha.ciHigh
+            if .k >= 3
+                for .j from 1 to .k
+                    .subAlphaIfDeleted[.s,.j] = emlCronbachAlpha.alphaIfDeleted# [.j]
+                endfor
+            endif
+        endif
+
+        @emlAlphaInfluence: .reversed##
+        .subInfluenceError$[.s] = emlAlphaInfluence.error$
+        if emlAlphaInfluence.error$ = ""
+            .subDeltaMax[.s] = emlAlphaInfluence.deltaMax
+            .subDeltaMaxRow[.s] = emlAlphaInfluence.deltaMaxRow
+            for .r from 1 to emlAlphaInfluence.n
+                .subAlphaWithout[.s,.r] = emlAlphaInfluence.alphaWithout# [.r]
+                .subDelta[.s,.r] = emlAlphaInfluence.delta# [.r]
+                .subRowIndex[.s,.r] = emlAlphaInfluence.rowIndex# [.r]
+            endfor
+        endif
+
+        # Item-rest / item-total and the scale scores both read .work##,
+        # guarded only against an EMPTY complete-case matrix (nKept = 0),
+        # not against @emlPearsonCorrelation's own n >= 3 floor -- that
+        # floor is consumed via its own .error$ per item below, not
+        # restated as a second condition here.
+        if .nKept >= 1
+            .total# = rowSums# (.work##)
+            for .j from 1 to .k
+                .unit# = zero# (.k)
+                .unit# [.j] = 1
+                .colJ# = mul# (.work##, .unit#)
+                .rest# = .total# - .colJ#
+                @emlPearsonCorrelation: .colJ#, .rest#, 2
+                if emlPearsonCorrelation.error$ = ""
+                    .subItemRest[.s,.j] = emlPearsonCorrelation.r
+                    if emlPearsonCorrelation.r < 0
+                        .subItemFlag[.s,.j] = 1
+                    else
+                        .subItemFlag[.s,.j] = 0
+                    endif
+                endif
+                @emlPearsonCorrelation: .colJ#, .total#, 2
+                if emlPearsonCorrelation.error$ = ""
+                    .subItemTotal[.s,.j] = emlPearsonCorrelation.r
+                endif
+            endfor
+
+            .scores# = .total# * (1 / .k)
+            .subScoreMin[.s] = min (.scores#)
+            .subScoreMax[.s] = max (.scores#)
+            .subScoreMean[.s] = mean (.scores#)
+            if .nKept >= 2
+                .subScoreSD[.s] = stdev (.scores#)
+            endif
+        endif
+        .subScoredN[.s] = .nKept
+        .subScoredNone[.s] = .nExcl
+    endfor
+endproc
+
+# ============================================================================
+# @emlSurveySubscaleDisclosure (V1.9)
+# ============================================================================
+# THE PER-SUBSCALE SLICE OF THE CELL RULING'S GLOBAL DISCLOSURE. V1.7's
+# @emlSurveyValidateDeclaration already scans every subscale item's data
+# column once (@eml_scanColumnForPlaceholders, above) and prints one
+# aggregated sentence for the DECLARATION AS A WHOLE, unconditionally,
+# whenever any recognised missing-value placeholder cell was found anywhere
+# in it. That answers "was anything in this run reinterpreted" -- correct
+# for Stage 1, and not this procedure's job to repeat. It does not answer
+# "was THIS subscale's own report affected, and by which of ITS items and
+# spellings", which is what a per-subscale report block needs and the
+# run-wide aggregate throws away (it keeps distinct spellings and affected
+# item NAMES for the whole run, but not which spelling landed on which
+# item, nor a per-item cell count).
+#
+# NOT a second classifier and NOT a restatement of @emlRepairClassify's
+# kind-3 spelling list (which lives only at eml-extract.praat:2665): this
+# calls @eml_scanColumnForPlaceholders again, once per item of the ONE
+# subscale asked about -- the identical helper @emlSurveyValidateDeclaration
+# itself already calls once per item of EVERY subscale. Calling it twice on
+# the same column is safe and cheap: it is read-only (a loop of plain
+# "Get value:" calls over the column), writes no cell, and creates no
+# object, so nothing about calling it again disturbs
+# @emlSurveyValidateDeclaration's own already-returned state.
+#
+# PRECONDITION, the same one @emlSurveyScoreScales documents: the caller has
+# already run @emlSurveyValidateDeclaration on .dataTableId and confirmed
+# .refusal = 0, and has already run @emlSurveyScoreScales on the same
+# .dataTableId, so this subscale's own .subK[.s] / .subItemOrigIdx[.s,*]
+# (V1.8) are populated. Walking THOSE arrays -- rather than re-deriving
+# subscale membership from .itemScaleIndex[] a second, differently-ordered
+# way -- is what keeps this in the declared item order the report already
+# uses for every other per-item line.
+#
+# Input:  .dataTableId, .s   (subscale index, 1..emlSurveyScoreScales.nScales)
+# Output: .count             - number of THIS subscale's items that had at
+#                              least one recognised placeholder cell
+#         .cellCount         - total placeholder CELLS across those items
+#                              (may exceed .count: one item can hold several)
+#         .item$[1..count]   - those item names, in declared order
+#         .spellingCount, .spelling$[1..spellingCount] - distinct spellings
+#                              found within THIS subscale's own items only
+#                              (a subset of, or equal to,
+#                              emlSurveyValidateDeclaration.
+#                              disclosureSpelling$[] for the run as a whole)
+#
+# Notes:
+#   - .count is 0, .cellCount is 0 and .spellingCount is 0 -- never left
+#     undefined -- for a subscale none of whose items carried a placeholder,
+#     the same "seed a safe zero, never an unassigned indexed variable"
+#     discipline every other output in this module already keeps.
+#   - Read-only; no report text; the caller formats.
+# ----------------------------------------------------------------------------
+procedure emlSurveySubscaleDisclosure: .dataTableId, .s
+    .count = 0
+    .cellCount = 0
+    .spellingCount = 0
+    for .j from 1 to emlSurveyScoreScales.subK[.s]
+        .origIdx = emlSurveyScoreScales.subItemOrigIdx[.s, .j]
+        .colName$ = emlSurveyValidateDeclaration.itemName$[.origIdx]
+        @eml_scanColumnForPlaceholders: .dataTableId, .colName$,
+        ... emlSurveyScoreScales.nData
+        if eml_scanColumnForPlaceholders.nPlaceholder > 0
+            .count = .count + 1
+            .item$[.count] = .colName$
+            for .p from 1 to eml_scanColumnForPlaceholders.nPlaceholder
+                .cellCount = .cellCount + 1
+                .pText$ = eml_scanColumnForPlaceholders.placeholderText$[.p]
+                .seen = 0
+                for .q from 1 to .spellingCount
+                    if .spelling$[.q] = .pText$
+                        .seen = 1
+                    endif
+                endfor
+                if .seen = 0
+                    .spellingCount = .spellingCount + 1
+                    .spelling$[.spellingCount] = .pText$
+                endif
+            endfor
+        endif
+    endfor
+endproc
 
 # ============================================================================
 # END OF MODULE
