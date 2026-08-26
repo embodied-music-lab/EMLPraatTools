@@ -792,6 +792,29 @@ endproc
 # there is no error output here to consume -- there is nothing left to ask
 # once this has already returned .found = 1 for that column.
 #
+# THE SKIP CONDITION, AND WHY IT IS NOT THE SAME LIST TWICE (Fix 3). The
+# previous round's skip re-typed all three of @eml_strictNumericColumn's
+# spellings ("", "--undefined--", "?") -- one canon, stated in two files,
+# with nothing holding the copies together. Checked here: @eml_classifyCell
+# never returns kind 1 for a bare "?" (it is not empty once trimmed, and it
+# is not a number in any locale -- @eml_classifyCell's own kind 3), so the
+# "?" comparison below never once changed which row this loop reports; it
+# was dead. The other two are NOT dead -- they are load-bearing, and for a
+# reason specific to THIS helper rather than to the pre-scan it is patching
+# a gap in: a caller auditing a DATA column (as opposed to a "min"/"max"
+# endpoint) must tell an outright empty cell ("" or the round-tripped
+# "--undefined--" token) apart from a whitespace-only one, because the
+# first is ordinary missingness -- exempt, per this module's own refusal 8
+# -- and the second is not. Folding either spelling into "whitespace-only
+# found" here would misreport an exempt, genuinely missing cell as the
+# crash-landmine this helper exists to catch. So the two that still do
+# something stay, spelled out in full rather than as a fragment of the
+# three; v129_survey_declaration.R checks by source text (the
+# v105_pitch_parity.R pattern: the canon is read out of both files and
+# compared, not restructured into one) that this pair is still a subset of
+# @eml_strictNumericColumn's own list, so the two cannot silently drift
+# apart if that list ever changes.
+#
 # Input:  .tableId, .columnName$, .nRows
 # Output: .found - 1 if some cell is whitespace-only, 0 otherwise
 #         .row   - the first such row (only meaningful when .found = 1)
@@ -802,12 +825,15 @@ procedure eml_findWhitespaceOnlyCell: .tableId, .columnName$, .nRows
     for .i from 1 to .nRows
         selectObject: .tableId
         .raw$ = Get value: .i, .columnName$
-        ; Skip the three spellings @eml_strictNumericColumn's own pre-scan
-        ; already recognises (it marks the column unreadable and falls
-        ; through to a per-cell scan safely for those) -- this helper exists
-        ; only for the gap that pre-scan has, not to re-decide what it
-        ; already decides correctly.
-        if .raw$ <> "" and .raw$ <> "--undefined--" and .raw$ <> "?"
+        ; Skip a cell that is already one of @eml_classifyCell's own kind-1
+        ; spellings for "genuinely nothing here" ("" or "--undefined--") --
+        ; those are safe downstream (ordinary missingness) and are not this
+        ; helper's question. The "?" spelling @eml_strictNumericColumn's own
+        ; pre-scan also treats as unreadable is NOT tested here: it never
+        ; classifies as kind 1 in the first place (see header comment above),
+        ; so testing for it here would only restate a token this loop can
+        ; never actually match.
+        if .raw$ <> "" and .raw$ <> "--undefined--"
             @eml_classifyCell: .raw$
             if eml_classifyCell.kind = 1
                 if .found = 0
@@ -1680,6 +1706,69 @@ procedure emlSurveyValidateDeclaration: .dataTableId, .scalesTableId, .itemsTabl
     # before.
     for .i from 1 to .nItems
         if .itemScaleIndex[.i] > 0
+            # ----- V1.6, Fix 3: a whitespace-only DATA cell, checked -----
+            # ----- BEFORE this column is ever handed to @emlAuditColumn --
+            # @emlAuditColumn's own fast path (eml-extract.praat:
+            # @eml_strictNumericColumn) is exactly the call Fix 2 above
+            # already keeps away from a "min"/"max" column carrying this
+            # landmine, for the identical reason: its pre-scan does not
+            # recognise a whitespace-only cell as unreadable, so nothing
+            # stops it reaching Praat's own "Get all numbers in column:",
+            # which halts outright rather than returning control to this
+            # module. Verified live on a DATA column: a single space in
+            # item column "R1", respondent row 2, aborts with "Table
+            # ""eml_numericProbe"": the cell in row 2 of column ""R1"" is
+            # undefined" before this refusal, or refusal 2 below it, ever
+            # gets a chance to run. @eml_findWhitespaceOnlyCell (above) is
+            # reused unchanged, not reimplemented a second time for data
+            # columns.
+            #
+            # DECISION: refused here, as an unusable value (this refusal's
+            # own "kind 3, unreadable" wording, msg8a..msg8e, reused
+            # verbatim below), not folded into kind 1's ordinary
+            # missingness. The two are NOT the same fact for a DATA
+            # column, even though @eml_classifyCell files both under its
+            # own kind 1: a genuinely empty cell is safe wherever it is
+            # read again, because @eml_strictNumericColumn's pre-scan
+            # recognises "" and "--undefined--" by name and diverts them
+            # to a per-cell path before its crash-prone fast path ever
+            # runs. A whitespace-only cell is exactly what that pre-scan
+            # fails to recognise -- the gap this fix closes -- so it is
+            # NOT safe downstream: any later read of this same column for
+            # real computation (eml-extract.praat, outside this lane) hits
+            # the identical halt this refusal exists to prevent, not a
+            # quietly-dropped row. Treating it as missing here would only
+            # move today's crash to a later, unguarded line, defeating the
+            # one promise this whole procedure makes -- checked before any
+            # number is computed. Checked first, before @emlAuditColumn's
+            # own four-kind scan below, for the same reason Fix 2 checks
+            # "min" and "max" first: a column carrying this landmine
+            # cannot be handed to @emlAuditColumn at all, so whether some
+            # OTHER cell in the same column is bad, and at an earlier row,
+            # cannot be learned without incurring the very crash being
+            # avoided. Reporting the whitespace-only row itself is the one
+            # answer available without it -- the same trade-off Fix 2
+            # already accepts on the scales file.
+            @eml_findWhitespaceOnlyCell: .dataTableId, .itemName$[.i], .nData
+            if eml_findWhitespaceOnlyCell.found = 1
+                .matchedScaleIdx = .itemScaleIndex[.i]
+                .badAuditRow = eml_findWhitespaceOnlyCell.row
+                selectObject: .dataTableId
+                .badAuditText$ = Get value: .badAuditRow, .itemName$[.i]
+                .error$ = .msg8a$ + .itemName$[.i] + .msg8b$
+                ... + .scaleName$[.matchedScaleIdx] + .msg8c$
+                ... + string$ (.badAuditRow) + .msg8d$
+                ... + .badAuditText$ + .msg8e$
+                .remedy$ = .rem8a$ + .itemName$[.i] + .rem8b$
+                ... + string$ (.badAuditRow) + .rem8c$
+                .refusal = 8
+                .badItem$ = .itemName$[.i]
+                .badScale$ = .scaleName$[.matchedScaleIdx]
+                .badRow = .badAuditRow
+                .badCellText$ = .badAuditText$
+                goto SURVEY_VALIDATE_DONE
+            endif
+
             @emlAuditColumn: .dataTableId, .itemName$[.i]
             if emlAuditColumn.error$ = ""
                 # The smallest nonzero "first row" across the four

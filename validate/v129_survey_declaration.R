@@ -650,6 +650,37 @@ if (!canDrive) {
         positive_leg_codes <- c(positive_leg_codes, 8)
     }
 
+    # kind: whitespace-only (V1.6, Fix 3) -- R1 row 2 (committed value
+    # "71.8") edited to a single space. Verified live before the fix: none
+    # of @eml_strictNumericColumn's own pre-scan spellings ("",
+    # "--undefined--", "?") match a bare space, so nothing stops
+    # @emlAuditColumn's fast path from reaching Praat's own "Get all
+    # numbers in column:", which HALTS the whole script --
+    # "Table ""eml_numericProbe"": the cell in row 2 of column ""R1"" is
+    # undefined" -- before this refusal, or any other, ever gets a chance
+    # to run. This is the positive leg; a bespoke halt-control proving the
+    # guard load-bearing (the same shape as Fix 2's own, above) follows
+    # with the rest of this refusal's negative controls, below.
+    data8_ws <- edit_field(clean_data_lines, 2, "R1", " ")
+    p8_ws <- write_csv_lines(data8_ws, "d8_ws_data.csv")
+    out8_ws <- drive_validate("stats", p8_ws, committed_scales_path,
+                              committed_items_path, "d8-ws")
+    results$d8_ws <- out8_ws
+    check_true("v129", "[refusal 8, whitespace-only] probe ran (NOT a halt -- this is the exact live crash Fix 3 closes)", ran_ok(out8_ws))
+    if (ran_ok(out8_ws)) {
+        check("v129", "[refusal 8, whitespace-only] code is 8 (a bare-space respondent cell is refused as an unusable value, not silently treated as ordinary missingness)",
+              num_(out8_ws, "res", 1), 8, tol = 0)
+        check_true("v129", "[refusal 8, whitespace-only] badItem is \"R1\"",
+                   identical(str_(out8_ws, "res", 2), "R1"))
+        check_true("v129", "[refusal 8, whitespace-only] badScale is \"Ease\"",
+                   identical(str_(out8_ws, "res", 3), "Ease"))
+        check("v129", "[refusal 8, whitespace-only] badRow is 2",
+              num_(out8_ws, "res", 4), 2, tol = 0)
+        check_true("v129", "[refusal 8, whitespace-only] badCellText is a single space (the raw cell, not the empty string a genuinely blank cell would print)",
+                   identical(str_(out8_ws, "res", 17), " "))
+        positive_leg_codes <- c(positive_leg_codes, 8)
+    }
+
     # --- Defect 9: a scale type that is neither ordinal nor continuous --
     scales9 <- clean_scales_lines
     scales9[grepl("^Confidence,", scales9)] <- "Confidence,1,5,banana"
@@ -1310,6 +1341,115 @@ if (!canDrive) {
         "mutant8", committed_data_path, committed_scales_path, p8, 8)
 
     # -------------------------------------------------------------------
+    # NEGATIVE CONTROL for Fix 3's whitespace-only-DATA-cell guard -- NOT
+    # the generic run_negative_control() pattern, for the same reason as
+    # Fix 2's own bespoke control above (and refusal 11's and refusal 1's):
+    # neutering this guard does not make the module produce a DIFFERENT,
+    # well-formed refusal code -- it reproduces the exact HALT Fix 3's own
+    # header describes. @eml_strictNumericColumn's own pre-scan
+    # (eml-extract.praat) does not recognise a whitespace-only cell as
+    # unreadable, so once this module's own guard is neutered, nothing
+    # stops @emlAuditColumn's fast path from calling Praat's "Get all
+    # numbers in column:" on it, and Praat itself aborts the script. That
+    # crash, not a differing refusal code, IS the proof this guard is
+    # load-bearing.
+    #
+    # Bounded to refusal 8's own block (its opening comment line to
+    # refusal 2's, exclusive) -- the same discipline Fix 2's own control
+    # above now uses, and section 18b's derive_refusal_codes() applies to
+    # @emlSurveyValidateDeclaration's own body (the v105_pitch_parity.R
+    # pattern) -- so this needle, which reads textually IDENTICALLY to
+    # Fix 2's own guard line ("if eml_findWhitespaceOnlyCell.found = 1",
+    # the same shared helper's output tested the same way), can be counted
+    # and mutated here without any risk of also touching Fix 2's two
+    # occurrences on the scales file, above.
+    # -------------------------------------------------------------------
+    mut8w <- file.path(work, "mutant8w")
+    dir.create(mut8w, showWarnings = FALSE)
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-extract.praat")),
+                 file.path(mut8w, "eml-extract.praat"))
+    file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
+                 file.path(mut8w, "eml-inferential.praat"))
+    src8w <- readLines(file.path(plug, "stats", "eml-psychometrics.praat"))
+    r8_start <- grep("^    # ===== Refusal 8:", src8w)
+    r8_next <- grep("^    # ===== Refusal 2:", src8w)
+    stopifnot(length(r8_start) == 1L, length(r8_next) == 1L, r8_start < r8_next)
+    src8w_txt <- paste(src8w[r8_start:(r8_next - 1L)], collapse = "\n")
+    needle8w <- "if eml_findWhitespaceOnlyCell.found = 1"
+    hit8w <- lengths(regmatches(src8w_txt, gregexpr(needle8w, src8w_txt, fixed = TRUE)))
+    check_true("v129",
+               "[Fix 3] the whitespace-only-DATA-cell guard line exists in refusal 8's own source block, exactly once -- negative-control seed site",
+               hit8w == 1)
+    mut8w_body_txt <- sub(needle8w, "0 = 1", src8w_txt, fixed = TRUE)
+    mut8w_full <- src8w
+    mut8w_full[r8_start:(r8_next - 1L)] <- strsplit(mut8w_body_txt, "\n", fixed = TRUE)[[1]]
+    writeLines(mut8w_full, file.path(mut8w, "eml-psychometrics.praat"))
+    linkdir8w <- file.path(work, "mutant8w_link")
+    if (!file.exists(linkdir8w)) file.symlink(mut8w, linkdir8w)
+
+    out_mut8w <- drive_validate("mutant8w_link", p8_ws, committed_scales_path,
+                                committed_items_path, "mutant8w")
+    negative_control_codes <- c(negative_control_codes, 8)
+
+    if (red_mode) {
+        cat("      EML_LANE_RED: running the standard 'refusal 8 fires'\n")
+        cat("      check against the neutered-guard build -- the next check is\n")
+        cat("      EXPECTED to FAIL (the mutant HALTS rather than reports 8).\n")
+        check_true("v129",
+            "[RED] refusal 8 fires on the whitespace-only-DATA-cell fixture (must go red once Fix 3's guard is neutered)",
+            ran_ok(out_mut8w) && identical(num_(out_mut8w, "res", 1), 8))
+    } else {
+        check_true("v129",
+            "[Fix 3] whitespace-only-DATA-cell guard neutered: the mutant HALTS outright on its own seeded defect (a bare space in R1, row 2) instead of refusing gracefully -- the guard is load-bearing against exactly the script abort Fix 3 closes",
+            !ran_ok(out_mut8w))
+    }
+
+    # -------------------------------------------------------------------
+    # TEXT PARITY (Fix 3's cleanup) -- @eml_findWhitespaceOnlyCell's skip
+    # condition (eml-psychometrics.praat) restates two of
+    # @eml_strictNumericColumn's own three "unreadable" spellings
+    # (eml-extract.praat). eml-extract.praat is outside this lane's
+    # boundary, so the two cannot be merged into one shared constant; the
+    # canon is instead read out of both files by source text and compared,
+    # not restructured into one -- the v105_pitch_parity.R pattern. The
+    # third spelling ("?") is deliberately NOT restated: @eml_classifyCell
+    # never classifies a bare "?" as kind 1 (it is not empty once trimmed,
+    # and it is not a number in any locale -- @eml_classifyCell's own kind
+    # 3), so a "?" comparison in the skip condition could never change
+    # which row is reported and was dead code, removed rather than kept
+    # for a false symmetry with the other two.
+    # -------------------------------------------------------------------
+    extract_canon_line <- grep(
+        'if \\.cell\\$ = "" or \\.cell\\$ = "--undefined--" or \\.cell\\$ = "\\?"',
+        readLines(file.path(plug, "stats", "eml-extract.praat"), warn = FALSE),
+        value = TRUE)
+    check_true("v129",
+        "[Fix 3 cleanup] @eml_strictNumericColumn's own three-spelling canon line is found, unchanged and exactly once, in eml-extract.praat (this parity check's own anchor)",
+        length(extract_canon_line) == 1L)
+
+    skip_line <- grep(
+        'if \\.raw\\$ <> "" and \\.raw\\$ <> "--undefined--"',
+        readLines(file.path(plug, "stats", "eml-psychometrics.praat"), warn = FALSE),
+        value = TRUE)
+    check_true("v129",
+        "[Fix 3 cleanup] @eml_findWhitespaceOnlyCell's skip condition is found, exactly once, in eml-psychometrics.praat",
+        length(skip_line) == 1L)
+
+    extract_tokens <- if (length(extract_canon_line) == 1L) {
+        regmatches(extract_canon_line, gregexpr('"[^"]*"', extract_canon_line))[[1]]
+    } else character(0)
+    skip_tokens <- if (length(skip_line) == 1L) {
+        regmatches(skip_line, gregexpr('"[^"]*"', skip_line))[[1]]
+    } else character(0)
+
+    check_true("v129",
+        "[Fix 3 cleanup] every token @eml_findWhitespaceOnlyCell's skip condition excludes is one @eml_strictNumericColumn's own pre-scan already recognises (the restated pair is a SUBSET of the three-spelling canon, not a fork of it -- catches the canon changing out from under the copy)",
+        length(skip_tokens) > 0 && all(skip_tokens %in% extract_tokens))
+    check_true("v129",
+        "[Fix 3 cleanup] the skip condition restates exactly the two LIVE tokens (\"\" and \"--undefined--\"), not the dead third (\"?\") that @eml_classifyCell already excludes from kind 1 on its own",
+        identical(sort(skip_tokens), sort(c('""', '"--undefined--"'))))
+
+    # -------------------------------------------------------------------
     # 11b-11e. NEGATIVE CONTROLS for refusals 3, 4, 5A and 5B -- Finding 6:
     #    these four guards (plus refusal 1, given its own bespoke section 6b
     #    above) had only positive seeded-defect legs, unlike every refusal
@@ -1428,15 +1568,32 @@ if (!canDrive) {
     file.symlink(normalizePath(file.path(plug, "stats", "eml-inferential.praat")),
                  file.path(mut12w, "eml-inferential.praat"))
     src12w <- readLines(file.path(plug, "stats", "eml-psychometrics.praat"))
-    src12w_txt <- paste(src12w, collapse = "\n")
+    # Bounded to refusal 12's own block (its opening comment line to
+    # refusal 15's, exclusive) -- the same "bound the scan" discipline
+    # section 18b's derive_refusal_codes() applies to
+    # @emlSurveyValidateDeclaration's own body (the v105_pitch_parity.R
+    # pattern) -- so Fix 3's guard line for the DATA-column case (added
+    # below, in refusal 8's own block, reading textually IDENTICALLY:
+    # "if eml_findWhitespaceOnlyCell.found = 1", the same shared helper's
+    # output tested the same way) can never be swept into this count or
+    # this mutation. Without the bound, a plain whole-file substring count
+    # would over-count once Fix 3 exists (its guard line, at deeper
+    # indentation, contains this needle as a trailing substring) and the
+    # gsub below would silently neuter Fix 3's guard too while claiming to
+    # test only Fix 2's.
+    r12_start <- grep("^    # ===== Refusal 12:", src12w)
+    r12_next <- grep("^    # ===== Refusal 15", src12w)
+    stopifnot(length(r12_start) == 1L, length(r12_next) == 1L, r12_start < r12_next)
+    src12w_txt <- paste(src12w[r12_start:(r12_next - 1L)], collapse = "\n")
     needle12w <- "    if eml_findWhitespaceOnlyCell.found = 1"
     hit12w <- lengths(regmatches(src12w_txt, gregexpr(needle12w, src12w_txt, fixed = TRUE)))
     check_true("v129",
-               "[Fix 2] the whitespace-only-endpoint guard line exists in source, exactly twice (min then max) -- negative-control seed site",
+               "[Fix 2] the whitespace-only-endpoint guard line exists in refusal 12's own source block, exactly twice (min then max) -- negative-control seed site",
                hit12w == 2)
-    mut12w_txt <- gsub(needle12w, "    if 0 = 1", src12w_txt, fixed = TRUE)
-    writeLines(strsplit(mut12w_txt, "\n", fixed = TRUE)[[1]],
-               file.path(mut12w, "eml-psychometrics.praat"))
+    mut12w_body_txt <- gsub(needle12w, "    if 0 = 1", src12w_txt, fixed = TRUE)
+    mut12w_full <- src12w
+    mut12w_full[r12_start:(r12_next - 1L)] <- strsplit(mut12w_body_txt, "\n", fixed = TRUE)[[1]]
+    writeLines(mut12w_full, file.path(mut12w, "eml-psychometrics.praat"))
     linkdir12w <- file.path(work, "mutant12w_link")
     if (!file.exists(linkdir12w)) file.symlink(mut12w, linkdir12w)
 
