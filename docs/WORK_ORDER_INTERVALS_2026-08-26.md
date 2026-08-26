@@ -142,3 +142,25 @@ approval.**
 The Welch-only wizard is a 4.3 gap already ruled — Student rows join the
 wizard through lane 4's language batch. Out of scope here; nothing in this
 order keys off the door.
+
+---
+
+# Amendment — the direction-of-effect claim was wrong, and a standing rule
+
+Fable, 26 August 2026, on item 5's report.
+
+**Confirmed: the direction-of-effect claim in the framing above was wrong.**
+Substituting alpha/m for alpha pushes the F quantile UP, so the interval
+WIDENS. It does not narrow. The work-order sentence is amended in REV 3.
+
+Item 5's demonstration B, as built, is correct and correctly shaped: identity
+with the named wrong arithmetic, no direction asserted.
+
+## Standing rule, from this, applying to ALL red demonstrations
+
+**Assert identity with the specified wrong computation. NEVER a direction or a
+magnitude narrative.**
+
+Those are prose, and prose does not get checked.
+
+The report-both-claim-nothing construction is the house pattern.
