@@ -54,20 +54,20 @@ Degrees of freedom are `n - 1`. So 3.7 inherits 3.6's interval SHAPE -- the
 Bonferroni gate, the level, the `invStudentQ(0, df)` hang guard -- but not the
 Welch/Student split.
 
-## The one gap, and it needs your ruling
+## Scheffe — decided by Ian, not open
 
 **Scheffe has no installed package oracle.** `DescTools::ScheffeTest` and
 `agricolae::scheffe.test` both implement it. Neither is packaged for Debian,
 and this container cannot reach CRAN.
 
-The kit's Scheffe oracle is therefore our own evaluation of the published
-definition through base R's `pf`. That is a closed-form definition rather than
-a reimplemented procedure, but it is still our arithmetic, and it is the one
-place in the kit where Josh would be right to discount the agreement.
+**Ian's decision, 26 August: Scheffe stays hand-rolled**, and the kit invites
+Josh to compare against another package if he wants a third answer. The R side
+evaluates the published definition through base R's `pf` — the statistic is
+`(diff/SE)^2 / (k-1)` — so `pf` does the distributional work and the rest is
+the definition.
 
-Ian's note on precedent: your sessions have obtained packages without CRAN.
-If there is a route to `DescTools` and its dependencies, item 3.9's oracle
-stops being ours.
+The kit's README already carries this, naming both packages and the rows to
+compare against. No ruling needed.
 
 ## What is yours to rule
 
@@ -75,7 +75,7 @@ stops being ours.
 2. Whether the items may be built in parallel, given that every one of them
    touches `stats/eml-inferential.praat`.
 3. What validation runs at each step, and what waits for the gate.
-4. The Scheffe oracle: fetch a package, or ship with the definition-based
-   oracle and disclose it.
+
+Scheffe is settled and is not on this list.
 
 — executing session
