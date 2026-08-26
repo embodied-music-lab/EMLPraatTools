@@ -296,8 +296,19 @@ eml_report <- function(title) {
     df <- do.call(rbind, EML_RESULTS$rows)
     if (is.null(df)) { cat("no checks recorded\n"); return(invisible(NULL)) }
     cat("\n", strrep("=", 78), "\n", title, "\n", strrep("=", 78), "\n", sep = "")
+
+    # QUIET BY DEFAULT. A passing assertion's text is only useful once it stops
+    # passing, and printing every one of them costs the reader far more than it
+    # informs: on 26 August four validators emitted 2,107 lines, of which 2,079
+    # were PASS. Failures and attestations always print, in full. Set
+    # EML_VERBOSE=1 to see the passing lines too.
+    .emlVerbose <- nzchar(Sys.getenv("EML_VERBOSE"))
+    .emlAnyFail <- any(!df$pass[df$expect != "attested"])
+    .emlShowAll <- .emlVerbose || .emlAnyFail
+
     for (i in seq_len(nrow(df))) {
         r <- df[i, ]
+        if (!.emlShowAll && r$pass && !identical(r$expect, "attested")) next
         mark <- if (identical(r$expect, "attested")) {
             "ATST"
         } else if (r$pass) "PASS" else "FAIL"
