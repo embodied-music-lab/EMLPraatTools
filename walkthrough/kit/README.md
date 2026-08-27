@@ -55,6 +55,22 @@ happens correctly is evidence**, so those cells are checked as strictly as any
 other: both sides must refuse the same cell, and neither may emit a number
 while doing it. 15 of the 630 cells are declared refusals.
 
+### Which cells a fixture may contain
+
+Fixtures carry missing-class cells and never error-class cells.
+
+A missing-class cell is an absent value, written `NA`, `n/a`, or empty. Both
+runners treat these identically, and the four fixtures that carry them
+produce no residue.
+
+An error-class cell is malformed rather than absent: a comma-decimal number,
+a control character, a whitespace-only field. The two runners are entitled to
+disagree about these, and the disagreement says nothing about the statistics
+under test. One fixture holds them on purpose,
+`rp_r6_parse_conditions_input.csv`, and it is excluded from the run list.
+
+Scan a new fixture for error-class cells before adding it to the run list.
+
 ## How every combination is produced
 
 The plugin's choices are axes. Across the 17 procedures there are nine of
