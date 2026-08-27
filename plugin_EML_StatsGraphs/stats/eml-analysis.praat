@@ -3888,34 +3888,32 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         goto END_NORMALITY
     endif
 
-    # Extract column data (exclude undefined)
-    .nValid = 0
-    for .iRow from 1 to .nRows
-        selectObject: .tableId
-        .val = Get value: .iRow, .dataCol$
-        if .val <> undefined
-            .nValid += 1
-        endif
-    endfor
+    # CONFORMANCE, 27 August 2026. This read used Praat's own `Get value:`
+    # on every row, which coerces a cell rather than classifying it: the
+    # comma-decimal cell "73,4" came back as 73, because Praat's numeric
+    # grammar parses a leading prefix and stops at the comma. The value was
+    # then reported as data. @emlRunDescriptiveAnalysis reads the same cell
+    # through @emlExtractColumn, which excludes it and discloses the
+    # exclusion -- so one table produced two different n, and the procedure
+    # that answered had the wrong number.
+    #
+    # The shipped contract is exclude-and-disclose, and descriptive already
+    # conformed. This brings normality to it. Both procedures now read
+    # through the one extractor, so they cannot disagree about a cell.
+    @emlExtractColumn: .tableId, .dataCol$
+    if emlExtractColumn.error$ <> ""
+        .error$ = emlExtractColumn.error$
+    endif
+    .nValid = emlExtractColumn.n
 
-    if .nValid < 3
+    if .error$ = "" and .nValid < 3
         .error$ = "Need at least 3 non-missing values (found "
         ... + string$ (.nValid) + ")."
     endif
 
     if .error$ = ""
-        .data# = zero# (.nValid)
-        .idx = 0
-        for .iRow from 1 to .nRows
-            selectObject: .tableId
-            .val = Get value: .iRow, .dataCol$
-            if .val <> undefined
-                .idx += 1
-                .data# [.idx] = .val
-            endif
-        endfor
-
-        .nUndefined = .nRows - .nValid
+        .data# = emlExtractColumn.data#
+        .nUndefined = emlExtractColumn.nUndefined
 
         # Descriptive shape measures
         @emlSkewness: .data#
