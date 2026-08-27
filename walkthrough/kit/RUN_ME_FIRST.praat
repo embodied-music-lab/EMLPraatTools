@@ -25,7 +25,7 @@ include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib
 # RUN_ME_FIRST.praat -- reads matrix.tsv and runs every one of its 630 cells
 # against the EML Stats & Graphs procedures, writing the result in the long
 # shared schema to out/praat_results.tsv (source = "praat") and one
-# human-readable report per cell_id to out/praat_reports/<cell_id>.txt.
+# human-readable report per cell_id to results/praat_reports/<cell_id>.txt.
 #
 # THIS SCRIPT CARRIES NO LIST OF ITS OWN. Every cell it runs comes from
 # reading matrix.tsv at run time. Add a row to that file -- no code change
@@ -69,18 +69,19 @@ include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib
 # ============================================================================
 
 createFolder: "out"
-createFolder: "out/praat_reports"
+createFolder: "results"
+createFolder: "results/praat_reports"
 
 # THE REPORT FOLDER IS EMPTIED FIRST. writeFile overwrites but never
 # deletes, so a cell removed from matrix.tsv leaves its old report behind
 # and the folder drifts out of step with the declaration. Every cell in the
 # current matrix rewrites its own report below, so nothing live is lost.
-emlKitStale = Create Strings as file list: "emlKitStale", "out/praat_reports/*.txt"
+emlKitStale = Create Strings as file list: "emlKitStale", "results/praat_reports/*.txt"
 emlKitNStale = Get number of strings
 for emlKitI to emlKitNStale
     selectObject: emlKitStale
     emlKitStaleName$ = Get string: emlKitI
-    deleteFile: "out/praat_reports/" + emlKitStaleName$
+    deleteFile: "results/praat_reports/" + emlKitStaleName$
 endfor
 selectObject: emlKitStale
 Remove
@@ -411,7 +412,7 @@ procedure emlKitBeginCell: .cellId$
 endproc
 
 # ----------------------------------------------------------------------------
-# @emlKitEndCell -- write out/praat_reports/<cell_id>.txt: this script's own
+# @emlKitEndCell -- write results/praat_reports/<cell_id>.txt: this script's own
 # header (every column of the matrix row, so the report is self-contained),
 # then whatever the library printed to the Info window for this cell (APA
 # formatting intact -- that is what a human wants when a row disagrees), then
@@ -454,7 +455,7 @@ procedure emlKitEndCell: .cellId$, .lane$, .proc$, .dataset$, .colA$, .colB$,
     ; Sanitizing the WHOLE report would collapse its internal newlines, so
     ; only fold to ASCII here and keep the original's line breaks.
     @emlAsciiFold: .rep$
-    writeFile: "out/praat_reports/" + .cellId$ + ".txt", emlAsciiFold.result$
+    writeFile: "results/praat_reports/" + .cellId$ + ".txt", emlAsciiFold.result$
 endproc
 
 

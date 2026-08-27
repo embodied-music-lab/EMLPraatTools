@@ -4,7 +4,7 @@
 # Run it AFTER both runners:
 #     Praat:  open RUN_ME_FIRST.praat, click Run        -> out/praat_results.tsv
 #     R:      open run_analyses.R, click Source         -> out/r_results.tsv
-#     then:   open this file, click Source              -> out/reconciliation.tsv
+#     then:   open this file, click Source              -> results/reconciliation.tsv
 #
 # It reads nothing but those two files and matrix.tsv. It needs no package.
 #
@@ -75,6 +75,12 @@ emlThisFile <- function() {
 }
 kitDir <- dirname(emlThisFile())
 outDir <- file.path(kitDir, "out")
+# TWO OUTPUT DIRECTORIES, SPLIT BY AUDIENCE. out/ holds the two long tables
+# the runners emit and this file consumes -- machine input, not reading
+# matter. results/ holds what a person opens: the verdict, the reconciliation,
+# and the per-cell reports from both sides.
+resultsDir <- file.path(kitDir, "results")
+dir.create(resultsDir, showWarnings = FALSE)
 
 need <- file.path(outDir, c("praat_results.tsv", "r_results.tsv"))
 missing <- need[!file.exists(need)]
@@ -746,16 +752,16 @@ if (nrow(out)) {
 } else {
     out$enforcement <- character(); out$why <- character()
 }
-write.table(out, file.path(outDir, "reconciliation.tsv"), sep = "\t",
+write.table(out, file.path(resultsDir, "reconciliation.tsv"), sep = "\t",
             quote = FALSE, row.names = FALSE)
 
 # THE VERDICT IS WRITTEN AS WELL AS PRINTED. Everything below reaches both
-# the console and out/verdict.txt. A verdict that exists only in a console
+# the console and results/VERDICT.txt. A verdict that exists only in a console
 # is gone when the window closes, cannot be attached to an email, and cannot
 # be diffed against the next run. split = TRUE tees rather than diverts, so
 # the console still shows it live. on.exit closes the sink even if something
 # below fails, which otherwise leaves the session silently redirected.
-.verdictPath <- file.path(outDir, "verdict.txt")
+.verdictPath <- file.path(resultsDir, "VERDICT.txt")
 sink(.verdictPath, split = TRUE)
 on.exit(if (sink.number() > 0) sink(), add = TRUE)
 
@@ -930,7 +936,7 @@ if (balances) {
 } else {
     cat(sprintf("  balance: FAILS -- gap of %d key(s); something fell out of (or was double-counted\n",
                 abs(balanceGap)))
-    cat("  across) all three categories. See out/reconciliation.tsv.\n")
+    cat("  across) all three categories. See results/reconciliation.tsv.\n")
 }
 
 cat("\n---------------------------------------------------------\n")
@@ -949,11 +955,11 @@ if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0 && bal
     if (!balances)
         cat(sprintf("    balance invariant FAILS -- gap of %d key(s); see 'the balance invariant' above.\n",
                     abs(balanceGap)))
-    cat("  See out/reconciliation.tsv.\n")
+    cat("  See results/reconciliation.tsv.\n")
     cat("  A run that compares fewer quantities than the contract requires is not green,\n")
     cat("  however well the ones present agree.\n")
 }
 cat("---------------------------------------------------------\n")
-cat(sprintf("full detail: %s\n", file.path(outDir, "reconciliation.tsv")))
+cat(sprintf("full detail: %s\n", file.path(resultsDir, "reconciliation.tsv")))
 cat(sprintf("this verdict: %s\n\n", .verdictPath))
 if (sink.number() > 0) sink()

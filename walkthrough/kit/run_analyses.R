@@ -24,7 +24,7 @@
 #
 # Emits out/r_results.tsv in the shared long schema (cell_id, quantity,
 # value, source) and one human-readable report per cell into
-# out/r_reports/<cell_id>.txt -- including refused and skipped cells, which
+# results/r_reports/<cell_id>.txt -- including refused and skipped cells, which
 # get a short report stating why nothing was computed.
 #
 # KNOWN, INVESTIGATED DISCREPANCIES against matrix.tsv's `expect` column
@@ -99,9 +99,11 @@ emlThisFile <- function() {
 kitDir    <- dirname(emlThisFile())
 dataDir   <- file.path(kitDir, "data")
 outDir    <- file.path(kitDir, "out")
-reportDir <- file.path(outDir, "r_reports")
+resultsDir <- file.path(kitDir, "results")
+reportDir  <- file.path(resultsDir, "r_reports")
 matrixPath <- file.path(kitDir, "matrix.tsv")
 dir.create(outDir, showWarnings = FALSE)
+dir.create(resultsDir, showWarnings = FALSE)
 # THE REPORT DIRECTORY IS EMPTIED FIRST. Reports are written one file per
 # cell and never deleted, so a cell removed from matrix.tsv leaves its old
 # report behind. A reader then finds a report for a cell that no longer
@@ -386,7 +388,7 @@ refuseCell <- function(cell_id, reason) {
     emitText(cell_id, "refused", "1")
     emitText(cell_id, "refuse_reason", reason)
     # One report per cell, no exceptions: a refused cell still gets its
-    # out/r_reports/<cell_id>.txt, stating plainly that nothing was
+    # results/r_reports/<cell_id>.txt, stating plainly that nothing was
     # computed and why, rather than leaving that cell with no file at all.
     writeReport(cell_id, c(sprintf("REFUSED: %s", reason)))
 }
