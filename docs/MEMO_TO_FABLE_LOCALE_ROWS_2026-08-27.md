@@ -26,13 +26,11 @@ interval wiring, Scheffe, and the `p method` quantity.
 So the fixture compares as plugin-excludes against R-includes, at `n = 3`
 against `n = 4`. The 19 rows stand.
 
-## Why R is the correct side
+## The two ingestion contracts
 
-A single comma between digits is a decimal separator. R reads 73.4, which is
-the value in the cell. The plugin refuses the cell entirely.
-
-The plugin's refusal is defensible as a conservative contract while the parse
-canon is paused, but it is not the same answer, and it is not the better one.
+STRUCK 27 August 2026 by Fable's ruling. This section adjudicated between two
+deliberate ingestion contracts, which the kit does not do. The fixture and its
+cells have since been removed from the kit, so the question does not arise.
 
 ## The two ways to close the rows
 

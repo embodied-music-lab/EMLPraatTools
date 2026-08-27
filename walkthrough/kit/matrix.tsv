@@ -178,7 +178,6 @@ c0071	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			0			discovery	
 c0072	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			0			alphabetical				ok	
 c0073	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			1			discovery				ok	
 c0074	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			1			alphabetical				ok	
-c0075	analysis	emlRunAnovaAnalysis	rp_r6_parse_conditions_input	SPL_soft	singer			1			discovery				refuse	singer is an identifier column: 6 groups for 6 rows
 c0076	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off
 c0077	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bonferroni		discovery				ok	
 c0078	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	holm		discovery				ok	
@@ -259,7 +258,6 @@ c0152	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			0	holm		alphabeti
 c0153	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bonferroni		alphabetical				ok	
 c0154	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	holm		alphabetical				ok	
 c0155	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bh		alphabetical				ok	
-c0156	analysis	emlRunKWAnalysis	rp_r6_parse_conditions_input	SPL_soft	singer			1	holm		discovery				refuse	blank cell leaves group S05 with 0 observations
 c0157	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bonferroni		discovery				ok	
 c0158	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		holm		discovery				ok	
 c0159	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bh		discovery				ok	
@@ -562,7 +560,6 @@ c0455	analysis	emlRunDescriptiveAnalysis	rp_r3_paired_input	SPL_loud											o
 c0456	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_soft											ok	one non-numeric cell (n/a): dropped as missing, disclosed
 c0457	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_medium											ok	
 c0458	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_loud											ok	
-c0459	analysis	emlRunDescriptiveAnalysis	rp_r6_parse_conditions_input	SPL_soft											ok	n/a, a comma decimal and an empty cell: parse disclosure
 c0460	analysis	emlRunDescriptiveAnalysis	v73_directional_input	idx											ok	
 c0461	analysis	emlRunDescriptiveAnalysis	v73_directional_input	x											ok	
 c0462	analysis	emlRunNormalityAnalysis	demo_3groups_input	SPL_dB			both								ok	
@@ -604,7 +601,6 @@ c0497	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_loud			both							
 c0498	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_soft			both								ok	non-numeric cells dropped as missing
 c0499	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_medium			both								ok	non-numeric cells dropped as missing
 c0500	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_loud			both								ok	non-numeric cells dropped as missing
-c0501	analysis	emlRunNormalityAnalysis	rp_r6_parse_conditions_input	SPL_soft			both								ok	non-numeric cells dropped as missing
 c0502	analysis	emlRunNormalityAnalysis	v73_directional_input	idx			both								ok	
 c0503	analysis	emlRunNormalityAnalysis	v73_directional_input	x			both								ok	
 c0504	analysis	emlRunRegressionAnalysis	v13_regression_input	vibrato_regularity_pct	practice_hrs_wk										ok	
@@ -667,8 +663,6 @@ c0560	analysis	emlRunRepeatedMeasuresAnalysis	rp_r3_paired_input	SPL_soft|SPL_me
 c0561	analysis	emlRunFriedmanAnalysis	rp_r3_paired_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok	every value identical: no variance to partition; Friedman ranks and survives where RM-ANOVA refuses
 c0562	analysis	emlRunRepeatedMeasuresAnalysis	rp_r6_describe_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						refuse	zero subject x condition residual on the 4 complete rows
 c0563	analysis	emlRunFriedmanAnalysis	rp_r6_describe_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok	zero subject x condition residual on the 4 complete rows; Friedman ranks and survives where RM-ANOVA refuses
-c0564	analysis	emlRunRepeatedMeasuresAnalysis	rp_r6_parse_conditions_input	SPL_soft|				1	holm						refuse	need at least 2 condition columns
-c0565	analysis	emlRunFriedmanAnalysis	rp_r6_parse_conditions_input	SPL_soft|				1	holm						refuse	need at least 2 condition columns
 c0566	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.90			ok	
 c0567	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.95			ok	
 c0568	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.99			ok	

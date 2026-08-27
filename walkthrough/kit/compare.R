@@ -243,6 +243,40 @@ DECLARED <- list(
     # measured there. A family whose bound the fresh run exceeds is NOT here:
     # an exceeded bound is a finding, not a bound to raise.
 
+    list(q = "^posthoc_.*_diff_wilcoxest(_undefined)?$", where = "r",
+         id = "D-WILCOXEST",
+         why = paste("DOCUMENTED ABSENCE, R-side, under the",
+                     "definition-over-implementation rule. The plugin computes the",
+                     "DEFINITIONAL Hodges-Lehmann median of the pairwise differences, and",
+                     "that quantity is already compared under posthoc_*_diff. R's",
+                     "*_diff_wilcoxest field is the estimate wilcox.test returns from its",
+                     "own uniroot search over the shifted statistic -- an artifact of how",
+                     "that function locates the estimate, not a second definition of it. It",
+                     "has no plugin counterpart to compare against. R keeps emitting it, and",
+                     "this clause is the disclosure that it was seen and accounted for",
+                     "rather than dropped. Ordered by the bare-run adjudication, 26 August;",
+                     "the measured family is 261 rows including the graded variants and the",
+                     "_undefined markers.")),
+
+    list(q = "^posthoc_.*_padj$", where = "diff", id = "D-PTUKEY",
+         maxrel = 5e-3, vmax = 1e-9,
+         why = paste("EXTREME-TAIL QUADRATURE, DIAGNOSED 27 AUGUST 2026, AND",
+                     "ENVIRONMENT-DEPENDENT. Both sides evaluate the studentised range",
+                     "distribution. The statistic itself is identical: at cell c0069, pair",
+                     "paired__perfect, q = 14.123877432410683 on the run machine and",
+                     "14.12387743241068350 in the reference container -- the same number.",
+                     "Only the CDF evaluation differs, so the spread is in ptukey's",
+                     "quadrature and nowhere else.",
+                     "It also depends on the Praat build. Against R's",
+                     "5.6645799162424737e-12, the container returns 5.66435787e-12",
+                     "(3.9e-5 relative) and the run machine returns 5.671796365902537e-12",
+                     "(1.27e-3). The bound is 5e-3, set above the wider of the two rather",
+                     "than tuned to either, and asserted below.",
+                     "SCOPED to padj < 1e-9 by vmax. This clause speaks only for the",
+                     "extreme tail, where quadrature error is largest and the absolute",
+                     "difference is nil. A padj disagreement anywhere else is not covered",
+                     "and stays unexplained.")),
+
     list(q = "^(task|voice_type)(__(task|voice_type))?_(ss|ms|f|p|partial_eta_squared)$",
          where = "diff", id = "D-TWOWAY-PRECISION",
          proc = "emlRunTwoWayAnalysis", maxrel = 2e-8,
@@ -576,6 +610,14 @@ for (k in both) {
             if (identical(P$value[pi], R$value[ri])) { nAgree <- nAgree + 1L; next }
         } else if (agree(pv, rv)) { nAgree <- nAgree + 1L; next }
         rule <- declaredFor(cell, q, "diff")
+        # VALUE SCOPE. A clause may carry `vmax`, the largest magnitude it
+        # speaks for. A quadrature spread that is real at p ~ 1e-12 says
+        # nothing about the same quantity at p ~ 0.05, and a bound wide
+        # enough for the tail would excuse a genuine disagreement in the
+        # body. Outside its scope the clause does not apply and the row
+        # stays unexplained.
+        if (!is.null(rule) && !is.null(rule$vmax) && !is.na(pv) && !is.na(rv) &&
+            max(abs(pv), abs(rv)) > rule$vmax) rule <- NULL
         if (!is.null(rule)) {
             if (!is.null(rule$maxrel) && !is.na(pv) && !is.na(rv)) {
                 rel <- abs(pv - rv) / max(abs(pv), abs(rv))

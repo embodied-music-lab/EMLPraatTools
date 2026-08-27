@@ -86,8 +86,9 @@ wrong repair.
 
 The measured content, for the record: the plugin excludes the comma-decimal
 cell and reports n = 3; R reads 73.4 and reports n = 4; every descriptive
-statistic and the two CI bounds differ downstream. R holds the correct
-reading.
+statistic and the two CI bounds differ downstream. The two sides implement
+different deliberate ingestion contracts, and the kit does not adjudicate
+between them.
 
 ## What each needs
 

@@ -171,25 +171,13 @@ readDataset <- function(name) {
     }
     get(name, envir = .dsCache, inherits = FALSE)
 }
-# NUMERIC PARSING IS PART OF THE INPUT CONTRACT, NOT A STATISTICAL CHOICE.
-# The plugin documents (and its reports state) that it reads a cell as a
-# number "in any locale": a value written with a decimal comma, e.g. the
-# "73,4" in rp_r6_parse_conditions_input.csv, is the number 73.4, and the
-# fixture exists precisely to exercise that. read.csv() alone returns NA
-# there, so this runner would silently analyse a different, smaller sample
-# than the Praat side on that file -- a data-ingestion divergence dressed
-# up as a statistical disagreement. Rule applied, matching the plugin: a
-# token that is numeric once a single comma is read as the decimal point is
-# that number; anything else stays NA and is counted as missing. A comma
-# used as a thousands separator would be ambiguous, so only a single comma
-# with no period present is treated this way.
+# The comma-decimal conversion that lived here was removed on 27 August 2026
+# together with rp_r6_parse_conditions_input, the only fixture that exercised
+# it. No fixture in the corpus now carries a comma-decimal cell, and the
+# corpus rule in README.md keeps it that way, so the branch was dead. The
+# fixture's behaviour assertion lives in validate/, not here.
 .localeNumeric <- function(v) {
-    v <- trimws(as.character(v))
-    out <- suppressWarnings(as.numeric(v))
-    cand <- is.na(out) & !is.na(v) & nzchar(v) &
-        grepl("^[+-]?[0-9]+,[0-9]+$", v)
-    if (any(cand)) out[cand] <- suppressWarnings(as.numeric(sub(",", ".", v[cand], fixed = TRUE)))
-    out
+    suppressWarnings(as.numeric(trimws(as.character(v))))
 }
 numcol <- function(d, col) .localeNumeric(d[[col]])
 chrcol <- function(d, col) trimws(as.character(d[[col]]))
