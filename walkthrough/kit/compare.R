@@ -237,7 +237,42 @@ indexSet <- function(scope, cell, tmpl) {
 # simply means every previously-declared row now falls to UNEXPLAINED or
 # CONTRACT_*, which is the point.
 # ---------------------------------------------------------------------------
-DECLARED <- list()
+DECLARED <- list(
+    # REBUILT 2026-08-27 from the fresh run, not copied from the retired list.
+    # Every clause below matched a family in that run and carries the number
+    # measured there. A family whose bound the fresh run exceeds is NOT here:
+    # an exceeded bound is a finding, not a bound to raise.
+
+    list(q = "^(task|voice_type)(__(task|voice_type))?_(ss|ms|f|p|partial_eta_squared)$",
+         where = "diff", id = "D-TWOWAY-PRECISION",
+         proc = "emlRunTwoWayAnalysis", maxrel = 2e-8,
+         why = paste("PRECISION CEILING, NOT A DISAGREEMENT.",
+                     "@emlRunTwoWayAnalysis does not compute the two-way ANOVA: it parses",
+                     "the text of Praat's own 'Report two-way anova', which prints SS to",
+                     "about nine significant digits. Every quantity derived from those sums",
+                     "inherits that ceiling. Measured worst relative disagreement in this",
+                     "run: 1.223e-8, against the 2e-8 bound this clause has carried since",
+                     "26 August. The bound is asserted below, not assumed.")),
+
+    list(q = "^refuse_reason$", where = "diff", id = "D-WORDING",
+         why = paste("Refusal wording differs between implementations. That the same cells",
+                     "refuse is asserted separately, and does hold: both sides refused 24",
+                     "cells and neither missed a declared refusal.")),
+
+    list(q = "^alpha_if_deleted_.*_undefined$", where = "praat", id = "D-ALPHA2ITEM",
+         why = paste("Alpha-if-item-deleted on a two-item scale would leave one item, for",
+                     "which alpha is undefined. The plugin emits the undefined marker; the R",
+                     "side does not attempt the quantity at k = 2. Same statement, two",
+                     "spellings.")),
+
+    list(q = "^delta_(max|row_[0-9]+)$", where = "diff", id = "D-ALPHADROP",
+         proc = "emlAlphaInfluence",
+         why = paste("Leave-one-out alpha on the n = 3 fixture reaches a two-respondent",
+                     "submatrix in which one item has no variance. psych::alpha deletes that",
+                     "item and computes on k = 3; the plugin keeps it and computes on k = 4.",
+                     "Different scale definitions, hence different alpha. Ruled by Fable as",
+                     "a divergence with the derivation carried as provenance."))
+)
 
 # --- RETIRED_DECLARED_2026_08_27 -- input to nothing ------------------------
 # Kept verbatim, for reference only, so nobody has to reconstruct what used
