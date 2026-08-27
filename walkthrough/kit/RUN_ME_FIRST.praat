@@ -1,35 +1,24 @@
 # ============================================================================
-# EDIT THIS ONE LINE BEFORE RUNNING.
+# NOTHING TO EDIT ON macOS.
 #
-# The line directly below reads:
+# The line below loads the plugin from the folder Praat installs it into.
+# Praat expands `~` to your home folder, so the path is the same on every
+# Mac and this script needs no change from you.
 #
-#     include <praat-prefs>/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
+# ON WINDOWS OR LINUX, change that one line to your own Praat preferences
+# folder -- the one setup.praat wrote scripts/eml-lib-user.praat into the
+# first time you launched Praat after installing the plugin:
 #
-# Replace <praat-prefs> with YOUR OWN Praat preferences folder -- the one
-# setup.praat wrote scripts/eml-lib-user.praat into the first time you
-# launched Praat after installing the plugin. On macOS, with a default
-# install, that is:
+#     Windows   C:\Users\<you>\Praat\plugin_EML_StatsGraphs\scripts\eml-lib-user.praat
+#     Linux     ~/.praat-dir/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
 #
-#     ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
-#
-# so the line becomes:
-#
-#     include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
-#
-# WHY THIS CANNOT BE DONE FOR YOU. Praat's `include` is a PARSE-TIME text
-# paste, not a runtime call -- it cannot take a variable, a function result,
-# or anything computed while the script runs. The path has to be written
-# here, literally, before Praat reads the rest of the file.
-#
-# WHAT HAPPENS IF YOU GET IT WRONG. Praat fails at PARSE time, before line 1
-# of this script's own logic ever runs, with its own "Cannot open file"
-# dialog naming the path it tried. No guard in this script can catch that or
-# soften it -- parsing has not reached far enough for any of this script's
-# own code to be running yet. If you see that dialog, re-check the path
-# above against the file setup.praat actually wrote on your machine.
+# If the path is wrong, Praat stops at PARSE time with its own "Cannot open
+# file" dialog naming the path it tried, before any line of this script runs.
+# No guard here can catch that, because `include` is a parse-time text paste
+# rather than a runtime call.
 # ============================================================================
 
-include <praat-prefs>/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
+include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
 
 
 # ============================================================================

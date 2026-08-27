@@ -32,27 +32,26 @@ refuse the same cell, and neither may emit a number while doing it.
 
 ## Before you start
 
-1. Install Praat 6.6.30 or newer. Below that version the library refuses to
-   load.
-2. Install the plugin: unzip `plugin_EML_StatsGraphs.zip`, **do not rename
-   the folder**, and drag it into your Praat preferences folder (macOS:
-   `~/Library/Preferences/Praat Prefs/`). Restart Praat.
-3. Launch Praat once and let it fully start. This is not optional idling --
-   the plugin's `setup.praat` runs at launch and generates
-   `plugin_EML_StatsGraphs/scripts/eml-lib-user.praat`, an absolute-path
-   barrel this kit's own script includes. The kit cannot run until that file
-   exists.
-4. Open `RUN_ME_FIRST.praat` and edit the one `include` line at the very top
-   to point at the `eml-lib-user.praat` that step 3 just generated on your
-   machine. The file itself says what to replace it with; it is the only
-   line in the kit that is not a plain relative path, because Praat's
-   `include` is resolved at parse time and cannot take a variable.
+You need Praat 6.6.30 or newer, R, and RStudio.
 
-You also need R, RStudio, and eight packages. Install them once:
+To set up, follow these steps:
 
-```r
-install.packages(c("rstatix","effectsize","car","afex","multcomp","nortest","coin","psych"))
-```
+1. Install Praat. Below 6.6.30 the plugin refuses to load.
+2. Unzip `plugin_EML_StatsGraphs.zip` and drag the folder into your Praat
+   preferences folder. On macOS that is `~/Library/Preferences/Praat Prefs/`.
+   Do not rename the folder; Praat identifies the plugin by that exact name.
+3. Restart Praat and let it finish starting. The plugin generates
+   `scripts/eml-lib-user.praat` at launch, and this kit loads the plugin
+   through that file.
+4. In RStudio, install the eight R packages:
+
+   ```r
+   install.packages(c("rstatix","effectsize","car","afex","multcomp","nortest","coin","psych"))
+   ```
+
+On macOS, that is the whole setup. On Windows or Linux, change the one
+`include` line at the top of `RUN_ME_FIRST.praat` to your own preferences
+folder; the file names both paths.
 
 ## Run the kit
 
@@ -100,7 +99,7 @@ Both tables are long, not wide: `cell_id`, `quantity`, `value`, `source`.
 One row per reported quantity, values unrounded and unformatted. A quantity
 one side reports and the other does not shows up as an unmatched row rather
 than a silent blank, and two packages disagreeing about the same named
-quantity are simply two rows with different `source`.
+quantity are two rows with different `source`.
 
 ## The verdict
 
@@ -112,7 +111,7 @@ value comparisons made       : 8903
   UNEXPLAINED      0
 ```
 
-The agreement tolerance is 1e-9 relative and is not a knob. Two
+The agreement tolerance is 1e-9 relative. It is not a knob. Two
 implementations of the same formula in IEEE double should agree to near
 machine precision; anything that does not is a difference worth naming
 rather than a tolerance to widen.
@@ -129,8 +128,8 @@ D-TWOWAY-PRECISION  observed max relative difference 1.22e-08, limit 1e-07 -- HO
 
 ## Which package supplies which comparison
 
-Every number on the R side comes from a package function, chosen because it
-is the one a statistician would call for that design.
+Every number on the R side comes from a package function -- the one a
+statistician calls for that design.
 
 | quantity | R source |
 | --- | --- |
@@ -145,13 +144,13 @@ is the one a statistician would call for that design.
 | Cronbach's alpha and its Feldt CI | `psych::alpha`, `psych::alpha.ci` |
 | every p-value adjustment | `stats::p.adjust` |
 
-Six effect sizes are deliberately computed twice, once from each package,
+The kit computes six effect sizes twice, once from each package,
 and never averaged or picked between. Where the two genuinely differ they
 appear as two rows with different `source` and the difference is a declared
 entry, not a defect to smooth over.
 
-`multcomp`, `nortest` and `coin` are installed and loaded but no cell calls
-them: nothing in the declaration needs what they uniquely offer over the
+`multcomp`, `nortest` and `coin` are installed, but no cell calls them:
+nothing in the declaration needs what they uniquely offer over the
 others. They are listed because they were considered.
 
 **Provenance, in two sentences.** Every quantity on the R side is produced
@@ -169,8 +168,8 @@ on trust unless you go and look at CI.
 
 ## The one expression written by hand
 
-The rule on the R side is that no statistic is re-derived; each is called
-from a package. `compare.R` would be worthless otherwise -- if the R script
+No statistic on the R side is re-derived. Each comes from a package.
+`compare.R` would be worthless otherwise -- if the R script
 reimplemented the plugin's formulas, agreement would prove only that the
 same arithmetic was typed twice.
 
@@ -358,7 +357,7 @@ the end of every run.
 ## Three questions for you
 
 1. What dataset would you construct that you think would break this --
-   expose a wrong number, not just an ugly one?
+   expose a wrong number, not an ugly one?
 2. Where in `run_analyses.R` would you have written the statistics
    differently, and why?
 3. If you handed a paper using this kit to a reviewer, what would they still
