@@ -13,29 +13,24 @@ how to order the groups.
 This kit is the evidence that those procedures compute what they claim. It
 runs every one of them against R and shows you both answers.
 
-## What it is trying to prove, and what it is not
+## What it tests
 
-Whether a t-test is correct in isolation is not in question. Any competent
-implementation gets that right, and testing it proves little.
+Whether a t-test is correct in isolation is not in question.
 
-**The claim under test is that the procedures compose correctly.** Choosing
-Welch rather than Student, then Holm rather than Bonferroni, then alphabetical
+The claim under test is that the procedures compose correctly. Choosing Welch
+rather than Student, then Holm rather than Bonferroni, then alphabetical
 rather than discovery group order should change exactly the numbers those
-choices govern and nothing else. That is where implementations fail: not in
-the formula, but in the wiring between a dialog setting and the arithmetic it
-is supposed to reach.
+choices govern and nothing else.
 
-Two consequences follow, and they shape everything below.
+The kit is built around two rules.
 
-**A single defensible answer is not enough.** Every quantity is computed twice
-— once by the plugin, once by an R package a statistician would call — and the
-two are compared row by row. Agreement between two independent implementations
-is worth more than either one being self-consistent.
+**Every quantity is computed twice** — once by the plugin, once by an R
+package a statistician would call — and the two are compared row by row.
 
-**Every row must be accounted for.** A quantity that one side reports and the
-other does not is not silence; it is a finding, and it lands in a named
-category with a written reason. Nothing falls between the categories, and the
-comparison checks its own arithmetic to make sure of it.
+**Every row lands in a named category.** A quantity one side reports and the
+other does not is a finding with a written reason, not an absence. The
+comparison counts its categories and checks they sum to the total, so a row
+cannot fall out of all of them.
 
 ## How the procedures are stress-tested
 
@@ -46,8 +41,7 @@ identical, missing values, non-numeric values, a decimal comma, a value too
 large to represent.
 
 Ordinary data exercises the path an implementation was written for.
-Degenerate data exercises the paths nobody thought about. The second is where
-the disagreements are.
+Degenerate data exercises the paths it was not.
 
 Some inputs are expected to be refused rather than analysed. **A refusal that
 happens correctly is evidence**, so those cells are checked as strictly as any
@@ -75,10 +69,10 @@ Crossing every applicable axis against every dataset a procedure legitimately
 accepts gives **630 cells**. One cell is one analysis run: a procedure, a
 dataset, and a value for every setting that applies to it.
 
-Group order shows why an axis earns its place. On `v11_twoway_input`, SPL_dB
-by voice_type, discovery order gives t = 3.9024 and alphabetical gives
+Group order is an axis because it changes results. On `v11_twoway_input`,
+SPL_dB by voice_type, discovery order gives t = 3.9024 and alphabetical gives
 t = −3.9024. That sign reaches Cohen's d, rank-biserial r, and every pairwise
-mean difference. Sort a spreadsheet, re-run, and every sign flips.
+mean difference.
 
 **All 630 cells are declared in one file, `matrix.tsv`, and both sides read
 it.** Neither the Praat script nor the R script carries its own list of what
@@ -133,8 +127,8 @@ two-group cell using axis values no existing row uses — and deleted another,
 either side. The comparison still reported green against the modified
 declaration.
 
-The second direction is the one that matters. A runner carrying its own hidden
-list would pass the first test and fail this one.
+A runner carrying its own hidden list would pass the first test and fail the
+second.
 
 `matrix.tsv` documents its own columns in its header.
 
