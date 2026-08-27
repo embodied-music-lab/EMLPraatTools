@@ -30,25 +30,6 @@ other does not is a finding with a written reason, not an absence. The
 comparison counts its categories and checks they sum to the total, so a row
 cannot fall out of all of them.
 
-## What the kit does not cover
-
-Three parts of the plugin are outside it.
-
-**Mixed models.** `@emlRunLMMAnalysis` exists in the source, is not registered
-on any menu, and is excluded from the include barrel. It is under no oracle of
-any kind and is not exercised here.
-
-**Inter-rater reliability.** `@emlRunReliabilityAnalysis` takes a subject
-column, rater columns, an ICC form and a scale, and is a declared stub: no
-call sites, a non-empty error, and nothing computed. This is agreement between
-raters on the same subjects, a different question from the Cronbach's alpha
-the survey lane does test, which measures consistency across items.
-
-**Batch voice analysis.** `scripts/eml-batch-process.praat` extracts acoustic
-measures — mean F0, intensity, jitter, shimmer, HNR, CPPS — from folders of
-Sound files. It reads audio rather than tables, so R has nothing to compare
-against and it is not part of this comparison.
-
 ## The datasets
 
 29 tables, of two kinds.
