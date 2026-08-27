@@ -12,7 +12,10 @@
 #        @emlSpearmanExactP propagates it, and the dispatch reads it rather
 #        than testing n again. New .methodReason$ separates why an
 #        approximation was chosen ("ties" / "large sample") from what was
-#        computed. Two pins re-checked against the R-4-3-3 source and found
+#        computed; the reason is derived by exhaustive dispatch, so an
+#        unrecognised label refuses rather than captioning itself, and the
+#        refusal reaches every existing reader. Two pins re-checked
+#        against the R-4-3-3 source and found
 #        already correct: the two-sided fold (tail by q vs (n^3-n)/6, then
 #        min(2p, 1)) and continuity = FALSE on the asymptotic arm.
 #        Fable's branch-law ruling, 27 August 2026.
@@ -1550,17 +1553,34 @@ procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
         else
             @emlSpearmanExactP: .rho, .n, .tails
             .method$ = emlSpearmanExactP.method$
-            ; Tested positively, not as "anything but exact": if the
-            ; kernel ever returns without setting .method$, this leaves
-            ; the reason empty rather than asserting a large sample that
-            ; was not the reason. (@emlSpearmanExactP refuses only below
-            ; n = 2, which the guard above already excludes, so that path
-            ; is unreachable from here today.)
-            .methodReason$ = ""
-            if .method$ = "t approximation"
+            ; EXHAUSTIVE DISPATCH. Every label is matched positively and
+            ; none is left as the implicit default. A single positive test
+            ; is not enough: whichever label goes untested becomes the
+            ; caption an unset .method$ silently claims, which is the same
+            ; defect with a different victim. An unset or unknown label
+            ; here is an impossible state -- @emlSpearmanExactP sets
+            ; .method$ on every path that returns without an error -- and
+            ; impossible states fail loudly rather than captioning
+            ; themselves. Fable's ruling, 27 August 2026.
+            ;
+            ; The shape is @emlTTestAlt's (.error$ set, numerics left
+            ; undefined) rather than @emlRMPostHoc's disclosed fallback.
+            ; RMPostHoc validates an adjustment method a CALLER supplied,
+            ; where substituting Holm and saying so is a defensible
+            ; repair. This label is produced inside the module, so there
+            ; is no substitute to defend: the only honest output is a
+            ; refusal.
+            if .method$ = "exact"
+                .methodReason$ = ""
+                .p = emlSpearmanExactP.p
+            elsif .method$ = "t approximation"
                 .methodReason$ = "large sample"
+                .p = emlSpearmanExactP.p
+            else
+                .error$ = "Internal: unrecognised Spearman method label from @emlSpearmanExactP: " + .method$
+                .methodReason$ = ""
+                .p = undefined
             endif
-            .p = emlSpearmanExactP.p
         endif
 
         ; Written back so every EXISTING reader of emlSpearmanCorrelation.p
@@ -1568,7 +1588,18 @@ procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
         ; touched by this work order -- sees the routed value. The same
         ; qualified-global restoration @emlRunCorrelationAnalysis already
         ; does at its own capture site, one level up.
-        emlSpearmanCorrelation.p = .p
+        ; The refusal is propagated to the SAME qualified globals every
+        ; existing reader already checks. Without this the dispatch would
+        ; decline to publish while @emlSpearmanCorrelation.p still held
+        ; its own untouched value and .error$ still read empty -- a stale
+        ; number presented as a live one, which is the failure the
+        ; exhaustive dispatch above exists to prevent.
+        if .error$ = ""
+            emlSpearmanCorrelation.p = .p
+        else
+            emlSpearmanCorrelation.p = undefined
+            emlSpearmanCorrelation.error$ = .error$
+        endif
     endif
 endproc
 
