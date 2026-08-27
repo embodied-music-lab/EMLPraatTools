@@ -2,16 +2,14 @@
 
 ## What this is
 
-EML Stats & Graphs is a statistics plugin for Praat, the phonetics software
-voice researchers use. It adds a library of 17 statistical procedures: group
-comparisons, analysis of variance, rank tests, correlation, regression,
-repeated measures, and a survey lane covering reliability and categorical
-association. Each procedure offers choices — which test, whether to run a post
-hoc, which multiple-comparison adjustment, whether to assume equal variances,
-how to order the groups.
+EML Stats & Graphs is a statistics plugin for Praat. This kit is the evidence
+for the paper's central claim: that its procedures deliver exactly what they
+claim to deliver.
 
-This kit is the evidence that those procedures compute what they claim. It
-runs every one of them against R and shows you both answers.
+It runs 17 procedures — group comparisons, analysis of variance, rank tests,
+correlation, regression, repeated measures, and a survey lane covering
+reliability and categorical association — against R, and reports both answers
+for every quantity.
 
 ## What it tests
 
@@ -31,6 +29,22 @@ package a statistician would call — and the two are compared row by row.
 other does not is a finding with a written reason, not an absence. The
 comparison counts its categories and checks they sum to the total, so a row
 cannot fall out of all of them.
+
+## What the kit does not cover
+
+Three parts of the plugin are outside it.
+
+**Mixed models.** `@emlRunLMMAnalysis` exists in the source, is not registered
+on any menu, and is excluded from the include barrel. It is under no oracle of
+any kind and is not exercised here.
+
+**Reliability.** `@emlRunReliabilityAnalysis` is a declared stub. It has no
+call sites, returns a non-empty error, and computes nothing.
+
+**Batch voice analysis.** `scripts/eml-batch-process.praat` extracts acoustic
+measures — mean F0, intensity, jitter, shimmer, HNR, CPPS — from folders of
+Sound files. It reads audio rather than tables, so R has nothing to compare
+against and it is not part of this comparison.
 
 ## The datasets
 
