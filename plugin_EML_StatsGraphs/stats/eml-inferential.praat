@@ -2,8 +2,20 @@
 # EML Stats : Inferential Statistics
 # ============================================================================
 # Module: eml-inferential.praat
-# Version: 1.6
+# Version: 1.7
 # Date: 27 August 2026
+#
+# V1.7: The Spearman branch law gains its third arm, and the arm is named
+#        where it is decided. R reaches the exact branch only with no ties
+#        and n <= 1290; @eml_spearmanPspearman already carried that guard,
+#        so the constant is not copied. The kernel now sets .method$,
+#        @emlSpearmanExactP propagates it, and the dispatch reads it rather
+#        than testing n again. New .methodReason$ separates why an
+#        approximation was chosen ("ties" / "large sample") from what was
+#        computed. Two pins re-checked against the R-4-3-3 source and found
+#        already correct: the two-sided fold (tail by q vs (n^3-n)/6, then
+#        min(2p, 1)) and continuity = FALSE on the asymptotic arm.
+#        Fable's branch-law ruling, 27 August 2026.
 #
 # V1.6: New @emlSpearmanCorrelationDispatch -- the branch law (ties present
 #        -> the existing t-approximation; no ties -> @emlSpearmanExactP's
@@ -1279,10 +1291,19 @@ endproc
 # ============================================================================
 
 procedure eml_spearmanPspearman: .q, .n, .lowerTail
+    ; The kernel owns the branch and is the ONLY place the constant
+    ; appears. Callers read .method$ rather than re-testing .n --
+    ; Fable's branch-law ruling, 27 August 2026. R 4.3.3's guard is
+    ; n <= 1290, so 1290 itself is exact and 1291 is the first
+    ; asymptotic n.
     if .n <= 1290
+        .method$ = "exact"
         @eml_prho: .n, round (.q) + 2 * .lowerTail, .lowerTail
         .pv = eml_prho.pv
     else
+        .method$ = "t approximation"
+        ; continuity = FALSE is cor.test.default's default and this
+        ; kernel takes no continuity argument, so den carries no +1.
         .den = (.n * (.n ^ 2 - 1)) / 6
         .r = 1 - .q / .den
         .rSquared = .r * .r
@@ -1399,7 +1420,6 @@ procedure emlSpearmanExactP: .rho, .n, .tails
     elsif .tails < 1 or .tails > 2
         .error$ = "tails must be 1 or 2"
     else
-        .method$ = "exact"
         .q = (.n ^ 3 - .n) * (1 - .rho) / 6
         .qMean = (.n ^ 3 - .n) / 6
 
@@ -1407,6 +1427,8 @@ procedure emlSpearmanExactP: .rho, .n, .tails
         .pGreater = eml_spearmanPspearman.pv
         @eml_spearmanPspearman: .q, .n, 0
         .pLess = eml_spearmanPspearman.pv
+        ; Both calls carry the same .n, so both took the same branch.
+        .method$ = eml_spearmanPspearman.method$
 
         if .q > .qMean
             .pTwoSided = min (1, 2 * .pLess)
@@ -1498,6 +1520,7 @@ procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
     .p = emlSpearmanCorrelation.p
     .hasTies = 0
     .method$ = ""
+    .methodReason$ = ""
 
     if .error$ = ""
         @emlRankVector: .x#
@@ -1512,12 +1535,31 @@ procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
             .hasTies = 1
         endif
 
+        ; Two reasons an approximation is returned, and they are not the
+        ; same fact: ties make the exact null distribution wrong, while a
+        ; large n makes it unreachable. .method$ names what was computed,
+        ; .methodReason$ why. Above the cutoff the kernel has already
+        ; chosen, so this reads its flag and does not test .n a second
+        ; time -- Fable's branch-law ruling, 27 August 2026. Both are
+        ; internal tags; the printed wording is item 22 of the language
+        ; batch and is unapproved, so no call site prints either.
         if .hasTies = 1
             .method$ = "t approximation"
+            .methodReason$ = "ties"
             .p = .pAsymptotic
         else
-            .method$ = "exact"
             @emlSpearmanExactP: .rho, .n, .tails
+            .method$ = emlSpearmanExactP.method$
+            ; Tested positively, not as "anything but exact": if the
+            ; kernel ever returns without setting .method$, this leaves
+            ; the reason empty rather than asserting a large sample that
+            ; was not the reason. (@emlSpearmanExactP refuses only below
+            ; n = 2, which the guard above already excludes, so that path
+            ; is unreachable from here today.)
+            .methodReason$ = ""
+            if .method$ = "t approximation"
+                .methodReason$ = "large sample"
+            endif
             .p = emlSpearmanExactP.p
         endif
 

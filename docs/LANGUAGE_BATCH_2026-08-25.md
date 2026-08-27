@@ -1,6 +1,8 @@
 # Language batch — every new or changed user-facing string, for approval
 
-Verification session, 25 Aug 2026. Revision 6: item 4 gains the three
+Verification session, 25 Aug 2026. Revision 7 adds item 22, the Spearman
+method disclosure, following Fable's branch-law ruling of 27 August.
+Revision 6: item 4 gains the three
 pairwise Wilcoxon rows (the standalone dialog's rank-based cells, missed
 by revision 5's "parametric rows" framing — punch item 4.3 corrected to
 match) and one paragraph sentence distinguishing Dunn's shared ranking
@@ -297,3 +299,33 @@ to the front, and the benchmark loses its false attribution:
 The Pearson/Spearman gloss prints "Weak / Moderate / Strong" with no
 indication these are conventions. One word fixes it: "Moderate positive
 relationship (by common convention; range: -1 to 1)."
+
+## 22. Correlation report: Spearman names the method that produced its p
+
+DISCLOSURE. It states what was computed, so it prints on every path
+whether or not explanations are on.
+
+Spearman's p comes from one of three routes, and which one ran is not
+visible in the number. The report names it beside the p:
+
+    Spearman rho: RHO, p = P (exact method, AS 89)
+    Spearman rho: RHO, p = P (t approximation, ties present)
+    Spearman rho: RHO, p = P (t approximation, large sample)
+
+The routing is R's, not ours: the exact null distribution is only
+correct without ties, and R stops computing it above n = 1290. A reader
+comparing our p against `cor.test` needs to know which of the three they
+are looking at, because the three do not agree to arbitrary precision
+with each other.
+
+Two notes on the wording.
+
+The ruling wrote the third as "t approximation - large sample" with an em
+dash. Rendered here with a comma to match the other two rows and the
+batch's ASCII convention for anything reaching a saved report. Amend the
+item if the dash was load-bearing.
+
+"large sample" states the trigger without printing the constant. 1290 is
+R's implementation limit rather than a statistical threshold, and a
+reader who wants it will find it in the method note, not in a result
+line.
