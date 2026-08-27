@@ -97,6 +97,23 @@ emlKitStartTime = stopwatch
 
 
 # ============================================================================
+# OPTIONAL ROW FILTER -- Fable's standing rule (CLAUDE.md, "Scope of work
+# units") is that a change drives only the rows it touches, not a re-run of
+# everything. LEAVE THIS EMPTY for the unchanged, full 630-cell run.
+#
+# TO USE: set it to one or more matrix.tsv "procedure" column values
+# (column 3), comma-separated, e.g.:
+#     emlKitProcFilter$ = "emlRunPairwiseAnalysis,emlRunRepeatedMeasuresAnalysis"
+# Only rows whose procedure field exactly matches an entry in this list are
+# run; every other row is skipped outright before dispatch -- not refused,
+# not counted, no output row (results or report) of any kind. See
+# @emlKitRowSelected below, and the one call site that applies it in
+# SECTION 4.
+# ============================================================================
+emlKitProcFilter$ = ""
+
+
+# ============================================================================
 # SECTION 1 -- small string / TSV utilities
 # ============================================================================
 
@@ -223,6 +240,30 @@ endproc
 procedure emlKitSkip: .cellId$, .reason$
     @emlKitRow: .cellId$, "skipped", "1", "praat"
     @emlKitText: .cellId$, "skip_reason", .reason$
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlKitRowSelected -- applies emlKitProcFilter$ (set above) to one row's
+# procedure field. Always selected (1) when the filter is empty, so an
+# empty filter reproduces the unfiltered 630-cell run exactly. Otherwise
+# selected only when .proc$ exactly matches one comma-separated entry.
+# Output: .selected
+# ----------------------------------------------------------------------------
+procedure emlKitRowSelected: .proc$
+    if emlKitProcFilter$ = ""
+        .selected = 1
+    else
+        .selected = 0
+        .rest$ = emlKitProcFilter$ + ","
+        while length (.rest$) > 0 and .selected = 0
+            .cPos = index (.rest$, ",")
+            .tok$ = left$ (.rest$, .cPos - 1)
+            .rest$ = mid$ (.rest$, .cPos + 1, length (.rest$) - .cPos)
+            if .tok$ = .proc$
+                .selected = 1
+            endif
+        endwhile
+    endif
 endproc
 
 # ----------------------------------------------------------------------------
@@ -470,13 +511,16 @@ while length (emlKitRemaining$) > 0
         endif
     else
         @emlKitSplit17: emlKitLine$
-        @emlKitProcessRow:
-        ... emlKitSplit17.f$[1], emlKitSplit17.f$[2], emlKitSplit17.f$[3],
-        ... emlKitSplit17.f$[4], emlKitSplit17.f$[5], emlKitSplit17.f$[6],
-        ... emlKitSplit17.f$[7], emlKitSplit17.f$[8], emlKitSplit17.f$[9],
-        ... emlKitSplit17.f$[10], emlKitSplit17.f$[11], emlKitSplit17.f$[12],
-        ... emlKitSplit17.f$[13], emlKitSplit17.f$[14], emlKitSplit17.f$[15],
-        ... emlKitSplit17.f$[16], emlKitSplit17.f$[17]
+        @emlKitRowSelected: emlKitSplit17.f$[3]
+        if emlKitRowSelected.selected = 1
+            @emlKitProcessRow:
+            ... emlKitSplit17.f$[1], emlKitSplit17.f$[2], emlKitSplit17.f$[3],
+            ... emlKitSplit17.f$[4], emlKitSplit17.f$[5], emlKitSplit17.f$[6],
+            ... emlKitSplit17.f$[7], emlKitSplit17.f$[8], emlKitSplit17.f$[9],
+            ... emlKitSplit17.f$[10], emlKitSplit17.f$[11], emlKitSplit17.f$[12],
+            ... emlKitSplit17.f$[13], emlKitSplit17.f$[14], emlKitSplit17.f$[15],
+            ... emlKitSplit17.f$[16], emlKitSplit17.f$[17]
+        endif
     endif
 endwhile
 
@@ -843,20 +887,88 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                 ... 0, 1, 1, "pairwiseT"
                 # @emlPairwiseT carries .dfMatrix## beside .tMatrix## so a
                 # report can print t(df); it was computed and then dropped.
+                #
+                # THE POINT ESTIMATE AND (BONFERRONI-ONLY) INTERVAL, held
+                # dark on @emlReportPairwiseComparison -- the kit's call to
+                # @emlRunPairwiseAnalysis above runs it internally (that
+                # procedure's own body, stats/eml-analysis.praat:1352), so
+                # its namespace survives here exactly as emlPairwiseT's
+                # does. .meanDiffFlat#/.lowFlat#/.highFlat# are "in the
+                # same pair order as .rawP#" per that procedure's Output
+                # header, so the i<j loop below counts pairs the same way
+                # @emlKitEmitPosthocPairs does, and .pc lines up with it.
+                # Holm and BH define no per-pair level -- the interval is
+                # not just undefined there, it is UNASKED, so nothing is
+                # emitted for it at all (not even the _undefined marker).
+                .pc = 0
                 for .pi from 1 to .nG - 1
                     for .pj from .pi + 1 to .nG
+                        .pc = .pc + 1
                         @emlKitPairName: emlPublishInLabel$ [.pi],
                         ... emlPublishInLabel$ [.pj]
-                        @emlKitNum: .cellId$,
-                        ... "posthoc_" + emlKitPairName.result$ + "_df",
+                        .pn$ = emlKitPairName.result$
+                        @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_df",
                         ... emlPairwiseT.dfMatrix## [.pi, .pj]
+                        @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_diff",
+                        ... emlReportPairwiseComparison.meanDiffFlat# [.pc]
+                        if .adjust$ = "bonferroni"
+                            @emlKitNum: .cellId$,
+                            ... "posthoc_" + .pn$ + "_ci_low",
+                            ... emlReportPairwiseComparison.lowFlat# [.pc]
+                            @emlKitNum: .cellId$,
+                            ... "posthoc_" + .pn$ + "_ci_high",
+                            ... emlReportPairwiseComparison.highFlat# [.pc]
+                        endif
                     endfor
                 endfor
             elsif .test$ = "wilcoxon"
                 @emlKitEmitPosthocPairs: .cellId$, .nG, "u", "rank_biserial",
                 ... 0, 1, 1, "pairwiseWilcoxon"
+                # The Hodges-Lehmann point estimate and (bonferroni-only)
+                # interval, held dark on @emlReportPairwiseComparison --
+                # same reasoning as the t arms above. .hlMethod$ (which
+                # null distribution ran) is a disclosure field, excluded
+                # from the contract like every other .method$, and is not
+                # emitted here.
+                .pc = 0
+                for .pi from 1 to .nG - 1
+                    for .pj from .pi + 1 to .nG
+                        .pc = .pc + 1
+                        @emlKitPairName: emlPublishInLabel$ [.pi],
+                        ... emlPublishInLabel$ [.pj]
+                        .pn$ = emlKitPairName.result$
+                        @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_diff",
+                        ... emlReportPairwiseComparison.hlEstFlat# [.pc]
+                        if .adjust$ = "bonferroni"
+                            @emlKitNum: .cellId$,
+                            ... "posthoc_" + .pn$ + "_ci_low",
+                            ... emlReportPairwiseComparison.hlLowFlat# [.pc]
+                            @emlKitNum: .cellId$,
+                            ... "posthoc_" + .pn$ + "_ci_high",
+                            ... emlReportPairwiseComparison.hlHighFlat# [.pc]
+                        endif
+                    endfor
+                endfor
             elsif .test$ = "scheffe"
                 @emlKitEmitPosthocPairs: .cellId$, .nG, "f", "", 1, 0, 1, ""
+                # The Scheffe simultaneous interval, UNGATED: this branch
+                # has no separate adjust toggle to gate on (Scheffe's own
+                # critical value IS the correction), so it is computed and
+                # emitted on every row this branch runs -- see this
+                # procedure's Output header, "scheffe branch only".
+                .pc = 0
+                for .pi from 1 to .nG - 1
+                    for .pj from .pi + 1 to .nG
+                        .pc = .pc + 1
+                        @emlKitPairName: emlPublishInLabel$ [.pi],
+                        ... emlPublishInLabel$ [.pj]
+                        .pn$ = emlKitPairName.result$
+                        @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_ci_low",
+                        ... emlReportPairwiseComparison.scheffeLowFlat# [.pc]
+                        @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_ci_high",
+                        ... emlReportPairwiseComparison.scheffeHighFlat# [.pc]
+                    endfor
+                endfor
             endif
         endif
 
@@ -1241,12 +1353,49 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                         .bi = emlRMPostHoc.pairLabelB [.pp]
                         @emlKitPairName: emlExtractConditionMatrix.colLabel$
                         ... [.ai], emlExtractConditionMatrix.colLabel$ [.bi]
-                        @emlKitNum: .cellId$,
-                        ... "posthoc_" + emlKitPairName.result$ + "_p",
+                        .pn$ = emlKitPairName.result$
+                        @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_p",
                         ... emlRMPostHoc.rawP# [.pp]
-                        @emlKitNum: .cellId$,
-                        ... "posthoc_" + emlKitPairName.result$ + "_padj",
+                        @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_padj",
                         ... emlRMPostHoc.adj# [.pp]
+                        # THE POINT ESTIMATE AND (BONFERRONI-ONLY) INTERVAL,
+                        # held dark on @emlRMPostHoc -- called internally by
+                        # @emlRunRepeatedMeasuresAnalysis with "parametric"
+                        # and by @emlRunFriedmanAnalysis with "nonparametric"
+                        # (only one branch runs per call, per its Output
+                        # header), so .pp indexes .pairLabelA/.pairLabelB the
+                        # same way it indexes whichever branch's arrays are
+                        # live. Gated on .adjUsed$ -- the method that
+                        # ACTUALLY ran, not .adjust$ -- because this
+                        # procedure falls back to Holm silently on an
+                        # unrecognised request, and a Bonferroni interval
+                        # read out under a Holm fallback would misattribute
+                        # it. Holm and BH define no per-pair level, so
+                        # nothing is emitted for the interval on those rows,
+                        # not even the _undefined marker.
+                        if .proc$ = "emlRunRepeatedMeasuresAnalysis"
+                            @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_diff",
+                            ... emlRMPostHoc.meanDiffFlat# [.pp]
+                            if emlRMPostHoc.adjUsed$ = "bonferroni"
+                                @emlKitNum: .cellId$,
+                                ... "posthoc_" + .pn$ + "_ci_low",
+                                ... emlRMPostHoc.lowFlat# [.pp]
+                                @emlKitNum: .cellId$,
+                                ... "posthoc_" + .pn$ + "_ci_high",
+                                ... emlRMPostHoc.highFlat# [.pp]
+                            endif
+                        else
+                            @emlKitNum: .cellId$, "posthoc_" + .pn$ + "_diff",
+                            ... emlRMPostHoc.hlEstFlat# [.pp]
+                            if emlRMPostHoc.adjUsed$ = "bonferroni"
+                                @emlKitNum: .cellId$,
+                                ... "posthoc_" + .pn$ + "_ci_low",
+                                ... emlRMPostHoc.hlLowFlat# [.pp]
+                                @emlKitNum: .cellId$,
+                                ... "posthoc_" + .pn$ + "_ci_high",
+                                ... emlRMPostHoc.hlHighFlat# [.pp]
+                            endif
+                        endif
                     endfor
                 endif
             endif

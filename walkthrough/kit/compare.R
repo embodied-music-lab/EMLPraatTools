@@ -91,6 +91,29 @@ P <- rd(need[1]); R <- rd(need[2])
 mx <- read.delim(file.path(kitDir, "matrix.tsv"), sep = "\t", comment.char = "#",
                  colClasses = "character", quote = "")
 
+# --- HONOURING THE ROW FILTER ------------------------------------------------
+# Both runners now accept a comma-separated procedure filter (RUN_ME_FIRST.praat's
+# emlKitProcFilter$, run_analyses.R's EML_KIT_PROC_FILTER) and, on a filtered
+# run, write ZERO rows for a skipped cell -- not a refusal, not a value, no row
+# of any kind. compare.R is handed no filter string of its own and does not
+# need one: a cell with no row on EITHER side was never driven by either
+# runner, and reporting its contracted quantities as MISSING would be reporting
+# on a row nobody ran. A cell driven on only ONE side is left alone -- the two
+# runners are meant to share one filter, so a one-sided gap there is not
+# filtering, it is exactly the kind of thing MISSING/UNMATCHED exists to catch.
+nMxTotal <- nrow(mx)
+neverDriven <- setdiff(mx$cell_id, union(unique(P$cell_id), unique(R$cell_id)))
+isFilteredRun <- length(neverDriven) > 0
+if (isFilteredRun) {
+    excludedProcs <- sort(unique(mx$procedure[mx$cell_id %in% neverDriven]))
+    mx <- mx[!(mx$cell_id %in% neverDriven), , drop = FALSE]
+    cat(sprintf("\n*** FILTERED RUN: %d of %d matrix.tsv cells were never driven by either runner.\n",
+                length(neverDriven), nMxTotal))
+    cat(sprintf("*** excluded procedure(s): %s\n", paste(excludedProcs, collapse = ", ")))
+    cat(sprintf("*** Reporting only on the %d driven cells (procedure(s): %s).\n",
+                nrow(mx), paste(sort(unique(mx$procedure)), collapse = ", ")))
+}
+
 # --- THE SEEDED BREAK -------------------------------------------------------
 # Naming a quantity in $EML_KIT_BREAK removes every Praat row carrying it,
 # before anything below has looked at the table. Nothing else in this file
@@ -465,12 +488,32 @@ agree <- function(a, b) {
 
 rows <- list(); add <- function(...) rows[[length(rows) + 1]] <<- list(...)
 nAgree <- 0L; nDeclared <- 0L; nUnexplained <- 0L; nCompared <- 0L; maxRelSeen <- list()
+# Split for the balance invariant below: a DECLARED row reached via the
+# both-sides comparison loop (values present on both sides, differing by a
+# documented/bounded amount) is TOLERANCE-BOUNDED; a DECLARED row reached via
+# oneSided() (the quantity is absent from one side, and DECLARED[] says why)
+# is DOCUMENTED-ABSENT, same as a CONTRACT_ONLY_* row. nDeclared itself stays
+# their sum, for the existing summary line below.
+nDeclaredDiff <- 0L; nDeclaredOneSided <- 0L
 
 both <- intersect(P$key, R$key)
 Pl <- split(seq_len(nrow(P)), P$key); Rl <- split(seq_len(nrow(R)), R$key)
 for (k in both) {
     pi <- Pl[[k]][1]; cell <- P$cell_id[pi]; q <- P$quantity[pi]
     pv <- num(P$value[pi])
+    # A "both" key with MORE THAN ONE Praat row is not accommodated by the
+    # single representative pi above (only the first is ever compared). That
+    # would be exactly the failure the balance invariant exists to catch --
+    # a row silently unaccounted for -- so any extra Praat row for this key is
+    # surfaced explicitly rather than dropped. Not expected in practice (no
+    # cell_id+quantity pair is meant to repeat on the Praat side); asserted
+    # here, not assumed.
+    if (length(Pl[[k]]) > 1) for (pi2 in Pl[[k]][-1]) {
+        nUnexplained <- nUnexplained + 1L
+        add(bucket = "UNEXPLAINED", id = "", cell_id = cell, quantity = q,
+            praat = P$value[pi2], r = "",
+            source = "duplicate (cell_id,quantity) key on the Praat side; only the first row is ever paired against R")
+    }
     for (ri in Rl[[k]]) {
         nCompared <- nCompared + 1L
         rv <- num(R$value[ri]); src <- R$source[ri]
@@ -484,7 +527,7 @@ for (k in both) {
                 rel <- abs(pv - rv) / max(abs(pv), abs(rv))
                 maxRelSeen[[rule$id]] <- max(c(maxRelSeen[[rule$id]], rel))
             }
-            nDeclared <- nDeclared + 1L
+            nDeclaredDiff <- nDeclaredDiff + 1L; nDeclared <- nDeclared + 1L
             add(bucket = "DECLARED", id = rule$id, cell_id = cell, quantity = q,
                 praat = P$value[pi], r = R$value[ri], source = src)
         } else {
@@ -495,9 +538,17 @@ for (k in both) {
     }
 }
 nContract <- 0L; nViolation <- 0L
+# `idxs` walks EVERY row on the owning side for this key, not just the first.
+# A one-sided key that repeats (the runner wrote the same cell_id+quantity
+# more than once) used to have its extra rows silently skipped here -- unlike
+# the both-sides loop above, which already looped over every R row, this one
+# took only the first index and never reconsidered the rest. That is precisely
+# a row falling out of all three categories: not compared (it never reached
+# the both-sides loop, its key is one-sided by construction), not declared,
+# not contracted, not unexplained -- just absent from reconciliation.tsv.
+# Fixed by classifying each duplicate row on its own, same as any other row.
 oneSided <- function(keys, tbl, side) {
-    for (k in keys) {
-        i <- if (side == "praat") Pl[[k]][1] else Rl[[k]][1]
+    for (k in keys) for (i in (if (side == "praat") Pl[[k]] else Rl[[k]])) {
         cell <- tbl$cell_id[i]; q <- tbl$quantity[i]
         cv <- contractVerdict(cell, q, side)
         if (!is.null(cv)) {
@@ -510,7 +561,7 @@ oneSided <- function(keys, tbl, side) {
         }
         rule <- declaredFor(cell, q, side)
         if (!is.null(rule)) {
-            nDeclared <<- nDeclared + 1L
+            nDeclaredOneSided <<- nDeclaredOneSided + 1L; nDeclared <<- nDeclared + 1L
             add(bucket = paste0("DECLARED_ONLY_", toupper(side)), id = rule$id,
                 cell_id = cell, quantity = q,
                 praat = if (side == "praat") tbl$value[i] else "",
@@ -632,6 +683,11 @@ if (nViolation) {
 # assertion, so a matrix that stopped parsing cannot read as all-clear.
 # ---------------------------------------------------------------------------
 cat("\n--- the standing kit: one property per procedure ---\n")
+if (isFilteredRun)
+    cat(sprintf("  (filtered run: walking only the %d driven procedure(s); the reverse\n",
+                length(unique(mx$procedure))))
+if (isFilteredRun)
+    cat("   ratchet -- a governed procedure this run never drove -- is suspended below.)\n")
 members <- sort(unique(mx$procedure))
 governed <- sort(unique(QT$procedure))
 kitFail <- 0L
@@ -640,7 +696,7 @@ if (!length(members)) {
     kitFail <- kitFail + 1L
 } else {
     onlyMatrix <- setdiff(members, governed)
-    onlyContract <- setdiff(governed, members)
+    onlyContract <- if (isFilteredRun) character(0) else setdiff(governed, members)
     if (length(onlyMatrix)) {
         cat(sprintf("  RED: %d procedure(s) run by matrix.tsv with no clause in quantities.tsv: %s\n",
                     length(onlyMatrix), paste(onlyMatrix, collapse = ", ")))
@@ -683,8 +739,68 @@ cat(sprintf("  declared refusals missed by R:     %d %s\n", length(missR),
             if (length(missR)) paste0("(", paste(missR, collapse = ", "), ")") else ""))
 if (length(missP) || length(missR)) nUnexplained <- nUnexplained + length(missP) + length(missR)
 
+# ---------------------------------------------------------------------------
+# THE BALANCE INVARIANT -- Fable's ruling, verbatim: "the contract's arithmetic
+# (compared + documented-absent + tolerance-bounded = total) must balance at
+# every commit, so a row can never silently fall out of all three categories."
+#
+#   compared            AGREE                                    -- nAgree
+#   documented-absent    CONTRACT_* (contract says one side only)
+#                        + DECLARED_ONLY_* (DECLARED[] says one side only) -- nContract + nDeclaredOneSided
+#   tolerance-bounded    DECLARED (both sides present, differ by a written,
+#                        and where named, BOUNDED amount)         -- nDeclaredDiff
+#
+# `total` is computed a SECOND, INDEPENDENT way -- not by summing buckets, but
+# by counting PHYSICAL ROWS in the two result tables directly: nrow(P) +
+# nrow(R), less length(both) once for every (cell_id, quantity) key shared by
+# both sides. That subtraction is not a fudge; it falls out of how the
+# both-sides loop above is written on purpose: for a shared key, EVERY R row
+# is compared (the inner loop walks all of Rl[[k]]), but only ONE
+# representative Praat row stands in for the Praat side, because the whole
+# point of that loop, for a key like cohens_d (compared against BOTH
+# effectsize and rstatix under the same quantity name -- see run_analyses.R's
+# own comment on it), is one Praat value checked against every R source, not
+# a row-for-row pairing. So a shared key with m R-rows contributes m events,
+# not m+1 -- one fewer than its physical row count -- and subtracting
+# length(both) once accounts for exactly that, for every shared key at once.
+# Every row that is NOT so accounted (a one-sided key's row, or a SECOND
+# Praat row on an otherwise-shared key, which the loop above does not
+# similarly fold in and instead surfaces on its own) is walked by exactly one
+# of the loops above and lands in exactly one bucket -- so under normal
+# operation the two totals are the same number arrived at two different ways.
+# This is the check that would have caught D-NOCI: a DECLARED[] entry that
+# quietly recategorised "R has this, Praat does not" from compared to
+# documented-absent, on a claim (the plugin has no such output) nobody
+# re-tested once the plugin grew the output. A row that escapes
+# classification now shows up as a gap in this arithmetic, not as silence.
+# ---------------------------------------------------------------------------
+compared         <- nAgree
+documentedAbsent <- nContract + nDeclaredOneSided
+toleranceBounded <- nDeclaredDiff
+sumThree         <- compared + documentedAbsent + toleranceBounded
+totalRows        <- nrow(P) + nrow(R) - length(both)
+balanceGap       <- totalRows - (sumThree + nUnexplained)
+balances         <- balanceGap == 0
+
+cat("\n--- the balance invariant: compared + documented-absent + tolerance-bounded = total ---\n")
+cat(sprintf("  compared            (AGREE)                                    %6d\n", compared))
+cat(sprintf("  documented-absent   (CONTRACT one-sided + DECLARED one-sided)  %6d\n", documentedAbsent))
+cat(sprintf("  tolerance-bounded   (DECLARED, both sides present, differ)     %6d\n", toleranceBounded))
+cat(  "  -----------------------------------------------------------------------\n")
+cat(sprintf("  sum of the three                                               %6d\n", sumThree))
+cat(sprintf("  + UNEXPLAINED (outside all three)                              %6d\n", nUnexplained))
+cat(sprintf("  = %6d   vs. total rows in play (nrow(P) + nrow(R) - shared keys): %6d\n",
+            sumThree + nUnexplained, totalRows))
+if (balances) {
+    cat("  balance: HOLDS -- every observed key landed in exactly one category.\n")
+} else {
+    cat(sprintf("  balance: FAILS -- gap of %d key(s); something fell out of (or was double-counted\n",
+                abs(balanceGap)))
+    cat("  across) all three categories. See out/reconciliation.tsv.\n")
+}
+
 cat("\n---------------------------------------------------------\n")
-if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0) {
+if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0 && balances) {
     cat("  GREEN. Every row is accounted for AND every contracted quantity arrived.\n")
 } else {
     cat("  NOT GREEN.\n")
@@ -696,6 +812,9 @@ if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0) {
         cat(sprintf("    %d contract violation(s) -- bucket CONTRACT_VIOLATION_*.\n", nViolation))
     if (kitFail)
         cat(sprintf("    %d standing-kit failure(s) -- see the per-procedure walk above.\n", kitFail))
+    if (!balances)
+        cat(sprintf("    balance invariant FAILS -- gap of %d key(s); see 'the balance invariant' above.\n",
+                    abs(balanceGap)))
     cat("  See out/reconciliation.tsv.\n")
     cat("  A run that compares fewer quantities than the contract requires is not green,\n")
     cat("  however well the ones present agree.\n")

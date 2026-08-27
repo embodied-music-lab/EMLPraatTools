@@ -277,6 +277,48 @@ buildConditionMatrix <- function(d, conds) {
 # it, so that's what is passed.
 .adjMap <- c(bonferroni = "bonferroni", holm = "holm", bh = "BH", none = "none")
 
+# ALPHA FOR THE PAIRWISE/RM/FRIEDMAN INTERVAL WORK (26 Aug 2026 items 2-5).
+# matrix.tsv carries no alpha column (confirmed against its own column list,
+# `conf` is survey-lane only) -- every analysis-lane cell runs at the
+# plugin's own default, which is 0.05 unless a caller sets the global
+# emlAlpha (plugin_EML_StatsGraphs/stats/eml-analysis.praat ~line 1601,
+# "... otherwise .05"; RUN_ME_FIRST.praat never sets emlAlpha). Fixed here
+# for the same reason, not re-derived per row.
+EML_ALPHA <- 0.05
+
+# A CORRECTION'S PER-PAIR LEVEL, WHERE ONE EXISTS. Bonferroni is the only
+# adjustment among bonferroni/holm/bh that defines a per-pair simultaneous
+# confidence level (1 - alpha/m, m = the number of pairs in THIS row's
+# family); Holm and BH define none (docs/RULING_INTERVALS_2026-08-26.md).
+# Where no level is defined this returns the plain, non-simultaneous
+# 1 - alpha -- the same "a real, un-adjusted bound reported honestly under
+# the same name" convention quantities.tsv documents for those rows.
+pairLevel <- function(adjust, m) {
+    if (identical(adjust, "bonferroni")) 1 - EML_ALPHA / m else 1 - EML_ALPHA
+}
+
+# =============================================================================
+# OPTIONAL ROW FILTER -- same shape, same default as RUN_ME_FIRST.praat's
+# emlKitProcFilter$ / @emlKitRowSelected (CLAUDE.md, "Scope of work units": a
+# change drives only the rows it touches, not a re-run of everything). LEAVE
+# THIS EMPTY for the unchanged, full 630-cell run.
+#
+# TO USE: set the EML_KIT_PROC_FILTER environment variable (or edit the
+# default below directly) to one or more matrix.tsv "procedure" column
+# values, comma-separated, e.g.
+#     EML_KIT_PROC_FILTER=emlRunPairwiseAnalysis,emlRunRepeatedMeasuresAnalysis
+# Only rows whose procedure field exactly matches an entry in this list are
+# run; every other row is skipped outright before dispatch -- not refused,
+# not counted, no result row and no report file of any kind -- mirroring
+# @emlKitRowSelected exactly: empty filter -> every row selected, so an
+# empty filter reproduces the unfiltered 630-cell run exactly.
+# =============================================================================
+emlKitProcFilter <- Sys.getenv("EML_KIT_PROC_FILTER", unset = "")
+emlKitRowSelected <- function(proc) {
+    if (!nzchar(emlKitProcFilter)) return(TRUE)
+    proc %in% strsplit(emlKitProcFilter, ",", fixed = TRUE)[[1]]
+}
+
 # =============================================================================
 # Results accumulator and per-cell report writer
 # =============================================================================
@@ -662,8 +704,18 @@ process_pairwise <- function(row) {
     if (test %in% c("welch", "student")) {
         adj <- .adjMap[[row$adjust]]
         eqv <- identical(test, "student")
+        # ORACLE: t.test(var.equal =, conf.level = 1 - alpha/m)$conf.int
+        # (docs/WORK_ORDER_INTERVALS_2026-08-26.md item 2). m is THIS row's
+        # own pair count; rstatix::t_test's conf.level argument feeds the
+        # same interval @emlReportPairwiseComparison computes on its
+        # Bonferroni branch, so the two sides agree exactly there. On
+        # holm/bh -- which define no per-pair level -- this is 1 - alpha,
+        # R's own plain default, reported honestly as a real, non-
+        # simultaneous bound under the same name (quantities.tsv's ruling).
+        nPairsHere <- length(levs) * (length(levs) - 1) / 2
+        level <- pairLevel(row$adjust, nPairsHere)
         res <- rstatix::t_test(dfp, value ~ group, p.adjust.method = adj,
-                                var.equal = eqv, detailed = TRUE)
+                                var.equal = eqv, conf.level = level, detailed = TRUE)
         # Raw p from stats::t.test on the same pair (rstatix's is rounded to
         # 3 s.f.), adjusted with stats::p.adjust over that raw vector.
         pRaw <- vapply(seq_len(nrow(res)), function(k) {
@@ -682,13 +734,18 @@ process_pairwise <- function(row) {
             emit(cid, paste0("posthoc_", pl, "_t"), res$statistic[k], "rstatix")
             de <- effectsize::cohens_d(a, b, pooled_sd = TRUE, verbose = FALSE)
             emit(cid, paste0("posthoc_", pl, "_cohens_d"), de$Cohens_d, "effectsize")
-            lines <- c(lines, sprintf("  %s: diff=%.4f [%.4f,%.4f] t=%.4f df=%.2f p=%.4g p.adj=%.4g d=%.4f",
-                                       pl, res$estimate[k], res$conf.low[k], res$conf.high[k],
+            lines <- c(lines, sprintf("  %s: diff=%.4f [%.4f,%.4f] (level=%.4f) t=%.4f df=%.2f p=%.4g p.adj=%.4g d=%.4f",
+                                       pl, res$estimate[k], res$conf.low[k], res$conf.high[k], level,
                                        res$statistic[k], res$df[k], pRaw[k], pAdj[k], de$Cohens_d))
         }
     } else if (test == "wilcoxon") {
         adj <- .adjMap[[row$adjust]]
-        res <- rstatix::wilcox_test(dfp, value ~ group, p.adjust.method = adj, detailed = TRUE)
+        # ORACLE: wilcox.test(conf.int = TRUE, conf.level = 1 - alpha/m).
+        # Same level rule as the t branch above.
+        nPairsHere <- length(levs) * (length(levs) - 1) / 2
+        level <- pairLevel(row$adjust, nPairsHere)
+        res <- rstatix::wilcox_test(dfp, value ~ group, p.adjust.method = adj,
+                                     conf.level = level, detailed = TRUE)
         pRaw <- vapply(seq_len(nrow(res)), function(k) {
             a <- x[g == res$group1[k]]; b <- x[g == res$group2[k]]
             suppressWarnings(stats::wilcox.test(a, b))$p.value }, numeric(1))
@@ -696,7 +753,21 @@ process_pairwise <- function(row) {
         for (k in seq_len(nrow(res))) {
             pl <- pairLabel(res$group1[k], res$group2[k])
             a <- x[g == res$group1[k]]; b <- x[g == res$group2[k]]
-            emit(cid, paste0("posthoc_", pl, "_diff"), res$estimate[k], "rstatix")
+            # THE POINT ESTIMATE IS ORACLED AGAINST median(outer(a, b, "-")),
+            # NOT AGAINST wilcox.test's $estimate (docs/RULING_INTERVALS_
+            # 2026-08-26.md's Hodges-Lehmann ruling, carried over here
+            # verbatim: the shipped plugin's estimate is that median on
+            # BOTH branches; wilcox.test's own $estimate is a uniroot
+            # artefact on the normal-approximation branch, measured about
+            # 4e-5 away from that median on this same kind of data. The two
+            # agree exactly on the exact branch (small n, no ties), so this
+            # is a deliberate divergence on one branch only, not a
+            # slackening of the check. R's own estimate is still emitted,
+            # under its own name, so the gap stays visible rather than
+            # silently substituted.
+            hlEst <- stats::median(outer(a, b, "-"))
+            emit(cid, paste0("posthoc_", pl, "_diff"), hlEst, "stats")
+            emit(cid, paste0("posthoc_", pl, "_diff_wilcoxest"), res$estimate[k], "rstatix")
             emit(cid, paste0("posthoc_", pl, "_ci_low"), res$conf.low[k], "rstatix")
             emit(cid, paste0("posthoc_", pl, "_ci_high"), res$conf.high[k], "rstatix")
             emit(cid, paste0("posthoc_", pl, "_p"), pRaw[k], "stats")
@@ -704,8 +775,8 @@ process_pairwise <- function(row) {
             emit(cid, paste0("posthoc_", pl, "_u"), unname(suppressWarnings(stats::wilcox.test(a, b))$statistic), "stats")
             rbe <- effectsize::rank_biserial(a, b, verbose = FALSE)
             emit(cid, paste0("posthoc_", pl, "_rank_biserial"), rbe$r_rank_biserial, "effectsize")
-            lines <- c(lines, sprintf("  %s: hl-diff=%.4f [%.4f,%.4f] U1=%.1f p=%.4g p.adj=%.4g rb=%.4f",
-                                       pl, res$estimate[k], res$conf.low[k], res$conf.high[k],
+            lines <- c(lines, sprintf("  %s: hl-diff=%.4f (wilcox.test est=%.4f) [%.4f,%.4f] (level=%.4f) U1=%.1f p=%.4g p.adj=%.4g rb=%.4f",
+                                       pl, hlEst, res$estimate[k], res$conf.low[k], res$conf.high[k], level,
                                        res$statistic[k], pRaw[k], pAdj[k], rbe$r_rank_biserial))
         }
     } else if (test == "scheffe") {
@@ -1270,12 +1341,18 @@ process_rm <- function(row) {
 
     if (identical(row$posthoc, "1")) {
         adj <- .adjMap[[row$adjust]]
-        res <- tryCatch(rstatix::t_test(long, val ~ cond, paired = TRUE, p.adjust.method = adj, detailed = TRUE),
+        # ORACLE: t.test(paired = TRUE, conf.level = 1 - alpha/m)$conf.int
+        # (docs/WORK_ORDER_INTERVALS_2026-08-26.md item 4, paired-t branch).
+        # Same bonferroni-only level rule as the standalone pairwise door.
+        nPairsHere <- k * (k - 1) / 2
+        level <- pairLevel(row$adjust, nPairsHere)
+        res <- tryCatch(rstatix::t_test(long, val ~ cond, paired = TRUE, p.adjust.method = adj,
+                                         conf.level = level, detailed = TRUE),
                          error = function(e) e)
         if (inherits(res, "error")) {
             lines <- c(lines, sprintf("Post hoc paired t: could not be computed (%s).", conditionMessage(res)))
         } else {
-            lines <- c(lines, sprintf("Post hoc paired t (%s-adjusted):", row$adjust))
+            lines <- c(lines, sprintf("Post hoc paired t (%s-adjusted, level=%.4f):", row$adjust, level))
             pRaw <- vapply(seq_len(nrow(res)), function(kk) {
                 aa <- M[, res$group1[kk]]; bb <- M[, res$group2[kk]]
                 if (stats::sd(aa - bb) == 0) NA_real_ else stats::t.test(aa, bb, paired = TRUE)$p.value },
@@ -1288,7 +1365,8 @@ process_rm <- function(row) {
                 emit(cid, paste0("posthoc_", pl, "_ci_high"), res$conf.high[kk], "rstatix")
                 emit(cid, paste0("posthoc_", pl, "_p"), pRaw[kk], "stats")
                 emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[kk], "stats")
-                lines <- c(lines, sprintf("  %s: diff=%.4f p=%.4g p.adj=%.4g", pl, res$estimate[kk], pRaw[kk], pAdj[kk]))
+                lines <- c(lines, sprintf("  %s: diff=%.4f [%.4f,%.4f] p=%.4g p.adj=%.4g",
+                                           pl, res$estimate[kk], res$conf.low[kk], res$conf.high[kk], pRaw[kk], pAdj[kk]))
             }
         }
     }
@@ -1340,12 +1418,34 @@ process_friedman <- function(row) {
                 if (all(aa - bb == 0)) NA_real_ else suppressWarnings(stats::wilcox.test(aa, bb, paired = TRUE))$p.value },
                 numeric(1))
             pAdj <- padjust(pRaw, adj)
+            # ORACLE: the paired/signed-rank estimate is the median of the
+            # n(n+1)/2 Walsh averages (d[i]+d[j])/2, i<=j, of the within-
+            # subject differences (docs/WORK_ORDER_INTERVALS_2026-08-26.md
+            # item 4's one-sample form) -- NOT wilcox.test's own $estimate,
+            # for the same reason as the two-sample pairwise door above: on
+            # the normal-approximation branch that estimate is a uniroot
+            # artefact, not the published Walsh-average median. Interval
+            # bounds are deliberately NOT emitted here, even though `res`
+            # itself carries conf.low/conf.high columns (checked directly
+            # against this installed rstatix): no emit() call for them
+            # existed in this door before this change, and quantities.tsv's
+            # contract row for posthoc_<PAIR>_ci_low/_ci_high on this
+            # procedure marks that a standing, accepted R-side gap --
+            # "praat" side alone, the mirror of D-SCHEFFE -- not something
+            # this item closes. Adding it would be outside this item's
+            # stated scope (CLAUDE.md, "Scope of work units"), so it stays
+            # unfilled here.
+            walsh <- function(d) { m <- outer(d, d, `+`); sort(m[!lower.tri(m)]) / 2 }
             for (kk in seq_len(nrow(res))) {
                 pl <- pairLabel(res$group1[kk], res$group2[kk])
-                emit(cid, paste0("posthoc_", pl, "_diff"), res$estimate[kk], "rstatix")
+                aa <- M[, res$group1[kk]]; bb <- M[, res$group2[kk]]
+                hlEst <- stats::median(walsh(aa - bb))
+                emit(cid, paste0("posthoc_", pl, "_diff"), hlEst, "stats")
+                emit(cid, paste0("posthoc_", pl, "_diff_wilcoxest"), res$estimate[kk], "rstatix")
                 emit(cid, paste0("posthoc_", pl, "_p"), pRaw[kk], "stats")
                 emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[kk], "stats")
-                lines <- c(lines, sprintf("  %s: hl-diff=%.4f p=%.4g p.adj=%.4g", pl, res$estimate[kk], pRaw[kk], pAdj[kk]))
+                lines <- c(lines, sprintf("  %s: hl-diff=%.4f (wilcox.test est=%.4f) p=%.4g p.adj=%.4g",
+                                           pl, hlEst, res$estimate[kk], pRaw[kk], pAdj[kk]))
             }
         }
     }
@@ -1572,8 +1672,10 @@ mat <- read_matrix(matrixPath)
 cat(sprintf("run_analyses.R: %d rows read from %s\n", nrow(mat), matrixPath))
 
 startTime <- Sys.time()
+nSkippedByFilter <- 0L
 for (i in seq_len(nrow(mat))) {
     row <- as.list(mat[i, , drop = FALSE])
+    if (!emlKitRowSelected(row$procedure)) { nSkippedByFilter <- nSkippedByFilter + 1L; next }
     fn <- dispatch[[row$procedure]]
     if (is.null(fn)) {
         refuseCell(row$cell_id, sprintf("No R handler registered for procedure '%s'.", row$procedure))
@@ -1585,8 +1687,18 @@ for (i in seq_len(nrow(mat))) {
     )
 }
 elapsed <- as.numeric(Sys.time() - startTime, units = "secs")
+if (nzchar(emlKitProcFilter)) {
+    cat(sprintf("run_analyses.R: row filter '%s' active -- %d of %d matrix rows skipped outright (no result row, no report).\n",
+                emlKitProcFilter, nSkippedByFilter, nrow(mat)))
+}
 
 flushResults(file.path(outDir, "r_results.tsv"))
 cat(sprintf("run_analyses.R: wrote %d result rows to %s\n", length(RESULTS$rows), file.path(outDir, "r_results.tsv")))
-cat(sprintf("run_analyses.R: %d per-cell reports written to %s\n", nrow(mat), reportDir))
+# nrow(mat) - nSkippedByFilter, not nrow(mat): a filtered run writes (or
+# rewrites) exactly one report per SELECTED row -- every dispatch path ends
+# in writeReport(), directly or via refuseCell()/skipCell() -- and a row the
+# filter skipped gets none. Printing the unfiltered total here would
+# overstate what this run actually wrote and contradict @emlKitRowSelected's
+# own "no report file of any kind" contract for a skipped row.
+cat(sprintf("run_analyses.R: %d per-cell reports written to %s\n", nrow(mat) - nSkippedByFilter, reportDir))
 cat(sprintf("run_analyses.R: done in %.1f s\n", elapsed))
