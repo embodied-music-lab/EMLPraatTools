@@ -762,8 +762,14 @@ write.table(out, file.path(resultsDir, "reconciliation.tsv"), sep = "\t",
 # the console still shows it live. on.exit closes the sink even if something
 # below fails, which otherwise leaves the session silently redirected.
 .verdictPath <- file.path(resultsDir, "VERDICT.txt")
-sink(.verdictPath, split = TRUE)
-on.exit(if (sink.number() > 0) sink(), add = TRUE)
+# CAPTURED, NOT SINKED. sink(split = TRUE) writes an EMPTY file under
+# RStudio: RStudio replaces the console connection, so the split copy has
+# nowhere to go and only the console sees the output. Measured on
+# RStudio 4.5.2 -- the file was created at 0 bytes while the console showed
+# the whole verdict. capture.output() diverts to a text connection instead,
+# which RStudio does not intercept, so the same lines reach both the file and
+# the console on every front end.
+.emlReport <- capture.output({
 
 cat("\n=========================================================\n")
 cat("  EML kit -- reconciliation of the two result tables\n")
@@ -962,4 +968,8 @@ if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0 && bal
 cat("---------------------------------------------------------\n")
 cat(sprintf("full detail: %s\n", file.path(resultsDir, "reconciliation.tsv")))
 cat(sprintf("this verdict: %s\n\n", .verdictPath))
-if (sink.number() > 0) sink()
+
+})
+writeLines(.emlReport, .verdictPath)
+cat(.emlReport, sep = "\n")
+cat("\n")
