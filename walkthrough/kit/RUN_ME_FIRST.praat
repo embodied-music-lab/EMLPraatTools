@@ -71,6 +71,20 @@ include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib
 createFolder: "out"
 createFolder: "out/praat_reports"
 
+# THE REPORT FOLDER IS EMPTIED FIRST. writeFile overwrites but never
+# deletes, so a cell removed from matrix.tsv leaves its old report behind
+# and the folder drifts out of step with the declaration. Every cell in the
+# current matrix rewrites its own report below, so nothing live is lost.
+emlKitStale = Create Strings as file list: "emlKitStale", "out/praat_reports/*.txt"
+emlKitNStale = Get number of strings
+for emlKitI to emlKitNStale
+    selectObject: emlKitStale
+    emlKitStaleName$ = Get string: emlKitI
+    deleteFile: "out/praat_reports/" + emlKitStaleName$
+endfor
+selectObject: emlKitStale
+Remove
+
 if not fileReadable ("matrix.tsv")
     writeInfoLine: "RUN_ME_FIRST.praat cannot find matrix.tsv beside itself."
     appendInfoLine: "Keep the kit folder together and try again."

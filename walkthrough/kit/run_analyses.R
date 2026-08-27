@@ -102,6 +102,13 @@ outDir    <- file.path(kitDir, "out")
 reportDir <- file.path(outDir, "r_reports")
 matrixPath <- file.path(kitDir, "matrix.tsv")
 dir.create(outDir, showWarnings = FALSE)
+# THE REPORT DIRECTORY IS EMPTIED FIRST. Reports are written one file per
+# cell and never deleted, so a cell removed from matrix.tsv leaves its old
+# report behind. A reader then finds a report for a cell that no longer
+# exists, describing a fixture that may no longer exist either, and the kit
+# looks out of step with itself. Emptying costs nothing: every cell in the
+# current declaration writes its report on this run.
+unlink(reportDir, recursive = TRUE)
 dir.create(reportDir, showWarnings = FALSE)
 
 # --- packages -----------------------------------------------------------

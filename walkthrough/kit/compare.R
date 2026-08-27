@@ -749,6 +749,16 @@ if (nrow(out)) {
 write.table(out, file.path(outDir, "reconciliation.tsv"), sep = "\t",
             quote = FALSE, row.names = FALSE)
 
+# THE VERDICT IS WRITTEN AS WELL AS PRINTED. Everything below reaches both
+# the console and out/verdict.txt. A verdict that exists only in a console
+# is gone when the window closes, cannot be attached to an email, and cannot
+# be diffed against the next run. split = TRUE tees rather than diverts, so
+# the console still shows it live. on.exit closes the sink even if something
+# below fails, which otherwise leaves the session silently redirected.
+.verdictPath <- file.path(outDir, "verdict.txt")
+sink(.verdictPath, split = TRUE)
+on.exit(if (sink.number() > 0) sink(), add = TRUE)
+
 cat("\n=========================================================\n")
 cat("  EML kit -- reconciliation of the two result tables\n")
 cat("=========================================================\n")
@@ -944,4 +954,6 @@ if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0 && bal
     cat("  however well the ones present agree.\n")
 }
 cat("---------------------------------------------------------\n")
-cat(sprintf("full detail: %s\n\n", file.path(outDir, "reconciliation.tsv")))
+cat(sprintf("full detail: %s\n", file.path(outDir, "reconciliation.tsv")))
+cat(sprintf("this verdict: %s\n\n", .verdictPath))
+if (sink.number() > 0) sink()
