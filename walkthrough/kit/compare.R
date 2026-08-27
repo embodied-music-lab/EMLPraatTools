@@ -502,6 +502,7 @@ dsOf   <- setNames(mx$dataset, mx$cell_id)
 # (cell_id, quantity, sides) this run owes.
 # ---------------------------------------------------------------------------
 expCell <- character(0); expQty <- character(0); expSides <- character(0)
+expNote <- character(0)
 QTbyProc <- split(seq_len(nrow(QT)), QT$procedure)
 for (ci in seq_len(nrow(mx))) {
     cell <- mx[ci, ]
@@ -521,12 +522,20 @@ for (ci in seq_len(nrow(mx))) {
         expCell  <- c(expCell,  rep(cell$cell_id, length(names)))
         expQty   <- c(expQty,   names)
         expSides <- c(expSides, rep(QT$sides[qi], length(names)))
+        expNote  <- c(expNote,  rep(QT$note[qi], length(names)))
     }
 }
 EXP <- data.frame(cell_id = expCell, quantity = expQty, sides = expSides,
-                  stringsAsFactors = FALSE)
+                  note = expNote, stringsAsFactors = FALSE)
 EXP <- EXP[!duplicated(paste(EXP$cell_id, EXP$quantity, sep = "\r")), , drop = FALSE]
 sidesOf <- setNames(EXP$sides, paste(EXP$cell_id, EXP$quantity, sep = "\r"))
+# THE CLAUSE'S OWN NOTE, KEYED THE SAME WAY. Without this a CONTRACT row
+# reaches the reconciliation with enforcement "no rule found" and an empty
+# reason, which is exactly the absence the file exists to prevent -- and it
+# is the largest family in the table, so it is the first thing a reader
+# meets. The reason a contract row is one-sided is written in
+# quantities.tsv; it belongs in the row.
+noteOf <- setNames(EXP$note, paste(EXP$cell_id, EXP$quantity, sep = "\r"))
 
 # A REFUSAL DISCHARGES THE CONTRACT FOR THAT SIDE ON THAT CELL, and nothing
 # else does. A run that refused reported completely: it said why it computed
@@ -561,6 +570,10 @@ nMissing <- length(missRows)
 # WHAT THE CONTRACT SAYS ABOUT A ONE-SIDED ROW. Consulted BEFORE DECLARED[]:
 # where the contract governs a quantity, the contract decides, and a sentence
 # in DECLARED[] cannot overrule it.
+contractNote <- function(cell, quantity) {
+    n <- noteOf[paste(cell, baseName(quantity), sep = "\r")]
+    if (is.na(n)) "" else unname(n)
+}
 contractVerdict <- function(cell, quantity, side) {
     base <- baseName(quantity)
     sd <- sidesOf[paste(cell, base, sep = "\r")]
@@ -726,10 +739,12 @@ ruleById <- function(theId) {
     NULL
 }
 flatten1 <- function(x) gsub("[\t\r\n]+", " ", paste(x, collapse = " "))
+flatten1v <- function(x) gsub("[\t\r\n]+", " ", as.character(x))
 enforcementFor <- function(theId) {
     if (!nzchar(theId)) return(list(enf = "", why = ""))
     rule <- ruleById(theId)
     if (is.null(rule)) return(list(enf = "no rule found", why = ""))
+
     why <- flatten1(rule$why)
     if (is.null(rule$maxrel)) {
         return(list(enf = "PROSE ONLY -- no numeric bound is enforced; this reason cannot detect its own drift", why = why))
@@ -748,7 +763,22 @@ if (is.null(out)) out <- data.frame(bucket = character(), id = character(),
 if (nrow(out)) {
     ann <- lapply(out$id, enforcementFor)
     out$enforcement <- vapply(ann, function(a) a$enf, character(1))
+    # A CONTRACT ROW IS NOT AN UNRULED ROW. Its reason lives in
+    # quantities.tsv, so it is written in here rather than left to the reader
+    # to go and find. Without this the largest family in the file reads
+    # "no rule found" with an empty reason.
     out$why         <- vapply(ann, function(a) a$why, character(1))
+    isC <- out$id == "CONTRACT"
+    if (any(isC)) {
+        out$enforcement[isC] <- paste0(
+            "CONTRACT CLAUSE: quantities.tsv declares this quantity for ",
+            ifelse(grepl("_ONLY_PRAAT$", out$bucket[isC]), "the plugin only",
+            ifelse(grepl("_ONLY_R$", out$bucket[isC]), "R only",
+                   "both sides")),
+            "; one-sidedness here is declared, not missing")
+        out$why[isC] <- flatten1v(mapply(contractNote,
+                                         out$cell_id[isC], out$quantity[isC]))
+    }
 } else {
     out$enforcement <- character(); out$why <- character()
 }
