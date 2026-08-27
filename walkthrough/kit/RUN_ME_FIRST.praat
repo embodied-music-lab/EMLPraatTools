@@ -750,6 +750,19 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                 else
                     @emlKitNum: .cellId$, "p", emlRunTwoGroupAnalysis.stP
                 endif
+                # ITEM 22 (language batch, Fable's ruling 27 August 2026):
+                # the "p method" disclosure row, read straight off
+                # @emlMannWhitneyU's own qualified globals -- same
+                # composition graphs/eml-annotation-procedures.praat's
+                # report prints ("exact" bare, else the method name plus
+                # every reason that ruled it out, comma-separated, no
+                # precedence). No parametric-arm counterpart exists, so
+                # "p_method" never needs the mw_p-style second-arm rename.
+                .pMethodMW$ = emlMannWhitneyU.method$
+                if emlMannWhitneyU.method$ <> "exact"
+                    .pMethodMW$ = .pMethodMW$ + " (" + emlMannWhitneyU.methodReason$ + ")"
+                endif
+                @emlKitText: .cellId$, "p_method", .pMethodMW$
             endif
         endif
 
@@ -1070,6 +1083,16 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                         @emlKitNum: .cellId$, "wilcoxon_p", undefined
                     endif
                 endif
+                # ITEM 22 (language batch, Fable's ruling 27 August 2026):
+                # same "p method" disclosure row as the two-group door's
+                # p_method, with the THIRD independent reason only this
+                # test owes -- "zero differences" -- read straight off
+                # @emlWilcoxonSignedRank's own qualified globals.
+                .pMethodWSR$ = emlWilcoxonSignedRank.method$
+                if emlWilcoxonSignedRank.method$ <> "exact"
+                    .pMethodWSR$ = .pMethodWSR$ + " (" + emlWilcoxonSignedRank.methodReason$ + ")"
+                endif
+                @emlKitText: .cellId$, "p_method", .pMethodWSR$
             endif
         endif
 
@@ -1092,6 +1115,14 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                     @emlKitNum: .cellId$, "df",
                     ... emlRunCorrelationAnalysis.pearDf
                     @emlKitNum: .cellId$, "p", emlRunCorrelationAnalysis.pearP
+                    # ITEM 22 (language batch, Fable's ruling 27 August
+                    # 2026): a LITERAL, not a composition -- Pearson never
+                    # branches between an exact and an approximate null.
+                    # Always named plain "p_method" (unlike p/t/df, never
+                    # renamed under test=both -- there is no second Pearson
+                    # arm to collide with; Spearman's own row below takes
+                    # the spearman_p_method name there instead).
+                    @emlKitText: .cellId$, "p_method", "t distribution"
                 endif
             endif
             if .test$ = "spearman" or .test$ = "both"
@@ -1114,6 +1145,26 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                     if .test$ = "spearman"
                         @emlKitNum: .cellId$, "p",
                         ... emlRunCorrelationAnalysis.spearP
+                    endif
+                    # ITEM 22 (language batch, Fable's ruling 27 August
+                    # 2026): read straight off @emlSpearmanCorrelationDispatch's
+                    # own qualified globals -- @emlRunCorrelationAnalysis
+                    # calls the dispatch once, immediately above, with no
+                    # intervening call that could clobber them, the same
+                    # reasoning the report layer itself relies on. Named
+                    # plain "p_method" only where Spearman is the SOLE arm
+                    # (test=spearman); under test=both it is
+                    # "spearman_p_method" instead, since Pearson's own
+                    # p_method already holds the plain name there -- the
+                    # same primary/secondary split p/spearman_p follow.
+                    .pMethodSp$ = emlSpearmanCorrelationDispatch.method$
+                    if emlSpearmanCorrelationDispatch.method$ <> "exact"
+                        .pMethodSp$ = .pMethodSp$ + " (" + emlSpearmanCorrelationDispatch.methodReason$ + ")"
+                    endif
+                    if .test$ = "spearman"
+                        @emlKitText: .cellId$, "p_method", .pMethodSp$
+                    else
+                        @emlKitText: .cellId$, "spearman_p_method", .pMethodSp$
                     endif
                 endif
             endif

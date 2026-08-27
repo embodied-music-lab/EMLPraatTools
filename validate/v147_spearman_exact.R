@@ -87,19 +87,44 @@
 #      correct AS 89 exact p at this cell, which the grid above already
 #      shows is a specific small POSITIVE number, not zero.
 #
-# HOW THE STRINGS STAY DARK. Fable's order: "exact method (AS 89)" and "t
-# approximation (ties present)" go to Ian's language batch, unapproved --
-# "compute the values, expose them as outputs a check can read, print
-# nothing," the same shape every interval item since item 2 has followed
-# (v144, v145, v146). @emlSpearmanCorrelationDispatch's .method$ is
-# therefore an INTERNAL two-word tag ("exact" / "t approximation"), the
-# same shape @emlMannWhitneyU.method$ already carries, and not the drafted
-# sentence -- no call site gained a print, and @emlReportCorrelationAnalysis
-# (the shared reporter every door already runs through) was not touched at
-# all. This file asserts both halves: the two drafted sentences appear
-# NOWHERE in executable source (comments only, where this file's own
-# header just used them), and NOWHERE in any driven Info-window text
-# across the whole grid and all three red demonstrations.
+# THE STRINGS WERE DARK; ITEM 22 APPROVED THEM AND THEY NOW PRINT. When
+# this file was first written, "exact method (AS 89)" and "t approximation
+# (ties present)" sat in Ian's language batch, unapproved -- .method$ was
+# an INTERNAL two-word tag only ("exact" / "t approximation"), no call site
+# printed a sentence built from it, and this file asserted the two drafted
+# sentences appeared nowhere at all, in source or in any driven Info-window
+# text. Fable's item 22 ruling (27 August 2026,
+# docs/RULING... "p method" row) approved a *composed* disclosure --
+# @emlReportCorrelationAnalysis now prints a "p method" row reading bare
+# "exact" or "t approximation (<reasons>)", .methodReason$ having grown
+# from a single-cause tag into a comma-joined list -- so "t approximation
+# (ties present)" and "t approximation (large sample)" are now LITERALLY
+# the printed text on the cells that earn them, and this file's job
+# inverts to match: assert each string appears on the cell whose method
+# and reason produce it, and nowhere else.
+#
+# "exact method (AS 89)" is not one of the shapes item 22 settled on --
+# the exact branch prints bare "exact", never that longer phrase -- so it
+# stays dark everywhere, checked below exactly as before.
+#
+# Two probes drive the real print path (@emlRunCorrelationAnalysis, which
+# calls @emlReportCorrelationAnalysis internally): PART 2 (the door) and
+# PART 3 (the boundary twins), both extended below to also build a Table
+# and run the orchestrator, then grep the driven Info-window text for the
+# exact "  p method<pad>value" line @emlPadRight/@emlReportLineString would
+# produce. PART 1 (the grid) and the four red demonstrations call
+# @emlSpearmanCorrelationDispatch DIRECTLY and never reach the report
+# layer at all, on any build of the plugin -- so nothing they drive ever
+# prints a disclosure sentence, and their own "never printed" assertions
+# stay TRUE and unchanged; that is a fact about what those probes drive,
+# not a leftover from before item 22.
+#
+# Every string is still asserted to appear in NO executable source line
+# (comments only) -- unaffected by item 22, since none of the three was
+# ever a literal source token: all three are runtime string concatenation
+# ("t approximation" + " (" + methodReason$ + ")"), so no build of the
+# plugin can hardcode them as one line regardless of what the report is
+# approved to print.
 #
 # Base R only. Requires a Praat at or above the plugin's floor; skips (not
 # fails) below it, the same convention v108/v143/v144/v145/v146 use.
@@ -182,8 +207,38 @@ if (!canDrive) {
     vec_lit <- function(v) paste0("{", paste(sprintf("%.0f", v), collapse = ", "), "}")
     num <- function(s) if (identical(s, "--undefined--")) NA_real_ else as.numeric(s)
 
+    # composePMethod / pMethodLine -- reproduce, in R, exactly the string
+    # @emlReportCorrelationAnalysis's Spearman block builds and exactly the
+    # line @emlReportLineString/@emlPadRight print it on (label "p method"
+    # padded right to 20 characters, 2-space indent, no gloss column since
+    # this row's emlWizardExplain$ is always empty by the time it prints --
+    # item 22, Fable's ruling 27 August 2026). Used below (PART 2 door,
+    # PART 3 boundary twins) to assert the ACTUAL printed Info-window line,
+    # not only the .method$/.methodReason$ fields.
+    composePMethod <- function(method, reason) {
+        if (identical(method, "exact")) return("exact")
+        if (!nzchar(reason)) return(method)
+        paste0(method, " (", reason, ")")
+    }
+    pMethodLine <- function(value) paste0("  ", sprintf("%-20s", "p method"), value)
+
     DARK_SENTENCES <- c("exact method (AS 89)", "t approximation (ties present)",
                         "t approximation (large sample)")
+    # Only DARK_SENTENCES[1] is dark FOREVER -- item 22's "exact" branch
+    # prints bare "exact", never this longer phrase. The other two are the
+    # ACTUAL text item 22's "p method" row now composes on a ties-present /
+    # large-sample cell; PART 2 and PART 3 below assert they DO appear, on
+    # the cell that earns them. They are still asserted "never printed" on
+    # probes that cannot possibly print them (PART 1's grid and the four
+    # red demonstrations -- all drive @emlSpearmanCorrelationDispatch
+    # directly and never reach @emlReportCorrelationAnalysis).
+    NEVER_DARK <- DARK_SENTENCES[1]
+    # Every string built by @emlReportLineString's "p method" row is
+    # runtime concatenation ("t approximation" + " (" + methodReason$ +
+    # ")"), never one hardcoded token -- so ALL THREE stay provably absent
+    # as a literal SOURCE line regardless of what the report is now
+    # approved to print at runtime. Checked once, below, over the widened
+    # census.
 
     # ---------------------------------------------------------------------
     # PART 0 -- STRUCTURAL: every door is wired, and nothing else changed.
@@ -208,47 +263,90 @@ if (!canDrive) {
     check_true(V, "all three scatter draw-time annotation call sites (ungrouped, per-group, overall/pooled) call the dispatch",
                n_dispatch_calls(draw_src) == 3)
 
-    # And no live call site still reaches @emlSpearmanCorrelation directly.
-    # THREE raw occurrences are correct and named: the dispatch's OWN
-    # internal call (inside its body in eml-inferential.praat), the
-    # PRE-EXISTING call inside @emlSpearmanCorrelationAlt (also in
-    # eml-inferential.praat, untouched by this item -- no caller anywhere
-    # in the tree, so not a door), and @emlBridgeCorrelation (UNUSED, no
-    # caller, per this file's own header comment, in
-    # eml-annotation-procedures.praat). Two of the three therefore live in
-    # THIS file.
-    raw_inf   <- sum(grepl("^\\s*@emlSpearmanCorrelation:\\s", inf_src))
-    raw_bridge <- sum(grepl("@emlSpearmanCorrelation:\\s", bridge_src, fixed = FALSE))
+    # -----------------------------------------------------------------
+    # THE DOOR CENSUS, WIDENED (Fable's order, item 22 stage 2). This
+    # section used to read exactly five hand-picked files (ana / corr /
+    # wiz / draw / bridge) -- which is exactly how @emlBridgeCorrelation's
+    # raw @emlSpearmanCorrelation call went unnoticed for as long as it
+    # did: bridge_src WAS one of the five, but nothing forced "the files
+    # that might call a stat kernel" to be a COMPLETE list, so a sixth file
+    # with its own raw call would have passed this section silently. Census
+    # EVERY shipped .praat file under the plugin root instead, excluding
+    # dev/tests/ (harness fixtures, not shipped code), and require ZERO raw
+    # @emlSpearmanCorrelation calls in every one of them except
+    # eml-inferential.praat itself, which owes exactly two: the dispatch's
+    # own internal call (the one computation site) and
+    # @emlSpearmanCorrelationAlt's pre-existing, untouched one (no caller
+    # anywhere in the tree, so not a door).
+    # -----------------------------------------------------------------
+    all_praat_files <- list.files(plug, pattern = "\\.praat$", recursive = TRUE, full.names = TRUE)
+    is_dev_tests <- grepl("[/\\\\]dev[/\\\\]tests[/\\\\]", all_praat_files)
+    census_files <- sort(all_praat_files[!is_dev_tests])
+    check_true(V, sprintf("the door census covers every shipped .praat file, excluding dev/tests/ (%d files found)", length(census_files)),
+               length(census_files) > 0)
     check_true(V,
-               sprintf("exactly two raw @emlSpearmanCorrelation calls remain in eml-inferential.praat (the dispatch's own internal call, and @emlSpearmanCorrelationAlt's pre-existing, untouched one; found %d)",
-                       raw_inf),
-               raw_inf == 2)
+               "the census includes graphs/eml-annotation-procedures.praat -- the file the OLD five-file census omitted, which is exactly how @emlBridgeCorrelation's raw call went unnoticed",
+               any(grepl("eml-annotation-procedures\\.praat$", census_files)))
     check_true(V,
-               sprintf("exactly one raw @emlSpearmanCorrelation call remains in eml-annotation-procedures.praat (the UNUSED @emlBridgeCorrelation; found %d)",
-                       raw_bridge),
-               raw_bridge == 1)
-    check_true(V, "@emlBridgeCorrelation is confirmed unused (no caller anywhere in the tree)",
-               sum(grepl("@emlBridgeCorrelation:", c(ana_src, corr_src, wiz_src, draw_src, bridge_src), fixed = TRUE)) == 0)
-    check_true(V, "@emlSpearmanCorrelationAlt has no caller anywhere in the tree (not a door)",
-               sum(grepl("@emlSpearmanCorrelationAlt:", c(ana_src, corr_src, wiz_src, draw_src, bridge_src, inf_src), fixed = TRUE)) == 0)
+               "the census still includes every file the old hand-picked list already read (eml-analysis / eml-correlate / eml-wizard / eml-draw-procedures / eml-inferential)",
+               all(vapply(c("eml-analysis.praat", "eml-correlate.praat", "eml-wizard.praat",
+                            "eml-draw-procedures.praat", "eml-inferential.praat"),
+                          function(f) any(grepl(paste0(f, "$"), census_files)), logical(1))))
 
-    # -- the strings stay dark: not in executable source anywhere --------
-    all_src_lines <- c(inf_src, ana_src, corr_src, wiz_src, draw_src, bridge_src)
+    census_src <- lapply(census_files, readLines, warn = FALSE)
+    names(census_src) <- census_files
+    RAW_SPEARMAN_RE <- "^\\s*@emlSpearmanCorrelation:\\s"
+    raw_by_file <- vapply(census_src, function(src) sum(grepl(RAW_SPEARMAN_RE, src)), integer(1))
+    names(raw_by_file) <- census_files
+
+    is_inf_file <- normalizePath(census_files, mustWork = FALSE) == normalizePath(INF, mustWork = FALSE)
+    raw_inf <- unname(raw_by_file[is_inf_file])
+    check_true(V,
+               sprintf("eml-inferential.praat carries exactly two raw @emlSpearmanCorrelation calls (the dispatch's own internal call, and @emlSpearmanCorrelationAlt's pre-existing, untouched one; found %d)",
+                       raw_inf),
+               length(raw_inf) == 1 && raw_inf == 2)
+    offenders <- census_files[!is_inf_file & raw_by_file > 0]
+    check_true(V,
+               sprintf("NO shipped .praat file OTHER than eml-inferential.praat calls @emlSpearmanCorrelation raw (found in: %s)",
+                       if (length(offenders)) paste(basename(offenders), collapse = ", ") else "none"),
+               length(offenders) == 0)
+    is_bridge_file <- grepl("eml-annotation-procedures\\.praat$", census_files)
+    check_true(V,
+               "eml-annotation-procedures.praat itself now calls @emlSpearmanCorrelation raw ZERO times -- @emlBridgeCorrelation was fixed to route through the dispatch instead, closing exactly the gap this widened census exists to catch",
+               any(is_bridge_file) && unname(raw_by_file[is_bridge_file]) == 0)
+
+    check_true(V, "@emlBridgeCorrelation is confirmed unused (no caller anywhere in the census)",
+               sum(vapply(census_src, function(src) sum(grepl("@emlBridgeCorrelation:", src, fixed = TRUE)), integer(1))) == 0)
+    check_true(V, "@emlSpearmanCorrelationAlt has no caller anywhere in the census (not a door)",
+               sum(vapply(census_src, function(src) sum(grepl("@emlSpearmanCorrelationAlt:", src, fixed = TRUE)), integer(1))) == 0)
+
+    # -- NEVER_DARK, plus source-level absence of all three, over the whole census --
+    all_src_lines <- unlist(census_src, use.names = FALSE)
     is_comment <- grepl("^\\s*[#;]", all_src_lines)
     exec_lines <- all_src_lines[!is_comment]
-    for (s in DARK_SENTENCES) {
-        check_true(V, sprintf("the drafted sentence '%s' appears in no executable source line (comments only)", s),
+    check_true(V, sprintf("the drafted sentence '%s' appears in no executable source line across the whole census (comments only)", NEVER_DARK),
+               !any(grepl(NEVER_DARK, exec_lines, fixed = TRUE)))
+    for (s in DARK_SENTENCES[-1]) {
+        check_true(V, sprintf("the composed sentence '%s' is still never a literal source line anywhere (only ever built by concatenation at runtime)", s),
                    !any(grepl(s, exec_lines, fixed = TRUE)))
     }
-    # And @emlReportCorrelationAnalysis's Spearman block gained no new
-    # "Method" print line -- the report layer itself was not touched.
+
+    # @emlReportCorrelationAnalysis's Spearman block: item 22 DID touch the
+    # report layer -- it added the new "p method" disclosure row -- but
+    # gained no SEPARATE "Method" line (capital M, a different, older
+    # label already used elsewhere in the report). Read straight off
+    # bridge_src (not only via the census) since PART 2/3 below need this
+    # exact source shape anyway.
     rep_start <- grep("^procedure emlReportCorrelationAnalysis:", bridge_src)
     rep_end <- rep_start[1] - 1 + which(bridge_src[rep_start[1]:length(bridge_src)] == "endproc")[1]
     rep_body <- bridge_src[rep_start[1]:rep_end]
     sp_if <- grep('if \\.testType\\$ = "spearman" or \\.testType\\$ = "both"', rep_body)
-    check_true(V, "@emlReportCorrelationAnalysis's Spearman block prints no Method line (report layer untouched)",
+    check_true(V, "@emlReportCorrelationAnalysis's Spearman block prints no separate \"Method\" line (only the new \"p method\" row item 22 approved)",
                length(sp_if) >= 1 &&
                !any(grepl('emlReportLineString:\\s*"Method"', rep_body[sp_if[length(sp_if)]:length(rep_body)])))
+    check_true(V, "@emlReportCorrelationAnalysis's Spearman block DOES print the new \"p method\" row (item 22, Fable's ruling 27 August 2026)",
+               length(sp_if) >= 1 &&
+               any(grepl('emlReportLineString:\\s*"p method"', rep_body[sp_if[length(sp_if)]:length(rep_body)])))
 
     # ---------------------------------------------------------------------
     # PART 1 -- THE GRID: n = 5..50, rho +/-1 boundary + mid + ties, x4.
@@ -339,11 +437,15 @@ if (!canDrive) {
             check_true(V, sprintf("[%s] .method$ is the branch R's cor.test took (%s)", key, rBranch),
                        identical(cell$meth, rBranch))
             # .methodReason$ names WHY an approximation was taken, and the
-            # two reasons are not the same fact: "ties" when R's own TIES
-            # test is true, "" on an exact cell. n = 5..50 never reaches
-            # the n <= 1290 cutoff, so "large sample" must never appear
-            # here -- checked once, below, over the whole grid.
-            rReason <- if (rTies == 1L) "ties" else ""
+            # two reasons are not the same fact: "ties present" when R's
+            # own TIES test is true, "" on an exact cell. Item 22 (Fable's
+            # ruling, 27 August 2026) composes EVERY condition that applied
+            # rather than a single-cause tag, which is why the text is
+            # "ties present" and not the shorter "ties" this file asserted
+            # before that ruling. n = 5..50 never reaches the n <= 1290
+            # cutoff, so "large sample" must never appear here -- checked
+            # once, below, over the whole grid.
+            rReason <- if (rTies == 1L) "ties present" else ""
             check_true(V, sprintf("[%s] .methodReason$ is \"%s\"", key, if (nzchar(rReason)) rReason else "(empty)"),
                        identical(cell$mr, rReason))
 
@@ -372,8 +474,15 @@ if (!canDrive) {
         }
 
         # -- dark strings never printed across the whole grid drive ------
+        # This probe calls @emlSpearmanCorrelationDispatch DIRECTLY
+        # (@v147cell above) and never reaches @emlReportCorrelationAnalysis,
+        # so NONE of the three composed disclosure sentences is ever
+        # printed here regardless of item 22's ruling -- this stays "never"
+        # on every one of the three, unlike PART 2 (door) and PART 3
+        # (boundary twins) below, which drive the real report and assert
+        # the opposite on the cells that earn it.
         for (s in DARK_SENTENCES) {
-            check_true(V, sprintf("[grid] the drafted sentence '%s' never printed", s),
+            check_true(V, sprintf("[grid] the drafted sentence '%s' never printed (this probe never reaches the report layer)", s),
                        !any(grepl(s, outG, fixed = TRUE)))
         }
     }
@@ -387,6 +496,12 @@ if (!canDrive) {
     # menu runs it, and its own captured/restored .spearP is asserted to
     # equal the SAME value the direct dispatch call produces on identical
     # data -- both the no-ties (exact) and the ties (t-approximation) case.
+    # This is also the probe item 22 needs: @emlRunCorrelationAnalysis
+    # calls @emlReportCorrelationAnalysis internally, so driving the door
+    # ALSO prints the real "p method" disclosure row into the Info window
+    # -- @v147table's own DOOR line adds the dispatch's .method$/
+    # .methodReason$ so the exact composed sentence can be checked against
+    # BOTH the fields and the literal printed line below.
     door_lines <- c(prelude(INF), "",
         'procedure v147table: .tag$, .a#, .b#',
         '    .id = Create Table with column names: "t147", 0, "x y"',
@@ -400,7 +515,36 @@ if (!canDrive) {
         '    .p$ = fixed$ (emlRunCorrelationAnalysis.spearP, 15)',
         '    @emlSpearmanCorrelationDispatch: .a#, .b#, 2',
         '    .direct$ = fixed$ (emlSpearmanCorrelationDispatch.p, 15)',
-        '    appendInfoLine: "DOOR ", .tag$, " ", .p$, " ", .direct$',
+        '    .m$ = emlSpearmanCorrelationDispatch.method$',
+        '    .mr$ = emlSpearmanCorrelationDispatch.methodReason$',
+        '    appendInfoLine: "DOOR ", .tag$, " ", .p$, " ", .direct$, " [", .m$, "] [", .mr$, "]"',
+        '    removeObject: .id',
+        'endproc', "",
+        # @v147tableBig -- the large-sample (n > 1290) door fixtures. Built
+        # with a Praat loop, not vec_lit (a 1300-element literal would be a
+        # pathological source line, same reasoning as PART 3's boundary
+        # twins). x = 1:n, y = ((7*(i-1)) mod n) + 1 is the SAME tie-free
+        # permutation PART 3 uses at n = 1300; .forceTie duplicates x[2]
+        # onto x[1] to also put ties in play, for the "both reasons hold"
+        # cell item 22's ruling requires (there is no precedence between
+        # ties present and large sample -- both are named when both hold).
+        'procedure v147tableBig: .tag$, .n, .forceTie',
+        '    .id = Create Table with column names: "t147big", 0, "x y"',
+        '    for .i from 1 to .n',
+        '        Append row',
+        '        .xv = .i',
+        '        if .forceTie = 1 and .i = 2',
+        '            .xv = 1',
+        '        endif',
+        '        Set numeric value: .i, "x", .xv',
+        '        .yv = ((7 * (.i - 1)) mod .n) + 1',
+        '        Set numeric value: .i, "y", .yv',
+        '    endfor',
+        '    @emlRunCorrelationAnalysis: .id, "x", "y", "spearman"',
+        '    .p$ = fixed$ (emlRunCorrelationAnalysis.spearP, 15)',
+        '    .m$ = emlSpearmanCorrelationDispatch.method$',
+        '    .mr$ = emlSpearmanCorrelationDispatch.methodReason$',
+        '    appendInfoLine: "DOORBIG ", .tag$, " ", .p$, " [", .m$, "] [", .mr$, "]"',
         '    removeObject: .id',
         'endproc', "")
     door_fixtures <- list(
@@ -414,9 +558,18 @@ if (!canDrive) {
             sprintf("y# = %s", vec_lit(fx$y)),
             sprintf('@v147table: "%s", x#, y#', tag))
     }
+    doorbig_fixtures <- list(
+        large = list(n = 1300L, forceTie = 0L),  # n > 1290, no ties -> "large sample" alone
+        both  = list(n = 1300L, forceTie = 1L)   # n > 1290 AND ties -> both reasons, comma-joined
+    )
+    for (tag in names(doorbig_fixtures)) {
+        fx <- doorbig_fixtures[[tag]]
+        door_lines <- c(door_lines,
+            sprintf('@v147tableBig: "%s", %d, %d', tag, fx$n, fx$forceTie))
+    }
     door_path <- file.path(work, "v147-door.praat")
     writeLines(c('writeInfoLine: "v147 door"', door_lines), door_path)
-    outD <- drive(door_path)
+    outD <- drive(door_path, secs = "300")
     ranD <- !any(grepl("^Error", outD))
     check_true(V, "the end-to-end orchestrator-door probe ran with no Praat error", ranD)
     if (!ranD) {
@@ -425,8 +578,8 @@ if (!canDrive) {
     } else {
         gotD <- list()
         for (ln in grep("^DOOR ", outD, value = TRUE)) {
-            m <- regmatches(ln, regexec("^DOOR (\\S+) (\\S+) (\\S+)$", ln))[[1]]
-            if (length(m) == 4) gotD[[m[2]]] <- list(door = num(m[3]), direct = num(m[4]))
+            m <- regmatches(ln, regexec("^DOOR (\\S+) (\\S+) (\\S+) \\[([^]]*)\\] \\[([^]]*)\\]$", ln))[[1]]
+            if (length(m) == 6) gotD[[m[2]]] <- list(door = num(m[3]), direct = num(m[4]), meth = m[5], mr = m[6])
         }
         for (tag in names(door_fixtures)) {
             cell <- gotD[[tag]]
@@ -435,9 +588,64 @@ if (!canDrive) {
             check(V, sprintf("[door %s] @emlRunCorrelationAnalysis's own .spearP equals the direct dispatch call, bit for bit -- ONE computation site, driven two ways", tag),
                   cell$door, cell$direct, tol = 1e-12)
         }
-        for (s in DARK_SENTENCES) {
-            check_true(V, sprintf("[door] the drafted sentence '%s' never printed", s),
-                       !any(grepl(s, outD, fixed = TRUE)))
+        # -- ITEM 22, INVERTED: the composed reason text now DOES appear,
+        # on the cell that earns it, both as the dispatch's own fields and
+        # as the literal line @emlReportCorrelationAnalysis prints via
+        # @emlReportLineString. door_expect names what EACH fixture must
+        # show; the composed value that is not this cell's own is never
+        # asserted absent line-by-line (the boundary-twin and doorbig
+        # checks below already cover every other combination), but the
+        # single unconditionally-dark sentence (NEVER_DARK) is checked on
+        # every fixture as a floor.
+        door_expect <- list(
+            no_ties = list(method = "exact",           reason = ""),
+            ties    = list(method = "t approximation", reason = "ties present")
+        )
+        for (tag in names(door_expect)) {
+            cell <- gotD[[tag]]
+            if (is.null(cell)) next
+            exp <- door_expect[[tag]]
+            check_true(V, sprintf("[door %s] .method$ is \"%s\"", tag, exp$method),
+                       identical(cell$meth, exp$method))
+            check_true(V, sprintf("[door %s] .methodReason$ is \"%s\"", tag, if (nzchar(exp$reason)) exp$reason else "(empty)"),
+                       identical(cell$mr, exp$reason))
+            composed <- composePMethod(exp$method, exp$reason)
+            check_true(V, sprintf("[door %s] the printed \"p method\" row reads \"%s\" -- the ACTUAL composed disclosure text, not only the internal .method$/.methodReason$ fields", tag, composed),
+                       any(grepl(pMethodLine(composed), outD, fixed = TRUE)))
+        }
+        check_true(V, sprintf("[door] the drafted sentence '%s' never printed (item 22 never composes this exact phrase)", NEVER_DARK),
+                   !any(grepl(NEVER_DARK, outD, fixed = TRUE)))
+
+        gotDB <- list()
+        for (ln in grep("^DOORBIG ", outD, value = TRUE)) {
+            m <- regmatches(ln, regexec("^DOORBIG (\\S+) (\\S+) \\[([^]]*)\\] \\[([^]]*)\\]$", ln))[[1]]
+            if (length(m) == 5) gotDB[[m[2]]] <- list(p = num(m[3]), meth = m[4], mr = m[5])
+        }
+        doorbig_expect <- list(
+            large = list(method = "t approximation", reason = "large sample"),
+            both  = list(method = "t approximation", reason = "ties present, large sample")
+        )
+        for (tag in names(doorbig_expect)) {
+            fx <- doorbig_fixtures[[tag]]
+            cell <- gotDB[[tag]]
+            check_true(V, sprintf("[doorbig %s] a cell was printed", tag), !is.null(cell))
+            if (is.null(cell)) next
+            exp <- doorbig_expect[[tag]]
+            n <- fx$n
+            x <- 1:n
+            if (fx$forceTie == 1L) x[2] <- x[1]
+            y <- ((7 * (0:(n - 1))) %% n) + 1
+            ct <- suppressWarnings(cor.test(x, y, method = "spearman"))
+            tol_p <- max(1e-12, abs(ct$p.value) * 1e-8)
+            check(V, sprintf("[doorbig %s] p vs cor.test(method=\"spearman\")", tag),
+                  cell$p, ct$p.value, tol = tol_p)
+            check_true(V, sprintf("[doorbig %s] .method$ is \"%s\"", tag, exp$method),
+                       identical(cell$meth, exp$method))
+            check_true(V, sprintf("[doorbig %s] .methodReason$ is \"%s\" -- EVERY condition that applied, comma-separated, fixed order, no precedence", tag, exp$reason),
+                       identical(cell$mr, exp$reason))
+            composed <- composePMethod(exp$method, exp$reason)
+            check_true(V, sprintf("[doorbig %s] the printed \"p method\" row reads \"%s\"", tag, composed),
+                       any(grepl(pMethodLine(composed), outD, fixed = TRUE)))
         }
     }
 
@@ -449,6 +657,14 @@ if (!canDrive) {
     # Praat loop, not a literal -- a 1300-element vec_lit would be a
     # pathological source line.
     # ---------------------------------------------------------------------
+    # Item 22, Fable's ruling 27 August 2026: "extend [the boundary twins]
+    # to assert the printed label, not only .method$." So this procedure
+    # now ALSO builds a Table from the same x#/y# and drives
+    # @emlRunCorrelationAnalysis on it -- which calls
+    # @emlReportCorrelationAnalysis internally -- so the real "p method"
+    # disclosure row prints into the SAME Info window this probe captures,
+    # and the composed sentence can be asserted as literally printed text,
+    # not only as the dispatch's own fields.
     boundary_lines <- c(prelude(INF), "",
         "procedure v147boundary: .tag$, .n",
         "    x# = zero# (.n)",
@@ -463,6 +679,14 @@ if (!canDrive) {
         "    .mr$ = emlSpearmanCorrelationDispatch.methodReason$",
         "    .err$ = emlSpearmanCorrelationDispatch.error$",
         "    appendInfoLine: \"BOUND \", .tag$, \" \", .p$, \" [\", .m$, \"] [\", .mr$, \"] [\", .err$, \"]\"",
+        "    .id = Create Table with column names: \"t147bound\", 0, \"x y\"",
+        "    for .i from 1 to .n",
+        "        Append row",
+        "        Set numeric value: .i, \"x\", x#[.i]",
+        "        Set numeric value: .i, \"y\", y#[.i]",
+        "    endfor",
+        "    @emlRunCorrelationAnalysis: .id, \"x\", \"y\", \"spearman\"",
+        "    removeObject: .id",
         "endproc", "",
         '@v147boundary: "n1290", 1290',
         '@v147boundary: "n1300", 1300')
@@ -503,6 +727,12 @@ if (!canDrive) {
             check_true(V, sprintf("[boundary %s] .methodReason$ is \"%s\"", tag,
                                   if (nzchar(exp$reason)) exp$reason else "(empty)"),
                        identical(cell$mr, exp$reason))
+            # THE PRINTED LABEL, not only .method$ (item 22's extension of
+            # the boundary twins): the ACTUAL "p method" line
+            # @emlReportCorrelationAnalysis prints, byte for byte.
+            composed <- composePMethod(exp$method, exp$reason)
+            check_true(V, sprintf("[boundary %s] the printed \"p method\" row reads \"%s\"", tag, composed),
+                       any(grepl(pMethodLine(composed), outBnd, fixed = TRUE)))
             tol_p <- max(1e-12, abs(ct$p.value) * 1e-8)
             check(V, sprintf("[boundary %s] p vs cor.test(method=\"spearman\")", tag),
                   cell$p, ct$p.value, tol = tol_p)
@@ -529,10 +759,14 @@ if (!canDrive) {
                       ct$p.value, p_hand, tol = 1e-10)
             }
         }
-        for (s in DARK_SENTENCES) {
-            check_true(V, sprintf("[boundary] the drafted sentence '%s' never printed", s),
-                       !any(grepl(s, outBnd, fixed = TRUE)))
-        }
+        # ITEM 22, INVERTED: n1290 prints bare "exact" (asserted above via
+        # composePMethod("exact", "") == "exact"), so the NEVER_DARK
+        # sentence is the only one still checked absent here; n1300
+        # actually printing "t approximation (large sample)" was just
+        # asserted present, two lines above -- a blanket "never printed"
+        # loop over all three DARK_SENTENCES would contradict that.
+        check_true(V, sprintf("[boundary] the drafted sentence '%s' never printed", NEVER_DARK),
+                   !any(grepl(NEVER_DARK, outBnd, fixed = TRUE)))
     }
 
     # ---------------------------------------------------------------------
@@ -641,8 +875,12 @@ if (!canDrive) {
                                is.finite(ctC$p.value) && ctC$p.value > 0)
                 }
             }
+            # Unchanged by item 22: this mutant probe calls
+            # @emlSpearmanCorrelationDispatch directly and never reaches
+            # @emlReportCorrelationAnalysis, so none of the three composed
+            # sentences is ever printed here regardless of the ruling.
             for (s in DARK_SENTENCES) {
-                check_true(V, sprintf("[red A/C] the drafted sentence '%s' never printed", s),
+                check_true(V, sprintf("[red A/C] the drafted sentence '%s' never printed (this probe never reaches the report layer)", s),
                            !any(grepl(s, outAC, fixed = TRUE)))
             }
         }
@@ -712,8 +950,10 @@ if (!canDrive) {
                           pB, namedWrong, tol = 1e-10)
                 }
             }
+            # Unchanged by item 22: same reason as [red A/C] above -- a
+            # direct dispatch call, never the report layer.
             for (s in DARK_SENTENCES) {
-                check_true(V, sprintf("[red B] the drafted sentence '%s' never printed", s),
+                check_true(V, sprintf("[red B] the drafted sentence '%s' never printed (this probe never reaches the report layer)", s),
                            !any(grepl(s, outB, fixed = TRUE)))
             }
         }
@@ -789,8 +1029,10 @@ if (!canDrive) {
                                identical(mrD, ""))
                 }
             }
+            # Unchanged by item 22: same reason as [red A/C] above -- a
+            # direct dispatch call, never the report layer.
             for (s in DARK_SENTENCES) {
-                check_true(V, sprintf("[red D] the drafted sentence '%s' never printed", s),
+                check_true(V, sprintf("[red D] the drafted sentence '%s' never printed (this probe never reaches the report layer)", s),
                            !any(grepl(s, outDD, fixed = TRUE)))
             }
         }

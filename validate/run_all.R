@@ -1860,12 +1860,41 @@ scripts <- c(
                                  # asymptotic p on an exact-eligible cell; a
                                  # ties case that skips the t-approximation
                                  # fallback; the rho=1 boundary against the
-                                 # wrong method. .method$ is an internal tag
-                                 # only -- the two disclosure sentences stay
-                                 # in the language batch, asserted dark in
-                                 # both source and every driven Info window.
-                                 # Boundary task: confirms no Kendall
-                                 # correlation exists in the plugin.
+                                 # wrong method. Item 22 (Fable, 27 Aug 2026)
+                                 # approved the "p method" disclosure row --
+                                 # updated here to assert the composed
+                                 # reason text DOES print on the cell that
+                                 # earns it (door + boundary twins, both
+                                 # extended to drive the real report), door
+                                 # census widened to every shipped .praat
+                                 # file (excluding dev/tests/), catching
+                                 # @emlBridgeCorrelation's raw call the old
+                                 # five-file census missed.
+    ,
+    "v148_p_method_disclosure.R" # Item 22 (language batch, Fable's ruling
+                                 # 27 Aug 2026), the other two rank tests:
+                                 # Mann-Whitney and Wilcoxon signed-rank
+                                 # compose "normal approximation (<reasons>)"
+                                 # from EVERY condition that ruled out the
+                                 # exact branch, fixed order, no precedence
+                                 # -- ties present, large sample, and (Wilcoxon
+                                 # only) zero differences. Eight fixtures
+                                 # (3 MW, 5 Wilcoxon) driven through the real
+                                 # orchestrators, asserting both the fields
+                                 # and the literal printed "p method" line.
+                                 # Plus the explanation-class acceptance
+                                 # check: one cell driven three ways
+                                 # (default / forced off / forced on) proves
+                                 # the default IS off, every line the raised
+                                 # flag adds is explanation class BY
+                                 # CONSTRUCTION of the diff (never a text
+                                 # pattern), and the "p method" row is
+                                 # byte-identical across all three --
+                                 # disclosure class. Red demo: a mutant
+                                 # @emlRunTwoGroupAnalysis that silently
+                                 # discards the caller's override, proving
+                                 # the acceptance check goes red if the gate
+                                 # is ever made inert.
 )
 
 # ---------------------------------------------------------------------------

@@ -343,3 +343,10 @@ same shape, and it returns to Fable as a wording amendment rather than
 being adjusted here.
 
 The Hodges-Lehmann interval disclosures reuse this row when they land.
+
+## 23. Normality lines: significance language, not magnitude (PENDING)
+
+Ruled 27 Aug 2026, revision 8, door-round work. Every line saying
+"departure" while meaning "rejection" takes the significance form; skew and
+kurtosis glosses keep magnitude phrasing because they measure magnitudes.
+Lines not drafted here. Gates nothing.

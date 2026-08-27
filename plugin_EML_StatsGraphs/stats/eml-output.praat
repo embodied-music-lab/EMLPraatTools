@@ -82,17 +82,26 @@
 # emlWizardExplain$ is set before each @emlReportLine/@emlReportLineString
 # call and consumed (cleared) by the procedure.
 #
-# THE DEFAULT IS 1: a wrapper report explains itself without the user having
-# to know that a gate exists. At a default of 0 the glosses would be absent
-# from every wrapper report while the graph path (which sets the gate to 1)
-# had them — the same analysis narrated two different ways depending on
-# whether a figure had been drawn earlier in the session.
+# THE DEFAULT IS 0 (item 22 of the language batch, Fable's ruling 27 August
+# 2026, superseding the "default is 1" rationale this block used to state):
+# a report is terse by default and a reader who wants the plain-language
+# gloss beside a value turns the gate on for that session. @emlGraphsWorkflow
+# still raises the gate for the drawing path exactly as before -- this
+# change only retires the WRAPPER report's default, not the graph path's.
 #
 # THE DEFAULT IS DECLARED ONCE, HERE. @emlResetExplanations restores this
 # variable rather than a literal, so the initial value and the restored value
 # cannot drift apart.
 # ============================================================================
-emlShowExplanationsDefault = 1
+; ITEM 22 (language batch, Fable's ruling 27 August 2026): flipped to 0.
+; The wizard's own explanation toggle (this variable) is a separate
+; control from emlShowExplanations's original rationale above -- the
+; ruling holds that reports should be terse by default, wordy only where
+; the reader turns it on. Both this initial assignment and
+; @emlResetExplanations's fallback below carry the SAME literal; changing
+; only one leaves the fallback restoring 1 whenever the variable does not
+; yet exist, silently reviving explanations that this line just retired.
+emlShowExplanationsDefault = 0
 emlShowExplanations = emlShowExplanationsDefault
 
 # ----------------------------------------------------------------------------
@@ -111,7 +120,12 @@ emlShowExplanations = emlShowExplanationsDefault
 # ----------------------------------------------------------------------------
 procedure emlResetExplanations
     if not variableExists ("emlShowExplanationsDefault")
-        emlShowExplanationsDefault = 1
+        ; Same literal as the declaration above -- item 22's ruling, 27
+        ; August 2026. Left at 1 here while the declaration above reads 0,
+        ; this fallback would silently restore explanations for any script
+        ; whose first touch of the gate is a reset rather than the top-of-
+        ; file declaration.
+        emlShowExplanationsDefault = 0
     endif
     emlShowExplanations = emlShowExplanationsDefault
 endproc
@@ -465,11 +479,20 @@ procedure emlReportFooter
     .border$ = "══════════════════════════════════════════════"
     .conv1$ = "  Conventions: quartiles R type 7 · SD & variance n-1"
     .conv2$ = "  · rank tests average tied ranks (tie-corrected)."
+    ; ITEM 22 (language batch, Fable's ruling 27 August 2026): which exact
+    ; method backs each rank test's p, and the sample-size limit each one
+    ; is exact under -- the same facts the new "p method" row states per
+    ; result, stated once here for the whole report. ASCII only: this
+    ; string is also written to the plain-text report file.
+    .exact1$ = "  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank"
+    .exact2$ = "  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)"
     ; ITEM 1.2 — factual: the estimator conventions the numbers above were
     ; computed under. Canonical, so through the emit helper.
     @emlEmit: .empty$, ""
     @emlEmit: .conv1$, ""
     @emlEmit: .conv2$, ""
+    @emlEmit: .exact1$, ""
+    @emlEmit: .exact2$, ""
     @emlEmit: .border$, ""
 endproc
 

@@ -85,6 +85,20 @@
 # branch the pair's own p-value was computed on; it is not part of this
 # contract for that reason, same as every other $-suffixed disclosure field.
 #
+# ADDED 27 August (item 22 of the language batch, Fable's ruling): p_method
+# / spearman_p_method -- NOT an exception to the exclusion above, a
+# graduation out of it. .method$ and .methodReason$ themselves stay
+# excluded, same as ever (still bookkeeping, never printed on their own).
+# What changed is that item 22 gave @emlMannWhitneyU, @emlWilcoxonSignedRank
+# and @emlSpearmanCorrelationDispatch's composition of those two fields
+# (plus Pearson's literal "t distribution") its own PRINTED report row --
+# "p method", via the existing @emlReportLineString, always, never gated on
+# emlShowExplanations. A number a user reads in the Info window is a number
+# the plugin reports, whatever slot it arrives in (this file's own opening
+# principle, above) -- so once item 22 made that composition a printed row,
+# it is contracted like any other, not read directly off the two excluded
+# fields the way v145 reads .hlMethod$ for its own internal cross-check.
+#
 # One header-listed RESULT is reported by neither runner and is named here so
 # the gap is visible rather than absent: nothing else. @emlChiSquareIndependence's
 # .nCellsBelow5 IS reported by both (n_cells_below5), and was the candidate.
@@ -187,6 +201,7 @@ emlRunTwoGroupAnalysis	u2	cell	test:nonparametric,both	both	stats/eml-inferentia
 emlRunTwoGroupAnalysis	rank_biserial	cell	test:nonparametric,both	both	stats/eml-inferential.praat:1695 @emlRankBiserialR .r	Nonparametric arm only.
 emlRunTwoGroupAnalysis	mw_p	cell	test=both	both	stats/eml-extract.praat:4370 write site .secondP	THE SECOND ARM. The write site carries .secondLabel$/.secondStat/.secondP for a door that ran two tests of one hypothesis; test=both is the only axis value that fills it.
 emlRunTwoGroupAnalysis	wilcox_r	cell	test:nonparametric,both	r	run_analyses.R rstatix::wilcox_effsize	R side alone. Rosenthal's r = Z/sqrt(N); not the rank-biserial correlation and it has no plugin counterpart. See D-WILCOXR.
+emlRunTwoGroupAnalysis	p_method	cell	test:nonparametric,both	both	stats/eml-inferential.praat:1892 @emlMannWhitneyU .method$ .methodReason$; printed graphs/eml-annotation-procedures.praat:5265 @emlReportLineString "p method"	Item 22 (language batch, Fable's ruling 27 Aug 2026): the disclosure row naming HOW the p above was computed. "exact" bare, else "normal approximation" plus every reason that ruled out the exact branch, comma-separated, fixed order (ties present, large sample), no precedence. Nonparametric arm only; no parametric-arm counterpart exists, so this name never collides with a second arm the way p/mw_p do.
 emlRunAnovaAnalysis	f	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .fValue	
 emlRunAnovaAnalysis	p	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .p	
 emlRunAnovaAnalysis	df_between	cell	always	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .dfBetween	
@@ -249,17 +264,21 @@ emlRunPairedAnalysis	rank_biserial	cell	test:nonparametric,both	both	stats/eml-i
 emlRunPairedAnalysis	wilcoxon_p	cell	test=both	both	stats/eml-extract.praat:4370 write site .secondP	THE SECOND ARM, as mw_p is for the two-group door.
 emlRunPairedAnalysis	n_excluded	cell	always	r	run_analyses.R	R side alone. @emlRunPairedAnalysis exposes no excluded-row count. See D-MINOR.
 emlRunPairedAnalysis	wilcox_r	cell	test:nonparametric,both	r	run_analyses.R rstatix::wilcox_effsize	R side alone, and only where the nonparametric arm runs -- rstatix::wilcox_effsize is computed inside that arm. Rosenthal's r; no plugin counterpart. See D-WILCOXR.
+emlRunPairedAnalysis	p_method	cell	test:nonparametric,both	both	stats/eml-inferential.praat:2903 @emlWilcoxonSignedRank .method$ .methodReason$; printed graphs/eml-annotation-procedures.praat:7181 @emlReportLineString "p method"	Item 22 (language batch, Fable's ruling 27 Aug 2026). Same shape as the two-group door's p_method, with a THIRD independent reason this test alone owes: "zero differences" (nZero > 0), fixed order "ties present, large sample, zero differences", no precedence. Nonparametric arm only; no parametric-arm counterpart, so no second-arm rename is needed.
 emlRunCorrelationAnalysis	n	cell	always	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .n	
 emlRunCorrelationAnalysis	p	cell	always	both	stats/eml-extract.praat:4370 write site .omnibusP	
 emlRunCorrelationAnalysis	r	cell	test:pearson,both	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .r	Pearson arm only.
 emlRunCorrelationAnalysis	t	cell	test:pearson,both	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .t	Pearson arm only.
 emlRunCorrelationAnalysis	df	cell	test:pearson,both	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .df	Pearson arm only.
+emlRunCorrelationAnalysis	p_method	cell	test:pearson,both	both	graphs/eml-annotation-procedures.praat:6375 @emlReportLineString "p method", "t distribution" (literal)	Item 22 (language batch, Fable's ruling 27 Aug 2026): a LITERAL, not a composition -- @emlPearsonCorrelation never branches between an exact and an approximate null, so there is no .method$/.methodReason$ to read. Pearson arm only; unlike p/t/df this name is NOT renamed under test=both (there is no second Pearson arm to collide with -- Spearman's own row is named spearman_p_method there instead, below).
 emlRunCorrelationAnalysis	rho	cell	test:spearman,both	both	stats/eml-inferential.praat:808 @emlSpearmanCorrelation .r	Spearman arm only.
 emlRunCorrelationAnalysis	spearman_p_asymptotic	cell	test:spearman,both	both	stats/eml-inferential.praat:808 @emlSpearmanCorrelation .p	Spearman arm only. Both sides compute the large-sample t-approximation under this name and they AGREE, which is what pins D-SPEARMAN to the choice of tail rather than to arithmetic.
 emlRunCorrelationAnalysis	spearman_t	cell	test:spearman,both	praat	stats/eml-inferential.praat:808 @emlSpearmanCorrelation .t	Praat side alone. t and df are intrinsic to the plugin's t-approximation; cor.test reports S instead. See D-SPEARMAN.
 emlRunCorrelationAnalysis	spearman_df	cell	test:spearman,both	praat	stats/eml-inferential.praat:808 @emlSpearmanCorrelation .df	Praat side alone. See spearman_t.
 emlRunCorrelationAnalysis	spearman_s	cell	test:spearman,both	r	run_analyses.R stats::cor.test	R side alone. S is intrinsic to cor.test's exact method. See D-SPEARMAN.
 emlRunCorrelationAnalysis	spearman_p	cell	test=both	r	run_analyses.R stats::cor.test	R side alone, AND ONLY ON THE SECOND ARM: where test=spearman the exact Spearman p arrives under the plain name p, and where test=both the Pearson p holds that name. See D-SPEARMAN.
+emlRunCorrelationAnalysis	p_method	cell	test=spearman	both	stats/eml-inferential.praat:1567 @emlSpearmanCorrelationDispatch .method$ .methodReason$; printed graphs/eml-annotation-procedures.praat:6489 @emlReportLineString "p method"	Item 22 (language batch, Fable's ruling 27 Aug 2026): "exact" bare, else "t approximation" plus every reason that ruled the exact branch out, fixed order (ties present, large sample), no precedence -- the Spearman branch law's OWN two reasons, distinct from Pearson's literal above. Named plain "p_method" only where Spearman is the SOLE arm run (test=spearman); under test=both this row is named spearman_p_method instead (below), the same primary/secondary split p itself already follows.
+emlRunCorrelationAnalysis	spearman_p_method	cell	test=both	both	stats/eml-inferential.praat:1567 @emlSpearmanCorrelationDispatch .method$ .methodReason$; printed graphs/eml-annotation-procedures.praat:6489 @emlReportLineString "p method"	THE SECOND ARM, as spearman_p is for spearman_p, mw_p is for p, and wilcoxon_p is for p. Only fires when test=both, since Pearson's own p_method already holds the plain name there.
 emlRunRegressionAnalysis	slope	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .slope	
 emlRunRegressionAnalysis	intercept	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .intercept	
 emlRunRegressionAnalysis	r	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .r	

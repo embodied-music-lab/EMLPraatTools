@@ -352,6 +352,23 @@ emitText <- function(cell_id, quantity, text, source = "r") {
     RESULTS$rows[[length(RESULTS$rows) + 1]] <<- list(
         cell_id = cell_id, quantity = quantity, value = as.character(text), source = source)
 }
+# composePMethod -- item 22 of the language batch (Fable's ruling, 27
+# August 2026): "p method" is text, not a number a tolerance question
+# applies to, so it rides through emitText/agree()'s existing text-valued
+# path (compare.R's "text-valued on both sides" branch already does exact
+# string identity, same as refuse_reason). "exact" bare, else the method
+# name plus EVERY reason that ruled the exact branch out, comma-separated,
+# fixed order, no precedence -- reproduced here from independently-derived
+# facts about the DATA (ties, sample size, zero differences), never from
+# reading a package's own internal decision (wilcox.test's $method text
+# does not even name its branch for Spearman -- see v147's own header note
+# on this) -- mirroring the composition the plugin's own kernels build.
+composePMethod <- function(method, reasons) {
+    reasons <- reasons[nzchar(reasons)]
+    if (identical(method, "exact")) return("exact")
+    if (length(reasons) == 0) return(method)
+    paste0(method, " (", paste(reasons, collapse = ", "), ")")
+}
 refuseCell <- function(cell_id, reason) {
     emitText(cell_id, "refused", "1")
     emitText(cell_id, "refuse_reason", reason)
@@ -476,6 +493,15 @@ process_two_group <- function(row) {
         # is the rank-biserial correlation and matches the plugin exactly.
         wers <- rstatix::wilcox_effsize(dfp, value ~ group)
         emit(cid, "wilcox_r", wers$effsize, "rstatix")
+        # p_method: R's wilcox.test.default's own rule -- exact iff both
+        # groups have n < 50 AND no ties in the combined sample -- derived
+        # independently from the raw vectors, not parsed off wt$method.
+        mwHasTies <- length(unique(c(v1, v2))) < length(c(v1, v2))
+        mwLarge <- length(v1) >= 50 || length(v2) >= 50
+        mwExact <- !mwHasTies && !mwLarge
+        mwMethod <- if (mwExact) "exact" else "normal approximation"
+        emitText(cid, "p_method",
+                 composePMethod(mwMethod, c(if (mwHasTies) "ties present", if (mwLarge) "large sample")))
         lines <- c(lines,
                    sprintf("Mann-Whitney: U1=%.1f U2=%.1f p=%.4g", u1, u2, wt$p.value),
                    sprintf("Rank-biserial r (effectsize)=%.4f | wilcox_r = Z/sqrt(N), unsigned (rstatix)=%.4f",
@@ -993,6 +1019,20 @@ process_paired <- function(row) {
             dfp <- data.frame(val = c(a, b), cond = factor(rep(c("first", "second"), each = n), levels = c("first", "second")))
             wers <- rstatix::wilcox_effsize(dfp, val ~ cond, paired = TRUE)
             emit(cid, "wilcox_r", wers$effsize, "rstatix")   # Z/sqrt(N), not rank-biserial
+            # p_method: R's wilcox.test.default's own rule -- exact iff
+            # n_nonzero < 50 AND no ties among the nonzero |differences|
+            # AND no zero differences -- derived independently from d_ab,
+            # the same three facts @emlWilcoxonSignedRank computes.
+            wsrNonzero <- d_ab[d_ab != 0]
+            wsrNZero <- sum(d_ab == 0)
+            wsrHasTies <- length(unique(abs(wsrNonzero))) < length(wsrNonzero)
+            wsrLarge <- length(wsrNonzero) >= 50
+            wsrExact <- !wsrHasTies && !wsrLarge && wsrNZero == 0
+            wsrMethod <- if (wsrExact) "exact" else "normal approximation"
+            emitText(cid, "p_method",
+                     composePMethod(wsrMethod, c(if (wsrHasTies) "ties present",
+                                                  if (wsrLarge) "large sample",
+                                                  if (wsrNZero > 0) "zero differences")))
             lines <- c(lines, sprintf("Wilcoxon signed-rank: W=%.1f p=%.4g, rank-biserial r (effectsize)=%.4f, wilcox_r (rstatix)=%.4f",
                                        wt$statistic, wt$p.value, rbVal, wers$effsize))
             ranNon <- TRUE
@@ -1033,6 +1073,12 @@ process_correlation <- function(row) {
         emit(cid, "t", unname(pe$statistic), "stats")
         emit(cid, "df", unname(pe$parameter), "stats")
         emit(cid, "p", pe$p.value, "stats")
+        # p_method: a LITERAL, not a composition -- Pearson's p never
+        # branches between an exact and an approximate null. Always plain
+        # "p_method" (never renamed under test=both -- no second Pearson
+        # arm to collide with; Spearman's own row below is
+        # spearman_p_method there instead).
+        emitText(cid, "p_method", "t distribution")
         lines <- c(lines, sprintf("Pearson: r=%.4f t(%d)=%.4f p=%.4g", pe$estimate, pe$parameter, pe$statistic, pe$p.value))
     }
     if (testType %in% c("spearman", "both")) {
@@ -1041,6 +1087,20 @@ process_correlation <- function(row) {
         emit(cid, "spearman_s", unname(sp$statistic), "stats")
         pName <- if (testType == "both") "spearman_p" else "p"
         emit(cid, pName, sp$p.value, "stats")
+        # p_method: the plugin's OWN branch law (@emlSpearmanCorrelationDispatch,
+        # copied verbatim from cor.test.default's TIES test), derived
+        # independently from xx/yy -- NOT parsed off sp$method, which does
+        # not name its branch for Spearman (unlike wilcox.test's $method,
+        # cor.test's Spearman $method string is the same literal text on
+        # both branches; see v147's own header note on this). n <= 1290 is
+        # R's own exact-branch cutoff (n*(n^2-1) does not overflow there).
+        spHasTies <- min(length(unique(xx)), length(unique(yy))) < n
+        spLarge <- n > 1290
+        spExact <- !spHasTies && !spLarge
+        spMethod <- if (spExact) "exact" else "t approximation"
+        spPMethod <- composePMethod(spMethod, c(if (spHasTies) "ties present", if (spLarge) "large sample"))
+        pmName <- if (testType == "both") "spearman_p_method" else "p_method"
+        emitText(cid, pmName, spPMethod)
         # cor.test's default Spearman p is the EXACT permutation p for small
         # n without ties, falling back to AS89. The plugin computes the
         # large-sample t-approximation instead, which is a different p for

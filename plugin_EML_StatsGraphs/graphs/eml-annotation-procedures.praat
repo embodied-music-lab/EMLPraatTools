@@ -4593,7 +4593,17 @@ procedure emlBridgeCorrelation: .tableId, .colX$, .colY$, .alpha, .style$, .corr
 
     if .error$ = ""
         if .corrType$ = "spearman"
-            @emlSpearmanCorrelation: .xData#, .yData#, 2
+            ; ONE COMPUTATION SITE (docs/WORK_ORDER_SPEARMAN_EXACT_2026-08-27.md):
+            ; routed through the dispatch rather than @emlSpearmanCorrelation
+            ; directly, so that if this UNUSED procedure is ever wired to a
+            ; caller it cannot come back onto the raw kernel and bypass the
+            ; branch law. The dispatch writes its .p (and .error$, on
+            ; failure) back into emlSpearmanCorrelation.p / .error$ itself,
+            ; the same qualified-global contract every other call site
+            ; already relies on -- .rho below is untouched by that write-
+            ; back and still the value @emlSpearmanCorrelation set inside
+            ; the dispatch's own call.
+            @emlSpearmanCorrelationDispatch: .xData#, .yData#, 2
             if emlSpearmanCorrelation.error$ <> ""
                 .error$ = emlSpearmanCorrelation.error$
             else
@@ -5242,6 +5252,17 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             @emlWizardExplainP: emlMannWhitneyU.p
         endif
         @emlReportPWithExact: "p", emlMannWhitneyU.p
+        ; ITEM 22 (language batch, Fable's ruling 27 August 2026): the
+        ; disclosure row naming HOW the p above was computed. ALWAYS
+        ; prints, never gated on emlShowExplanations -- @emlReportLineString
+        ; itself never gates the row, only the third-column gloss beside it.
+        ; "exact" prints bare; any approximation prints with EVERY reason
+        ; that ruled out the exact branch, comma-separated, no precedence.
+        .pMethod$ = emlMannWhitneyU.method$
+        if emlMannWhitneyU.method$ <> "exact"
+            .pMethod$ = .pMethod$ + " (" + emlMannWhitneyU.methodReason$ + ")"
+        endif
+        @emlReportLineString: "p method", .pMethod$
         # Report the method @emlMannWhitneyU actually used. Read it
         # defensively — a build of eml-inferential.praat that does not expose
         # .method$ must not abort the report. The routing rule is R's
@@ -5266,7 +5287,8 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
                 ... + " group has n >= 50, or ties are present)"
             endif
         endif
-        @emlReportLineString: "Method", .mwuMethod$
+        ; Legacy "Method" row retired 27 Aug 2026: it duplicated the
+        ; "p method" disclosure row above. One fact, one row -- Fable.
         @emlReportBlank
         @emlReportSection: "Nonparametric Effect Size"
         if emlShowExplanations
@@ -6347,6 +6369,11 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 @emlWizardExplainP: emlPearsonCorrelation.p
             endif
             @emlReportPWithExact: "p", emlPearsonCorrelation.p
+            ; ITEM 22 (language batch, Fable's ruling 27 August 2026):
+            ; Pearson's p is a literal -- @emlPearsonCorrelation never
+            ; branches between an exact and an approximate null, so there
+            ; is no .method$ to read and no reason to compose.
+            @emlReportLineString: "p method", "t distribution"
             # An interval for r, from numbers already in hand, by the
             # Fisher z transform: z = atanh(r), se = 1/sqrt(n-3), and the
             # interval is tanh(z +/- zCrit se). It is a z interval — the
@@ -6446,6 +6473,21 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 @emlWizardExplainP: emlSpearmanCorrelation.p
             endif
             @emlReportPWithExact: "p", emlSpearmanCorrelation.p
+            ; ITEM 22 (language batch, Fable's ruling 27 August 2026). The
+            ; p just printed is the value @emlSpearmanCorrelationDispatch
+            ; computed (written back into emlSpearmanCorrelation.p by every
+            ; caller of the dispatch, per its own contract), but .method$
+            ; and .methodReason$ are read straight off the dispatch's own
+            ; qualified globals -- every call site that reaches this report
+            ; calls @emlSpearmanCorrelationDispatch immediately beforehand
+            ; and only restores .rho/.t/.df/.p/.error$ into
+            ; emlSpearmanCorrelation.*, so the dispatch's .method$ and
+            ; .methodReason$ are still the ones this correlation produced.
+            .pMethod$ = emlSpearmanCorrelationDispatch.method$
+            if emlSpearmanCorrelationDispatch.method$ <> "exact"
+                .pMethod$ = .pMethod$ + " (" + emlSpearmanCorrelationDispatch.methodReason$ + ")"
+            endif
+            @emlReportLineString: "p method", .pMethod$
             # Rho is an effect size and had no magnitude gloss in the
             # report and no effect_label in the export.
             @emlFormatEffectLabel: abs (emlSpearmanCorrelation.rho), "r"
@@ -7128,6 +7170,16 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
                 @emlWizardExplainP: emlWilcoxonSignedRank.p
             endif
             @emlReportPWithExact: "p", emlWilcoxonSignedRank.p
+            ; ITEM 22 (language batch, Fable's ruling 27 August 2026): see
+            ; the identical row on the Mann-Whitney arm above for the
+            ; disclosure rule -- always prints, "exact" bare, otherwise
+            ; every reason that ruled out the exact branch, comma-
+            ; separated, no precedence.
+            .pMethod$ = emlWilcoxonSignedRank.method$
+            if emlWilcoxonSignedRank.method$ <> "exact"
+                .pMethod$ = .pMethod$ + " (" + emlWilcoxonSignedRank.methodReason$ + ")"
+            endif
+            @emlReportLineString: "p method", .pMethod$
 
             # The matched-pairs magnitude was printed and then dropped on
             # the way to the export.

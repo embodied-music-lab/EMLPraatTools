@@ -1547,17 +1547,21 @@ endproc
 #                  validate check building its red demonstrations; never
 #                  printed by this procedure or any caller.
 #   .hasTies     - 1 if either variable has a repeated value, else 0.
-#   .method$     - "exact" or "t approximation" -- an INTERNAL branch tag
-#                  for a caller's own logic, the same shape as
+#   .method$     - "exact" or "t approximation" -- the same shape as
 #                  @emlMannWhitneyU.method$ ("exact" / "normal
-#                  approximation"). NOT the disclosed report sentence:
-#                  Fable's work order holds "exact method (AS 89)" and
-#                  "t approximation (ties present)" in the language
-#                  batch, unapproved. No code anywhere formats or prints
-#                  either sentence yet -- see "The report line" in the
-#                  work order, and eml-analysis.praat / eml-correlate.praat
-#                  / eml-wizard.praat / eml-draw-procedures.praat for the
-#                  wired call sites, none of which gained a print.
+#                  approximation"). Read by the "p method" report row
+#                  (item 22 of the language batch, Fable's ruling 27
+#                  August 2026): "exact" prints bare, "t approximation"
+#                  prints with .methodReason$ parenthesized.
+#   .methodReason$ - "" when .method$ is "exact" (no parenthetical).
+#                  Otherwise every condition that made the exact branch
+#                  unavailable, comma-separated in the fixed order "ties
+#                  present, large sample" -- there is no precedence, both
+#                  are named when both hold. On the ties-present path this
+#                  dispatch never calls the kernel, so it asks
+#                  @eml_spearmanExactEligible directly to learn whether n
+#                  is ALSO past the cutoff, rather than re-testing n
+#                  against a second copy of 1290.
 # ============================================================================
 
 procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
@@ -1591,14 +1595,24 @@ procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
         ; Two reasons an approximation is returned, and they are not the
         ; same fact: ties make the exact null distribution wrong, while a
         ; large n makes it unreachable. .method$ names what was computed,
-        ; .methodReason$ why. Above the cutoff the kernel has already
-        ; chosen, so this reads its flag and does not test .n a second
-        ; time -- Fable's branch-law ruling, 27 August 2026. Both are
-        ; internal tags; the printed wording is item 22 of the language
-        ; batch and is unapproved, so no call site prints either.
+        ; .methodReason$ why -- EVERY condition that applied, comma-
+        ; separated, "ties present, large sample" in that fixed order,
+        ; with no precedence between them (Fable's item 22 ruling, 27
+        ; August 2026).
+        ;
+        ; THE COLLISION: on the ties-present path this dispatch never
+        ; calls the kernel, so it never learns on its own whether n is
+        ; ALSO past the exact cutoff -- yet both conditions must be named
+        ; when both hold. Asking @eml_spearmanExactEligible directly
+        ; answers that without re-testing n against a second copy of
+        ; 1290 (the branch-law ruling forbids exactly that copy).
         if .hasTies = 1
             .method$ = "t approximation"
-            .methodReason$ = "ties"
+            .methodReason$ = "ties present"
+            @eml_spearmanExactEligible: .n
+            if eml_spearmanExactEligible.ok = 0
+                .methodReason$ = .methodReason$ + ", large sample"
+            endif
             .p = .pAsymptotic
         else
             @emlSpearmanExactP: .rho, .n, .tails
@@ -1859,6 +1873,12 @@ endproc
 #   .r2          - rank sum of group 2
 #   .hasTies     - 1 if the combined sample contains tied values, else 0
 #   .method$     - "exact" or "normal approximation"
+#   .methodReason$ - "" when .method$ is "exact" (no parenthetical).
+#                  Otherwise every condition that ruled out the exact
+#                  branch, comma-separated in the fixed order "ties
+#                  present, large sample" -- there is no precedence, both
+#                  are named when both hold (Fable's item 22 ruling, 27
+#                  August 2026).
 #   .z           - z statistic (approximation path only; undefined for exact)
 #   .error$      - error message, or "" if valid
 #
@@ -1881,6 +1901,7 @@ procedure emlMannWhitneyU: .v1#, .v2#, .tails
     .r2 = undefined
     .hasTies = 0
     .method$ = ""
+    .methodReason$ = ""
     .z = undefined
     .error$ = ""
 
@@ -1940,6 +1961,31 @@ procedure emlMannWhitneyU: .v1#, .v2#, .tails
             if .n2 < 50
                 if .hasTies = 0
                     .useExact = 1
+                endif
+            endif
+        endif
+
+        ; .methodReason$ names EVERY condition that ruled out the exact
+        ; branch, not just the first one tested -- ties present and a
+        ; large sample are independent facts and both are named when both
+        ; hold. Fixed order "ties present, large sample", no precedence
+        ; between them. Fable's item 22 ruling, 27 August 2026.
+        .methodReason$ = ""
+        if .useExact = 0
+            if .hasTies = 1
+                .methodReason$ = "ties present"
+            endif
+            .largeSample = 0
+            if .n1 >= 50
+                .largeSample = 1
+            elsif .n2 >= 50
+                .largeSample = 1
+            endif
+            if .largeSample = 1
+                if .methodReason$ <> ""
+                    .methodReason$ = .methodReason$ + ", large sample"
+                else
+                    .methodReason$ = "large sample"
                 endif
             endif
         endif
@@ -2838,6 +2884,12 @@ endproc
 #   .nZero       - number of zero differences (excluded)
 #   .hasTies     - 1 if the absolute differences contain ties, else 0
 #   .method$     - "exact" or "normal approximation"
+#   .methodReason$ - "" when .method$ is "exact" (no parenthetical).
+#                  Otherwise every condition that ruled out the exact
+#                  branch, comma-separated in the fixed order "ties
+#                  present, large sample, zero differences" -- there is
+#                  no precedence, every condition that held is named
+#                  (Fable's item 22 ruling, 27 August 2026).
 #   .z           - z statistic (approximation path only; undefined for exact)
 #   .error$      - error message, or "" if valid
 #
@@ -2860,6 +2912,7 @@ procedure emlWilcoxonSignedRank: .v1#, .v2#, .tails
     .nZero = 0
     .hasTies = 0
     .method$ = ""
+    .methodReason$ = ""
     .z = undefined
     .error$ = ""
 
@@ -2944,6 +2997,33 @@ procedure emlWilcoxonSignedRank: .v1#, .v2#, .tails
                 if .hasTies = 0
                     if .nZero = 0
                         .useExact = 1
+                    endif
+                endif
+            endif
+
+            ; .methodReason$ names EVERY condition that ruled out the
+            ; exact branch -- ties present, a large non-zero sample, and
+            ; zero differences are three independent facts, so all that
+            ; held are named, comma-separated in that fixed order, with
+            ; no precedence among them. Fable's item 22 ruling, 27 August
+            ; 2026.
+            .methodReason$ = ""
+            if .useExact = 0
+                if .hasTies = 1
+                    .methodReason$ = "ties present"
+                endif
+                if .nNonzero >= 50
+                    if .methodReason$ <> ""
+                        .methodReason$ = .methodReason$ + ", large sample"
+                    else
+                        .methodReason$ = "large sample"
+                    endif
+                endif
+                if .nZero > 0
+                    if .methodReason$ <> ""
+                        .methodReason$ = .methodReason$ + ", zero differences"
+                    else
+                        .methodReason$ = "zero differences"
                     endif
                 endif
             endif
