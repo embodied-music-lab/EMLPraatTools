@@ -1,34 +1,89 @@
 # EML Stats & Graphs walkthrough kit
 
-This kit establishes one claim: that a large set of statistical procedures in
-the EML Stats & Graphs Praat plugin *combine* correctly. Choosing Welch rather
-than Student, then Holm rather than Bonferroni, then alphabetical rather than
-discovery group order changes exactly the numbers it should and nothing else.
+## What this is
 
-It checks that claim by running 630 declared cells through two independent
-implementations -- the plugin's own code, and an R script that calls installed
-packages -- and joining the two result tables on `(cell_id, quantity)`. Every
-row must be accounted for. The claim is about composition, not about whether a
-t-test is correct in isolation.
+EML Stats & Graphs is a statistics plugin for Praat, the phonetics software
+voice researchers use. It adds a library of 17 statistical procedures: group
+comparisons, analysis of variance, rank tests, correlation, regression,
+repeated measures, and a survey lane covering reliability and categorical
+association. Each procedure offers choices — which test, whether to run a post
+hoc, which multiple-comparison adjustment, whether to assume equal variances,
+how to order the groups.
 
-The kit runs against the EML Stats & Graphs plugin as installed in your own
-Praat preferences folder, not a bundled copy -- so what it measures is what a
-user gets.
+This kit is the evidence that those procedures compute what they claim. It
+runs every one of them against R and shows you both answers.
 
-## What the 630 cells cover
+## What it is trying to prove, and what it is not
 
-17 procedures across 29 datasets, spanning every combination of test, post hoc,
-adjustment, equal-variance and group-order setting the plugin's own dialogs can
-produce.
+Whether a t-test is correct in isolation is not in question. Any competent
+implementation gets that right, and testing it proves little.
 
-Group order is a real axis rather than a formality. On `v11_twoway_input`,
-SPL_dB by voice_type, discovery order gives t = 3.9024 and alphabetical gives
-t = -3.9024. That sign reaches Cohen's d, rank-biserial r and every pairwise
-mean difference.
+**The claim under test is that the procedures compose correctly.** Choosing
+Welch rather than Student, then Holm rather than Bonferroni, then alphabetical
+rather than discovery group order should change exactly the numbers those
+choices govern and nothing else. That is where implementations fail: not in
+the formula, but in the wiring between a dialog setting and the arithmetic it
+is supposed to reach.
 
-15 of the 630 cells are declared to refuse. A refusal that happens correctly is
-evidence, so those cells are checked as strictly as the rest: both sides must
-refuse the same cell, and neither may emit a number while doing it.
+Two consequences follow, and they shape everything below.
+
+**A single defensible answer is not enough.** Every quantity is computed twice
+— once by the plugin, once by an R package a statistician would call — and the
+two are compared row by row. Agreement between two independent implementations
+is worth more than either one being self-consistent.
+
+**Every row must be accounted for.** A quantity that one side reports and the
+other does not is not silence; it is a finding, and it lands in a named
+category with a written reason. Nothing falls between the categories, and the
+comparison checks its own arithmetic to make sure of it.
+
+## How the procedures are stress-tested
+
+The datasets are not realistic and are not meant to be. They are 29 tables
+built to sit on the boundaries where implementations break: a group of two, a
+group of one, zero variance, perfectly additive columns, every difference
+identical, missing values, non-numeric values, a decimal comma, a value too
+large to represent.
+
+Ordinary data exercises the path an implementation was written for.
+Degenerate data exercises the paths nobody thought about. The second is where
+the disagreements are.
+
+Some inputs are expected to be refused rather than analysed. **A refusal that
+happens correctly is evidence**, so those cells are checked as strictly as any
+other: both sides must refuse the same cell, and neither may emit a number
+while doing it. 15 of the cells are declared refusals.
+
+## How every combination is produced
+
+The plugin's choices are axes. Across the 17 procedures there are nine of
+them:
+
+| axis | values |
+|---|---|
+| test | 9, including Welch, Student, Wilcoxon, Scheffé, Pearson, Spearman |
+| post hoc | on, off |
+| adjustment | Bonferroni, Holm, Benjamini-Hochberg, none |
+| equal variance | assumed, not assumed |
+| group order | table order, alphabetical |
+| confidence level | 0.90, 0.95, 0.99 |
+| continuity correction | on, off |
+| lane | analysis, survey |
+| expected outcome | result, refusal |
+
+Crossing every applicable axis against every dataset a procedure legitimately
+accepts gives **630 cells**. One cell is one analysis run: a procedure, a
+dataset, and a value for every setting that applies to it.
+
+Group order shows why an axis earns its place. On `v11_twoway_input`, SPL_dB
+by voice_type, discovery order gives t = 3.9024 and alphabetical gives
+t = −3.9024. That sign reaches Cohen's d, rank-biserial r, and every pairwise
+mean difference. Sort a spreadsheet, re-run, and every sign flips.
+
+**All 630 cells are declared in one file, `matrix.tsv`, and both sides read
+it.** Neither the Praat script nor the R script carries its own list of what
+to run. A cell that exists for one language and not the other cannot happen,
+because there is only one list.
 
 ## Before you start
 
@@ -66,24 +121,22 @@ To run both sides and compare them, follow these steps:
 
 On this tree, step 3 ends with `GREEN. Every row is accounted for.`
 
-## The declaration: `matrix.tsv`
+## How the declaration is proved
 
-Neither runner carries its own list of what to run. Both read `matrix.tsv`,
-one row per cell. Read its header; the columns are documented there.
+The claim that both runners read one list is testable, so the kit tests it in
+both directions rather than asserting it.
 
-That is the design, not an implementation detail: a cell that exists for one
-language and not the other cannot happen, because there is only one list.
+On a throwaway copy of the folder, the test added one row — `c9001`, a
+two-group cell using axis values no existing row uses — and deleted another,
+`c0157`. Both runners, unmodified, then produced results and a report for
+`c9001` and produced nothing at all for `c0157`: no rows, no report file on
+either side. The comparison still reported green against the modified
+declaration.
 
-The kit tests both directions of that property rather than asserting them.
-On a throwaway
-copy of this folder, the test appended one row (`c9001`, a two-group cell with
-axis values no existing row uses) and deleted one row (`c0157`). Both
-runners, byte-for-byte unmodified, then produced results and a report for
-`c9001` and produced nothing at all for `c0157` -- no rows, no report file
-in either `out/praat_reports/` or `out/r_reports/`. `compare.R` still
-reported GREEN on the modified declaration. The second direction is the one
-that matters: a runner carrying its own hidden list would pass the first
-test and fail this one.
+The second direction is the one that matters. A runner carrying its own hidden
+list would pass the first test and fail this one.
+
+`matrix.tsv` documents its own columns in its header.
 
 ## What the run produces
 
