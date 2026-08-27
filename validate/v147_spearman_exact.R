@@ -182,7 +182,8 @@ if (!canDrive) {
     vec_lit <- function(v) paste0("{", paste(sprintf("%.0f", v), collapse = ", "), "}")
     num <- function(s) if (identical(s, "--undefined--")) NA_real_ else as.numeric(s)
 
-    DARK_SENTENCES <- c("exact method (AS 89)", "t approximation (ties present)")
+    DARK_SENTENCES <- c("exact method (AS 89)", "t approximation (ties present)",
+                        "t approximation (large sample)")
 
     # ---------------------------------------------------------------------
     # PART 0 -- STRUCTURAL: every door is wired, and nothing else changed.
@@ -260,9 +261,10 @@ if (!canDrive) {
         "    .p$ = fixed$ (emlSpearmanCorrelationDispatch.p, 15)",
         "    .rho$ = fixed$ (emlSpearmanCorrelationDispatch.rho, 15)",
         "    .m$ = emlSpearmanCorrelationDispatch.method$",
+        "    .mr$ = emlSpearmanCorrelationDispatch.methodReason$",
         "    .ht = emlSpearmanCorrelationDispatch.hasTies",
         "    .err$ = emlSpearmanCorrelationDispatch.error$",
-        "    appendInfoLine: \"CELL \", .tag$, \" \", .p$, \" \", .rho$, \" [\", .m$, \"] \", .ht, \" [\", .err$, \"]\"",
+        "    appendInfoLine: \"CELL \", .tag$, \" \", .p$, \" \", .rho$, \" [\", .m$, \"] \", .ht, \" [\", .err$, \"] [\", .mr$, \"]\"",
         "endproc", "")
 
     for (n in 5:50) {
@@ -300,10 +302,10 @@ if (!canDrive) {
         gotG <- list()
         for (ln in grep("^CELL ", outG, value = TRUE)) {
             m <- regmatches(ln, regexec(
-                "^CELL (\\S+) (\\S+) (\\S+) \\[([^]]*)\\] (\\S+) \\[(.*)\\]$", ln))[[1]]
-            if (length(m) == 7) {
+                "^CELL (\\S+) (\\S+) (\\S+) \\[([^]]*)\\] (\\S+) \\[([^]]*)\\] \\[([^]]*)\\]$", ln))[[1]]
+            if (length(m) == 8) {
                 gotG[[m[2]]] <- list(p = num(m[3]), rho = num(m[4]), meth = m[5],
-                                     ht = as.integer(m[6]), err = m[7])
+                                     ht = as.integer(m[6]), err = m[7], mr = m[8])
             }
         }
         nChecked <- 0L
@@ -336,6 +338,14 @@ if (!canDrive) {
                        identical(cell$ht, rTies))
             check_true(V, sprintf("[%s] .method$ is the branch R's cor.test took (%s)", key, rBranch),
                        identical(cell$meth, rBranch))
+            # .methodReason$ names WHY an approximation was taken, and the
+            # two reasons are not the same fact: "ties" when R's own TIES
+            # test is true, "" on an exact cell. n = 5..50 never reaches
+            # the n <= 1290 cutoff, so "large sample" must never appear
+            # here -- checked once, below, over the whole grid.
+            rReason <- if (rTies == 1L) "ties" else ""
+            check_true(V, sprintf("[%s] .methodReason$ is \"%s\"", key, if (nzchar(rReason)) rReason else "(empty)"),
+                       identical(cell$mr, rReason))
 
             if (identical(rBranch, "exact")) nExactCells <- nExactCells + 1L
             else nTiesCells <- nTiesCells + 1L
@@ -345,6 +355,8 @@ if (!canDrive) {
         check_true(V, sprintf("the grid actually exercises BOTH branches (%d exact, %d t-approximation cells)",
                               nExactCells, nTiesCells),
                    nExactCells > 0 && nTiesCells > 0)
+        check_true(V, "no grid cell ever reports .methodReason$ = \"large sample\" (n = 5..50 is entirely below R's n <= 1290 cutoff)",
+                   !any(vapply(gotG, function(c) identical(c$mr, "large sample"), logical(1))))
         # The two named boundary cells, singled out as their own assertion
         # per Fable's own wording ("INCLUDING BOTH BOUNDARY CELLS").
         for (n in 5:50) {
@@ -430,13 +442,121 @@ if (!canDrive) {
     }
 
     # ---------------------------------------------------------------------
+    # PART 3 -- THE BOUNDARY TWINS: n = 1290 (R's own exact cutoff, still
+    # exact) and n = 1300 (just above it, "large sample" t approximation).
+    # x = 1:n, y = ((7 * (0:(n-1))) %% n) + 1 -- a tie-free permutation of
+    # 1..n for both n (gcd(7, 1290) = gcd(7, 1300) = 1). Built with a
+    # Praat loop, not a literal -- a 1300-element vec_lit would be a
+    # pathological source line.
+    # ---------------------------------------------------------------------
+    boundary_lines <- c(prelude(INF), "",
+        "procedure v147boundary: .tag$, .n",
+        "    x# = zero# (.n)",
+        "    y# = zero# (.n)",
+        "    for .i from 1 to .n",
+        "        x#[.i] = .i",
+        "        y#[.i] = ((7 * (.i - 1)) mod .n) + 1",
+        "    endfor",
+        "    @emlSpearmanCorrelationDispatch: x#, y#, 2",
+        "    .p$ = fixed$ (emlSpearmanCorrelationDispatch.p, 15)",
+        "    .m$ = emlSpearmanCorrelationDispatch.method$",
+        "    .mr$ = emlSpearmanCorrelationDispatch.methodReason$",
+        "    .err$ = emlSpearmanCorrelationDispatch.error$",
+        "    appendInfoLine: \"BOUND \", .tag$, \" \", .p$, \" [\", .m$, \"] [\", .mr$, \"] [\", .err$, \"]\"",
+        "endproc", "",
+        '@v147boundary: "n1290", 1290',
+        '@v147boundary: "n1300", 1300')
+    boundary_path <- file.path(work, "v147-boundary.praat")
+    writeLines(c('writeInfoLine: "v147 boundary"', boundary_lines), boundary_path)
+    outBnd <- drive(boundary_path, secs = "300")
+    ranBnd <- !any(grepl("^Error", outBnd))
+    check_true(V, "the boundary-twins probe ran with no Praat error", ranBnd)
+    if (!ranBnd) {
+        cat("      v147 boundary probe output:\n      ",
+            paste(utils::tail(outBnd, 30), collapse = "\n      "), "\n", sep = "")
+    } else {
+        gotBnd <- list()
+        for (ln in grep("^BOUND ", outBnd, value = TRUE)) {
+            m <- regmatches(ln, regexec(
+                "^BOUND (\\S+) (\\S+) \\[([^]]*)\\] \\[([^]]*)\\] \\[([^]]*)\\]$", ln))[[1]]
+            if (length(m) == 6) {
+                gotBnd[[m[2]]] <- list(p = num(m[3]), meth = m[4], mr = m[5], err = m[6])
+            }
+        }
+        boundary_expect <- list(
+            n1290 = list(n = 1290L, method = "exact", reason = ""),
+            n1300 = list(n = 1300L, method = "t approximation", reason = "large sample")
+        )
+        for (tag in names(boundary_expect)) {
+            exp <- boundary_expect[[tag]]
+            cell <- gotBnd[[tag]]
+            check_true(V, sprintf("[boundary %s] a cell was printed", tag), !is.null(cell))
+            if (is.null(cell)) next
+            n <- exp$n
+            x <- 1:n
+            y <- ((7 * (0:(n - 1))) %% n) + 1
+            ct <- suppressWarnings(cor.test(x, y, method = "spearman"))
+
+            check_true(V, sprintf("[boundary %s] .error$ is empty", tag), identical(cell$err, ""))
+            check_true(V, sprintf("[boundary %s] .method$ is \"%s\"", tag, exp$method),
+                       identical(cell$meth, exp$method))
+            check_true(V, sprintf("[boundary %s] .methodReason$ is \"%s\"", tag,
+                                  if (nzchar(exp$reason)) exp$reason else "(empty)"),
+                       identical(cell$mr, exp$reason))
+            tol_p <- max(1e-12, abs(ct$p.value) * 1e-8)
+            check(V, sprintf("[boundary %s] p vs cor.test(method=\"spearman\")", tag),
+                  cell$p, ct$p.value, tol = tol_p)
+
+            # Independent, in R, of anything the plugin computed: proves
+            # the cutoff sits where we say it does, rather than merely
+            # proving the plugin agrees with itself. R's own cor.test p
+            # must DIFFER from the hand-built asymptotic p at n = 1290
+            # (R itself took the exact branch there) and EQUAL it at
+            # n = 1300 (R itself took the asymptotic branch there).
+            rho <- unname(ct$estimate)
+            t_hand <- rho * sqrt((n - 2) / (1 - rho^2))
+            p_hand <- 2 * min(pt(t_hand, n - 2), 1 - pt(t_hand, n - 2))
+            # tol = 1e-10 here, tighter than the grid's usual tolerances:
+            # the measured gap at n = 1290 is ~8.7e-9 (real, but small next
+            # to the p itself, ~3e-7) and the two numbers at n = 1300 agree
+            # to within ~2.4e-17 (floating-point noise). 1e-10 sits
+            # comfortably between the two with margin either way.
+            if (identical(tag, "n1290")) {
+                check(V, "[boundary n1290] R's own cor.test p DIFFERS from the hand-built asymptotic p -- proving R itself was exact here, not merely agreeing with the plugin",
+                      ct$p.value, p_hand, tol = 1e-10, expect = "differ")
+            } else {
+                check(V, "[boundary n1300] R's own cor.test p EQUALS the hand-built asymptotic p -- proving R itself was asymptotic here, not merely agreeing with the plugin",
+                      ct$p.value, p_hand, tol = 1e-10)
+            }
+        }
+        for (s in DARK_SENTENCES) {
+            check_true(V, sprintf("[boundary] the drafted sentence '%s' never printed", s),
+                       !any(grepl(s, outBnd, fixed = TRUE)))
+        }
+    }
+
+    # ---------------------------------------------------------------------
     # RED DEMO A and RED DEMO C share one mutant: the exact branch's p is
     # overwritten with the asymptotic one, while .method$ still says
     # "exact" -- the defect that looks right.
     # ---------------------------------------------------------------------
-    needleA <- "            .p = emlSpearmanExactP.p"
-    hitA <- which(inf_src == needleA)
-    check_true(V, "red demos A/C's seed line exists in source, exactly once", length(hitA) == 1)
+    # The bare seed text ".p = emlSpearmanExactP.p" is no longer unique:
+    # the dispatch now has THREE arms, and the same assignment (at 16
+    # spaces of indent, one level deeper than before) appears once in the
+    # EXACT arm and once in the "t approximation"/"large sample" arm right
+    # below it. Anchor instead on the unique guard line 'if .method$ =
+    # "exact"' and take the seed line at a FIXED offset beneath it,
+    # asserting the line landed on is exactly what is expected before
+    # mutating anything.
+    anchorA <- '            if .method$ = "exact"'
+    hitAnchorA <- which(inf_src == anchorA)
+    check_true(V, "the EXACT arm's anchor line ('if .method$ = \"exact\"') exists in source, exactly once",
+               length(hitAnchorA) == 1)
+    seedOffsetA <- 2L
+    needleA <- "                .p = emlSpearmanExactP.p"
+    hitA <- if (length(hitAnchorA) == 1) hitAnchorA + seedOffsetA else integer(0)
+    check_true(V, "red demos A/C's seed line (2 lines below the EXACT arm's anchor) is the expected assignment, exactly once",
+               length(hitA) == 1 && identical(inf_src[hitA], needleA))
 
     asym_red <- nzchar(Sys.getenv("EML_ASYMPTOTIC_RED", unset = ""))
     ties_red <- nzchar(Sys.getenv("EML_TIES_RED", unset = ""))
@@ -444,7 +564,7 @@ if (!canDrive) {
 
     if (length(hitA) == 1) {
         mutA_lines <- inf_src
-        mutA_lines[hitA] <- "            .p = .pAsymptotic"
+        mutA_lines[hitA] <- "                .p = .pAsymptotic"
         mutA_dir <- file.path(work, "mutantA"); dir.create(mutA_dir, showWarnings = FALSE)
         mutA <- file.path(mutA_dir, "eml-inferential.praat")
         writeLines(mutA_lines, mutA)
@@ -595,6 +715,83 @@ if (!canDrive) {
             for (s in DARK_SENTENCES) {
                 check_true(V, sprintf("[red B] the drafted sentence '%s' never printed", s),
                            !any(grepl(s, outB, fixed = TRUE)))
+            }
+        }
+    }
+
+    # ---------------------------------------------------------------------
+    # RED DEMO D -- an unrecognised .method$ label reaching the dispatch's
+    # own exhaustive check. @eml_spearmanPspearman is the ONE place that
+    # ever assigns the literal ".method$ = \"exact\"" (the dispatch and
+    # @emlSpearmanExactP only ever COPY that label onward), so mutating it
+    # to a nonsense string there means neither of the dispatch's two
+    # positive tests ("exact" / "t approximation") can match, and the
+    # impossible-state ELSE must fire: .error$ set, .p left undefined,
+    # .methodReason$ left empty. Per the standing rule, this asserts
+    # identity with the named wrong outcome (undefined, non-empty error,
+    # empty reason) -- never a direction, a magnitude, or a match on the
+    # error string's prose. The demo fails if the code ever captions the
+    # unknown label instead of refusing (which would leave .p DEFINED).
+    # ---------------------------------------------------------------------
+    procStartD <- grep("^procedure eml_spearmanPspearman:", inf_src)
+    check_true(V, "@eml_spearmanPspearman is defined exactly once", length(procStartD) == 1)
+    hitD <- NA_integer_
+    if (length(procStartD) == 1) {
+        procEndD <- procStartD[1] - 1 + which(inf_src[procStartD[1]:length(inf_src)] == "endproc")[1]
+        procBodyD <- inf_src[procStartD[1]:procEndD]
+        needleD <- '        .method$ = "exact"'
+        hitInBodyD <- which(procBodyD == needleD)
+        check_true(V, "red demo D's seed line (@eml_spearmanPspearman's own '.method$ = \"exact\"') exists exactly once inside that procedure",
+                   length(hitInBodyD) == 1)
+        if (length(hitInBodyD) == 1) hitD <- procStartD[1] - 1 + hitInBodyD
+    }
+    if (!is.na(hitD)) {
+        mutD_lines <- inf_src
+        mutD_lines[hitD] <- '        .method$ = "unrecognised-nonsense-label"'
+        mutD_dir <- file.path(work, "mutantD"); dir.create(mutD_dir, showWarnings = FALSE)
+        mutD <- file.path(mutD_dir, "eml-inferential.praat")
+        writeLines(mutD_lines, mutD)
+
+        dLines <- c(prelude(mutD), "",
+            "procedure v147d: .a#, .b#",
+            "    @emlSpearmanCorrelationDispatch: .a#, .b#, 2",
+            "    .p$ = fixed$ (emlSpearmanCorrelationDispatch.p, 15)",
+            "    .mr$ = emlSpearmanCorrelationDispatch.methodReason$",
+            "    .err$ = emlSpearmanCorrelationDispatch.error$",
+            "    appendInfoLine: \"REDD \", .p$, \" [\", .mr$, \"] [\", .err$, \"]\"",
+            "endproc", "")
+        # A no-ties fixture (n = 25, full reversal) -- the ONLY branch that
+        # ever reaches @emlSpearmanExactP / @eml_spearmanPspearman.
+        fxD <- grid[["n25_minus1"]]
+        dLines <- c(dLines,
+            sprintf("x# = %s", vec_lit(fxD$x)), sprintf("y# = %s", vec_lit(fxD$y)),
+            "@v147d: x#, y#")
+        d_path <- file.path(work, "v147-d.praat")
+        writeLines(c('writeInfoLine: "v147 red D"', dLines), d_path)
+        outDD <- drive(d_path)
+        ranDD <- !any(grepl("^Error", outDD))
+        check_true(V, "[red D] the mutant probe ran", ranDD)
+        if (!ranDD) {
+            cat("      v147 red-D probe output:\n      ",
+                paste(utils::tail(outDD, 30), collapse = "\n      "), "\n", sep = "")
+        } else {
+            ln <- grep("^REDD ", outDD, value = TRUE)
+            check_true(V, "[red D] the mutant printed a cell", length(ln) == 1)
+            if (length(ln) == 1) {
+                m <- regmatches(ln, regexec("^REDD (\\S+) \\[([^]]*)\\] \\[([^]]*)\\]$", ln))[[1]]
+                if (length(m) == 4) {
+                    pD <- num(m[2]); mrD <- m[3]; errD <- m[4]
+                    check_true(V, "[red D] .p is undefined -- the impossible-state ELSE refused rather than captioning the unknown label",
+                               is.na(pD))
+                    check_true(V, "[red D] .error$ is non-empty -- the refusal is recorded, not silent (prose itself is not asserted on)",
+                               nzchar(errD))
+                    check_true(V, "[red D] .methodReason$ is empty -- the refusal path sets no reason string",
+                               identical(mrD, ""))
+                }
+            }
+            for (s in DARK_SENTENCES) {
+                check_true(V, sprintf("[red D] the drafted sentence '%s' never printed", s),
+                           !any(grepl(s, outDD, fixed = TRUE)))
             }
         }
     }
