@@ -111,6 +111,24 @@ dir.create(reportDir, showWarnings = FALSE)
 # the others here; loading them costs nothing so they stay listed for the
 # record of what was considered). psych is used for Cronbach's alpha /
 # leave-one-out influence and for descriptive shape statistics.
+# PREFLIGHT. Without this, a missing package fails on whichever library()
+# call comes first -- "there is no package called 'rstatix'" -- which names
+# one package, not the eight, and does not say what to do about it. Measured
+# on a first run against a clean R 4.5.2. Check them all and print the
+# install line the README already carries.
+.emlNeed <- c("rstatix", "effectsize", "car", "afex",
+              "multcomp", "nortest", "coin", "psych")
+.emlMissing <- .emlNeed[!vapply(.emlNeed, requireNamespace, logical(1),
+                                quietly = TRUE)]
+if (length(.emlMissing)) {
+    stop("This kit needs ", length(.emlMissing), " package(s) that are not ",
+         "installed: ", paste(.emlMissing, collapse = ", "), ".\n",
+         "  Run this once, then Source this file again:\n",
+         "  install.packages(c(",
+         paste0('"', .emlNeed, '"', collapse = ","), "))",
+         call. = FALSE)
+}
+
 suppressPackageStartupMessages({
     library(rstatix)
     library(effectsize)
