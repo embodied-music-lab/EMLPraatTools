@@ -1,10 +1,9 @@
 # Language batch — every new or changed user-facing string, for approval
 
 Verification session, 25 Aug 2026. Revision 7 adds item 22, the Spearman
-method disclosure, following Fable's branch-law ruling of 27 August. Item 22
-is NOT approval-ready and is not part of an en-bloc approval of this batch:
-its phrases are ruled but the printed row is with Fable. Every other item is
-unaffected.
+method disclosure, following Fable's branch-law ruling of 27 August and her
+item 22 ruling the same day. Item 22 is approval-ready and carries one open
+question for Ian, marked in the item.
 Revision 6: item 4 gains the three
 pairwise Wilcoxon rows (the standalone dialog's rank-based cells, missed
 by revision 5's "parametric rows" framing — punch item 4.3 corrected to
@@ -303,24 +302,44 @@ The Pearson/Spearman gloss prints "Weak / Moderate / Strong" with no
 indication these are conventions. One word fixes it: "Moderate positive
 relationship (by common convention; range: -1 to 1)."
 
-## 22. Correlation report: Spearman names the method that produced its p
+## 22. Rank tests name the method that produced their p
 
-DISCLOSURE. It states what was computed, so it prints on every path
-whether or not explanations are on.
+DISCLOSURE. It states what was computed, so it prints on every path,
+independent of the explanations toggle.
 
-Spearman's p comes from one of three routes, and which one ran is not
-visible in the number:
+Three procedures choose between an exact null distribution and an
+approximation, and which one ran is not visible in the p. None of them
+says so today. This is the first method disclosure in the plugin, so the
+row shape is new: a dedicated row directly beneath the p line, in the same
+two-column shape every other labelled row uses -- two-space indent, label
+padded to 20, value.
 
-    exact method (AS 89)
-    t approximation (ties present)
-    t approximation (large sample)
+    p                   0.000000634
+    p method            exact method (AS 89)
 
-NOT READY FOR APPROVAL. The phrases are ruled; where they print is not.
-The work order said to follow the pattern the Mann-Whitney p already uses,
-and no such pattern exists -- no method tag anywhere in the plugin reaches
-a printed line. The row has no precedent to copy, and the same undisclosed
-branching sits in @emlMannWhitneyU and @emlWilcoxonSignedRank, so the row
-chosen here is the one all three inherit.
+The value by procedure:
 
-With Fable: docs/QUESTIONS_FOR_FABLE_ITEM22_2026-08-27.md. Approve the
-rest of the batch without this item; it returns when she has ruled.
+| Procedure | Value |
+|---|---|
+| Mann-Whitney | `exact` or `normal approximation` |
+| Wilcoxon signed-rank | `exact` or `normal approximation` |
+| Spearman | `exact method (AS 89)`, `t approximation (ties present)`, or `t approximation (large sample)` |
+
+Spearman carries a reason where the other two carry only a method, because
+its approximation has two distinct causes: ties make the exact
+distribution wrong, and a sample above R's cutoff makes it unreachable.
+The other two have one cause each.
+
+Parentheses throughout, no dashes, per the batch's ASCII convention for
+anything reaching a saved report.
+
+**One question, Ian.** The three values are not parallel. Spearman names
+its method and its cause; Mann-Whitney and signed-rank print a bare tag.
+Read down a report that contains both and "exact" sits under the same
+label as "exact method (AS 89)". The ruling says the existing tags print
+as they are, so they are shown here as they are. Approving the item as
+written accepts that; say so if you want the shorter two brought into the
+same shape, and it returns to Fable as a wording amendment rather than
+being adjusted here.
+
+The Hodges-Lehmann interval disclosures reuse this row when they land.

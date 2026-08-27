@@ -68,3 +68,26 @@ An earlier revision of item 22 carried three fully composed report rows, a
 rationale, and a decision on the em dash — all authored here, none of it
 ruled. That was mine to plumb, not to write. It has been removed. The
 item now carries the phrases as ruled and these questions, nothing else.
+
+---
+
+## Ruled, 27 August 2026
+
+Fable ruled all three questions and corrected the work order's premise
+herself.
+
+1. **Format.** A dedicated `p method` row directly beneath the p line,
+   two-column shape, disclosure class -- always prints, independent of the
+   explainer toggle.
+2. **Scope.** All three procedures in this pass. Mann-Whitney and
+   signed-rank print their existing tags; Spearman prints method plus
+   reason. The Hodges-Lehmann interval disclosures reuse the row shape.
+3. **ASCII.** Parentheses, no em dash.
+
+Exact row texts are item 22 of the language batch, awaiting Ian.
+Plumbing builds now; the strings print on his approval. Affected canonical
+baselines ride the standing batched re-drive.
+
+One question was carried forward to Ian rather than settled here: the
+three values are not parallel, because Spearman names a cause and the
+other two do not. It is marked in the item.
