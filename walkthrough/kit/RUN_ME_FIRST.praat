@@ -1140,8 +1140,17 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                     # same null (most visibly at rho = 1, where the exact p
                     # is 2/n! and the approximation collapses to ~0), so
                     # they must not share the bare name "spearman_p".
+                    # The ASYMPTOTIC value, read from the dispatch's own
+                    # capture rather than from .spearP. Since item 3.10,
+                    # .spearP carries the ROUTED p -- exact where the branch
+                    # law reaches the exact null -- so reading it here filled
+                    # a quantity named "asymptotic" with the exact value and
+                    # broke the very property this quantity exists to hold.
+                    # @emlSpearmanCorrelationDispatch captures .pAsymptotic
+                    # before it routes, so this is the t-approximation on
+                    # every path.
                     @emlKitNum: .cellId$, "spearman_p_asymptotic",
-                    ... emlRunCorrelationAnalysis.spearP
+                    ... emlSpearmanCorrelationDispatch.pAsymptotic
                     if .test$ = "spearman"
                         @emlKitNum: .cellId$, "p",
                         ... emlRunCorrelationAnalysis.spearP
