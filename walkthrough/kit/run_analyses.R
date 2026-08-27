@@ -780,14 +780,44 @@ process_pairwise <- function(row) {
                                        res$statistic[k], pRaw[k], pAdj[k], rbe$r_rank_biserial))
         }
     } else if (test == "scheffe") {
-        skipCell(cid, paste0(
-            "Scheffe's post hoc test has no implementation in any installed package ",
-            "(rstatix, effectsize, car, afex, multcomp, nortest, coin, psych, base stats). ",
-            "multcomp::glht's `adjusted()` p-value types do not include a Scheffe option, and no ",
-            "other installed package exports one. Hand-deriving the Scheffe F-statistic would be ",
-            "the hand-rolled formula the brief rules out, so this cell is reported as a genuine ",
-            "capability gap rather than filled in."))
-        lines <- c(lines, "SKIPPED: no installed R package implements Scheffe's test (see skip_reason).")
+        # SCHEFFE IS EVALUATED FROM THE PUBLISHED DEFINITION, ON IAN'S RULING.
+        # No installed package implements it -- DescTools::ScheffeTest and
+        # agricolae::scheffe.test do, on CRAN, and neither is reachable from
+        # this build. Evaluating a closed-form definition through R's own F
+        # distribution is not a reimplementation of a procedure: qf and pf do
+        # the statistical work and the rest is the definition. The README says
+        # so and invites the reader to install a package and compare. This is
+        # the same core leg validate/v146_scheffe_interval.R already runs.
+        #
+        #   F      = (diff / SE)^2 / (k - 1)
+        #   p      = pf(F, k - 1, dfWithin, lower.tail = FALSE)
+        #   half   = sqrt((k - 1) * qf(1 - alpha, k - 1, dfWithin)) * SE
+        #
+        # LEVEL IS ALPHA DIRECTLY, NEVER ALPHA/M. Scheffe's multiplier is the
+        # simultaneity correction; dividing alpha again corrects twice.
+        alpha <- EML_ALPHA
+        kG <- length(levs)
+        ns <- vapply(levs, function(L) sum(g == L), numeric(1))
+        ms <- vapply(levs, function(L) mean(x[g == L]), numeric(1))
+        dfW <- sum(ns) - kG
+        mse <- sum(vapply(seq_along(levs), function(i)
+                   (ns[i] - 1) * stats::var(x[g == levs[i]]), numeric(1))) / dfW
+        fCrit <- stats::qf(1 - alpha, kG - 1, dfW)
+        for (i in seq_len(kG - 1)) for (j in (i + 1):kG) {
+            pl   <- pairLabel(levs[i], levs[j])
+            diff <- ms[i] - ms[j]
+            se   <- sqrt(mse * (1 / ns[i] + 1 / ns[j]))
+            fSt  <- (diff / se)^2 / (kG - 1)
+            half <- sqrt((kG - 1) * fCrit) * se
+            emit(cid, paste0("posthoc_", pl, "_diff"), diff, "stats")
+            emit(cid, paste0("posthoc_", pl, "_f"), fSt, "stats")
+            emit(cid, paste0("posthoc_", pl, "_padj"),
+                 stats::pf(fSt, kG - 1, dfW, lower.tail = FALSE), "stats")
+            emit(cid, paste0("posthoc_", pl, "_ci_low"), diff - half, "stats")
+            emit(cid, paste0("posthoc_", pl, "_ci_high"), diff + half, "stats")
+            lines <- c(lines, sprintf("  %s: diff=%.4f F=%.4f [%.4f,%.4f] (alpha=%.4f)",
+                                      pl, diff, fSt, diff - half, diff + half, alpha))
+        }
     } else {
         refuseCell(cid, sprintf("Unknown pairwise test '%s'", test)); return(invisible())
     }
