@@ -2,8 +2,28 @@
 # EML Stats : Inferential Statistics
 # ============================================================================
 # Module: eml-inferential.praat
-# Version: 1.7
+# Version: 1.8
 # Date: 27 August 2026
+#
+# V1.8: Item 22 of the language batch, ruled by Fable 27 August 2026. Every
+#        rank-test kernel now composes .methodReason$ from ALL the
+#        conditions that applied -- ties present, large sample, zero
+#        differences, comma-separated in that fixed order, no precedence
+#        among them. @emlMannWhitneyU and @emlWilcoxonSignedRank gain the
+#        field; @emlSpearmanCorrelationDispatch's existing .methodReason$
+#        (V1.7 introduced it as a single-cause tag) is brought to the same
+#        composed shape.
+#
+#        THE SPEARMAN COLLISION: the dispatch decides ties-present without
+#        ever calling the kernel, so on that path it does not learn whether
+#        n is ALSO past the exact cutoff -- yet both must be named when both
+#        hold. A prior ruling forbids the dispatch from re-testing n against
+#        a second copy of 1290, so the cutoff test is pulled out of
+#        @eml_spearmanPspearman into @eml_spearmanExactEligible, a one-line
+#        predicate the kernel now calls instead of its own literal, and the
+#        dispatch calls the SAME predicate to learn the large-sample fact
+#        the ties-present short-circuit would otherwise hide. One executable
+#        1290 in the module, inside the predicate.
 #
 # V1.7: The Spearman branch law gains its third arm, and the arm is named
 #        where it is decided. R reaches the exact branch only with no ties
@@ -1246,6 +1266,34 @@ endproc
 
 
 # ============================================================================
+# INTERNAL HELPER: @eml_spearmanExactEligible — the one copy of the cutoff
+# ============================================================================
+# R reaches the exact Spearman branch only when n <= 1290 ("n*(n^2-1) does
+# not overflow" at that size -- see @eml_spearmanPspearman below, which is
+# the only caller that used to carry this literal). Pulled out to its own
+# predicate so @emlSpearmanCorrelationDispatch can ask the SAME question
+# on the ties-present path -- where it never reaches the kernel and so
+# never learns on its own whether n is ALSO past the cutoff -- without
+# re-testing n against a second copy of the constant. Fable's branch-law
+# ruling, 27 August 2026: exactly one executable 1290 in this module, and
+# this is it.
+#
+# Input:
+#   .n  - sample size
+#
+# Output:
+#   .ok - 1 if n qualifies for the exact branch (n <= 1290), else 0
+# ============================================================================
+
+procedure eml_spearmanExactEligible: .n
+    .ok = 0
+    if .n <= 1290
+        .ok = 1
+    endif
+endproc
+
+
+# ============================================================================
 # INTERNAL HELPER: @eml_spearmanPspearman — R's pspearman(), ported
 # ============================================================================
 # The closure cor.test.default (src/library/stats/R/cor.test.R, same
@@ -1294,12 +1342,14 @@ endproc
 # ============================================================================
 
 procedure eml_spearmanPspearman: .q, .n, .lowerTail
-    ; The kernel owns the branch and is the ONLY place the constant
-    ; appears. Callers read .method$ rather than re-testing .n --
-    ; Fable's branch-law ruling, 27 August 2026. R 4.3.3's guard is
-    ; n <= 1290, so 1290 itself is exact and 1291 is the first
-    ; asymptotic n.
-    if .n <= 1290
+    ; The kernel owns the branch and is the ONLY place the constant used
+    ; to appear; it now reads @eml_spearmanExactEligible rather than
+    ; testing .n itself, so the dispatch can ask the identical question
+    ; without a second copy of 1290 -- Fable's branch-law ruling, 27
+    ; August 2026. R 4.3.3's guard is n <= 1290, so 1290 itself is exact
+    ; and 1291 is the first asymptotic n.
+    @eml_spearmanExactEligible: .n
+    if eml_spearmanExactEligible.ok = 1
         .method$ = "exact"
         @eml_prho: .n, round (.q) + 2 * .lowerTail, .lowerTail
         .pv = eml_prho.pv
