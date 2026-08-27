@@ -277,6 +277,22 @@ DECLARED <- list(
                      "difference is nil. A padj disagreement anywhere else is not covered",
                      "and stays unexplained.")),
 
+    list(q = "^posthoc_.*_padj$", where = "diff", id = "D-PTUKEY-MID",
+         maxrel = 1e-5, vmin = 1e-9, vmax = 1e-5,
+         why = paste("TIER 2 OF THE ptukey QUADRATURE FAMILY, ruled 27 August 2026.",
+                     "Same diagnosis as D-PTUKEY: the studentised range statistic is",
+                     "bit-identical across Praat builds -- q = 14.123877432410683 on the",
+                     "run machine and 14.12387743241068350 in the reference container --",
+                     "and the spread lies entirely in the CDF evaluation, which is",
+                     "build-dependent.",
+                     "Scoped to 1e-9 <= padj < 1e-5, where the measured worst relative",
+                     "disagreement is 8.3e-7. The bound is 1e-5: about twelve times that,",
+                     "which is headroom for a third Praat build nobody here has measured,",
+                     "and still five hundred times tighter than the far-tail bound.",
+                     "Above padj 1e-5 no clause applies and the kit default governs,",
+                     "which this run shows it holds. A run exceeding either tier is a",
+                     "finding routed back, never a raise.")),
+
     list(q = "^(task|voice_type)(__(task|voice_type))?_(ss|ms|f|p|partial_eta_squared)$",
          where = "diff", id = "D-TWOWAY-PRECISION",
          proc = "emlRunTwoWayAnalysis", maxrel = 2e-8,
@@ -562,8 +578,27 @@ matches <- function(rule, cell, quantity, side) {
     if (!is.null(rule$dataset) && !identical(dsOf[[cell]],   rule$dataset)) return(FALSE)
     TRUE
 }
-declaredFor <- function(cell, quantity, side) {
-    for (r in DECLARED) if (matches(r, cell, quantity, side)) return(r)
+# VALUE SCOPE. A clause may name the magnitude range it speaks for: `vmax` is
+# the largest magnitude it covers, `vmin` the smallest. A quadrature spread
+# that is real at p ~ 1e-12 says nothing about the same quantity at p ~ 0.05,
+# and one bound wide enough for the far tail would excuse a genuine
+# disagreement in the body. Scopes let one family carry tiers, each bound
+# sitting close to what it governs.
+#
+# Selection walks DECLARED in order and skips a clause whose pattern matches
+# but whose scope does not, so a later tier gets its turn. A row matching no
+# tier's scope stays unexplained -- that is the point, not a gap.
+inScope <- function(r, value) {
+    if (is.null(r$vmin) && is.null(r$vmax)) return(TRUE)
+    if (is.null(value) || is.na(value)) return(TRUE)
+    if (!is.null(r$vmax) && value >= r$vmax) return(FALSE)
+    if (!is.null(r$vmin) && value <  r$vmin) return(FALSE)
+    TRUE
+}
+declaredFor <- function(cell, quantity, side, value = NULL) {
+    for (r in DECLARED) {
+        if (matches(r, cell, quantity, side) && inScope(r, value)) return(r)
+    }
     NULL
 }
 
@@ -609,15 +644,8 @@ for (k in both) {
             # text-valued on both sides (refuse_reason and friends)
             if (identical(P$value[pi], R$value[ri])) { nAgree <- nAgree + 1L; next }
         } else if (agree(pv, rv)) { nAgree <- nAgree + 1L; next }
-        rule <- declaredFor(cell, q, "diff")
-        # VALUE SCOPE. A clause may carry `vmax`, the largest magnitude it
-        # speaks for. A quadrature spread that is real at p ~ 1e-12 says
-        # nothing about the same quantity at p ~ 0.05, and a bound wide
-        # enough for the tail would excuse a genuine disagreement in the
-        # body. Outside its scope the clause does not apply and the row
-        # stays unexplained.
-        if (!is.null(rule) && !is.null(rule$vmax) && !is.na(pv) && !is.na(rv) &&
-            max(abs(pv), abs(rv)) > rule$vmax) rule <- NULL
+        .mag <- if (!is.na(pv) && !is.na(rv)) max(abs(pv), abs(rv)) else NA_real_
+        rule <- declaredFor(cell, q, "diff", .mag)
         if (!is.null(rule)) {
             if (!is.null(rule$maxrel) && !is.na(pv) && !is.na(rv)) {
                 rel <- abs(pv - rv) / max(abs(pv), abs(rv))
