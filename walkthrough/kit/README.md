@@ -32,21 +32,30 @@ other does not is a finding with a written reason, not an absence. The
 comparison counts its categories and checks they sum to the total, so a row
 cannot fall out of all of them.
 
-## How the procedures are stress-tested
+## The datasets
 
-The datasets are not realistic and are not meant to be. They are 29 tables
-built to sit on the boundaries where implementations break: a group of two, a
-group of one, zero variance, perfectly additive columns, every difference
-identical, missing values, non-numeric values, a decimal comma, a value too
-large to represent.
+29 tables, of two kinds.
 
-Ordinary data exercises the path an implementation was written for.
-Degenerate data exercises the paths it was not.
+**Ordinary data.** Around twenty of them hold 20 to 50 rows of realistic voice
+measurements — jitter by group, sound pressure level by voice type, speaking
+against singing fundamental frequency, vibrato regularity against practice
+hours, survey responses across items. These are what a procedure meets in
+use, and they carry 553 of the 630 cells.
 
-Some inputs are expected to be refused rather than analysed. **A refusal that
+**Boundary data.** Ten are small and deliberately awkward, carrying the other
+77 cells: two respondents, three groups of one, zero variance, perfectly
+additive columns where every difference is identical, a contingency table with
+an empty cell, missing values, a non-numeric value, a decimal comma, a number
+too large to represent.
+
+Both are needed. The realistic tables cover the work a procedure does in
+normal use. The small ones reach code paths the realistic tables never
+execute, and every disagreement found so far has come from one of them.
+
+Some inputs are meant to be refused rather than analysed. **A refusal that
 happens correctly is evidence**, so those cells are checked as strictly as any
 other: both sides must refuse the same cell, and neither may emit a number
-while doing it. 15 of the cells are declared refusals.
+while doing it. 15 of the 630 cells are declared refusals.
 
 ## How every combination is produced
 
