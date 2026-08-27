@@ -1844,6 +1844,28 @@ scripts <- c(
                                  # alpha; the call site dividing alpha by the
                                  # pair count on top of the multiplier that
                                  # already spends the family-wise budget.
+    ,
+    "v147_spearman_exact.R"      # @emlSpearmanCorrelationDispatch (item 3.10,
+                                 # 27 Aug work order): wires @emlSpearmanExactP
+                                 # (AS 89) to all six live call sites -- the
+                                 # correlation orchestrator, the per-group
+                                 # correlation (Correlate dialog and wizard),
+                                 # and the scatter's three draw-time
+                                 # annotation sites. Grid: n=5..50 x {rho=+1,
+                                 # rho=-1, mid, ties} = 184 cells vs
+                                 # cor.test(method="spearman"), plus one door
+                                 # driven end to end. Three red demos, each
+                                 # asserting identity with a named wrong
+                                 # computation per the standing rule: an
+                                 # asymptotic p on an exact-eligible cell; a
+                                 # ties case that skips the t-approximation
+                                 # fallback; the rho=1 boundary against the
+                                 # wrong method. .method$ is an internal tag
+                                 # only -- the two disclosure sentences stay
+                                 # in the language batch, asserted dark in
+                                 # both source and every driven Info window.
+                                 # Boundary task: confirms no Kendall
+                                 # correlation exists in the plugin.
 )
 
 # ---------------------------------------------------------------------------

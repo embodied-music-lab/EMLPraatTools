@@ -208,17 +208,20 @@ if (!canDrive) {
                n_dispatch_calls(draw_src) == 3)
 
     # And no live call site still reaches @emlSpearmanCorrelation directly.
-    # Three raw occurrences are correct and named: the dispatch's OWN
+    # THREE raw occurrences are correct and named: the dispatch's OWN
     # internal call (inside its body in eml-inferential.praat), the
-    # scripting-only @emlSpearmanCorrelationAlt (no caller anywhere in the
-    # tree -- not a door), and @emlBridgeCorrelation (UNUSED, no caller,
-    # per this file's own header comment).
+    # PRE-EXISTING call inside @emlSpearmanCorrelationAlt (also in
+    # eml-inferential.praat, untouched by this item -- no caller anywhere
+    # in the tree, so not a door), and @emlBridgeCorrelation (UNUSED, no
+    # caller, per this file's own header comment, in
+    # eml-annotation-procedures.praat). Two of the three therefore live in
+    # THIS file.
     raw_inf   <- sum(grepl("^\\s*@emlSpearmanCorrelation:\\s", inf_src))
     raw_bridge <- sum(grepl("@emlSpearmanCorrelation:\\s", bridge_src, fixed = FALSE))
     check_true(V,
-               sprintf("exactly one raw @emlSpearmanCorrelation call remains in eml-inferential.praat (the dispatch's own internal call; found %d)",
+               sprintf("exactly two raw @emlSpearmanCorrelation calls remain in eml-inferential.praat (the dispatch's own internal call, and @emlSpearmanCorrelationAlt's pre-existing, untouched one; found %d)",
                        raw_inf),
-               raw_inf == 1)
+               raw_inf == 2)
     check_true(V,
                sprintf("exactly one raw @emlSpearmanCorrelation call remains in eml-annotation-procedures.praat (the UNUSED @emlBridgeCorrelation; found %d)",
                        raw_bridge),
