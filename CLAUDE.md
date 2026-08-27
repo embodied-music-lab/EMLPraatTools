@@ -272,3 +272,18 @@ artefacts, two contracts — do not lower ours. The rest bites silently:
   copies agree (`v105` is the model). A procedure records a rule, never enforces it.
 - Two PraatGen rules are knowingly unmet, pending Ian's adjudication: leading
   `;` comments (~4,900 of them) and `+=`. Do not sweep either.
+
+## Agent brief discipline — read narrowly
+
+Every agent brief inherits these. They exist because one stage-2 agent spent
+279 KB of tool results, of which the largest share was thirteen full reads of
+one 36 KB file.
+
+- Read a file in full once, to orient. After that, `sed -n` on known ranges.
+- Use `grep -n` to locate. Never read a whole file to find a line.
+- Never re-read a file you just edited to confirm the edit. Edit and Write
+  fail loudly when they do not apply; a confirming read buys nothing.
+- No brief carries more than three substantive tasks. Beyond that the agent
+  cannot hold the work in view and starts re-reading to recover context.
+- Validators report counts only. Full output belongs behind a failure.
+- Name the model in every brief and every task label.
