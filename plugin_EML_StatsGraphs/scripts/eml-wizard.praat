@@ -2044,7 +2044,7 @@ elsif goal = 2
                     wizPgPearErr$ = emlPearsonCorrelation.error$
                 endif
                 if wizCorrTestType$ = "spearman" or wizCorrTestType$ = "both"
-                    @emlSpearmanCorrelation: wizPgX#, wizPgY#, 2
+                    @emlSpearmanCorrelationDispatch: wizPgX#, wizPgY#, 2
                     wizPgSpearRho = emlSpearmanCorrelation.rho
                     wizPgSpearT = emlSpearmanCorrelation.t
                     wizPgSpearDf = emlSpearmanCorrelation.df

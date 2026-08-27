@@ -2,8 +2,30 @@
 # EML Stats : Inferential Statistics
 # ============================================================================
 # Module: eml-inferential.praat
-# Version: 1.4
-# Date: 2 August 2026
+# Version: 1.6
+# Date: 27 August 2026
+#
+# V1.6: New @emlSpearmanCorrelationDispatch -- the branch law (ties present
+#        -> the existing t-approximation; no ties -> @emlSpearmanExactP's
+#        AS 89 exact p), and the ONE call site every door now uses to reach
+#        it. Neither @emlSpearmanCorrelation nor @emlSpearmanExactP is
+#        touched. Wired at eml-analysis.praat's correlation orchestrator,
+#        eml-correlate.praat's and eml-wizard.praat's per-group loops, and
+#        the scatter's three draw-time annotation call sites in
+#        eml-draw-procedures.praat (ungrouped, per-group, overall/pooled).
+#        The two disclosure sentences ("exact method (AS 89)" / "t
+#        approximation (ties present)") stay in Ian's language batch,
+#        unapproved -- .method$ is an internal tag only, and no call site
+#        gained a print.
+#
+# V1.5: New @emlSpearmanExactP, a statement-for-statement port of R 4.3.3's
+#        prho() (src/library/stats/src/prho.c, AS 89 — Best & Roberts 1975)
+#        plus the pspearman()/tail-selection dispatch that surrounds it in
+#        cor.test.default (src/library/stats/R/cor.test.R), fetched from the
+#        R-4-3-3 tag. Given the same rho and n that @emlSpearmanCorrelation
+#        already computes, it reproduces R's default (exact) Spearman p
+#        rather than the t-approximation. Does not touch the existing rho
+#        computation. As of V1.6 it is wired -- see @emlSpearmanCorrelationDispatch.
 #
 # V1.4: @emlPairwiseT and @emlPairwiseWilcoxon now call
 #        @emlRequireNumericColumn (.strict = 0) straight after the
@@ -26,6 +48,7 @@
 #   @emlPearsonCorrelation, @emlSpearmanCorrelation,
 #   @emlTTestAlt, @emlTTestPairedAlt,
 #   @emlPearsonCorrelationAlt, @emlSpearmanCorrelationAlt,
+#   @emlSpearmanExactP, @emlSpearmanCorrelationDispatch,
 #   @emlMannWhitneyU, @emlWilcoxonSignedRank,
 #   @emlRankBiserialR, @emlMatchedPairsR,
 #   @emlBonferroni, @emlHolm, @emlBenjaminiHochberg,
@@ -1007,6 +1030,503 @@ procedure emlSpearmanCorrelationAlt: .x#, .y#, .alternative$
                 .p = emlSpearmanCorrelation.p
             endif
         endif
+    endif
+endproc
+
+
+# ============================================================================
+# INTERNAL HELPER: @eml_prho — R's prho() (AS 89), ported
+# ============================================================================
+# A statement-for-statement port of R 4.3.3's C routine `prho`,
+# src/library/stats/src/prho.c, itself AS 89 (Best & Roberts, Appl.
+# Statist. (1975) Vol. 24, No. 3, p. 377). Read from
+# https://github.com/wch/r-source/blob/tags/R-4-3-3/src/library/stats/src/prho.c
+# on 27 August 2026 -- that mirror's `tags/R-4-3-3`, not trunk, is a
+# read of the exact release this container's installed R (4.3.3) is
+# built from, per item 3's finding that trunk had drifted from the
+# installed oracle for a sibling routine (wilcox.test.R's digits.rank
+# default). `Rscript -e 'print(stats:::C_pRho)'` confirms the compiled
+# routine this container's R actually calls is this same file's `pRho`
+# SEXP wrapper, and the whole port was checked, call for call, against
+# that installed routine directly (`.Call(stats:::C_pRho, is, n,
+# lower)`) -- not only against cor.test()'s reported p -- across
+# n = 2..2000, is at and around every branch boundary, and both
+# lower_tail values: 508 cases, max |difference| 5.6e-16 (double
+# rounding noise).
+#
+# Evaluates Pr[S >= is] when .lowerTail = 0, or Pr[S < is] when
+# .lowerTail = 1, where S = (n^3 - n) * (1 - R) / 6 is Spearman's
+# statistic (R the random variable; is = (n^3 - n) * (1 - r) / 6 for
+# an observed r). n_small = 9 in R's source: 2 <= n <= 9 is evaluated
+# by exact enumeration of all n! permutations (the same recurrence AS
+# 89 gives; it is not a distribution any faster method here would
+# replace, since this is the only place this plugin needs the exact
+# S null distribution and it is cheap to call once per test), n > 9 by
+# the Edgeworth series AS 89 gives for the tail. Both branches, and the
+# is <= 0 / is > n3 short-circuits ahead of them, are ported as R has
+# them -- nothing is simplified, reordered, or special-cased beyond
+# what the C already does, with one exception, noted where it happens:
+# Praat's exp() returns undefined on overflow instead of the C double's
+# +Inf, which the Edgeworth branch's own arithmetic depends on staying
+# finite-valued at extreme x. That single guard is the only place this
+# port adds anything prho.c does not have; it exists to give Praat's
+# arithmetic the same behaviour C's already has, not to change what
+# the formula computes.
+#
+# n <= 9 is slow by construction (AS 89's own algorithm, not this
+# port): n = 9 enumerates 362880 permutations and took ~10 s measured
+# on this container's Praat 6.6.30. A caller driving many n <= 9 exact
+# cases in one run should expect that; no cache is built here because
+# nothing in this plugin calls this helper more than once per test (unlike
+# @eml_mannWhitneyExactP and @eml_wilcoxonExactP's DP tables, which the
+# Hodges-Lehmann interval procedures re-read for the same n).
+#
+# Input:
+#   .n        - sample size, integer, matching R's `n` (caller guarantees
+#               n >= 2; the n <= 1 branch is ported for completeness --
+#               @emlSpearmanCorrelation already refuses n < 3 before any
+#               caller can reach this helper)
+#   .is       - the observed-or-shifted S value the tail is evaluated at
+#               (R's `is`; may be non-integer only through the caller's
+#               own rounding/offset, matching R's C signature which takes
+#               a double)
+#   .lowerTail - 1 for Pr[S < is], 0 for Pr[S >= is] (R's `lower_tail`)
+#
+# Output:
+#   .pv       - the tail probability, clamped to [0, 1] exactly where
+#               prho.c clamps it (the Edgeworth branch only)
+# ============================================================================
+
+procedure eml_prho: .n, .is, .lowerTail
+    # Edgeworth coefficients, verbatim from prho.c
+    .c1 = 0.2274
+    .c2 = 0.2531
+    .c3 = 0.1745
+    .c4 = 0.0758
+    .c5 = 0.1033
+    .c6 = 0.3932
+    .c7 = 0.0879
+    .c8 = 0.0151
+    .c9 = 0.0072
+    .c10 = 0.0831
+    .c11 = 0.0131
+    .c12 = 4.6e-4
+
+    .nSmall = 9
+
+    # "Test admissibility of arguments and initialize"
+    if .lowerTail = 1
+        .pv = 0
+    else
+        .pv = 1
+    endif
+
+    if .n <= 1
+        # R: ifault = 1, pv left at its init value. Unreachable from any
+        # caller in this plugin (see header); ported because the routine
+        # is ported whole, not only its reachable part.
+    elsif .is <= 0
+        # R: "if (is <= 0.) return" -- pv stays at its init value (p = 1
+        # for the upper tail, p = 0 for the lower tail: S is never < 0
+        # and always >= 0).
+    else
+        .n3 = .n
+        .n3 = .n3 * (.n3 * .n3 - 1) / 3
+        if .is > .n3
+            # Larger than the maximal value S can take.
+            .pv = 1 - .pv
+        elsif .n <= .nSmall
+            # --- Exact evaluation by permutation enumeration ---
+            .nfac = 1
+            .l# = zero# (.n)
+            for .i to .n
+                .nfac = .nfac * .i
+                .l#[.i] = .i
+            endfor
+
+            # "KH mod: was `!=` in the code but `.eq.` in the paper"
+            if .is = .n3
+                .ifr = 1
+            else
+                .ifr = 0
+                for .m to .nfac
+                    .ise = 0
+                    for .i to .n
+                        .n1 = .i - .l#[.i]
+                        .ise = .ise + .n1 * .n1
+                    endfor
+                    if .is <= .ise
+                        .ifr = .ifr + 1
+                    endif
+
+                    # Next permutation by rotation, exactly as prho.c's
+                    # do-while: n1 resets to n once per outer (.m) pass,
+                    # then the rotation repeats -- using the SAME shrinking
+                    # n1 -- for as long as the carry condition holds.
+                    .n1 = .n
+                    repeat
+                        .mt = .l#[1]
+                        for .i from 2 to .n1
+                            .l#[.i - 1] = .l#[.i]
+                        endfor
+                        .n1 = .n1 - 1
+                        .l#[.n1 + 1] = .mt
+                    until not (.mt = .n1 + 1 and .n1 > 1)
+                endfor
+            endif
+
+            if .lowerTail = 1
+                .pv = (.nfac - .ifr) / .nfac
+            else
+                .pv = .ifr / .nfac
+            endif
+        else
+            # --- Evaluation by Edgeworth series expansion (n > 9) ---
+            .y = .n
+            .b = 1 / .y
+            .x = (6 * (.is - 1) * .b / (.y * .y - 1) - 1) * sqrt (.y - 1)
+            # = rho * sqrt(n - 1) == rho / sqrt(var(rho)) ~ (0,1)
+            .y = .x * .x
+            .u = .x * .b * (.c1 + .b * (.c2 + .c3 * .b) +
+                ... .y * (- .c4 + .b * (.c5 + .c6 * .b) -
+                ... .y * .b * (.c7 + .c8 * .b -
+                ... .y * (.c9 - .c10 * .b + .y * .b * (.c11 - .c12 * .y)))))
+
+            # y = u / exp(y / 2) in prho.c. C's double overflows exp() to
+            # +Inf here once y / 2 exceeds ~709.78, and u / Inf is then 0;
+            # Praat's exp() instead returns undefined past that point, and
+            # undefined / anything stays undefined. Measured: n = 2000 at
+            # is = n3 (rho -> -1) hits exactly this (y = x^2 ~ 1999,
+            # exp(999.5) overflows), turning a valid pv = 1 into undefined
+            # with no guard. The guard below gives Praat the same
+            # zero-in-the-limit behaviour the C already has -- it changes
+            # no in-range value (verified across the 508-case grid above,
+            # all of which fall inside n <= 9 or ordinary n > 9 magnitudes:
+            # max difference from R's own C routine was 5.6e-16 with the
+            # guard in place) and only fires where C's arithmetic would
+            # have silently carried an infinity through the same division.
+            .expHalfY = exp (.y / 2)
+            if .expHalfY = undefined
+                .y = 0
+            else
+                .y = .u / .expHalfY
+            endif
+
+            if .lowerTail = 1
+                .pv = - .y + gaussP (.x)
+            else
+                .pv = .y + gaussQ (.x)
+            endif
+            # gaussP/gaussQ are Praat's normal CDF/upper tail, standing in
+            # for prho.c's call to pnorm(x, 0, 1, lower_tail, FALSE).
+            if .pv < 0
+                .pv = 0
+            endif
+            if .pv > 1
+                .pv = 1
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# INTERNAL HELPER: @eml_spearmanPspearman — R's pspearman(), ported
+# ============================================================================
+# The closure cor.test.default (src/library/stats/R/cor.test.R, same
+# R-4-3-3 tag as @eml_prho above) builds around C_pRho:
+#
+#     pspearman <- function(q, n, lower.tail = TRUE) {
+#         if (n <= 1290 && exact)
+#             .Call(C_pRho, round(q) + 2*lower.tail, n, lower.tail)
+#         else {
+#             den <- (n*(n^2-1))/6
+#             if (continuity) den <- den + 1
+#             r <- 1 - q/den
+#             pt(r/sqrt((1-r^2)/(n-2)), df = n-2, lower.tail = !lower.tail)
+#         }
+#     }
+#
+# `exact` is TRUE on every call this plugin's kernel makes (the branch
+# law already sent ties-present cases to the t-approximation before
+# this is ever reached, and this plugin never sets cor.test's `exact`
+# argument itself), so that half of the `if` is omitted here -- there is
+# no second copy of it to disagree with. `continuity` is FALSE by
+# default in cor.test.default and this kernel does not take a
+# continuity argument, so that term is omitted too, not silently
+# defaulted somewhere else.
+#
+# n > 1290 (R's own guard: "n*(n^2-1) does not overflow" at that size)
+# is ROUTED TO THE SAME r THE ASYMPTOTIC BRANCH ALREADY USES: with no
+# ties, r = 1 - q/den reduces algebraically to rho itself, and the t it
+# builds, t = r / sqrt((1-r^2)/(n-2)), is the same t
+# @emlSpearmanCorrelation's eml_pearsonCore already forms; pt(t, n-2,
+# lower.tail = !lower.tail) is studentQ(t, n-2) when the caller's
+# .lowerTail = 1 and studentP(t, n-2) when .lowerTail = 0 (the `!`
+# inverts it). This plugin's grid (n = 5..50) never reaches this
+# branch -- ported for the same reason the n <= 1 branch of @eml_prho
+# is: the routine is ported whole. Not exercised by this item's proof
+# below; flagged in the report as outside the pinned grid's coverage.
+#
+# Input:
+#   .q         - R's q: (n^3 - n) * (1 - rho) / 6
+#   .n         - sample size
+#   .lowerTail - 1 for Pr[S < q]'s tail (R's lower.tail = TRUE),
+#                0 for Pr[S >= q]'s tail (R's lower.tail = FALSE)
+#
+# Output:
+#   .pv        - pspearman(q, n, lower.tail)
+# ============================================================================
+
+procedure eml_spearmanPspearman: .q, .n, .lowerTail
+    if .n <= 1290
+        @eml_prho: .n, round (.q) + 2 * .lowerTail, .lowerTail
+        .pv = eml_prho.pv
+    else
+        .den = (.n * (.n ^ 2 - 1)) / 6
+        .r = 1 - .q / .den
+        .rSquared = .r * .r
+        if .rSquared >= 1
+            # r = +-1 in the n > 1290 regime: t is infinite, as
+            # @eml_pearsonCore already discloses for the ordinary
+            # asymptotic path. Not reachable by this item's grid
+            # (n <= 50); see the header note above.
+            if .lowerTail = 1
+                if .r > 0
+                    .pv = 0
+                else
+                    .pv = 1
+                endif
+            else
+                if .r > 0
+                    .pv = 1
+                else
+                    .pv = 0
+                endif
+            endif
+        else
+            .t = .r / sqrt ((1 - .rSquared) / (.n - 2))
+            if .lowerTail = 1
+                .pv = studentQ (.t, .n - 2)
+            else
+                .pv = studentP (.t, .n - 2)
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlSpearmanExactP
+# ============================================================================
+# The exact-method Spearman p, given the rho and n an existing
+# @emlSpearmanCorrelation call already computed. AS 89 (via @eml_prho and
+# @eml_spearmanPspearman above), matching cor.test.default(method =
+# "spearman")'s default (exact = TRUE) dispatch exactly, including its
+# own tail selection -- ported from the same PVAL switch cor.test.R
+# builds around pspearman():
+#
+#     q <- (n^3 - n) * (1 - r) / 6
+#     PVAL <- switch(alternative,
+#         two.sided = {
+#             p <- if (q > (n^3-n)/6) pspearman(q, n, lower.tail=FALSE)
+#                  else pspearman(q, n, lower.tail=TRUE)
+#             min(2 * p, 1)
+#         },
+#         greater = pspearman(q, n, lower.tail = TRUE),
+#         less    = pspearman(q, n, lower.tail = FALSE))
+#
+# Read closely: the two-sided branch's `p` is exactly the SAME call as
+# "greater" when q is on the rho > 0 side of its null mean (n^3-n)/6, and
+# exactly the SAME call as "less" when q is on the rho < 0 side -- q > mean
+# iff rho < 0, since q = (n^3-n)(1-rho)/6. So this kernel computes
+# .pGreater = pspearman(q, n, TRUE) and .pLess = pspearman(q, n, FALSE)
+# once each, and the two-sided p reuses whichever of the two the sign of
+# q - mean selects, rather than a third call -- one fewer than a literal
+# transcription would need, and not a paraphrase: it is the identity R's
+# own two.sided branch already relies on.
+#
+# THE BRANCH LAW belongs to the caller, not this kernel: Fable's 27
+# August work order copies cor.test.default's own tie test --
+# `TIES <- (min(length(unique(x)), length(unique(y))) < n)` -- for
+# "ties present," and routes ties-present cases to the existing t-
+# approximation instead of calling this procedure at all. This kernel
+# does not re-derive or re-check that test; it assumes it has already
+# been asked for the no-ties case, exactly as @eml_prho and
+# @eml_spearmanPspearman above assume `exact` is TRUE.
+#
+# ONE-TAILED VARIANTS SELECT THE TAIL INSIDE THIS SAME PROCEDURE: both
+# .pGreater and .pLess are always computed, so a caller building the
+# Alt (named-alternative) entry point reads .pLess for "less" off THIS
+# call, the same way @emlSpearmanCorrelationAlt already reads .pLess off
+# @emlSpearmanCorrelation -- there is no separate one-tailed procedure
+# to keep in step with this one.
+#
+# Input:
+#   .rho   - Spearman's rho, already computed (e.g. by
+#            @emlSpearmanCorrelation.rho). NOT recomputed here.
+#   .n     - the number of pairs rho was computed from
+#   .tails - 1 or 2, same convention as @emlSpearmanCorrelation: 2 is
+#            two-sided; 1 fixes the one-tailed alternative to "greater"
+#            (H1: rho > 0), matching the base (non-Alt) entry point's
+#            existing convention. A caller wanting "less" reads .pLess
+#            directly regardless of .tails, as above.
+#
+# Output:
+#   .p           - the p-value for .tails and .alternative$
+#   .pGreater    - pspearman(q, n, lower.tail = TRUE): the one-tailed
+#                  p for H1: rho > 0
+#   .pLess       - pspearman(q, n, lower.tail = FALSE): the one-tailed
+#                  p for H1: rho < 0
+#   .alternative$ - "two-sided" or "greater"
+#   .method$      - "exact" (an internal tag for a caller's own
+#                   branching, not the disclosed report sentence --
+#                   Fable's work order holds the printed wording for
+#                   the language batch)
+#   .error$       - "" if valid, else the reason .p is undefined
+# ============================================================================
+
+procedure emlSpearmanExactP: .rho, .n, .tails
+    .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
+    .method$ = ""
+    .error$ = ""
+
+    if .n < 2
+        .error$ = "Need at least 2 pairs"
+    elsif .tails < 1 or .tails > 2
+        .error$ = "tails must be 1 or 2"
+    else
+        .method$ = "exact"
+        .q = (.n ^ 3 - .n) * (1 - .rho) / 6
+        .qMean = (.n ^ 3 - .n) / 6
+
+        @eml_spearmanPspearman: .q, .n, 1
+        .pGreater = eml_spearmanPspearman.pv
+        @eml_spearmanPspearman: .q, .n, 0
+        .pLess = eml_spearmanPspearman.pv
+
+        if .q > .qMean
+            .pTwoSided = min (1, 2 * .pLess)
+        else
+            .pTwoSided = min (1, 2 * .pGreater)
+        endif
+
+        if .tails = 2
+            .alternative$ = "two-sided"
+            .p = .pTwoSided
+        else
+            .alternative$ = "greater"
+            .p = .pGreater
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlSpearmanCorrelationDispatch
+# ============================================================================
+# THE ONE COMPUTATION SITE for a Spearman p (Fable's 27 August work order,
+# docs/WORK_ORDER_SPEARMAN_EXACT_2026-08-27.md, "One computation site").
+# Every door that reports a Spearman p -- the correlation orchestrator
+# (@emlRunCorrelationAnalysis), the per-group correlation (both the
+# Correlate dialog and the wizard's own per-group loop), and the scatter's
+# draw-time annotation (ungrouped, per-group and overall/pooled) -- calls
+# THIS procedure where it used to call @emlSpearmanCorrelation directly, so
+# there is exactly one place the branch law is decided, and the
+# door-agreement census (v127) sees one answer from every door.
+#
+# NEITHER existing kernel is modified or paraphrased here. This procedure
+# only ROUTES between two numbers each of them already computes:
+#   @emlSpearmanCorrelation  - rho, t, df, and its own (asymptotic, t-based)
+#                              p -- UNTOUCHED, called exactly as before.
+#   @emlSpearmanExactP       - the AS 89 port -- UNTOUCHED, called with the
+#                              rho and n the line above just produced.
+#
+# THE BRANCH LAW, copied verbatim from cor.test.default's own tie test:
+#     TIES <- (min(length(unique(x)), length(unique(y))) < n)
+# @emlRankVector's own .hasTies flag on a single vector IS that test:
+# .hasTies = 1 exactly when the vector holds a repeated value, which is
+# exactly unique(v) < n for that vector. Ties in EITHER variable route to
+# the existing t-approximation; no ties routes to the AS 89 exact p.
+#
+# Arguments: identical to @emlSpearmanCorrelation -- .x#, .y#, .tails --
+# every call site is a one-line drop-in swap.
+#
+# Output:
+#   .rho, .t, .df, .n, .error$, .warning$, .perfect
+#                - forwarded UNCHANGED from @emlSpearmanCorrelation.
+#   .p           - the p-value this dispatch reports: the AS 89 exact p
+#                  when there are no ties, @emlSpearmanCorrelation's own
+#                  t-approximation p when there are. ALSO written back
+#                  into emlSpearmanCorrelation.p (the qualified global),
+#                  the same way @emlRunCorrelationAnalysis already
+#                  restores captured outputs into that name -- so every
+#                  existing reader of emlSpearmanCorrelation.p (the
+#                  report layer, the CSV export) sees the routed value
+#                  without itself being touched.
+#   .pAsymptotic - @emlSpearmanCorrelation's own p, ALWAYS computed
+#                  regardless of which branch .p took. Read by the
+#                  validate check building its red demonstrations; never
+#                  printed by this procedure or any caller.
+#   .hasTies     - 1 if either variable has a repeated value, else 0.
+#   .method$     - "exact" or "t approximation" -- an INTERNAL branch tag
+#                  for a caller's own logic, the same shape as
+#                  @emlMannWhitneyU.method$ ("exact" / "normal
+#                  approximation"). NOT the disclosed report sentence:
+#                  Fable's work order holds "exact method (AS 89)" and
+#                  "t approximation (ties present)" in the language
+#                  batch, unapproved. No code anywhere formats or prints
+#                  either sentence yet -- see "The report line" in the
+#                  work order, and eml-analysis.praat / eml-correlate.praat
+#                  / eml-wizard.praat / eml-draw-procedures.praat for the
+#                  wired call sites, none of which gained a print.
+# ============================================================================
+
+procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
+    @emlSpearmanCorrelation: .x#, .y#, .tails
+    .rho = emlSpearmanCorrelation.rho
+    .t = emlSpearmanCorrelation.t
+    .df = emlSpearmanCorrelation.df
+    .n = emlSpearmanCorrelation.n
+    .error$ = emlSpearmanCorrelation.error$
+    .warning$ = emlSpearmanCorrelation.warning$
+    .perfect = emlSpearmanCorrelation.perfect
+    .pAsymptotic = emlSpearmanCorrelation.p
+    .p = emlSpearmanCorrelation.p
+    .hasTies = 0
+    .method$ = ""
+
+    if .error$ = ""
+        @emlRankVector: .x#
+        .hasTiesX = emlRankVector.hasTies
+        @emlRankVector: .y#
+        .hasTiesY = emlRankVector.hasTies
+        .hasTies = 0
+        if .hasTiesX = 1
+            .hasTies = 1
+        endif
+        if .hasTiesY = 1
+            .hasTies = 1
+        endif
+
+        if .hasTies = 1
+            .method$ = "t approximation"
+            .p = .pAsymptotic
+        else
+            .method$ = "exact"
+            @emlSpearmanExactP: .rho, .n, .tails
+            .p = emlSpearmanExactP.p
+        endif
+
+        ; Written back so every EXISTING reader of emlSpearmanCorrelation.p
+        ; -- the report layer, the CSV export, anything that has not been
+        ; touched by this work order -- sees the routed value. The same
+        ; qualified-global restoration @emlRunCorrelationAnalysis already
+        ; does at its own capture site, one level up.
+        emlSpearmanCorrelation.p = .p
     endif
 endproc
 

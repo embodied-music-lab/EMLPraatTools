@@ -3111,7 +3111,7 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
         .pearErr$ = emlPearsonCorrelation.error$
     endif
     if .testType$ = "spearman" or .testType$ = "both"
-        @emlSpearmanCorrelation: .dataX#, .dataY#, 2
+        @emlSpearmanCorrelationDispatch: .dataX#, .dataY#, 2
         .spearRho = emlSpearmanCorrelation.rho
         .spearT = emlSpearmanCorrelation.t
         .spearDf = emlSpearmanCorrelation.df

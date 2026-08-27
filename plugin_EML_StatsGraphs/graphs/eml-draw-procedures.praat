@@ -4674,7 +4674,7 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             .spearmanR = 0
             .spearmanP = 0
             if annotCorrType$ = "spearman" or annotCorrType$ = "both"
-                @emlSpearmanCorrelation: .xData#, .yData#, 2
+                @emlSpearmanCorrelationDispatch: .xData#, .yData#, 2
                 if emlSpearmanCorrelation.error$ = ""
                     .haveSpearman = 1
                     .spearmanR = emlSpearmanCorrelation.rho
@@ -5095,7 +5095,7 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
 
                         # --- Per-group Spearman (annotation) ---
                         if annotCorrType$ = "spearman" or annotCorrType$ = "both"
-                            @emlSpearmanCorrelation: .gXTrim#, .gYTrim#, 2
+                            @emlSpearmanCorrelationDispatch: .gXTrim#, .gYTrim#, 2
                             if emlSpearmanCorrelation.error$ = ""
                                 .gSpearmanR = emlSpearmanCorrelation.rho
                                 .gSpearmanP = emlSpearmanCorrelation.p
@@ -5270,7 +5270,7 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 endif
 
                 if annotCorrType$ = "spearman" or annotCorrType$ = "both"
-                    @emlSpearmanCorrelation: .xData#, .yData#, 2
+                    @emlSpearmanCorrelationDispatch: .xData#, .yData#, 2
                     if emlSpearmanCorrelation.error$ = ""
                         .oSpearmanR = emlSpearmanCorrelation.rho
                         .oSpearmanP = emlSpearmanCorrelation.p
