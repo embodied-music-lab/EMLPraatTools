@@ -225,6 +225,46 @@ our arithmetic rather than an independent implementation. Install either
 package and compare against `D-SCHEFFE`'s 40 rows if you want a third
 answer.
 
+## Potential conflicts with R that may be errors in R
+
+Three quantities where this plugin and an R package disagree, and the
+disagreement is not the plugin being wrong. Each is stated so you can check it
+rather than take it.
+
+**Paired rank-biserial, when every difference is identical.**
+`effectsize` 0.8.6 returns an unsigned result: +1 whether the first column is
+uniformly above or uniformly below the second. The definition gives
+`(R+ - R-)/(R+ + R-)`, so five differences of -5 give R+ = 0, R- = 15, and the
+answer is -1. `wilcox.test`'s own V statistic distinguishes the two directions
+correctly.
+
+In every non-degenerate case `effectsize` gets the sign right, so this is
+confined to inputs where all differences share one magnitude. Two of the kit's
+nine paired comparisons have that property by construction; the five
+substantial ones do not.
+
+**Alpha-if-deleted, on a two-item remainder.**
+The plugin reports the definitional value; `psych` reports something else.
+The derivation, which is short enough to check: item variances 0.5, 0.5, 0.5
+and 0; total variance 0.5; `(4/3)(1 - 3) = -8/3` exactly. Both the
+definitional and the covariance forms give -8/3.
+
+**The Hodges-Lehmann estimate on the approximation branch.**
+This one is not an error in R. It is two defensible definitions disagreeing,
+and it is recorded here so you do not spend time diagnosing it.
+
+The estimator is the median of the cross-differences, and that is what the
+plugin reports on both branches. On the approximation branch `wilcox.test`
+instead returns a `uniroot` of its own W function -- measured about 4e-5 from
+R's own exact-branch answer on the same data. This kit oracles the estimate
+against `median(outer(x, y, "-"))` and emits R's value beside it under
+`posthoc_<PAIR>_diff_wilcoxest`, so the gap stays visible. The interval bounds
+still come from `wilcox.test`, because bounds are defined by test inversion
+and the estimate is not.
+
+If you disagree with any of the three, that is the most useful thing you can
+tell us.
+
 ## Findings
 
 The reconciliation found real defects. This section names them rather than
