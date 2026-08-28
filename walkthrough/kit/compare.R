@@ -1498,6 +1498,19 @@ WORDLIST_LITERALS <- c("bucket", "enforcement", "DECLARED", "CONTRACT",
                         "vmax", "vmin", "maxrel", "quantities.tsv")
 WORDLIST_PATTERNS <- c("@eml\\w+", "D-[A-Z]")
 
+# ENUMERATED EXEMPTIONS. Each names one file and one pattern, with its reason.
+# Never a broadened regex: widening a pattern deletes the rule everywhere,
+# while an entry here is scoped, visible, and reported when it stops matching.
+# Rule-scope defect on Fable's side, fixed 28 August 2026 by narrowing rather
+# than by suppressing hits.
+WORDLIST_EXEMPT <- list(
+    list(file = "coverage.md", pattern = "@eml\\w+",
+         why = paste("coverage.md's identifier column prints the Praat",
+                     "procedure name by design; that column is the file's",
+                     "purpose, not a leak of working-paper voice."))
+)
+.exemptUnused <- character(0)
+
 checkWordlist <- function(path) {
     if (!file.exists(path)) return(character(0))
     lines <- readLines(path, warn = FALSE)
@@ -1507,7 +1520,15 @@ checkWordlist <- function(path) {
         if (length(m)) hits <- c(hits, sprintf("%s: literal \"%s\" on line %d", basename(path), w, m[1]))
     }
     for (p in WORDLIST_PATTERNS) {
+        ex <- Filter(function(e) identical(e$file, basename(path)) &&
+                                 identical(e$pattern, p), WORDLIST_EXEMPT)
         m <- which(grepl(p, lines, perl = TRUE))
+        if (length(ex)) {
+            # An exemption matching nothing has outlived its need.
+            if (!length(m)) .exemptUnused <<- c(.exemptUnused,
+                sprintf("%s: exemption for /%s/ matched nothing", basename(path), p))
+            next
+        }
         if (length(m)) hits <- c(hits, sprintf("%s: pattern /%s/ on line %d", basename(path), p, m[1]))
     }
     hits
@@ -1515,6 +1536,10 @@ checkWordlist <- function(path) {
 .wordlistFiles <- c(file.path(resultsDir, c("SUMMARY.md", "coverage.md")),
                      file.path(kitDir, "README.md"))
 .wordlistHits <- unlist(lapply(.wordlistFiles, checkWordlist))
+if (length(.exemptUnused)) {
+    cat("\n--- WORDLIST exemptions that matched nothing ---\n")
+    cat(paste0("  ", .exemptUnused, collapse = "\n"), "\n")
+}
 if (length(.wordlistHits)) {
     cat("\n--- WORDLIST (prose documents): RED ---\n")
     cat(paste0("  ", .wordlistHits, collapse = "\n"), "\n")
