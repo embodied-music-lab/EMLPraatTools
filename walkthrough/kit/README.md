@@ -158,12 +158,23 @@ second.
 ## What the run produces
 
 ```
-out/praat_results.tsv     9218 rows    long format, source = "praat"
-out/r_results.tsv        11812 rows    long format, source = the R package
-out/praat_reports/*.txt    630 files   one per cell, human-readable
-out/r_reports/*.txt        630 files   one per cell, including refusals
-out/reconciliation.tsv                 every row that is not a plain agreement
+audit/praat_results.tsv     9218 rows    long format, source = the Praat procedure
+audit/r_results.tsv        11812 rows    long format, source = package::function
+audit/VERDICT.txt                        the invariant check, teed to the console
+results/praat_reports/*.txt   630 files  one per cell, human-readable
+results/r_reports/*.txt       630 files  one per cell, including refusals
+results/reconciliation.tsv               every row that is not a plain agreement
+results/SUMMARY.md                       the reader-facing verdict, generated
+results/coverage.md                      procedures, options and R functions exercised
+results/exceptions.tsv                   the numeric disagreements, in full
+results/agreements_all.tsv               every plain agreement, in full
+results/disagreements_all.tsv            every non-agreement, in full
+results/agreement_by_procedure.tsv       agreement rate, one row per procedure
 ```
+
+`audit/` is the working record -- everything `results/` is derived from, with
+this file's own header and `compare.R`'s as the column definitions
+(`audit/README.md` says so in one line). `results/` is what a person opens.
 
 Both tables are long, not wide: `cell_id`, `quantity`, `value`, `source`.
 One row per reported quantity, values unrounded and unformatted. A quantity
@@ -266,7 +277,7 @@ as `x/n`, and counts. None of them is a second implementation of a test.
 
 ## Reading the reconciliation file
 
-`out/reconciliation.tsv` carries one row per quantity that is not a plain
+`results/reconciliation.tsv` carries one row per quantity that is not a plain
 agreement. Two of its columns tell you how much weight the row's excuse
 carries:
 
@@ -338,7 +349,7 @@ tell us.
 
 The reconciliation found real defects. This section names them rather than
 tuning them away. Each carries an id you can grep for in `compare.R` and in
-`out/reconciliation.tsv`.
+`results/reconciliation.tsv`.
 
 **In the plugin:**
 

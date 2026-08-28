@@ -24,7 +24,8 @@ include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib
 # ============================================================================
 # RUN_ME_FIRST.praat -- reads matrix.tsv and runs every one of its 630 cells
 # against the EML Stats & Graphs procedures, writing the result in the long
-# shared schema to out/praat_results.tsv (source = "praat") and one
+# shared schema to audit/praat_results.tsv (source = the plugin procedure
+# that produced each value, e.g. "emlRunTwoGroupAnalysis") and one
 # human-readable report per cell_id to results/praat_reports/<cell_id>.txt.
 #
 # THIS SCRIPT CARRIES NO LIST OF ITS OWN. Every cell it runs comes from
@@ -39,11 +40,11 @@ include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib
 # -- not a separate, point-in-time snapshot that can quietly drift out of
 # step with it.
 #
-# PLAIN RELATIVE PATHS EVERYWHERE ELSE ("data/...", "out/...", "matrix.tsv").
+# PLAIN RELATIVE PATHS EVERYWHERE ELSE ("data/...", "audit/...", "matrix.tsv").
 # Praat resolves a relative path in a script against THE SCRIPT'S OWN FOLDER,
 # not the working directory it was launched from -- measured, and depended on
 # here exactly as the smaller predecessor of this script depended on it. Keep
-# this folder together: RUN_ME_FIRST.praat, matrix.tsv, data/ and out/ all in
+# this folder together: RUN_ME_FIRST.praat, matrix.tsv, data/ and audit/ all in
 # one place. The one path that is NOT relative is the include above, and it
 # cannot be: it names a file outside this folder, in the Praat preferences
 # tree, and Praat's `include` cannot compute a path at run time -- see the
@@ -68,7 +69,7 @@ include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib
 # read at most once and cached by dataset name.
 # ============================================================================
 
-createFolder: "out"
+createFolder: "audit"
 createFolder: "results"
 createFolder: "results/praat_reports"
 
@@ -183,7 +184,7 @@ procedure emlKitSanitizeText: .s$
 endproc
 
 # ----------------------------------------------------------------------------
-# Output buffer for out/praat_results.tsv. Built in memory and written once
+# Output buffer for audit/praat_results.tsv. Built in memory and written once
 # at the end -- 630 cells produce several thousand rows, and one write beats
 # a few thousand file opens.
 # ----------------------------------------------------------------------------
@@ -210,7 +211,7 @@ endproc
 # ----------------------------------------------------------------------------
 procedure emlKitNum: .cellId$, .quantity$, .value
     if .value <> undefined
-        @emlKitRow: .cellId$, .quantity$, string$ (.value), "praat"
+        @emlKitRow: .cellId$, .quantity$, string$ (.value), emlKitSource$
     else
         # AN UNDEFINED VALUE IS NOT A REASON TO WRITE NOTHING. Dropping it
         # leaves the quantity looking like one this runner never attempted,
@@ -220,7 +221,7 @@ procedure emlKitNum: .cellId$, .quantity$, .value
         # undefined, and never assigned. The marker makes the difference
         # between "computed, came out undefined" and "never computed" visible
         # in the results table itself.
-        @emlKitRow: .cellId$, .quantity$ + "_undefined", "1", "praat"
+        @emlKitRow: .cellId$, .quantity$ + "_undefined", "1", emlKitSource$
     endif
 endproc
 
@@ -229,7 +230,7 @@ endproc
 # ----------------------------------------------------------------------------
 procedure emlKitText: .cellId$, .quantity$, .text$
     @emlKitSanitizeText: .text$
-    @emlKitRow: .cellId$, .quantity$, emlKitSanitizeText.result$, "praat"
+    @emlKitRow: .cellId$, .quantity$, emlKitSanitizeText.result$, emlKitSource$
 endproc
 
 # ----------------------------------------------------------------------------
@@ -237,12 +238,12 @@ endproc
 # blank, never a crash, never a silent fallback.
 # ----------------------------------------------------------------------------
 procedure emlKitRefuse: .cellId$, .reason$
-    @emlKitRow: .cellId$, "refused", "1", "praat"
+    @emlKitRow: .cellId$, "refused", "1", emlKitSource$
     @emlKitText: .cellId$, "refuse_reason", .reason$
 endproc
 
 procedure emlKitSkip: .cellId$, .reason$
-    @emlKitRow: .cellId$, "skipped", "1", "praat"
+    @emlKitRow: .cellId$, "skipped", "1", emlKitSource$
     @emlKitText: .cellId$, "skip_reason", .reason$
 endproc
 
@@ -538,6 +539,18 @@ procedure emlKitProcessRow: .cellId$, .lane$, .proc$, .dataset$, .colA$,
 
     emlKitNCells = emlKitNCells + 1
     @emlKitBeginCell: .cellId$
+    # PROVENANCE (28 Aug 2026): ONE assignment per cell, not one per emit
+    # site. emlKitSource$ is an undotted global (CLAUDE.md: undotted inside a
+    # procedure reads/writes the main-script global) read by @emlKitRow's
+    # five call sites below instead of the literal "praat" they used to pass
+    # -- every value this cell emits now carries the plugin procedure that
+    # produced it, matching R's source column moving from a bare package name
+    # to a specific function. Coarser than R's per-kernel granularity: this
+    # names the door (.proc$, e.g. "emlRunTwoGroupAnalysis"), not the
+    # internal helper (@emlTTest, @emlCohenD, ...) behind it, per Ian's
+    # ruling on the cheaper middle (docs/QUESTIONS_FOR_FABLE_OPEN_2026-08-27.md,
+    # item 5) -- real provenance where none existed, without 224 edits.
+    emlKitSource$ = .proc$
 
     @emlKitSetGroupOrder: .groupOrder$
 
@@ -1640,7 +1653,7 @@ endproc
 # ============================================================================
 # SECTION 9 -- write the results TSV, print the summary
 # ============================================================================
-writeFile: "out/praat_results.tsv", emlKitTSVBuf$
+writeFile: "audit/praat_results.tsv", emlKitTSVBuf$
 
 clearinfo
 writeInfoLine: "EML Stats & Graphs -- matrix.tsv walkthrough (Praat side)"
@@ -1649,8 +1662,8 @@ emlKitElapsed = stopwatch - emlKitStartTime
 appendInfoLine: "Cells run:        ", emlKitNCells
 appendInfoLine: "  -- ok:          ", emlKitNOk
 appendInfoLine: "  -- refused:     ", emlKitNRefused
-appendInfoLine: "Rows written:     ", emlKitRowCount, " (out/praat_results.tsv)"
-appendInfoLine: "Reports written:  ", emlKitNCells, " (out/praat_reports/*.txt)"
+appendInfoLine: "Rows written:     ", emlKitRowCount, " (audit/praat_results.tsv)"
+appendInfoLine: "Reports written:  ", emlKitNCells, " (results/praat_reports/*.txt)"
 appendInfoLine: "Elapsed:          ", fixed$ (emlKitElapsed, 1), " s"
 appendInfoLine: ""
 if emlKitNMismatch = 0

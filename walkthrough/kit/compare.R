@@ -2,9 +2,10 @@
 # the kit is green.
 #
 # Run it AFTER both runners:
-#     Praat:  open RUN_ME_FIRST.praat, click Run        -> out/praat_results.tsv
-#     R:      open run_analyses.R, click Source         -> out/r_results.tsv
-#     then:   open this file, click Source              -> results/reconciliation.tsv
+#     Praat:  open RUN_ME_FIRST.praat, click Run        -> audit/praat_results.tsv
+#     R:      open run_analyses.R, click Source         -> audit/r_results.tsv
+#     then:   open this file, click Source              -> results/reconciliation.tsv,
+#                                                          results/SUMMARY.md and friends
 #
 # It reads nothing but those two files and matrix.tsv. It needs no package.
 #
@@ -74,15 +75,20 @@ emlThisFile <- function() {
          call. = FALSE)
 }
 kitDir <- dirname(emlThisFile())
-outDir <- file.path(kitDir, "out")
-# TWO OUTPUT DIRECTORIES, SPLIT BY AUDIENCE. out/ holds the two long tables
-# the runners emit and this file consumes -- machine input, not reading
-# matter. results/ holds what a person opens: the verdict, the reconciliation,
-# and the per-cell reports from both sides.
+auditDir <- file.path(kitDir, "audit")
+# TWO OUTPUT DIRECTORIES, SPLIT BY AUDIENCE. audit/ is the working record:
+# the two long tables the runners emit and this file consumes, the per-cell
+# reports from both sides, and VERDICT.txt (the invariant check, teed to the
+# console below) -- everything results/ is derived from, with this file's
+# own header as the column definitions (audit/README.md says so in one
+# line). results/ holds what a person opens first: reconciliation.tsv (the
+# full row-by-row join) and, from the GENERATION step below, SUMMARY.md and
+# the rest of the generated tables.
+dir.create(auditDir, showWarnings = FALSE)
 resultsDir <- file.path(kitDir, "results")
 dir.create(resultsDir, showWarnings = FALSE)
 
-need <- file.path(outDir, c("praat_results.tsv", "r_results.tsv"))
+need <- file.path(auditDir, c("praat_results.tsv", "r_results.tsv"))
 missing <- need[!file.exists(need)]
 if (length(missing)) {
     stop("compare.R needs both runners to have run first. Not found:\n  ",
@@ -629,6 +635,12 @@ agree <- function(a, b) {
 }
 
 rows <- list(); add <- function(...) rows[[length(rows) + 1]] <<- list(...)
+# AGREEMENTS ARE ROWS TOO. The loop below only ever called add() on a
+# difference or a one-sided row -- an agreement was counted (nAgree) and
+# dropped. results/agreements_all.tsv (the generation step, further down)
+# needs the actual values, so every agreement is now also kept, in its own
+# list, at the point it is found.
+agreeRows <- list(); addAgree <- function(...) agreeRows[[length(agreeRows) + 1]] <<- list(...)
 nAgree <- 0L; nDeclared <- 0L; nUnexplained <- 0L; nCompared <- 0L; maxRelSeen <- list()
 # Split for the balance invariant below: a DECLARED row reached via the
 # both-sides comparison loop (values present on both sides, differing by a
@@ -661,8 +673,16 @@ for (k in both) {
         rv <- num(R$value[ri]); src <- R$source[ri]
         if (is.na(pv) && is.na(rv)) {
             # text-valued on both sides (refuse_reason and friends)
-            if (identical(P$value[pi], R$value[ri])) { nAgree <- nAgree + 1L; next }
-        } else if (agree(pv, rv)) { nAgree <- nAgree + 1L; next }
+            if (identical(P$value[pi], R$value[ri])) {
+                nAgree <- nAgree + 1L
+                addAgree(cell_id = cell, quantity = q, praat = P$value[pi], r = R$value[ri])
+                next
+            }
+        } else if (agree(pv, rv)) {
+            nAgree <- nAgree + 1L
+            addAgree(cell_id = cell, quantity = q, praat = P$value[pi], r = R$value[ri])
+            next
+        }
         .mag <- if (!is.na(pv) && !is.na(rv)) max(abs(pv), abs(rv)) else NA_real_
         rule <- declaredFor(cell, q, "diff", .mag)
         if (!is.null(rule)) {
@@ -786,12 +806,16 @@ write.table(out, file.path(resultsDir, "reconciliation.tsv"), sep = "\t",
             quote = FALSE, row.names = FALSE)
 
 # THE VERDICT IS WRITTEN AS WELL AS PRINTED. Everything below reaches both
-# the console and results/VERDICT.txt. A verdict that exists only in a console
-# is gone when the window closes, cannot be attached to an email, and cannot
-# be diffed against the next run. split = TRUE tees rather than diverts, so
-# the console still shows it live. on.exit closes the sink even if something
-# below fails, which otherwise leaves the session silently redirected.
-.verdictPath <- file.path(resultsDir, "VERDICT.txt")
+# the console and audit/VERDICT.txt -- the working record, not the reader
+# summary; a person reads results/SUMMARY.md, generated below FROM this
+# verdict's own numbers (task 8's re-derivation), and this file is what a
+# maintainer opens to check the presentation against the measurement. A
+# verdict that exists only in a console is gone when the window closes,
+# cannot be attached to an email, and cannot be diffed against the next run.
+# split = TRUE tees rather than diverts, so the console still shows it live.
+# on.exit closes the sink even if something below fails, which otherwise
+# leaves the session silently redirected.
+.verdictPath <- file.path(auditDir, "VERDICT.txt")
 # CAPTURED, NOT SINKED. sink(split = TRUE) writes an EMPTY file under
 # RStudio: RStudio replaces the console connection, so the split copy has
 # nowhere to go and only the console sees the output. Measured on
@@ -808,7 +832,7 @@ cat(sprintf("cells declared in matrix.tsv : %d\n", nrow(mx)))
 cat(sprintf("rows, Praat table            : %d\n", nrow(P)))
 cat(sprintf("rows, R table                : %d\n", nrow(R)))
 cat(sprintf("value comparisons made       : %d\n", nCompared))
-cat(sprintf("\n  AGREE       %6d   (relative difference < 1e-9)\n", nAgree))
+cat(sprintf("\n  AGREE       %6d   (relative difference < 1e-9, or absolute < 1e-12 near zero)\n", nAgree))
 cat(sprintf("  CONTRACT    %6d   (one-sided rows quantities.tsv accounts for)\n", nContract))
 cat(sprintf("  DECLARED    %6d   (differences and one-sided rows with a written reason)\n", nDeclared))
 cat(sprintf("  UNEXPLAINED %6d\n", nUnexplained))
@@ -1003,3 +1027,500 @@ cat(sprintf("this verdict: %s\n\n", .verdictPath))
 writeLines(.emlReport, .verdictPath)
 cat(.emlReport, sep = "\n")
 cat("\n")
+
+# =============================================================================
+# GENERATION -- results/SUMMARY.md, coverage.md, exceptions.tsv,
+# agreement_by_procedure.tsv, agreements_all.tsv, disagreements_all.tsv.
+#
+# Family prose comes from results_templates/reader_sentences.md, never
+# string-built here (Ian's ruling, 28 Aug 2026). This block only: reads that
+# file, maps each row of `out` (and, for coverage, the raw P/R tables) to the
+# clause that speaks for it, and fills the numbers from the live run. A
+# declared family with no matching section in reader_sentences.md is a HARD
+# ERROR -- generation stops rather than printing a reason nobody wrote.
+# =============================================================================
+
+# --- 1. PARSE THE READER SENTENCES, VERBATIM -------------------------------
+.readerSentencesPath <- file.path(kitDir, "results_templates", "reader_sentences.md")
+.parseReaderSentences <- function(path) {
+    lines <- readLines(path, warn = FALSE)
+    out <- list(); cur <- NULL; buf <- character(0)
+    flush <- function() {
+        if (!is.null(cur)) {
+            body <- paste(buf, collapse = " ")
+            body <- trimws(body)
+            # Drop the leading "Rows: ~N." (or "Rows: N.") sentence -- the
+            # live count is filled in by the generator, never read from here.
+            body <- sub("^Rows:\\s*~?[0-9,]+\\.\\s*", "", body)
+            out[[cur]] <<- body
+        }
+    }
+    for (ln in lines) {
+        if (grepl("^## ", ln)) {
+            flush()
+            cur <- trimws(sub("^## ", "", ln))
+            buf <- character(0)
+        } else if (!is.null(cur) && !grepl("^---\\s*$", ln)) {
+            buf <- c(buf, ln)
+        }
+    }
+    flush()
+    out
+}
+READER <- .parseReaderSentences(.readerSentencesPath)
+
+# --- 2. DECLARED-ID -> CLAUSE (the seven ids DECLARED[] carries today) ------
+ID_TO_CLAUSE <- c(
+    "D-WILCOXEST"        = "r-shift-estimate",
+    "D-PTUKEY"           = "tukey-tail-quadrature",
+    "D-PTUKEY-MID"       = "tukey-tail-quadrature",
+    "D-TWOWAY-PRECISION" = "two-way-precision",
+    "D-WORDING"          = "refusal-wording",
+    "D-ALPHA2ITEM"       = "alpha-two-item-scale",
+    "D-ALPHADROP"        = "alpha-three-person-sample"
+)
+
+# --- 3. CONTRACT (procedure, quantity) -> CLAUSE ----------------------------
+# Keyed by the procedure and quantity pattern that identifies a contract row
+# in quantities.tsv, per reader_sentences.md's own header note: "contract
+# clauses key by the procedure and quantity pattern... because every
+# contract row shares the single id CONTRACT." Matched in order; first hit
+# wins. `bucketExclude`, where set, keeps a rule from claiming a row that
+# belongs to a DIFFERENT one-sided story sharing the same quantity name (the
+# Scheffe posthoc CI, PRAAT-side-only, is not the same story as the
+# Holm/BH-vs-Bonferroni interval scope, even though both are named
+# posthoc_<PAIR>_ci_low on the same procedure).
+CONTRACT_CLAUSE_RULES <- list(
+    list(proc = "emlRunAnovaAnalysis",  re = "^posthoc_.*_q$",              clause = "studentised-range-statistic"),
+    list(proc = "emlRunKWAnalysis",     re = "^eta_squared$",               clause = "rank-test-effect-size"),
+    list(proc = c("emlRunNormalityAnalysis", "emlRunDescriptiveAnalysis"),
+                                         re = "^(skewness_b1|kurtosis_b2)$", clause = "extra-shape-statistics"),
+    list(proc = "emlRunCorrelationAnalysis", re = "^spearman_(t|df|s)$",    clause = "correlation-intermediates"),
+    list(proc = "emlRunCorrelationAnalysis", re = "^spearman_p$",           clause = "spearman-p-naming"),
+    list(proc = "emlRunRepeatedMeasuresAnalysis", re = "^gg_(epsilon|p)$",  clause = "sphericity-correction"),
+    list(proc = "emlRunPairedAnalysis", re = "^n_excluded$",                clause = "paired-excluded-rows"),
+    list(proc = "emlRunTwoGroupAnalysis", re = "^wilcox_r$",                clause = "rosenthal-r"),
+    list(proc = "emlRunPairedAnalysis", re = "^wilcox_r$",                  clause = "second-rank-effect-size"),
+    list(proc = "emlChiSquareIndependence", re = "^cramers_v_(yates|bias_corrected)$", clause = "cramers-v-corrected"),
+    list(proc = "emlRunFriedmanAnalysis", re = "^posthoc_.*_ci_(low|high)$", clause = "hl-interval-scope"),
+    list(proc = "emlRunPairwiseAnalysis", re = "^posthoc_.*_ci_(low|high)$", clause = "pairwise-interval-scope",
+         bucketExclude = "^CONTRACT_ONLY_PRAAT$"),   # excludes the Scheffe-arm CI -- see the collision note below
+    list(proc = "emlRunPairwiseAnalysis", re = "^posthoc_.*_padj_ptt$",    clause = "pairwise-oracle-cross-check"),
+    list(proc = "emlRunPairedAnalysis", re = "^(t|df|cohens_dz)$",          clause = "paired-parametric-absent"),
+    list(proc = "emlRunFriedmanAnalysis", re = "^kendalls_w$",              clause = "kendalls-w-derived"),
+    list(proc = "emlRunFriedmanAnalysis", re = "^(chi_square|p)$",          clause = "friedman-all-identical"),
+    list(proc = "emlRunTwoWayAnalysis", re = "_eta_squared$",               clause = "two-way-eta-squared-gap"),
+    list(proc = "emlRunGroupedRegression", re = "^overall_adj_r_squared$",  clause = "grouped-regression-adjusted-r2"),
+    list(proc = "emlRunDescriptiveAnalysis", re = "^ci_(low|high)$",        clause = "constant-column-mean-interval"),
+    list(proc = "emlCronbachAlpha",     re = "^alpha_if_deleted_",          clause = "alpha-two-item-scale")
+)
+
+# --- 4. THE LOOKUP, AND THE HARD ERROR --------------------------------------
+.missingClauses <- list()
+readerClauseFor <- function(bucket, id, procedure, quantity) {
+    if (nzchar(id) && id != "CONTRACT") {
+        cl <- unname(ID_TO_CLAUSE[id])
+        if (is.na(cl) || !length(cl)) return(NA_character_)
+        return(cl)
+    }
+    if (!identical(id, "CONTRACT")) return(NA_character_)   # UNEXPLAINED / UNMATCHED_* -- not a documented clause
+    bq <- sub("_undefined$", "", quantity)
+    for (r in CONTRACT_CLAUSE_RULES) {
+        if (!is.null(r$proc) && !(procedure %in% r$proc)) next
+        if (!grepl(r$re, bq)) next
+        if (!is.null(r$bucketExclude) && grepl(r$bucketExclude, bucket)) next
+        return(r$clause)
+    }
+    NA_character_
+}
+
+if (nrow(out)) {
+    out$procedure <- unname(procOf[out$cell_id])
+    out$clause <- mapply(readerClauseFor, out$bucket, out$id, out$procedure, out$quantity)
+    docBuckets <- c("DECLARED", "DECLARED_ONLY_PRAAT", "DECLARED_ONLY_R",
+                     "CONTRACT_ONLY_PRAAT", "CONTRACT_ONLY_R", "CONTRACT_UNDEFINED",
+                     "CONTRACT_MISSING_PARTNER")
+    isDoc <- out$bucket %in% docBuckets
+    missIdx <- which(isDoc & is.na(out$clause))
+    if (length(missIdx)) {
+        miss <- unique(data.frame(bucket = out$bucket[missIdx], id = out$id[missIdx],
+                                   procedure = out$procedure[missIdx], quantity = sub("_undefined$", "", out$quantity[missIdx])))
+        stop(sprintf(paste0(
+            "GENERATION HARD ERROR: %d documented row(s) match no reader sentence in\n",
+            "results_templates/reader_sentences.md. Every declared family (a DECLARED[]\n",
+            "id, or a CONTRACT procedure+quantity pattern) needs a clause there before\n",
+            "generation can write results/. Unmapped (procedure, quantity, bucket):\n\n%s\n"),
+            nrow(miss),
+            paste(sprintf("  %-32s %-40s %s", miss$procedure, miss$quantity, miss$bucket), collapse = "\n")),
+            call. = FALSE)
+    }
+    # NOT ifelse(is.na(out$clause), "", unlist(READER[out$clause])): subsetting
+    # a list by a character vector containing NA yields NULL at those
+    # positions, and unlist() SILENTLY DROPS NULL entries rather than keeping
+    # a placeholder -- shortening the vector so ifelse's recycling shifts
+    # every reader sentence after the first NA onto the wrong row. Found by
+    # the generate-then-verify leg (28 Aug 2026, item 8) exactly as designed:
+    # a fresh disk re-count of disagreements_all.tsv's reason column disagreed
+    # with the family counts SUMMARY.md's own bullets stated.
+    out$reader <- vapply(out$clause, function(cl) if (is.na(cl)) "" else unname(READER[[cl]]), character(1))
+} else {
+    out$procedure <- character(); out$clause <- character(); out$reader <- character()
+}
+
+# --- 5. SMALL SHARED HELPERS -------------------------------------------------
+tsvWrite <- function(df, name) write.table(df, file.path(resultsDir, name),
+                                            sep = "\t", quote = FALSE, row.names = FALSE, na = "")
+relDiff <- function(a, b) {
+    a <- num(a); b <- num(b)
+    ifelse(is.na(a) | is.na(b), NA_real_,
+           ifelse(pmax(abs(a), abs(b)) < 1e-12, 0, abs(a - b) / pmax(abs(a), abs(b))))
+}
+# A readable procedure label, derived mechanically from the @eml identifier
+# (no hand-maintained map): strip the "eml"/"Run" scaffolding, split the
+# remaining CamelCase into words. Coarser than a hand-written label, but it
+# cannot drift, because there is nothing to keep in sync.
+humanProc <- function(p) {
+    s <- sub("^emlRun", "", p); s <- sub("^eml", "", s)
+    s <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", s)
+    s <- gsub("([A-Z]+)([A-Z][a-z])", "\\1 \\2", s)
+    trimws(s)
+}
+# No package needed for this either (compare.R's own promise): a small
+# title-caser in place of tools::toTitleCase.
+titleCase <- function(s) {
+    w <- strsplit(s, " ")[[1]]
+    w <- ifelse(nchar(w) > 0, paste0(toupper(substr(w, 1, 1)), substr(w, 2, nchar(w))), w)
+    paste(w, collapse = " ")
+}
+
+# --- 6. exceptions.tsv -- the numeric DECLARED-diff rows, in full ----------
+excIdx <- which(out$bucket == "DECLARED" & !is.na(num(out$praat)) & !is.na(num(out$r)))
+EXC <- data.frame(
+    analysis = out$cell_id[excIdx], quantity = out$quantity[excIdx],
+    plugin_value = out$praat[excIdx], r_value = out$r[excIdx],
+    relative_difference = sprintf("%.2e", relDiff(out$praat[excIdx], out$r[excIdx])),
+    reason = out$reader[excIdx])
+EXC <- EXC[order(EXC$analysis, EXC$quantity), ]
+tsvWrite(EXC, "exceptions.tsv")
+
+# --- 7. disagreements_all.tsv -- every non-agreement, in full --------------
+kindOf <- function(bucket, id) {
+    ifelse(bucket == "DECLARED" & id == "D-WORDING", "wording differs (both refuse)",
+    ifelse(bucket == "DECLARED", "values differ (documented)",
+    ifelse(bucket %in% c("CONTRACT_ONLY_PRAAT", "DECLARED_ONLY_PRAAT"), "reported by plugin only (documented)",
+    ifelse(bucket %in% c("CONTRACT_ONLY_R", "DECLARED_ONLY_R"), "reported by R only (documented)",
+    ifelse(bucket == "CONTRACT_UNDEFINED", "undefined marker, one side (documented)",
+    ifelse(bucket == "CONTRACT_MISSING_PARTNER", "both sides: no value defined (documented)",
+    "NOT DOCUMENTED -- see enforcement/why in reconciliation.tsv"))))))
+}
+DIS <- data.frame(
+    analysis = out$cell_id, quantity = out$quantity,
+    plugin_value = out$praat, r_value = out$r,
+    relative_difference = ifelse(!is.na(num(out$praat)) & !is.na(num(out$r)),
+                                  sprintf("%.2e", relDiff(out$praat, out$r)), ""),
+    kind = kindOf(out$bucket, out$id),
+    reason = out$reader)
+DIS <- DIS[order(DIS$analysis, DIS$quantity), ]
+tsvWrite(DIS, "disagreements_all.tsv")
+
+# --- 8. agreements_all.tsv -- every plain agreement, in full ---------------
+# No worked example covered this file; its schema mirrors disagreements_all.tsv
+# minus the columns an agreement has no use for (kind, reason -- an agreement
+# needs no documentation).
+AGR <- if (length(agreeRows)) {
+    a <- do.call(rbind, lapply(agreeRows, function(r) as.data.frame(r, stringsAsFactors = FALSE)))
+    data.frame(analysis = a$cell_id, quantity = a$quantity,
+               plugin_value = a$praat, r_value = a$r,
+               relative_difference = ifelse(!is.na(num(a$praat)) & !is.na(num(a$r)),
+                                             sprintf("%.2e", relDiff(a$praat, a$r)), ""))
+} else data.frame(analysis = character(), quantity = character(), plugin_value = character(),
+                   r_value = character(), relative_difference = character())
+AGR <- AGR[order(AGR$analysis, AGR$quantity), ]
+tsvWrite(AGR, "agreements_all.tsv")
+
+# --- 9. agreement_by_procedure.tsv ------------------------------------------
+# `quantities_compared` = agreeing + differing_documented + any unexplained
+# both-sides mismatch (there is none in a green run, but an ongoing one must
+# still show up in the denominator, not vanish from it).
+oneSidedDocBuckets <- c("CONTRACT_ONLY_PRAAT", "CONTRACT_ONLY_R", "CONTRACT_UNDEFINED",
+                         "CONTRACT_MISSING_PARTNER", "DECLARED_ONLY_PRAAT", "DECLARED_ONLY_R")
+agreeCellId <- vapply(agreeRows, function(r) r$cell_id, "")
+agreeProc <- unname(procOf[agreeCellId])
+mxPosthoc <- setNames(if ("posthoc" %in% names(mx)) mx$posthoc else rep("", nrow(mx)), mx$cell_id)
+buildAgreementRow <- function(procName, cellSet, posthocLabel) {
+    nAgr  <- sum(agreeProc == procName & agreeCellId %in% cellSet)
+    nDiff <- sum(out$bucket == "DECLARED" & out$procedure == procName & out$cell_id %in% cellSet)
+    nUnex <- sum(out$bucket == "UNEXPLAINED" & out$procedure == procName & out$cell_id %in% cellSet)
+    nOne  <- sum(out$bucket %in% oneSidedDocBuckets & out$procedure == procName & out$cell_id %in% cellSet)
+    nComp <- nAgr + nDiff + nUnex
+    data.frame(procedure = humanProc(procName), post_hoc = posthocLabel,
+               quantities_compared = nComp, agreeing = nAgr, differing_documented = nDiff,
+               one_sided_documented = nOne,
+               percent_agreement_of_compared = if (nComp) sprintf("%.2f%%", 100 * nAgr / nComp) else "n/a")
+}
+ABP <- list()
+for (procName in sort(unique(mx$procedure))) {
+    cellsAll <- mx$cell_id[mx$procedure == procName]
+    ABP[[length(ABP) + 1]] <- buildAgreementRow(procName, cellsAll, "")
+    ph <- mxPosthoc[cellsAll]
+    for (v in sort(unique(ph[nzchar(ph)]))) {
+        ABP[[length(ABP) + 1]] <- buildAgreementRow(procName, cellsAll[ph == v], v)
+    }
+}
+ABP <- do.call(rbind, ABP)
+tsvWrite(ABP, "agreement_by_procedure.tsv")
+
+# --- 10. coverage.md -- derived from the run, no fixture --------------------
+# Procedures and options: matrix.tsv. The R-function column: the distinct
+# `source` values observed on that procedure's R rows -- never a hand-
+# maintained map (Ian's ruling, 28 Aug 2026; docs/QUESTIONS_FOR_FABLE_OPEN_
+# 2026-08-27.md, question 2/3/5). This is the "cheaper middle": the R side
+# names the specific function; the Praat side (task 3) names only the
+# procedure, so it contributes nothing new here beyond what "Praat procedure"
+# already shows -- a known, disclosed coarseness, not an oversight.
+optionCols <- setdiff(names(mx), c("cell_id", "lane", "procedure", "dataset", "col_a", "col_b", "col_c",
+                                    "prereq", "expect", "note"))
+covLines <- c("# What the kit tests, procedure by procedure", "",
+              "One row per plugin procedure: the Praat procedure name, the R functions",
+              "the kit compares it against, the options the live run exercises, and how",
+              "many analyses cover it. Option lists and analysis counts come from",
+              "`matrix.tsv`; the R functions are the distinct `source` values this run's",
+              "`audit/r_results.tsv` recorded for that procedure's cells -- not a",
+              "hand-maintained map, so a procedure that stops calling a function stops",
+              "listing it here on the next run.", "",
+              "| Procedure | Praat procedure | Compared against (R functions) | Options exercised | Analyses |",
+              "|---|---|---|---|---|")
+for (procName in sort(unique(mx$procedure))) {
+    cells <- mx$cell_id[mx$procedure == procName]
+    rFuncs <- sort(unique(R$source[R$cell_id %in% cells]))
+    optParts <- character(0)
+    for (oc in optionCols) {
+        vals <- unique(mx[[oc]][mx$cell_id %in% cells])
+        vals <- vals[nzchar(vals)]
+        if (length(vals) > 1) optParts <- c(optParts, sprintf("%s: %s", oc, paste(sort(vals), collapse = ", ")))
+    }
+    optTxt <- if (length(optParts)) paste(optParts, collapse = "; ") else "—"
+    covLines <- c(covLines, sprintf("| %s | `@%s` | %s | %s | %d |",
+        humanProc(procName), procName,
+        paste(sprintf("`%s`", rFuncs), collapse = ", "), optTxt, length(cells)))
+}
+covLines <- c(covLines, "", sprintf(
+    "Totals: %d procedures, %d analyses. Each analysis contributes every",
+    length(unique(mx$procedure)), nrow(mx)))
+covLines <- c(covLines, sprintf(
+    "quantity both programs report; the live run compared %d quantities.", nCompared))
+writeLines(covLines, file.path(resultsDir, "coverage.md"))
+
+# --- 11. SUMMARY.md ----------------------------------------------------------
+# Prose per family is the reader sentence, verbatim; only the counts and
+# worst-case numbers are filled from the run.
+famCounts <- if (nrow(out)) sort(table(out$clause[!is.na(out$clause)]), decreasing = TRUE) else integer(0)
+sumLines <- c(sprintf("# Validation summary — EML Stats & Graphs against R"), "",
+    sprintf("Run %s. Verdict: **%s**.", format(Sys.Date(), "%d %B %Y"),
+            if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && balances)
+                "green — every quantity accounted for" else "NOT GREEN — see results/reconciliation.tsv"),
+    "",
+    "## What was compared", "",
+    sprintf("The kit ran %d analyses through %d of the plugin's statistical procedures, and ran the same %d analyses in R. It then compared %d numerical results.",
+            nrow(mx), length(unique(mx$procedure)), nrow(mx), nCompared),
+    "",
+    sprintf("**%d of %d agree** to at least nine significant digits (values at machine zero are compared absolutely, below 1e-12). The rest are listed in full in `exceptions.tsv` and `disagreements_all.tsv`, one row each, with the reason beside the numbers. There are no unexplained differences: an accounting identity inside the comparison proves every quantity from both programs landed in exactly one category (the balance invariant in `audit/VERDICT.txt`), and the run fails loudly if one ever doesn't.",
+            nAgree, nCompared),
+    "",
+    "## The documented differences, in plain terms", "")
+for (nm in names(famCounts)) {
+    txt <- READER[[nm]]
+    if (is.null(txt)) next
+    title <- titleCase(gsub("-", " ", nm))
+    sumLines <- c(sumLines, sprintf("**%s (%d).** %s", title, famCounts[[nm]], txt), "")
+}
+sumLines <- c(sumLines, "## Run it yourself", "",
+    "1. Open `RUN_ME_FIRST.praat` in Praat and run it.",
+    "2. Source `run_analyses.R` in R.",
+    "3. Source `compare.R`. It prints this verdict and rewrites this folder.", "",
+    "The full row-by-row working record, including the two raw result tables",
+    "and `VERDICT.txt`, is in `audit/`; every per-analysis report from both",
+    "programs is in `results/praat_reports/` and `results/r_reports/`.")
+writeLines(sumLines, file.path(resultsDir, "SUMMARY.md"))
+
+cat(sprintf("\ncompare.R: generation wrote SUMMARY.md, coverage.md, exceptions.tsv (%d rows),\n", nrow(EXC)))
+cat(sprintf("  agreement_by_procedure.tsv (%d rows), agreements_all.tsv (%d rows),\n", nrow(ABP), nrow(AGR)))
+cat(sprintf("  disagreements_all.tsv (%d rows) to %s\n", nrow(DIS), resultsDir))
+
+# =============================================================================
+# VALIDATE LEG 1 -- READER-SENTENCE MEMBERSHIP (ruled 28 Aug 2026, item 6).
+# Replaces vocabulary matching for reason columns: a reason string in a
+# results/ file is not scanned for suspicious words (that check passed
+# "DOCUMENTED ABSENCE, R-side, under the definition-over-implementation
+# rule..." because it contains none of a short word list -- see
+# docs/QUESTIONS_FOR_FABLE_OPEN_2026-08-27.md, item 1). Instead every reason
+# string is checked, byte for byte, against the sentences READER[] parsed
+# out of results_templates/reader_sentences.md -- the exact set generation
+# draws from. Anything else is red, no matter what words it does or does not
+# contain.
+# =============================================================================
+readerSentenceSet <- unique(unname(unlist(READER)))
+
+# What "the reason string" is, per file kind:
+#   - a .tsv with a "reason" column: every distinct non-empty cell in it
+#   - SUMMARY.md: the prose that follows each "**Title (N).** " family bullet
+extractReasonStrings <- function(path) {
+    if (grepl("\\.tsv$", path)) {
+        d <- utils::read.delim(path, sep = "\t", colClasses = "character",
+                                quote = "", na.strings = NULL, check.names = FALSE)
+        if (!"reason" %in% names(d)) return(character(0))
+        unique(d$reason[nzchar(d$reason)])
+    } else {
+        lines <- readLines(path, warn = FALSE)
+        hit <- grep("^\\*\\*.+\\([0-9]+\\)\\.\\*\\* ", lines, value = TRUE)
+        unique(sub("^\\*\\*.+\\([0-9]+\\)\\.\\*\\* ", "", hit))
+    }
+}
+checkReasonMembership <- function(files) {
+    bad <- list()
+    for (f in files) {
+        if (!file.exists(f)) next
+        for (r in extractReasonStrings(f)) {
+            if (!(r %in% readerSentenceSet))
+                bad[[length(bad) + 1]] <- list(file = basename(f), reason = r)
+        }
+    }
+    bad
+}
+.membershipFiles <- file.path(resultsDir, c("exceptions.tsv", "disagreements_all.tsv", "SUMMARY.md"))
+.membershipBad <- checkReasonMembership(.membershipFiles)
+if (length(.membershipBad)) {
+    cat("\n--- READER-SENTENCE MEMBERSHIP: RED ---\n")
+    for (b in .membershipBad) cat(sprintf("  %s: %s\n", b$file, substr(b$reason, 1, 100)))
+    stop(sprintf(
+        "READER-SENTENCE MEMBERSHIP: %d reason string(s) do not byte-match a sentence in results_templates/reader_sentences.md.",
+        length(.membershipBad)), call. = FALSE)
+} else {
+    cat(sprintf(
+        "\nREADER-SENTENCE MEMBERSHIP: PASS -- every reason string in exceptions.tsv, disagreements_all.tsv\n  and SUMMARY.md byte-matches a sentence in results_templates/reader_sentences.md.\n"))
+}
+
+# =============================================================================
+# VALIDATE LEG 2 -- GENERATE-THEN-VERIFY (ruled 28 Aug 2026, item 8). Re-read
+# every file this run wrote OFF DISK -- not the in-memory `out`/`agreeRows`
+# that built them -- and re-derive SUMMARY.md's filled numbers independently:
+# agree count, family counts, and the three bounded DECLARED worst cases. The
+# presentation can never drift from what was actually measured and written;
+# if it does, this leg is what catches it.
+# =============================================================================
+.reread <- function(name, dir = resultsDir) utils::read.delim(file.path(dir, name), sep = "\t",
+    colClasses = "character", quote = "", na.strings = NULL, check.names = FALSE)
+.diskAgreeN   <- nrow(.reread("agreements_all.tsv"))
+.diskDis      <- .reread("disagreements_all.tsv")
+# "compared" means both sides had a value to compare: agreements, plus the
+# both-sides-present DECLARED rows, numeric ("values differ (documented)")
+# or textual ("wording differs (both refuse)"). disagreements_all.tsv also
+# carries one-sided CONTRACT/DECLARED rows and UNMATCHED/UNEXPLAINED rows
+# that were never a value-vs-value comparison at all -- those must not be
+# added (cross-checked against nCompared itself: 10792 + 34 + 15 = 10841).
+.diskCompared <- .diskAgreeN + sum(.diskDis$kind %in%
+    c("values differ (documented)", "wording differs (both refuse)"))
+.summaryTxt   <- readLines(file.path(resultsDir, "SUMMARY.md"), warn = FALSE)
+.gtv <- character(0)
+
+# 1. agree / compared, re-tallied from the two files actually written.
+if (!any(grepl(sprintf("**%d of %d agree**", .diskAgreeN, .diskCompared), .summaryTxt, fixed = TRUE)))
+    .gtv <- c(.gtv, sprintf(
+        "agree/compared: SUMMARY.md does not state %d of %d, the fresh disk re-count from agreements_all.tsv + disagreements_all.tsv",
+        .diskAgreeN, .diskCompared))
+
+# 2. family counts, re-tallied straight from disagreements_all.tsv's own reason column.
+.diskFamCounts <- table(.diskDis$reason[nzchar(.diskDis$reason)])
+for (nm in names(READER)) {
+    n <- unname(.diskFamCounts[READER[[nm]]])
+    if (is.na(n)) next   # zero disk rows for this clause this run -- nothing to assert
+    title <- titleCase(gsub("-", " ", nm))
+    if (!any(grepl(sprintf("**%s (%d).**", title, n), .summaryTxt, fixed = TRUE)))
+        .gtv <- c(.gtv, sprintf(
+            "family '%s': disk re-count of disagreements_all.tsv gives %d, not stated verbatim in SUMMARY.md", nm, n))
+}
+
+# 3. worst cases: the bounded DECLARED rules, re-derived from reconciliation.tsv
+#    on disk and cross-checked against the HOLDS/EXCEEDED line audit/VERDICT.txt
+#    already printed earlier in this same run.
+.diskRecon  <- .reread("reconciliation.tsv")
+.verdictTxt <- readLines(.verdictPath, warn = FALSE)
+for (rule in DECLARED) {
+    if (is.null(rule$maxrel)) next
+    rr <- .diskRecon[.diskRecon$id == rule$id, ]
+    if (!nrow(rr)) next
+    worst <- suppressWarnings(max(relDiff(rr$praat, rr$r), na.rm = TRUE))
+    if (!is.finite(worst)) next
+    freshVerdict <- if (worst <= rule$maxrel) "HOLDS" else "EXCEEDED"
+    expectLine <- sprintf("%s bound: observed max relative difference %.3g, declared limit %.3g -- %s",
+                          rule$id, worst, rule$maxrel, freshVerdict)
+    if (!any(grepl(expectLine, .verdictTxt, fixed = TRUE)))
+        .gtv <- c(.gtv, sprintf(
+            "%s: disk re-derivation gives \"%s\", not a line audit/VERDICT.txt printed", rule$id, expectLine))
+}
+
+if (length(.gtv)) {
+    cat("\n--- GENERATE-THEN-VERIFY: RED ---\n")
+    cat(paste0("  ", .gtv, collapse = "\n"), "\n")
+    stop(sprintf(
+        "GENERATE-THEN-VERIFY: %d mismatch(es) between the generated files and a fresh re-derivation from disk.",
+        length(.gtv)), call. = FALSE)
+} else {
+    cat(sprintf(
+        "GENERATE-THEN-VERIFY: PASS -- agree count, %d family count(s) and %d bounded worst-case(s) all match a fresh re-read from disk.\n",
+        length(names(READER)), sum(vapply(DECLARED, function(r) !is.null(r$maxrel), logical(1)))))
+}
+
+# =============================================================================
+# VALIDATE LEG 3 -- WORDLIST, SECOND NET (ruled 28 Aug 2026, item 7). Applies
+# only to the prose documents (SUMMARY.md, coverage.md, README.md) -- leg 1
+# above already pins every reason string in the .tsv files and in SUMMARY.md's
+# family bullets to a committed sentence; this net exists for prose that leg
+# 1 does not reach (README.md is hand-written, never built from READER[]) and
+# for anything that could slip into SUMMARY.md/coverage.md outside a family
+# bullet. Committed fixture, widened per Fable's answer to
+# docs/QUESTIONS_FOR_FABLE_OPEN_2026-08-27.md item 1 beyond the two literal
+# words the original list caught.
+#
+# COLLISION (found running this leg against the real files, not decided --
+# see the final report): this fixture, applied literally to all three named
+# files, is permanently red against CURRENT content that task 5 and the
+# kit's own README require to exist. coverage.md's "Praat procedure" column
+# is SPECIFIED (worked example, fable-handoff-2026-08-27/coverage.md) to
+# read `@emlRunDescriptiveAnalysis` etc. -- exactly what /@eml\w+/ exists to
+# catch. And README.md's own job, unlike SUMMARY.md's, is to teach a
+# technical reader what DECLARED/enforcement/D-PTUKEY mean -- it uses this
+# vocabulary in real prose sentences, not as a leaked working-paper voice.
+# Implemented here exactly as specified, un-narrowed, so the collision is
+# visible rather than quietly designed around.
+# =============================================================================
+WORDLIST_LITERALS <- c("bucket", "enforcement", "DECLARED", "CONTRACT",
+                        "vmax", "vmin", "maxrel", "quantities.tsv")
+WORDLIST_PATTERNS <- c("@eml\\w+", "D-[A-Z]")
+
+checkWordlist <- function(path) {
+    if (!file.exists(path)) return(character(0))
+    lines <- readLines(path, warn = FALSE)
+    hits <- character(0)
+    for (w in WORDLIST_LITERALS) {
+        m <- which(grepl(w, lines, fixed = TRUE))
+        if (length(m)) hits <- c(hits, sprintf("%s: literal \"%s\" on line %d", basename(path), w, m[1]))
+    }
+    for (p in WORDLIST_PATTERNS) {
+        m <- which(grepl(p, lines, perl = TRUE))
+        if (length(m)) hits <- c(hits, sprintf("%s: pattern /%s/ on line %d", basename(path), p, m[1]))
+    }
+    hits
+}
+.wordlistFiles <- c(file.path(resultsDir, c("SUMMARY.md", "coverage.md")),
+                     file.path(kitDir, "README.md"))
+.wordlistHits <- unlist(lapply(.wordlistFiles, checkWordlist))
+if (length(.wordlistHits)) {
+    cat("\n--- WORDLIST (prose documents): RED ---\n")
+    cat(paste0("  ", .wordlistHits, collapse = "\n"), "\n")
+    stop(sprintf(
+        "WORDLIST: %d working-paper term(s) found in a reader-facing prose document (SUMMARY.md, coverage.md or README.md).",
+        length(.wordlistHits)), call. = FALSE)
+} else {
+    cat("WORDLIST (prose documents): PASS -- SUMMARY.md, coverage.md and README.md carry none of the working-paper vocabulary.\n")
+}

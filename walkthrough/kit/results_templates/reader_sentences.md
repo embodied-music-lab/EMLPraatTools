@@ -143,3 +143,12 @@ output has no place for it.
 Rows: 2. Dropping one respondent leaves two, and one item then has no
 variance. R's package deletes that item and computes on the rest; the plugin
 keeps it. The plugin matches the textbook formula, which gives -8/3 exactly.
+
+## pairwise-oracle-cross-check
+Rows: ~432. Holm and Benjamini-Hochberg correction define no per-pair
+confidence level, so there is no interval for the plugin or R to print here
+(see pairwise-interval-scope). In its place R checks itself: the adjusted
+p-value from its primary per-pair test is compared against a second,
+independent computation, `stats::pairwise.t.test` with unpooled variances,
+run down its own code path. R verifying R; the plugin has no counterpart,
+and none is owed.

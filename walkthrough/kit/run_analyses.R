@@ -22,7 +22,7 @@
 # (distinguished by the `source` column) is the point of the comparison, not
 # a defect to average away.
 #
-# Emits out/r_results.tsv in the shared long schema (cell_id, quantity,
+# Emits audit/r_results.tsv in the shared long schema (cell_id, quantity,
 # value, source) and one human-readable report per cell into
 # results/r_reports/<cell_id>.txt -- including refused and skipped cells, which
 # get a short report stating why nothing was computed.
@@ -98,7 +98,7 @@ emlThisFile <- function() {
 }
 kitDir    <- dirname(emlThisFile())
 dataDir   <- file.path(kitDir, "data")
-outDir    <- file.path(kitDir, "out")
+outDir    <- file.path(kitDir, "audit")
 resultsDir <- file.path(kitDir, "results")
 reportDir  <- file.path(resultsDir, "r_reports")
 matrixPath <- file.path(kitDir, "matrix.tsv")
@@ -222,10 +222,10 @@ padjust <- function(p, method) stats::p.adjust(p, method = method)
 # produced the disagreement. psych's default is still emitted, under its
 # own names, so the choice is visible rather than buried.
 emitShape <- function(cid, x) {
-    emit(cid, "skewness", psych::skew(x, type = 2), "psych")
-    emit(cid, "kurtosis", psych::kurtosi(x, type = 2), "psych")
-    emit(cid, "skewness_b1", psych::skew(x, type = 3), "psych")
-    emit(cid, "kurtosis_b2", psych::kurtosi(x, type = 3), "psych")
+    emit(cid, "skewness", psych::skew(x, type = 2), "psych::skew")
+    emit(cid, "kurtosis", psych::kurtosi(x, type = 2), "psych::kurtosi")
+    emit(cid, "skewness_b1", psych::skew(x, type = 3), "psych::skew")
+    emit(cid, "kurtosis_b2", psych::kurtosi(x, type = 3), "psych::kurtosi")
 }
 
 # group_order: "discovery" = order of first appearance in the column (R's
@@ -385,16 +385,16 @@ composePMethod <- function(method, reasons) {
     paste0(method, " (", paste(reasons, collapse = ", "), ")")
 }
 refuseCell <- function(cell_id, reason) {
-    emitText(cell_id, "refused", "1")
-    emitText(cell_id, "refuse_reason", reason)
+    emitText(cell_id, "refused", "1", source = "r::refuseCell")
+    emitText(cell_id, "refuse_reason", reason, source = "r::refuseCell")
     # One report per cell, no exceptions: a refused cell still gets its
     # results/r_reports/<cell_id>.txt, stating plainly that nothing was
     # computed and why, rather than leaving that cell with no file at all.
     writeReport(cell_id, c(sprintf("REFUSED: %s", reason)))
 }
 skipCell <- function(cell_id, reason) {
-    emitText(cell_id, "skipped", "1")
-    emitText(cell_id, "skip_reason", reason)
+    emitText(cell_id, "skipped", "1", source = "r::skipCell")
+    emitText(cell_id, "skip_reason", reason, source = "r::skipCell")
 }
 writeReport <- function(cell_id, lines) {
     writeLines(lines, file.path(reportDir, paste0(cell_id, ".txt")))
@@ -453,12 +453,12 @@ process_two_group <- function(row) {
     }
     lines <- c(sprintf("Two-group comparison -- %s by %s", row$col_a, row$col_b),
                sprintf("group_order=%s  group1=%s  group2=%s", row$group_order, g1, g2), "")
-    emit(cid, "n", length(v1) + length(v2), "stats")
-    emit(cid, "n_group1", length(v1), "stats"); emit(cid, "n_group2", length(v2), "stats")
-    emit(cid, "mean_group1", mean(v1), "stats"); emit(cid, "mean_group2", mean(v2), "stats")
-    emit(cid, "sd_group1", sd(v1), "stats"); emit(cid, "sd_group2", sd(v2), "stats")
-    emit(cid, "median_group1", median(v1), "stats"); emit(cid, "median_group2", median(v2), "stats")
-    emit(cid, "mean_diff", mean(v1) - mean(v2), "stats")
+    emit(cid, "n", length(v1) + length(v2), "base::length")
+    emit(cid, "n_group1", length(v1), "base::length"); emit(cid, "n_group2", length(v2), "base::length")
+    emit(cid, "mean_group1", mean(v1), "stats::mean"); emit(cid, "mean_group2", mean(v2), "stats::mean")
+    emit(cid, "sd_group1", sd(v1), "stats::sd"); emit(cid, "sd_group2", sd(v2), "stats::sd")
+    emit(cid, "median_group1", median(v1), "stats::median"); emit(cid, "median_group2", median(v2), "stats::median")
+    emit(cid, "mean_diff", mean(v1) - mean(v2), "stats::mean")
     lines <- c(lines,
                sprintf("%s: n=%d mean=%.4f sd=%.4f median=%.4f", g1, length(v1), mean(v1), sd(v1), median(v1)),
                sprintf("%s: n=%d mean=%.4f sd=%.4f median=%.4f", g2, length(v2), mean(v2), sd(v2), median(v2)), "")
@@ -471,15 +471,15 @@ process_two_group <- function(row) {
 
     if (testType %in% c("parametric", "both")) {
         tt <- t.test(v1, v2, var.equal = equalVar)
-        emit(cid, "t", unname(tt$statistic), "stats")
-        emit(cid, "df", unname(tt$parameter), "stats")
-        emit(cid, "p", tt$p.value, "stats")
+        emit(cid, "t", unname(tt$statistic), "stats::t.test")
+        emit(cid, "df", unname(tt$parameter), "stats::t.test")
+        emit(cid, "p", tt$p.value, "stats::t.test")
         de <- effectsize::cohens_d(v1, v2, pooled_sd = TRUE, verbose = FALSE)
-        emit(cid, "cohens_d", de$Cohens_d, "effectsize")
+        emit(cid, "cohens_d", de$Cohens_d, "effectsize::cohens_d")
         ge <- effectsize::hedges_g(v1, v2, pooled_sd = TRUE, verbose = FALSE)
-        emit(cid, "hedges_g", ge$Hedges_g, "effectsize")
+        emit(cid, "hedges_g", ge$Hedges_g, "effectsize::hedges_g")
         drs <- rstatix::cohens_d(dfp, value ~ group, var.equal = equalVar)
-        emit(cid, "cohens_d", drs$effsize, "rstatix")
+        emit(cid, "cohens_d", drs$effsize, "rstatix::cohens_d")
         lines <- c(lines,
                    sprintf("%s t-test: t=%.4f df=%.2f p=%.4g",
                            if (equalVar) "Student" else "Welch", tt$statistic, tt$parameter, tt$p.value),
@@ -491,10 +491,10 @@ process_two_group <- function(row) {
         wt <- suppressWarnings(wilcox.test(v1, v2))
         u1 <- unname(wt$statistic); u2 <- length(v1) * length(v2) - u1
         pName <- if (testType == "both" && ranPar) "mw_p" else "p"
-        emit(cid, "u1", u1, "stats"); emit(cid, "u2", u2, "stats")
-        emit(cid, pName, wt$p.value, "stats")
+        emit(cid, "u1", u1, "stats::wilcox.test"); emit(cid, "u2", u2, "stats::wilcox.test")
+        emit(cid, pName, wt$p.value, "stats::wilcox.test")
         rbe <- effectsize::rank_biserial(v1, v2, verbose = FALSE)
-        emit(cid, "rank_biserial", rbe$r_rank_biserial, "effectsize")
+        emit(cid, "rank_biserial", rbe$r_rank_biserial, "effectsize::rank_biserial")
         # rstatix::wilcox_effsize DOES NOT COMPUTE THE RANK-BISERIAL
         # CORRELATION. It computes r = Z / sqrt(N), Rosenthal's r for a
         # Wilcoxon/Mann-Whitney test: a different published quantity, on a
@@ -507,7 +507,7 @@ process_two_group <- function(row) {
         # It is emitted here under its own name; effectsize::rank_biserial
         # is the rank-biserial correlation and matches the plugin exactly.
         wers <- rstatix::wilcox_effsize(dfp, value ~ group)
-        emit(cid, "wilcox_r", wers$effsize, "rstatix")
+        emit(cid, "wilcox_r", wers$effsize, "rstatix::wilcox_effsize")
         # p_method: R's wilcox.test.default's own rule -- exact iff both
         # groups have n < 50 AND no ties in the combined sample -- derived
         # independently from the raw vectors, not parsed off wt$method.
@@ -516,7 +516,8 @@ process_two_group <- function(row) {
         mwExact <- !mwHasTies && !mwLarge
         mwMethod <- if (mwExact) "exact" else "normal approximation"
         emitText(cid, "p_method",
-                 composePMethod(mwMethod, c(if (mwHasTies) "ties present", if (mwLarge) "large sample")))
+                 composePMethod(mwMethod, c(if (mwHasTies) "ties present", if (mwLarge) "large sample")),
+                 source = "r::composePMethod")
         lines <- c(lines,
                    sprintf("Mann-Whitney: U1=%.1f U2=%.1f p=%.4g", u1, u2, wt$p.value),
                    sprintf("Rank-biserial r (effectsize)=%.4f | wilcox_r = Z/sqrt(N), unsigned (rstatix)=%.4f",
@@ -560,16 +561,16 @@ process_anova <- function(row) {
     }
     msB <- s[["Mean Sq"]][1]; msW <- s[["Mean Sq"]][2]   # from aov's own table
     Fval <- unname(s[["F value"]][1]); pval <- unname(s[["Pr(>F)"]][1])
-    emit(cid, "f", Fval, "stats"); emit(cid, "df_between", dfB, "stats"); emit(cid, "df_within", dfW, "stats")
-    emit(cid, "p", pval, "stats")
-    emit(cid, "ss_between", ssB, "stats"); emit(cid, "ss_within", ssW, "stats"); emit(cid, "ss_total", ssB + ssW, "stats")
-    emit(cid, "ms_between", msB, "stats"); emit(cid, "ms_within", msW, "stats")
-    emit(cid, "n", length(x), "stats")
+    emit(cid, "f", Fval, "stats::aov"); emit(cid, "df_between", dfB, "stats::aov"); emit(cid, "df_within", dfW, "stats::aov")
+    emit(cid, "p", pval, "stats::aov")
+    emit(cid, "ss_between", ssB, "stats::aov"); emit(cid, "ss_within", ssW, "stats::aov"); emit(cid, "ss_total", ssB + ssW, "stats::aov")
+    emit(cid, "ms_between", msB, "stats::aov"); emit(cid, "ms_within", msW, "stats::aov")
+    emit(cid, "n", length(x), "base::length")
 
     eta_rs <- rstatix::eta_squared(fit)
-    emit(cid, "eta_squared", unname(eta_rs[1]), "rstatix")
+    emit(cid, "eta_squared", unname(eta_rs[1]), "rstatix::eta_squared")
     eta_es <- effectsize::eta_squared(fit, partial = FALSE, ci = NULL, verbose = FALSE)
-    emit(cid, "eta_squared", eta_es$Eta2[1], "effectsize")
+    emit(cid, "eta_squared", eta_es$Eta2[1], "effectsize::eta_squared")
 
     lines <- c(sprintf("One-way ANOVA -- %s by %s (group_order=%s)", row$col_a, row$col_b, row$group_order),
                sprintf("Levels (in order): %s", paste(levs, collapse = ", ")), "",
@@ -593,8 +594,8 @@ process_anova <- function(row) {
         # effect size under a variance assumption the omnibus test does not
         # make is incoherent regardless of what the other runner prints.
         drs <- rstatix::cohens_d(dfp, value ~ group, var.equal = TRUE)
-        emit(cid, paste0("posthoc_", pl, "_cohens_d"), de$Cohens_d, "effectsize")
-        emit(cid, paste0("posthoc_", pl, "_cohens_d"), drs$effsize, "rstatix")
+        emit(cid, paste0("posthoc_", pl, "_cohens_d"), de$Cohens_d, "effectsize::cohens_d")
+        emit(cid, paste0("posthoc_", pl, "_cohens_d"), drs$effsize, "rstatix::cohens_d")
         lines <- c(lines, sprintf("  %s: effectsize=%.4f rstatix=%.4f", pl, de$Cohens_d, drs$effsize))
     }
     lines <- c(lines, "")
@@ -611,10 +612,10 @@ process_anova <- function(row) {
             diffRaw <- tab[rn, "diff"]; loRaw <- tab[rn, "lwr"]; hiRaw <- tab[rn, "upr"]
             if (iIdx < jIdx) { diffV <- -diffRaw; loV <- -hiRaw; hiV <- -loRaw
             } else { diffV <- diffRaw; loV <- loRaw; hiV <- hiRaw }
-            emit(cid, paste0("posthoc_", pl, "_diff"), diffV, "stats")
-            emit(cid, paste0("posthoc_", pl, "_ci_low"), loV, "stats")
-            emit(cid, paste0("posthoc_", pl, "_ci_high"), hiV, "stats")
-            emit(cid, paste0("posthoc_", pl, "_padj"), tab[rn, "p adj"], "stats")
+            emit(cid, paste0("posthoc_", pl, "_diff"), diffV, "stats::TukeyHSD")
+            emit(cid, paste0("posthoc_", pl, "_ci_low"), loV, "stats::TukeyHSD")
+            emit(cid, paste0("posthoc_", pl, "_ci_high"), hiV, "stats::TukeyHSD")
+            emit(cid, paste0("posthoc_", pl, "_padj"), tab[rn, "p adj"], "stats::TukeyHSD")
             lines <- c(lines, sprintf("Tukey %s: diff=%.4f [%.4f, %.4f] p.adj=%.4g", pl, diffV, loV, hiV, tab[rn, "p adj"]))
         }
     }
@@ -651,16 +652,16 @@ process_kw <- function(row) {
     if (length(levs) < 2) { refuseCell(cid, sprintf("Group column '%s' has fewer than 2 groups.", row$col_b)); return(invisible()) }
     gf <- factor(g, levels = levs)
     kt <- kruskal.test(x, gf)
-    emit(cid, "h", unname(kt$statistic), "stats"); emit(cid, "df", unname(kt$parameter), "stats")
-    emit(cid, "p", kt$p.value, "stats"); emit(cid, "n", length(x), "stats")
+    emit(cid, "h", unname(kt$statistic), "stats::kruskal.test"); emit(cid, "df", unname(kt$parameter), "stats::kruskal.test")
+    emit(cid, "p", kt$p.value, "stats::kruskal.test"); emit(cid, "n", length(x), "base::length")
 
     dfp <- data.frame(value = x, group = gf)
     ke_rs <- rstatix::kruskal_effsize(dfp, value ~ group)
-    emit(cid, "eta_squared", ke_rs$effsize, "rstatix")
+    emit(cid, "eta_squared", ke_rs$effsize, "rstatix::kruskal_effsize")
     ree <- effectsize::rank_eta_squared(x, gf, ci = NULL, verbose = FALSE)
-    emit(cid, "eta_squared", ree$rank_eta_squared, "effectsize")
+    emit(cid, "eta_squared", ree$rank_eta_squared, "effectsize::rank_eta_squared")
     ep2 <- effectsize::rank_epsilon_squared(x, gf, ci = NULL, verbose = FALSE)
-    emit(cid, "epsilon_squared", ep2$rank_epsilon_squared, "effectsize")
+    emit(cid, "epsilon_squared", ep2$rank_epsilon_squared, "effectsize::rank_epsilon_squared")
 
     lines <- c(sprintf("Kruskal-Wallis -- %s by %s (group_order=%s)", row$col_a, row$col_b, row$group_order),
                sprintf("Levels: %s", paste(levs, collapse = ", ")), "",
@@ -692,16 +693,16 @@ process_kw <- function(row) {
             pl <- pairLabel(first, second)
             zRaw <- dn$statistic[k]
             zOriented <- if (i1 < i2) -zRaw else zRaw
-            emit(cid, paste0("posthoc_", pl, "_z"), zOriented, "rstatix")
-            emit(cid, paste0("posthoc_", pl, "_p"), pRaw[k], "stats")
-            emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[k], "stats")
+            emit(cid, paste0("posthoc_", pl, "_z"), zOriented, "rstatix::dunn_test")
+            emit(cid, paste0("posthoc_", pl, "_p"), pRaw[k], "stats::pnorm")
+            emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[k], "stats::p.adjust")
             lines <- c(lines, sprintf("  %s: z=%.4f p=%.4g p.adj=%.4g", pl, zOriented, pRaw[k], pAdj[k]))
 
             a <- x[g == first]; b <- x[g == second]
             rbe <- effectsize::rank_biserial(a, b, verbose = FALSE)
             dfp2 <- data.frame(value = c(a, b), group = factor(c(rep(first, length(a)), rep(second, length(b))), levels = c(first, second)))
             wers <- rstatix::wilcox_effsize(dfp2, value ~ group)
-            emit(cid, paste0("posthoc_", pl, "_rank_biserial"), rbe$r_rank_biserial, "effectsize")
+            emit(cid, paste0("posthoc_", pl, "_rank_biserial"), rbe$r_rank_biserial, "effectsize::rank_biserial")
             lines <- c(lines, sprintf("    rank-biserial r (effectsize)=%.4f ; wilcox_r Z/sqrt(N) (rstatix)=%.4f",
                                        rbe$r_rank_biserial, wers$effsize))
         }
@@ -714,15 +715,15 @@ process_kw <- function(row) {
 #   test: welch/student -> rstatix::t_test (var.equal = student), the
 #         package's own all-pairs runner, detailed=TRUE for t/df/CI.
 #         wilcoxon -> rstatix::wilcox_test, same shape.
-#         scheffe -> SKIPPED: no installed package (rstatix, effectsize,
-#         car, afex, multcomp, nortest, coin, psych, base stats) implements
-#         Scheffe's test. multcomp::glht's `adjusted()` p-value types do not
-#         include a Scheffe option. Hand-deriving the Scheffe F would be the
-#         hand-rolled formula the brief rules out, so this is reported as a
-#         genuine capability gap (quantity "skipped"/"skip_reason"), never
-#         filled in.
-#   adjust: bonferroni/holm/bh -> p.adjust.method; "none" only occurs paired
-#           with scheffe, which is skipped before any adjustment is applied.
+#         scheffe -> evaluated from the published definition, on Ian's
+#         ruling. No installed package implements it; DescTools and
+#         agricolae do, on CRAN, and neither is reachable from this build.
+#         qf and pf do the statistical work and the rest is the definition,
+#         so this is not a reimplementation of a procedure. The branch below
+#         carries the derivation. This comment said SKIPPED until 27 August
+#         2026, when the branch changed and the comment did not.
+#   adjust: bonferroni/holm/bh -> p.adjust.method; "none" occurs with
+#           scheffe, whose multiplier is itself the simultaneity correction.
 # rstatix's own group1/group2 label order already matches our group_order
 # (verified empirically: it enumerates all pairs via the factor's level
 # order), so no reorientation is needed for t_test/wilcox_test's estimate.
@@ -739,8 +740,8 @@ process_pairwise <- function(row) {
     test <- row$test
     lines <- c(sprintf("Pairwise (%s, adjust=%s) -- %s by %s (group_order=%s)",
                         test, row$adjust, row$col_a, row$col_b, row$group_order), "")
-    emit(cid, "n", length(x), "stats")
-    emit(cid, "k", length(levs), "stats")
+    emit(cid, "n", length(x), "base::length")
+    emit(cid, "k", length(levs), "base::length")
 
     if (test %in% c("welch", "student")) {
         adj <- .adjMap[[row$adjust]]
@@ -749,10 +750,16 @@ process_pairwise <- function(row) {
         # (docs/WORK_ORDER_INTERVALS_2026-08-26.md item 2). m is THIS row's
         # own pair count; rstatix::t_test's conf.level argument feeds the
         # same interval @emlReportPairwiseComparison computes on its
-        # Bonferroni branch, so the two sides agree exactly there. On
-        # holm/bh -- which define no per-pair level -- this is 1 - alpha,
-        # R's own plain default, reported honestly as a real, non-
-        # simultaneous bound under the same name (quantities.tsv's ruling).
+        # Bonferroni branch, so the two sides agree exactly there.
+        #
+        # INTERVAL LOGGED ONLY WHERE THE CONTRACT COMPARES IT (28 Aug 2026).
+        # Holm and BH define no per-pair simultaneous level, so an interval
+        # computed at their plain 1 - alpha was never a bound either program
+        # states an outcome in on those rows -- it used to be emitted anyway
+        # (quantities.tsv's own retired "R side alone" clause for it), which
+        # is noise this run stops logging. Bonferroni is unchanged: its
+        # interval is exactly the one the plugin now also fills, and the
+        # comparison stays live.
         nPairsHere <- length(levs) * (length(levs) - 1) / 2
         level <- pairLevel(row$adjust, nPairsHere)
         res <- rstatix::t_test(dfp, value ~ group, p.adjust.method = adj,
@@ -763,26 +770,45 @@ process_pairwise <- function(row) {
             a <- x[g == res$group1[k]]; b <- x[g == res$group2[k]]
             stats::t.test(a, b, var.equal = eqv)$p.value }, numeric(1))
         pAdj <- padjust(pRaw, adj)
+        # CROSS-CHECK LEG (28 Aug 2026): stats::pairwise.t.test(pool.sd =
+        # FALSE) runs its own per-pair unpooled-variance t-tests and applies
+        # the same family-wise correction internally -- a second, independent
+        # R code path to the t.test()+p.adjust() combination above, checked
+        # against the SAME adjusted p this door already emits. Read out by
+        # group name, not position: pairwise.t.test's own row/column order
+        # need not match levs, and it fills only the lower triangle.
+        pttMat <- stats::pairwise.t.test(x, gf, p.adjust.method = adj, pool.sd = FALSE)$p.value
+        pttLookup <- function(g1, g2) {
+            if (g1 %in% rownames(pttMat) && g2 %in% colnames(pttMat)) pttMat[g1, g2] else pttMat[g2, g1]
+        }
+        onBonf <- identical(row$adjust, "bonferroni")
         for (k in seq_len(nrow(res))) {
             pl <- pairLabel(res$group1[k], res$group2[k])
             a <- x[g == res$group1[k]]; b <- x[g == res$group2[k]]
-            emit(cid, paste0("posthoc_", pl, "_diff"), res$estimate[k], "rstatix")
-            emit(cid, paste0("posthoc_", pl, "_ci_low"), res$conf.low[k], "rstatix")
-            emit(cid, paste0("posthoc_", pl, "_ci_high"), res$conf.high[k], "rstatix")
-            emit(cid, paste0("posthoc_", pl, "_p"), pRaw[k], "stats")
-            emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[k], "stats")
-            emit(cid, paste0("posthoc_", pl, "_df"), res$df[k], "rstatix")
-            emit(cid, paste0("posthoc_", pl, "_t"), res$statistic[k], "rstatix")
+            emit(cid, paste0("posthoc_", pl, "_diff"), res$estimate[k], "rstatix::t_test")
+            if (onBonf) {
+                emit(cid, paste0("posthoc_", pl, "_ci_low"), res$conf.low[k], "rstatix::t_test")
+                emit(cid, paste0("posthoc_", pl, "_ci_high"), res$conf.high[k], "rstatix::t_test")
+            }
+            emit(cid, paste0("posthoc_", pl, "_p"), pRaw[k], "stats::t.test")
+            emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[k], "stats::p.adjust")
+            pttVal <- pttLookup(res$group1[k], res$group2[k])
+            emit(cid, paste0("posthoc_", pl, "_padj_ptt"), pttVal, "stats::pairwise.t.test")
+            emit(cid, paste0("posthoc_", pl, "_df"), res$df[k], "rstatix::t_test")
+            emit(cid, paste0("posthoc_", pl, "_t"), res$statistic[k], "rstatix::t_test")
             de <- effectsize::cohens_d(a, b, pooled_sd = TRUE, verbose = FALSE)
-            emit(cid, paste0("posthoc_", pl, "_cohens_d"), de$Cohens_d, "effectsize")
-            lines <- c(lines, sprintf("  %s: diff=%.4f [%.4f,%.4f] (level=%.4f) t=%.4f df=%.2f p=%.4g p.adj=%.4g d=%.4f",
-                                       pl, res$estimate[k], res$conf.low[k], res$conf.high[k], level,
-                                       res$statistic[k], res$df[k], pRaw[k], pAdj[k], de$Cohens_d))
+            emit(cid, paste0("posthoc_", pl, "_cohens_d"), de$Cohens_d, "effectsize::cohens_d")
+            lines <- c(lines, sprintf("  %s: diff=%.4f%s t=%.4f df=%.2f p=%.4g p.adj=%.4g (pairwise.t.test p.adj=%.4g) d=%.4f",
+                                       pl, res$estimate[k],
+                                       if (onBonf) sprintf(" [%.4f,%.4f] (level=%.4f)", res$conf.low[k], res$conf.high[k], level) else "",
+                                       res$statistic[k], res$df[k], pRaw[k], pAdj[k], pttVal, de$Cohens_d))
         }
     } else if (test == "wilcoxon") {
         adj <- .adjMap[[row$adjust]]
         # ORACLE: wilcox.test(conf.int = TRUE, conf.level = 1 - alpha/m).
-        # Same level rule as the t branch above.
+        # Same level rule as the t branch above, and the same 28 Aug 2026
+        # narrowing: the interval is logged only under Bonferroni, where the
+        # contract compares it.
         nPairsHere <- length(levs) * (length(levs) - 1) / 2
         level <- pairLevel(row$adjust, nPairsHere)
         res <- rstatix::wilcox_test(dfp, value ~ group, p.adjust.method = adj,
@@ -791,6 +817,7 @@ process_pairwise <- function(row) {
             a <- x[g == res$group1[k]]; b <- x[g == res$group2[k]]
             suppressWarnings(stats::wilcox.test(a, b))$p.value }, numeric(1))
         pAdj <- padjust(pRaw, adj)
+        onBonf <- identical(row$adjust, "bonferroni")
         for (k in seq_len(nrow(res))) {
             pl <- pairLabel(res$group1[k], res$group2[k])
             a <- x[g == res$group1[k]]; b <- x[g == res$group2[k]]
@@ -807,17 +834,20 @@ process_pairwise <- function(row) {
             # under its own name, so the gap stays visible rather than
             # silently substituted.
             hlEst <- stats::median(outer(a, b, "-"))
-            emit(cid, paste0("posthoc_", pl, "_diff"), hlEst, "stats")
-            emit(cid, paste0("posthoc_", pl, "_diff_wilcoxest"), res$estimate[k], "rstatix")
-            emit(cid, paste0("posthoc_", pl, "_ci_low"), res$conf.low[k], "rstatix")
-            emit(cid, paste0("posthoc_", pl, "_ci_high"), res$conf.high[k], "rstatix")
-            emit(cid, paste0("posthoc_", pl, "_p"), pRaw[k], "stats")
-            emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[k], "stats")
-            emit(cid, paste0("posthoc_", pl, "_u"), unname(suppressWarnings(stats::wilcox.test(a, b))$statistic), "stats")
+            emit(cid, paste0("posthoc_", pl, "_diff"), hlEst, "stats::median")
+            emit(cid, paste0("posthoc_", pl, "_diff_wilcoxest"), res$estimate[k], "rstatix::wilcox_test")
+            if (onBonf) {
+                emit(cid, paste0("posthoc_", pl, "_ci_low"), res$conf.low[k], "rstatix::wilcox_test")
+                emit(cid, paste0("posthoc_", pl, "_ci_high"), res$conf.high[k], "rstatix::wilcox_test")
+            }
+            emit(cid, paste0("posthoc_", pl, "_p"), pRaw[k], "stats::wilcox.test")
+            emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[k], "stats::p.adjust")
+            emit(cid, paste0("posthoc_", pl, "_u"), unname(suppressWarnings(stats::wilcox.test(a, b))$statistic), "stats::wilcox.test")
             rbe <- effectsize::rank_biserial(a, b, verbose = FALSE)
-            emit(cid, paste0("posthoc_", pl, "_rank_biserial"), rbe$r_rank_biserial, "effectsize")
-            lines <- c(lines, sprintf("  %s: hl-diff=%.4f (wilcox.test est=%.4f) [%.4f,%.4f] (level=%.4f) U1=%.1f p=%.4g p.adj=%.4g rb=%.4f",
-                                       pl, hlEst, res$estimate[k], res$conf.low[k], res$conf.high[k], level,
+            emit(cid, paste0("posthoc_", pl, "_rank_biserial"), rbe$r_rank_biserial, "effectsize::rank_biserial")
+            lines <- c(lines, sprintf("  %s: hl-diff=%.4f (wilcox.test est=%.4f)%s U1=%.1f p=%.4g p.adj=%.4g rb=%.4f",
+                                       pl, hlEst, res$estimate[k],
+                                       if (onBonf) sprintf(" [%.4f,%.4f] (level=%.4f)", res$conf.low[k], res$conf.high[k], level) else "",
                                        res$statistic[k], pRaw[k], pAdj[k], rbe$r_rank_biserial))
         }
     } else if (test == "scheffe") {
@@ -850,12 +880,12 @@ process_pairwise <- function(row) {
             se   <- sqrt(mse * (1 / ns[i] + 1 / ns[j]))
             fSt  <- (diff / se)^2 / (kG - 1)
             half <- sqrt((kG - 1) * fCrit) * se
-            emit(cid, paste0("posthoc_", pl, "_diff"), diff, "stats")
-            emit(cid, paste0("posthoc_", pl, "_f"), fSt, "stats")
+            emit(cid, paste0("posthoc_", pl, "_diff"), diff, "stats::mean")
+            emit(cid, paste0("posthoc_", pl, "_f"), fSt, "stats::pf")
             emit(cid, paste0("posthoc_", pl, "_padj"),
-                 stats::pf(fSt, kG - 1, dfW, lower.tail = FALSE), "stats")
-            emit(cid, paste0("posthoc_", pl, "_ci_low"), diff - half, "stats")
-            emit(cid, paste0("posthoc_", pl, "_ci_high"), diff + half, "stats")
+                 stats::pf(fSt, kG - 1, dfW, lower.tail = FALSE), "stats::pf")
+            emit(cid, paste0("posthoc_", pl, "_ci_low"), diff - half, "stats::qf")
+            emit(cid, paste0("posthoc_", pl, "_ci_high"), diff + half, "stats::qf")
             lines <- c(lines, sprintf("  %s: diff=%.4f F=%.4f [%.4f,%.4f] (alpha=%.4f)",
                                       pl, diff, fSt, diff - half, diff + half, alpha))
         }
@@ -905,29 +935,29 @@ process_twoway <- function(row) {
     # schema uses for a post-hoc pair. factor1_name/factor2_name are emitted
     # alongside so the keys stay self-describing on their own.
     f1 <- slug(row$col_b); f2 <- slug(row$col_c)
-    emitText(cid, "factor1_name", f1, "car"); emitText(cid, "factor2_name", f2, "car")
+    emitText(cid, "factor1_name", f1, "r::slug"); emitText(cid, "factor2_name", f2, "r::slug")
     for (tm in terms) {
         tag <- if (tm == "a") f1 else if (tm == "b") f2 else paste0(f1, "__", f2)
         ss <- at[tm, "Sum Sq"]; dfT <- at[tm, "Df"]; Fv <- at[tm, "F value"]; pv <- at[tm, "Pr(>F)"]
-        emit(cid, paste0(tag, "_ss"), ss, "car")
-        emit(cid, paste0(tag, "_df"), dfT, "car")
-        emit(cid, paste0(tag, "_f"), Fv, "car")
-        emit(cid, paste0(tag, "_p"), pv, "car")
+        emit(cid, paste0(tag, "_ss"), ss, "car::Anova")
+        emit(cid, paste0(tag, "_df"), dfT, "car::Anova")
+        emit(cid, paste0(tag, "_f"), Fv, "car::Anova")
+        emit(cid, paste0(tag, "_p"), pv, "car::Anova")
         # A mean square is SS/df by definition -- an identity between two
         # quantities already reported here, not a statistic re-derived.
-        emit(cid, paste0(tag, "_ms"), ss / dfT, "car")
+        emit(cid, paste0(tag, "_ms"), ss / dfT, "car::Anova")
         peta <- es$Eta2_partial[es$Parameter == tm]
         eta <- esFull$Eta2[esFull$Parameter == tm]
-        emit(cid, paste0(tag, "_partial_eta_squared"), peta, "effectsize")
-        emit(cid, paste0(tag, "_eta_squared"), eta, "effectsize")
+        emit(cid, paste0(tag, "_partial_eta_squared"), peta, "effectsize::eta_squared")
+        emit(cid, paste0(tag, "_eta_squared"), eta, "effectsize::eta_squared")
         lines <- c(lines, sprintf("%s (%s): F(%.0f,%.0f)=%.4f p=%.4g partial_eta2=%.4f eta2=%.4f",
                                    tag, tm, dfT, dfRes, Fv, pv, peta, eta))
     }
-    emit(cid, "ss_within", ssRes, "car"); emit(cid, "df_within", dfRes, "car")
-    emit(cid, "ms_within", ssRes / dfRes, "car")
-    emit(cid, "ss_total", sum(at[["Sum Sq"]]), "car")
-    emit(cid, "df_total", sum(at[["Df"]]), "car")
-    emit(cid, "n", length(x), "stats")
+    emit(cid, "ss_within", ssRes, "car::Anova"); emit(cid, "df_within", dfRes, "car::Anova")
+    emit(cid, "ms_within", ssRes / dfRes, "car::Anova")
+    emit(cid, "ss_total", sum(at[["Sum Sq"]]), "car::Anova")
+    emit(cid, "df_total", sum(at[["Df"]]), "car::Anova")
+    emit(cid, "n", length(x), "base::length")
     writeReport(cid, lines)
 }
 
@@ -975,23 +1005,23 @@ process_paired <- function(row) {
             # that the arm was omitted, and the results table has to say the
             # same thing rather than going quiet, or a refused arm reads as an
             # arm nobody asked for.
-            emit(cid, "t", NA_real_, "stats")
-            emit(cid, "df", NA_real_, "stats")
-            emit(cid, "cohens_dz", NA_real_, "effectsize")
+            emit(cid, "t", NA_real_, "stats::t.test")
+            emit(cid, "df", NA_real_, "stats::t.test")
+            emit(cid, "cohens_dz", NA_real_, "effectsize::cohens_d")
             lines <- c(lines, "Paired t-test: all differences identical (zero variance) -- omitted.")
         } else {
             tt <- t.test(a, b, paired = TRUE)
             pName <- if (testType == "both") "p" else "p"
-            emit(cid, "t", unname(tt$statistic), "stats"); emit(cid, "df", unname(tt$parameter), "stats")
-            emit(cid, pName, tt$p.value, "stats")
+            emit(cid, "t", unname(tt$statistic), "stats::t.test"); emit(cid, "df", unname(tt$parameter), "stats::t.test")
+            emit(cid, pName, tt$p.value, "stats::t.test")
             # The paired Cohen's d IS d_z (the difference scores' own mean
             # over their own SD). Naming it "cohens_d" invites it to be read
             # as the between-groups d, which it is not.
             de <- effectsize::cohens_d(a, b, paired = TRUE, verbose = FALSE)
-            emit(cid, "cohens_dz", de$Cohens_d, "effectsize")
+            emit(cid, "cohens_dz", de$Cohens_d, "effectsize::cohens_d")
             dfp <- data.frame(val = c(a, b), cond = factor(rep(c("first", "second"), each = n), levels = c("first", "second")))
             drs <- rstatix::cohens_d(dfp, val ~ cond, paired = TRUE)
-            emit(cid, "cohens_dz", drs$effsize, "rstatix")
+            emit(cid, "cohens_dz", drs$effsize, "rstatix::cohens_d")
             lines <- c(lines, sprintf("Paired t-test: t=%.4f df=%d p=%.4g, Cohen's d_z: effectsize=%.4f rstatix=%.4f",
                                        tt$statistic, tt$parameter, tt$p.value, de$Cohens_d, drs$effsize))
             ranPar <- TRUE
@@ -1007,14 +1037,14 @@ process_paired <- function(row) {
             # Wilcoxon p is the only p this cell has, so it is "p" -- naming
             # it "wilcoxon_p" would leave the cell with no headline p at all.
             pName <- if (testType == "both" && ranPar) "wilcoxon_p" else "p"
-            emit(cid, "w_statistic", unname(wt$statistic), "stats")
-            emit(cid, pName, wt$p.value, "stats")
+            emit(cid, "w_statistic", unname(wt$statistic), "stats::wilcox.test")
+            emit(cid, pName, wt$p.value, "stats::wilcox.test")
             # On test=both the contract owes a wilcoxon_p. Where the
             # parametric arm refused there is no second arm to hold one --
             # this cell's only p is the Wilcoxon p and it is reported under
             # "p" above -- so the second-arm slot is reported as empty rather
             # than left out of the table.
-            if (testType == "both" && !ranPar) emit(cid, "wilcoxon_p", NA_real_, "stats")
+            if (testType == "both" && !ranPar) emit(cid, "wilcoxon_p", NA_real_, "stats::wilcox.test")
             # UPSTREAM BUG, WORKED AROUND AND REPORTED: effectsize 0.8.6
             # returns an UNSIGNED paired rank-biserial when every paired
             # difference has the same magnitude -- +1 whether the first
@@ -1030,10 +1060,10 @@ process_paired <- function(row) {
             dnz <- (a - b)[a != b]
             if (length(dnz) > 0 && all(dnz < 0) && rbVal > 0) rbVal <- -rbVal
             if (length(dnz) > 0 && all(dnz > 0) && rbVal < 0) rbVal <- -rbVal
-            emit(cid, "rank_biserial", rbVal, "effectsize")
+            emit(cid, "rank_biserial", rbVal, "effectsize::rank_biserial")
             dfp <- data.frame(val = c(a, b), cond = factor(rep(c("first", "second"), each = n), levels = c("first", "second")))
             wers <- rstatix::wilcox_effsize(dfp, val ~ cond, paired = TRUE)
-            emit(cid, "wilcox_r", wers$effsize, "rstatix")   # Z/sqrt(N), not rank-biserial
+            emit(cid, "wilcox_r", wers$effsize, "rstatix::wilcox_effsize")   # Z/sqrt(N), not rank-biserial
             # p_method: R's wilcox.test.default's own rule -- exact iff
             # n_nonzero < 50 AND no ties among the nonzero |differences|
             # AND no zero differences -- derived independently from d_ab,
@@ -1047,7 +1077,8 @@ process_paired <- function(row) {
             emitText(cid, "p_method",
                      composePMethod(wsrMethod, c(if (wsrHasTies) "ties present",
                                                   if (wsrLarge) "large sample",
-                                                  if (wsrNZero > 0) "zero differences")))
+                                                  if (wsrNZero > 0) "zero differences")),
+                     source = "r::composePMethod")
             lines <- c(lines, sprintf("Wilcoxon signed-rank: W=%.1f p=%.4g, rank-biserial r (effectsize)=%.4f, wilcox_r (rstatix)=%.4f",
                                        wt$statistic, wt$p.value, rbVal, wers$effsize))
             ranNon <- TRUE
@@ -1058,7 +1089,12 @@ process_paired <- function(row) {
             "No paired test could be run: n=%d complete pairs and every pair has the same difference (zero variance in the differences).", n))
         return(invisible())
     }
-    for (h in deferred) emit(cid, h$q, h$v, "stats")
+    deferredSrc <- c(n = "base::sum", n_excluded = "base::sum",
+                     mean_group1 = "stats::mean", mean_group2 = "stats::mean",
+                     sd_group1 = "stats::sd", sd_group2 = "stats::sd",
+                     median_group1 = "stats::median", median_group2 = "stats::median",
+                     mean_diff = "stats::mean")
+    for (h in deferred) emit(cid, h$q, h$v, unname(deferredSrc[h$q]))
     writeReport(cid, lines)
 }
 
@@ -1079,29 +1115,29 @@ process_correlation <- function(row) {
     if (sd(xx) == 0 || sd(yy) == 0) {
         refuseCell(cid, "Zero variance in one column; correlation is undefined."); return(invisible())
     }
-    emit(cid, "n", n, "stats")
+    emit(cid, "n", n, "base::sum")
     lines <- c(sprintf("Correlation -- %s with %s (n=%d)", row$col_a, row$col_b, n), "")
     testType <- row$test
     if (testType %in% c("pearson", "both")) {
         pe <- cor.test(xx, yy, method = "pearson")
-        emit(cid, "r", unname(pe$estimate), "stats")
-        emit(cid, "t", unname(pe$statistic), "stats")
-        emit(cid, "df", unname(pe$parameter), "stats")
-        emit(cid, "p", pe$p.value, "stats")
+        emit(cid, "r", unname(pe$estimate), "stats::cor.test")
+        emit(cid, "t", unname(pe$statistic), "stats::cor.test")
+        emit(cid, "df", unname(pe$parameter), "stats::cor.test")
+        emit(cid, "p", pe$p.value, "stats::cor.test")
         # p_method: a LITERAL, not a composition -- Pearson's p never
         # branches between an exact and an approximate null. Always plain
         # "p_method" (never renamed under test=both -- no second Pearson
         # arm to collide with; Spearman's own row below is
         # spearman_p_method there instead).
-        emitText(cid, "p_method", "t distribution")
+        emitText(cid, "p_method", "t distribution", source = "stats::cor.test")
         lines <- c(lines, sprintf("Pearson: r=%.4f t(%d)=%.4f p=%.4g", pe$estimate, pe$parameter, pe$statistic, pe$p.value))
     }
     if (testType %in% c("spearman", "both")) {
         sp <- suppressWarnings(cor.test(xx, yy, method = "spearman"))
-        emit(cid, "rho", unname(sp$estimate), "stats")
-        emit(cid, "spearman_s", unname(sp$statistic), "stats")
+        emit(cid, "rho", unname(sp$estimate), "stats::cor.test")
+        emit(cid, "spearman_s", unname(sp$statistic), "stats::cor.test")
         pName <- if (testType == "both") "spearman_p" else "p"
-        emit(cid, pName, sp$p.value, "stats")
+        emit(cid, pName, sp$p.value, "stats::cor.test")
         # p_method: the plugin's OWN branch law (@emlSpearmanCorrelationDispatch,
         # copied verbatim from cor.test.default's TIES test), derived
         # independently from xx/yy -- NOT parsed off sp$method, which does
@@ -1115,7 +1151,7 @@ process_correlation <- function(row) {
         spMethod <- if (spExact) "exact" else "t approximation"
         spPMethod <- composePMethod(spMethod, c(if (spHasTies) "ties present", if (spLarge) "large sample"))
         pmName <- if (testType == "both") "spearman_p_method" else "p_method"
-        emitText(cid, pmName, spPMethod)
+        emitText(cid, pmName, spPMethod, source = "r::composePMethod")
         # cor.test's default Spearman p is the EXACT permutation p for small
         # n without ties, falling back to AS89. The plugin computes the
         # large-sample t-approximation instead, which is a different p for
@@ -1124,7 +1160,7 @@ process_correlation <- function(row) {
         # under its own name, so the difference is pinned to the choice of
         # tail rather than left looking like an arithmetic disagreement.
         spA <- suppressWarnings(cor.test(xx, yy, method = "spearman", exact = FALSE))
-        emit(cid, "spearman_p_asymptotic", spA$p.value, "stats")
+        emit(cid, "spearman_p_asymptotic", spA$p.value, "stats::cor.test")
         lines <- c(lines, sprintf("Spearman: rho=%.4f p=%.4g (exact/AS89) ; asymptotic p=%.4g",
                                    sp$estimate, sp$p.value, spA$p.value))
     }
@@ -1144,17 +1180,17 @@ process_descriptive <- function(row) {
     x <- numcol(d, row$col_a)
     nU <- sum(is.na(x)); x <- x[!is.na(x)]
     if (length(x) < 1) { refuseCell(cid, sprintf("Column '%s' contains no valid numeric values.", row$col_a)); return(invisible()) }
-    emit(cid, "n", length(x), "stats")
+    emit(cid, "n", length(x), "base::length")
     desc <- psych::describe(x)
-    emit(cid, "mean", desc$mean, "psych"); emit(cid, "sd", desc$sd, "psych")
-    emit(cid, "median", desc$median, "psych"); emit(cid, "min", desc$min, "psych")
-    emit(cid, "max", desc$max, "psych"); emit(cid, "range", desc$range, "psych")
-    emit(cid, "sem", desc$se, "psych")
+    emit(cid, "mean", desc$mean, "psych::describe"); emit(cid, "sd", desc$sd, "psych::describe")
+    emit(cid, "median", desc$median, "psych::describe"); emit(cid, "min", desc$min, "psych::describe")
+    emit(cid, "max", desc$max, "psych::describe"); emit(cid, "range", desc$range, "psych::describe")
+    emit(cid, "sem", desc$se, "psych::describe")
     emitShape(cid, x)
-    emit(cid, "variance", stats::var(x), "stats")
+    emit(cid, "variance", stats::var(x), "stats::var")
     qs <- stats::quantile(x, c(0.25, 0.75))
-    emit(cid, "q1", qs[1], "stats"); emit(cid, "q3", qs[2], "stats")
-    emit(cid, "iqr", stats::IQR(x), "stats")   # stats::IQR, not q3-q1 written out
+    emit(cid, "q1", qs[1], "stats::quantile"); emit(cid, "q3", qs[2], "stats::quantile")
+    emit(cid, "iqr", stats::IQR(x), "stats::IQR")   # stats::IQR, not q3-q1 written out
     ciLine <- NULL
     # t.test(x) throws "data are essentially constant" when sd(x)==0 (e.g. a
     # column that is literally the same value in every row). That is a real,
@@ -1164,7 +1200,7 @@ process_descriptive <- function(row) {
     # to throw and take the whole cell down with it.
     if (length(x) >= 2 && stats::sd(x) > 0) {
         ci <- t.test(x)$conf.int
-        emit(cid, "ci_low", ci[1], "stats"); emit(cid, "ci_high", ci[2], "stats")
+        emit(cid, "ci_low", ci[1], "stats::t.test"); emit(cid, "ci_high", ci[2], "stats::t.test")
         ciLine <- sprintf("95%% CI of the mean: [%.4f, %.4f] (stats::t.test)", ci[1], ci[2])
     } else if (length(x) >= 2) {
         # REPORTED AS UNDEFINED, NOT OMITTED. quantities.tsv contracts ci_low
@@ -1174,8 +1210,8 @@ process_descriptive <- function(row) {
         # convention for "we reached this quantity and it has no value here"
         # is the _undefined marker (n_undefined, gg_epsilon_undefined,
         # chi_square_undefined), so the marker is what goes out.
-        emit(cid, "ci_low_undefined", 1, "stats")
-        emit(cid, "ci_high_undefined", 1, "stats")
+        emit(cid, "ci_low_undefined", 1, "stats::t.test")
+        emit(cid, "ci_high_undefined", 1, "stats::t.test")
         ciLine <- "95% CI of the mean: undefined (zero variance -- t.test's own precondition fails)."
     }
     lines <- c(sprintf("Descriptives -- %s (n=%d valid, %d undefined)", row$col_a, length(x), nU), "",
@@ -1214,21 +1250,21 @@ process_regression <- function(row) {
     xx <- x[keep]; yy <- y[keep]
     if (sd(xx) == 0) { refuseCell(cid, sprintf("Predictor column '%s' has zero variance.", row$col_b)); return(invisible()) }
     fl <- fitLM(xx, yy)
-    emit(cid, "n", n, "stats")
-    emit(cid, "intercept", fl$intercept, "stats"); emit(cid, "slope", fl$slope, "stats")
-    emit(cid, "intercept_se", fl$seIntercept, "stats"); emit(cid, "slope_se", fl$seSlope, "stats")
-    emit(cid, "intercept_t", fl$tIntercept, "stats"); emit(cid, "slope_t", fl$tSlope, "stats")
-    emit(cid, "p", fl$pSlope, "stats")
-    emit(cid, "slope_p", fl$pSlope, "stats"); emit(cid, "intercept_p", fl$pIntercept, "stats")
-    emit(cid, "df_between", unname(fl$fstat["numdf"]), "stats")
-    emit(cid, "df_within", unname(fl$fstat["dendf"]), "stats")
-    emit(cid, "r_squared", fl$r2, "stats"); emit(cid, "adj_r_squared", fl$adjR2, "stats")
-    emit(cid, "residual_se", fl$sigma, "stats")
+    emit(cid, "n", n, "base::sum")
+    emit(cid, "intercept", fl$intercept, "stats::lm"); emit(cid, "slope", fl$slope, "stats::lm")
+    emit(cid, "intercept_se", fl$seIntercept, "stats::lm"); emit(cid, "slope_se", fl$seSlope, "stats::lm")
+    emit(cid, "intercept_t", fl$tIntercept, "stats::lm"); emit(cid, "slope_t", fl$tSlope, "stats::lm")
+    emit(cid, "p", fl$pSlope, "stats::lm")
+    emit(cid, "slope_p", fl$pSlope, "stats::lm"); emit(cid, "intercept_p", fl$pIntercept, "stats::lm")
+    emit(cid, "df_between", unname(fl$fstat["numdf"]), "stats::lm")
+    emit(cid, "df_within", unname(fl$fstat["dendf"]), "stats::lm")
+    emit(cid, "r_squared", fl$r2, "stats::lm"); emit(cid, "adj_r_squared", fl$adjR2, "stats::lm")
+    emit(cid, "residual_se", fl$sigma, "stats::lm")
     # stats::cor is the package call for this; the signed sqrt(R^2) that
     # stood here was the same number written out by hand, which is exactly
     # what this kit undertakes not to do.
-    emit(cid, "r", stats::cor(xx, yy), "stats")
-    emit(cid, "f", unname(fl$fstat["value"]), "stats")
+    emit(cid, "r", stats::cor(xx, yy), "stats::cor")
+    emit(cid, "f", unname(fl$fstat["value"]), "stats::lm")
     lines <- c(sprintf("Simple regression -- %s ~ %s (n=%d)", row$col_a, row$col_b, n), "",
                sprintf("%s = %.4f + %.4f * %s", row$col_a, fl$intercept, fl$slope, row$col_b),
                sprintf("R^2=%.4f adjR^2=%.4f residual SE=%.4f", fl$r2, fl$adjR2, fl$sigma),
@@ -1263,13 +1299,13 @@ process_grouped_regression <- function(row) {
     # BOTH an overall line and one line per group, and a bare "slope" here
     # would collide with the per-group keys and with the plain regression
     # procedure's own "slope".
-    emit(cid, "overall_intercept", ov$intercept, "stats"); emit(cid, "overall_slope", ov$slope, "stats")
-    emit(cid, "overall_intercept_se", ov$seIntercept, "stats"); emit(cid, "overall_slope_se", ov$seSlope, "stats")
-    emit(cid, "overall_intercept_t", ov$tIntercept, "stats"); emit(cid, "overall_slope_t", ov$tSlope, "stats")
-    emit(cid, "overall_slope_p", ov$pSlope, "stats")
-    emit(cid, "overall_intercept_p", ov$pIntercept, "stats")
-    emit(cid, "overall_r_squared", ov$r2, "stats"); emit(cid, "overall_adj_r_squared", ov$adjR2, "stats")
-    emit(cid, "overall_residual_se", ov$sigma, "stats"); emit(cid, "n", sum(keepAll), "stats")
+    emit(cid, "overall_intercept", ov$intercept, "stats::lm"); emit(cid, "overall_slope", ov$slope, "stats::lm")
+    emit(cid, "overall_intercept_se", ov$seIntercept, "stats::lm"); emit(cid, "overall_slope_se", ov$seSlope, "stats::lm")
+    emit(cid, "overall_intercept_t", ov$tIntercept, "stats::lm"); emit(cid, "overall_slope_t", ov$tSlope, "stats::lm")
+    emit(cid, "overall_slope_p", ov$pSlope, "stats::lm")
+    emit(cid, "overall_intercept_p", ov$pIntercept, "stats::lm")
+    emit(cid, "overall_r_squared", ov$r2, "stats::lm"); emit(cid, "overall_adj_r_squared", ov$adjR2, "stats::lm")
+    emit(cid, "overall_residual_se", ov$sigma, "stats::lm"); emit(cid, "n", sum(keepAll), "base::sum")
 
     levs <- orderedLevels(g, row$group_order)
     lines <- c(sprintf("Grouped regression -- %s ~ %s by %s (group_order=%s)", row$col_b, row$col_a, row$col_c, row$group_order), "",
@@ -1281,22 +1317,22 @@ process_grouped_regression <- function(row) {
             nRun <- nRun + 1
             gl <- fitLM(x[sel], y[sel])
             tag <- slug(lv)
-            emit(cid, paste0("grp_", tag, "_slope"), gl$slope, "stats")
-            emit(cid, paste0("grp_", tag, "_intercept"), gl$intercept, "stats")
-            emit(cid, paste0("grp_", tag, "_slope_se"), gl$seSlope, "stats")
-            emit(cid, paste0("grp_", tag, "_slope_t"), gl$tSlope, "stats")
-            emit(cid, paste0("grp_", tag, "_p"), gl$pSlope, "stats")
-            emit(cid, paste0("grp_", tag, "_r_squared"), gl$r2, "stats")
-            emit(cid, paste0("grp_", tag, "_n"), sum(sel), "stats")
+            emit(cid, paste0("grp_", tag, "_slope"), gl$slope, "stats::lm")
+            emit(cid, paste0("grp_", tag, "_intercept"), gl$intercept, "stats::lm")
+            emit(cid, paste0("grp_", tag, "_slope_se"), gl$seSlope, "stats::lm")
+            emit(cid, paste0("grp_", tag, "_slope_t"), gl$tSlope, "stats::lm")
+            emit(cid, paste0("grp_", tag, "_p"), gl$pSlope, "stats::lm")
+            emit(cid, paste0("grp_", tag, "_r_squared"), gl$r2, "stats::lm")
+            emit(cid, paste0("grp_", tag, "_n"), sum(sel), "base::sum")
             lines <- c(lines, sprintf("  %s (n=%d): slope=%.4f intercept=%.4f R^2=%.4f p=%.4g",
                                        lv, sum(sel), gl$slope, gl$intercept, gl$r2, gl$pSlope))
         } else {
             lines <- c(lines, sprintf("  %s (n=%d): skipped, fewer than 3 complete pairs", lv, sum(sel)))
         }
     }
-    emit(cid, "pg_total", length(levs), "stats")
-    emit(cid, "pg_run", nRun, "stats")
-    emit(cid, "pg_skipped", length(levs) - nRun, "stats")
+    emit(cid, "pg_total", length(levs), "base::length")
+    emit(cid, "pg_run", nRun, "base::length")
+    emit(cid, "pg_skipped", length(levs) - nRun, "base::length")
     writeReport(cid, lines)
 }
 
@@ -1314,21 +1350,21 @@ process_normality <- function(row) {
     nU <- sum(is.na(x)); x <- x[!is.na(x)]
     if (length(x) < 3) { refuseCell(cid, sprintf("Need at least 3 non-missing values (found %d).", length(x))); return(invisible()) }
     desc <- psych::describe(x)
-    emit(cid, "n", length(x), "stats")
+    emit(cid, "n", length(x), "base::length")
     emitShape(cid, x)
-    emit(cid, "mean", desc$mean, "psych"); emit(cid, "sd", desc$sd, "psych"); emit(cid, "median", desc$median, "psych")
+    emit(cid, "mean", desc$mean, "psych::describe"); emit(cid, "sd", desc$sd, "psych::describe"); emit(cid, "median", desc$median, "psych::describe")
     lines <- c(sprintf("Normality -- %s (n=%d, %d undefined)", row$col_a, length(x), nU), "")
     if (length(x) <= 5000 && length(unique(x)) > 1) {
         sw <- shapiro.test(x)
-        emit(cid, "w_statistic", unname(sw$statistic), "stats")
-        emit(cid, "p", sw$p.value, "stats")
+        emit(cid, "w_statistic", unname(sw$statistic), "stats::shapiro.test")
+        emit(cid, "p", sw$p.value, "stats::shapiro.test")
         lines <- c(lines, sprintf("Shapiro-Wilk: W=%.4f p=%.4g", sw$statistic, sw$p.value))
     } else {
         # Reported as undefined, not omitted: the contract owes w_statistic
         # and p on every normality cell, and "the column is constant so the
         # test has no variance to work on" is an answer, not a silence.
-        emit(cid, "w_statistic", NA_real_, "stats")
-        emit(cid, "p", NA_real_, "stats")
+        emit(cid, "w_statistic", NA_real_, "stats::shapiro.test")
+        emit(cid, "p", NA_real_, "stats::shapiro.test")
         lines <- c(lines, "Shapiro-Wilk not computed (n out of [3,5000] or zero range).")
     }
     lines <- c(lines, sprintf("skewness=%.4f kurtosis=%.4f (psych::describe)", desc$skew, desc$kurtosis))
@@ -1401,12 +1437,12 @@ process_rm <- function(row) {
     petaES <- effectsize::eta_squared(fit, partial = TRUE, ci = NULL, verbose = FALSE)
     peta <- petaES$Eta2_partial[petaES$Parameter == "cond"]
 
-    emit(cid, "f", Fval, "afex"); emit(cid, "df_between", dfCond, "afex"); emit(cid, "df_within", dfErr, "afex")
-    emit(cid, "p", pval, "afex")
-    emit(cid, "ss_between", ssCond, "afex"); emit(cid, "ss_within", ssErr, "afex")
-    emit(cid, "partial_eta_squared", peta, "effectsize")
-    emit(cid, "n", n, "stats"); emit(cid, "n_excluded", cm$nExcluded, "stats")
-    for (cc in conds) emit(cid, paste0("mean_", slug(cc)), mean(M[, cc]), "stats")
+    emit(cid, "f", Fval, "afex::aov_ez"); emit(cid, "df_between", dfCond, "afex::aov_ez"); emit(cid, "df_within", dfErr, "afex::aov_ez")
+    emit(cid, "p", pval, "afex::aov_ez")
+    emit(cid, "ss_between", ssCond, "afex::aov_ez"); emit(cid, "ss_within", ssErr, "afex::aov_ez")
+    emit(cid, "partial_eta_squared", peta, "effectsize::eta_squared")
+    emit(cid, "n", n, "base::sum"); emit(cid, "n_excluded", cm$nExcluded, "base::sum")
+    for (cc in conds) emit(cid, paste0("mean_", slug(cc)), mean(M[, cc]), "stats::mean")
 
     lines <- c(sprintf("Repeated-measures ANOVA (afex::aov_ez, GG correction) -- %s", paste(conds, collapse = ", ")),
                sprintf("n=%d k=%d", n, k),
@@ -1422,13 +1458,13 @@ process_rm <- function(row) {
         # available"). Emitting it produced a p of exactly zero in the
         # results table. Epsilon gates the pair: no epsilon, no GG row.
         if (is.na(ggEps)) {
-            emit(cid, "gg_epsilon", NA_real_, "afex")
-            emit(cid, "gg_p", NA_real_, "afex")
+            emit(cid, "gg_epsilon", NA_real_, "afex::aov_ez")
+            emit(cid, "gg_p", NA_real_, "afex::aov_ez")
             lines <- c(lines, paste0("Greenhouse-Geisser: not available -- afex returned NA epsilon ",
                                       "(singular error SSP matrix on this design); its Pr(>F[GG]) of 0 ",
                                       "is a sentinel, not a p-value, and is not reported."))
         } else {
-            emit(cid, "gg_epsilon", ggEps, "afex"); emit(cid, "gg_p", ggP, "afex")
+            emit(cid, "gg_epsilon", ggEps, "afex::aov_ez"); emit(cid, "gg_p", ggP, "afex::aov_ez")
             lines <- c(lines, sprintf("Greenhouse-Geisser epsilon=%.4f, GG-corrected p=%.4g", ggEps, ggP))
         }
     } else {
@@ -1438,8 +1474,8 @@ process_rm <- function(row) {
         # are DIFFERENT, which is exactly why both sides have to say
         # something: the pair is reported as undefined here rather than
         # dropped, so the disagreement stays visible as a disagreement.
-        emit(cid, "gg_epsilon", NA_real_, "afex")
-        emit(cid, "gg_p", NA_real_, "afex")
+        emit(cid, "gg_epsilon", NA_real_, "afex::aov_ez")
+        emit(cid, "gg_p", NA_real_, "afex::aov_ez")
         lines <- c(lines, "Greenhouse-Geisser correction not applicable (k=2 conditions, 1 df; sphericity is trivial).")
     }
     lines <- c(lines, sprintf("partial eta^2 (effectsize)=%.4f", peta), "")
@@ -1465,11 +1501,13 @@ process_rm <- function(row) {
             pAdj <- padjust(pRaw, adj)
             for (kk in seq_len(nrow(res))) {
                 pl <- pairLabel(res$group1[kk], res$group2[kk])
-                emit(cid, paste0("posthoc_", pl, "_diff"), res$estimate[kk], "rstatix")
-                emit(cid, paste0("posthoc_", pl, "_ci_low"), res$conf.low[kk], "rstatix")
-                emit(cid, paste0("posthoc_", pl, "_ci_high"), res$conf.high[kk], "rstatix")
-                emit(cid, paste0("posthoc_", pl, "_p"), pRaw[kk], "stats")
-                emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[kk], "stats")
+                emit(cid, paste0("posthoc_", pl, "_diff"), res$estimate[kk], "rstatix::t_test")
+                if (identical(row$adjust, "bonferroni")) {
+                    emit(cid, paste0("posthoc_", pl, "_ci_low"), res$conf.low[kk], "rstatix::t_test")
+                    emit(cid, paste0("posthoc_", pl, "_ci_high"), res$conf.high[kk], "rstatix::t_test")
+                }
+                emit(cid, paste0("posthoc_", pl, "_p"), pRaw[kk], "stats::t.test")
+                emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[kk], "stats::p.adjust")
                 lines <- c(lines, sprintf("  %s: diff=%.4f [%.4f,%.4f] p=%.4g p.adj=%.4g",
                                            pl, res$estimate[kk], res$conf.low[kk], res$conf.high[kk], pRaw[kk], pAdj[kk]))
             }
@@ -1497,14 +1535,14 @@ process_friedman <- function(row) {
     if (n < 2) { refuseCell(cid, sprintf("Need at least 2 complete subjects (found %d).", n)); return(invisible()) }
     ft <- tryCatch(stats::friedman.test(M), error = function(e) e)
     if (inherits(ft, "error")) { refuseCell(cid, sprintf("Friedman test failed: %s", conditionMessage(ft))); return(invisible()) }
-    emit(cid, "chi_square", unname(ft$statistic), "stats"); emit(cid, "df", unname(ft$parameter), "stats")
-    emit(cid, "p", ft$p.value, "stats"); emit(cid, "n", n, "stats")
-    emit(cid, "n_excluded", cm$nExcluded, "stats")
+    emit(cid, "chi_square", unname(ft$statistic), "stats::friedman.test"); emit(cid, "df", unname(ft$parameter), "stats::friedman.test")
+    emit(cid, "p", ft$p.value, "stats::friedman.test"); emit(cid, "n", n, "base::sum")
+    emit(cid, "n_excluded", cm$nExcluded, "base::sum")
     long <- data.frame(id = rep(seq_len(n), times = k), cond = factor(rep(conds, each = n), levels = conds), val = as.vector(M))
     kw_rs <- rstatix::friedman_effsize(long, val ~ cond | id)
-    emit(cid, "kendalls_w", kw_rs$effsize, "rstatix")
+    emit(cid, "kendalls_w", kw_rs$effsize, "rstatix::friedman_effsize")
     kw_es <- tryCatch(effectsize::kendalls_w(val ~ cond | id, data = long, ci = NULL, verbose = FALSE), error = function(e) NULL)
-    if (!is.null(kw_es)) emit(cid, "kendalls_w", kw_es$Kendalls_W, "effectsize")
+    if (!is.null(kw_es)) emit(cid, "kendalls_w", kw_es$Kendalls_W, "effectsize::kendalls_w")
     lines <- c(sprintf("Friedman test -- %s", paste(conds, collapse = ", ")),
                sprintf("n=%d k=%d", n, k),
                sprintf("chi-square(%d)=%.4f p=%.4g", ft$parameter, ft$statistic, ft$p.value),
@@ -1545,10 +1583,10 @@ process_friedman <- function(row) {
                 pl <- pairLabel(res$group1[kk], res$group2[kk])
                 aa <- M[, res$group1[kk]]; bb <- M[, res$group2[kk]]
                 hlEst <- stats::median(walsh(aa - bb))
-                emit(cid, paste0("posthoc_", pl, "_diff"), hlEst, "stats")
-                emit(cid, paste0("posthoc_", pl, "_diff_wilcoxest"), res$estimate[kk], "rstatix")
-                emit(cid, paste0("posthoc_", pl, "_p"), pRaw[kk], "stats")
-                emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[kk], "stats")
+                emit(cid, paste0("posthoc_", pl, "_diff"), hlEst, "stats::median")
+                emit(cid, paste0("posthoc_", pl, "_diff_wilcoxest"), res$estimate[kk], "rstatix::wilcox_test")
+                emit(cid, paste0("posthoc_", pl, "_p"), pRaw[kk], "stats::wilcox.test")
+                emit(cid, paste0("posthoc_", pl, "_padj"), pAdj[kk], "stats::p.adjust")
                 lines <- c(lines, sprintf("  %s: hl-diff=%.4f (wilcox.test est=%.4f) p=%.4g p.adj=%.4g",
                                            pl, hlEst, res$estimate[kk], pRaw[kk], pAdj[kk]))
             }
@@ -1588,11 +1626,11 @@ process_cronbach <- function(row) {
     a <- psych::alpha(Mc, check.keys = FALSE, warnings = FALSE)
     alphaVal <- unname(a$total$raw_alpha)
     ci <- psych::alpha.ci(alphaVal, n.obs = n, n.var = k, p.val = 1 - conf)
-    emit(cid, "alpha", alphaVal, "psych")
-    emit(cid, "alpha_ci_low", ci$lower.ci, "psych")
-    emit(cid, "alpha_ci_high", ci$upper.ci, "psych")
-    emit(cid, "n", n, "stats"); emit(cid, "k", k, "stats")
-    emit(cid, "n_excluded", nExcl, "stats")
+    emit(cid, "alpha", alphaVal, "psych::alpha")
+    emit(cid, "alpha_ci_low", ci$lower.ci, "psych::alpha.ci")
+    emit(cid, "alpha_ci_high", ci$upper.ci, "psych::alpha.ci")
+    emit(cid, "n", n, "base::nrow"); emit(cid, "k", k, "base::ncol")
+    emit(cid, "n_excluded", nExcl, "base::sum")
     lines <- c(sprintf("Cronbach's alpha -- %s (conf=%.2f)", row$dataset, conf),
                sprintf("n=%d (excluded %d) k=%d", n, nExcl, k),
                sprintf("alpha=%.4f  CI[%.4f, %.4f] (psych::alpha / psych::alpha.ci, Feldt)", alphaVal, ci$lower.ci, ci$upper.ci), "")
@@ -1602,7 +1640,7 @@ process_cronbach <- function(row) {
         dropAlpha <- a$alpha.drop$raw_alpha
         itemNames <- colnames(Mc)
         for (j in seq_len(k)) {
-            emit(cid, paste0("alpha_if_deleted_", slug(itemNames[j])), dropAlpha[j], "psych")
+            emit(cid, paste0("alpha_if_deleted_", slug(itemNames[j])), dropAlpha[j], "psych::alpha")
             lines <- c(lines, sprintf("  alpha if item %s deleted = %.4f", itemNames[j], dropAlpha[j]))
         }
     }
@@ -1638,19 +1676,19 @@ process_alpha_influence <- function(row) {
         aj <- tryCatch(psych::alpha(sub, check.keys = FALSE, warnings = FALSE), error = function(e) NULL)
         deltas[j] <- if (is.null(aj)) NA_real_ else unname(aj$total$raw_alpha) - alphaFull
     }
-    emit(cid, "alpha", alphaFull, "psych"); emit(cid, "n", n, "stats"); emit(cid, "k", k, "stats")
+    emit(cid, "alpha", alphaFull, "psych::alpha"); emit(cid, "n", n, "base::nrow"); emit(cid, "k", k, "base::ncol")
     lines <- c(sprintf("Alpha respondent influence (leave-one-out via psych::alpha) -- %s", row$dataset),
                sprintf("n=%d k=%d alpha_full=%.4f", n, k, alphaFull), "")
     if (any(!is.na(deltas))) {
         dmax <- max(abs(deltas), na.rm = TRUE)
         whichMax <- which(abs(deltas) == dmax)[1]
-        emit(cid, "delta_max", dmax, "psych")
-        emit(cid, "delta_max_row", origIdx[whichMax], "psych")
+        emit(cid, "delta_max", dmax, "psych::alpha")
+        emit(cid, "delta_max_row", origIdx[whichMax], "psych::alpha")
         lines <- c(lines, sprintf("largest |delta| = %.4f at original row %d", dmax, origIdx[whichMax]))
     }
-    emit(cid, "n_excluded", nrow(M) - n, "stats")
+    emit(cid, "n_excluded", nrow(M) - n, "base::nrow")
     for (j in seq_len(n)) {
-        emit(cid, paste0("delta_row_", origIdx[j]), deltas[j], "psych")
+        emit(cid, paste0("delta_row_", origIdx[j]), deltas[j], "psych::alpha")
         lines <- c(lines, sprintf("  row %d removed: delta=%s", origIdx[j], if (is.na(deltas[j])) "NA" else sprintf("%.4f", deltas[j])))
     }
     writeReport(cid, lines)
@@ -1678,10 +1716,10 @@ process_chisq <- function(row) {
     if (any(rowSums(M) == 0) || any(colSums(M) == 0)) { refuseCell(cid, "Every row and column must contain at least one observation."); return(invisible()) }
     correction <- identical(row$correction, "1")
     ct <- suppressWarnings(stats::chisq.test(M, correct = correction))
-    emit(cid, "chi_square", unname(ct$statistic), "stats"); emit(cid, "df", unname(ct$parameter), "stats")
-    emit(cid, "p", ct$p.value, "stats"); emit(cid, "n", sum(M), "stats")
-    emit(cid, "min_expected", min(ct$expected), "stats")
-    emit(cid, "n_cells_below5", sum(ct$expected < 5), "stats")
+    emit(cid, "chi_square", unname(ct$statistic), "stats::chisq.test"); emit(cid, "df", unname(ct$parameter), "stats::chisq.test")
+    emit(cid, "p", ct$p.value, "stats::chisq.test"); emit(cid, "n", sum(M), "base::sum")
+    emit(cid, "min_expected", min(ct$expected), "stats::chisq.test")
+    emit(cid, "n_cells_below5", sum(ct$expected < 5), "stats::chisq.test")
     # BOTH PACKAGES' DEFAULTS ARE WRONG FOR THIS CELL, IN DIFFERENT WAYS.
     #   rstatix::cramer_v(correct = TRUE) is its default and applies Yates'
     #   continuity correction to the 2x2 chi-square before taking the root.
@@ -1704,12 +1742,12 @@ process_chisq <- function(row) {
     # belongs; it is deliberately not carried into V. rstatix's corrected
     # value is still reported, under a name that says what it is.
     cv_rs <- rstatix::cramer_v(M, correct = FALSE)
-    emit(cid, "cramers_v", cv_rs, "rstatix")
-    emit(cid, "cramers_v_yates", rstatix::cramer_v(M, correct = TRUE), "rstatix")
+    emit(cid, "cramers_v", cv_rs, "rstatix::cramer_v")
+    emit(cid, "cramers_v_yates", rstatix::cramer_v(M, correct = TRUE), "rstatix::cramer_v")
     cv_es <- effectsize::cramers_v(M, adjust = FALSE, ci = NULL, verbose = FALSE)
-    emit(cid, "cramers_v", cv_es[[1]][1], "effectsize")
+    emit(cid, "cramers_v", cv_es[[1]][1], "effectsize::cramers_v")
     cv_adj <- effectsize::cramers_v(M, adjust = TRUE, ci = NULL, verbose = FALSE)
-    emit(cid, "cramers_v_bias_corrected", cv_adj[[1]][1], "effectsize")
+    emit(cid, "cramers_v_bias_corrected", cv_adj[[1]][1], "effectsize::cramers_v")
     lines <- c(sprintf("Chi-square test of independence -- %s (correction=%s)", row$dataset, correction),
                sprintf("chi-square(%d)=%.4f p=%.4g", ct$parameter, ct$statistic, ct$p.value),
                sprintf("Cramer's V: rstatix=%.4f effectsize=%.4f | Bergsma bias-corrected=%.4f",
@@ -1736,9 +1774,9 @@ process_wilson <- function(row) {
     if (is.na(n) || n < 1 || n != round(n)) { refuseCell(cid, "n must be a positive integer"); return(invisible()) }
     if (is.na(x) || x < 0 || x > n || x != round(x)) { refuseCell(cid, "successes must be an integer between 0 and n"); return(invisible()) }
     pt <- stats::prop.test(x, n, conf.level = conf, correct = FALSE)
-    emit(cid, "prop_hat", x / n, "stats")
-    emit(cid, "ci_low", pt$conf.int[1], "stats"); emit(cid, "ci_high", pt$conf.int[2], "stats")
-    emit(cid, "n", n, "stats")
+    emit(cid, "prop_hat", x / n, "stats::prop.test")
+    emit(cid, "ci_low", pt$conf.int[1], "stats::prop.test"); emit(cid, "ci_high", pt$conf.int[2], "stats::prop.test")
+    emit(cid, "n", n, "base::identity")
     lines <- c(sprintf("Wilson score interval -- case '%s' (x=%d, n=%d, conf=%.2f)", row$col_a, x, n, conf),
                sprintf("p_hat=%.4f  CI[%.4f, %.4f] (stats::prop.test, correct=FALSE)", x / n, pt$conf.int[1], pt$conf.int[2]))
     writeReport(cid, lines)
