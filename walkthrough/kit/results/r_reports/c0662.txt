@@ -1,0 +1,7 @@
+Kruskal-Wallis -- value by grp (group_order=discovery)
+Levels: G1, G2, G3
+
+H(2)=4.8041 p=0.09053 n=600
+eta^2[H]: rstatix(kruskal_effsize)=0.0047 effectsize(rank_eta_squared)=0.0047
+epsilon^2 (rank): effectsize(rank_epsilon_squared)=0.0080 [no rstatix counterpart in this installed version]
+

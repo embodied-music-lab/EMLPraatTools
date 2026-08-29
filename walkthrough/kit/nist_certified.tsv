@@ -1,0 +1,108 @@
+# nist_certified.tsv -- NIST StRD published constants, cited by dataset.
+# Source: evidence/nist/<Name>_certified.csv (NIST ANOVA datasets, analysis
+# of variance StRD). compare.R compares the Praat column against these
+# constants directly -- there is no R oracle for the nist tier (Ian's
+# ruling, docs/MEMO_TO_FABLE_TIERS_2026-08-28.md).
+# label is matched by PREFIX ("Between"/"Within"), same as v19_nist_strd.R,
+# because NIST names the ANOVA rows per dataset ("Between Instrument",
+# "Between Treatment", ...). "Certified R-Squared" and "Standard Deviation"
+# are matched exactly.
+dataset	label	field	certified
+AtmWtAg	Between Instrument	1	1
+AtmWtAg	Between Instrument	2	3.6383418749999998e-09
+AtmWtAg	Between Instrument	3	3.6383418749999998e-09
+AtmWtAg	Between Instrument	4	15.946733567793
+AtmWtAg	Within Instrument	1	46
+AtmWtAg	Within Instrument	2	1.04951729166667e-08
+AtmWtAg	Within Instrument	3	2.28155932971014e-10
+AtmWtAg	Certified R-Squared	1	0.25742654453832098
+SiRstv	Between Instrument	1	4
+SiRstv	Between Instrument	2	0.051146261599999999
+SiRstv	Between Instrument	3	0.0127865654
+SiRstv	Between Instrument	4	1.18046237440255
+SiRstv	Within Instrument	1	20
+SiRstv	Within Instrument	2	0.21663656000000001
+SiRstv	Within Instrument	3	0.010831828
+SiRstv	Certified R-Squared	1	0.190999039051129
+SiRstv	Standard Deviation	1	0.10407606833465601
+SmLs01	Between Treatment	1	8
+SmLs01	Between Treatment	2	1.6799999999999999
+SmLs01	Between Treatment	3	0.20999999999999999
+SmLs01	Between Treatment	4	21
+SmLs01	Within Treatment	1	180
+SmLs01	Within Treatment	2	1.8
+SmLs01	Within Treatment	3	0.01
+SmLs01	Certified R-Squared	1	0.48275862068965503
+SmLs01	Standard Deviation	1	0.10000000000000001
+SmLs02	Between Treatment	1	8
+SmLs02	Between Treatment	2	16.079999999999998
+SmLs02	Between Treatment	3	2.0099999999999998
+SmLs02	Between Treatment	4	201
+SmLs02	Within Treatment	1	1800
+SmLs02	Within Treatment	2	18
+SmLs02	Within Treatment	3	0.01
+SmLs02	Certified R-Squared	1	0.471830985915493
+SmLs02	Standard Deviation	1	0.10000000000000001
+SmLs03	Between Treatment	1	8
+SmLs03	Between Treatment	2	160.08000000000001
+SmLs03	Between Treatment	3	20.010000000000002
+SmLs03	Between Treatment	4	2001
+SmLs03	Within Treatment	1	18000
+SmLs03	Within Treatment	2	180
+SmLs03	Within Treatment	3	0.01
+SmLs03	Certified R-Squared	1	0.47071277346506701
+SmLs03	Standard Deviation	1	0.10000000000000001
+SmLs04	Between Treatment	1	8
+SmLs04	Between Treatment	2	1.6799999999999999
+SmLs04	Between Treatment	3	0.20999999999999999
+SmLs04	Between Treatment	4	21
+SmLs04	Within Treatment	1	180
+SmLs04	Within Treatment	2	1.8
+SmLs04	Within Treatment	3	0.01
+SmLs04	Certified R-Squared	1	0.48275862068965503
+SmLs04	Standard Deviation	1	0.10000000000000001
+SmLs05	Between Treatment	1	8
+SmLs05	Between Treatment	2	16.079999999999998
+SmLs05	Between Treatment	3	2.0099999999999998
+SmLs05	Between Treatment	4	201
+SmLs05	Within Treatment	1	1800
+SmLs05	Within Treatment	2	18
+SmLs05	Within Treatment	3	0.01
+SmLs05	Certified R-Squared	1	0.471830985915493
+SmLs05	Standard Deviation	1	0.10000000000000001
+SmLs06	Between Treatment	1	8
+SmLs06	Between Treatment	2	160.08000000000001
+SmLs06	Between Treatment	3	20.010000000000002
+SmLs06	Between Treatment	4	2001
+SmLs06	Within Treatment	1	18000
+SmLs06	Within Treatment	2	180
+SmLs06	Within Treatment	3	0.01
+SmLs06	Certified R-Squared	1	0.47071277346506701
+SmLs06	Standard Deviation	1	0.10000000000000001
+SmLs07	Between Treatment	1	8
+SmLs07	Between Treatment	2	1.6799999999999999
+SmLs07	Between Treatment	3	0.20999999999999999
+SmLs07	Between Treatment	4	21
+SmLs07	Within Treatment	1	180
+SmLs07	Within Treatment	2	1.8
+SmLs07	Within Treatment	3	0.01
+SmLs07	Certified R-Squared	1	0.48275862068965503
+SmLs07	Standard Deviation	1	0.10000000000000001
+SmLs08	Between Treatment	1	8
+SmLs08	Between Treatment	2	16.079999999999998
+SmLs08	Between Treatment	3	2.0099999999999998
+SmLs08	Between Treatment	4	201
+SmLs08	Within Treatment	1	1800
+SmLs08	Within Treatment	2	18
+SmLs08	Within Treatment	3	0.01
+SmLs08	Certified R-Squared	1	0.471830985915493
+SmLs08	Standard Deviation	1	0.10000000000000001
+SmLs09	Between Treatment	1	8
+SmLs09	Between Treatment	2	160.08000000000001
+SmLs09	Between Treatment	3	20.010000000000002
+SmLs09	Between Treatment	4	2001
+SmLs09	Within Treatment	1	18000
+SmLs09	Within Treatment	2	180
+SmLs09	Within Treatment	3	0.01
+SmLs09	Certified R-Squared	1	0.47071277346506701
+SmLs09	Standard Deviation	1	0.10000000000000001

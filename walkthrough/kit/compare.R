@@ -502,6 +502,34 @@ testOf <- setNames(mx$test, mx$cell_id)
 dsOf   <- setNames(mx$dataset, mx$cell_id)
 
 # ---------------------------------------------------------------------------
+# THREE TIERS (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_2026-08-28.md):
+#   options  the plugin's own option space, oracled against R packages.
+#   sweep    the designed shape grid, oracled against base R exactly like
+#            any other cell -- it shares the machinery below untouched.
+#   nist     NIST StRD certified datasets. NO R ORACLE: R never runs these
+#            cells (run_analyses.R skips tier=="nist" outright), so a nist
+#            row is split out of P/R here, before the Praat-vs-R contract
+#            machinery below ever sees it -- otherwise every contracted
+#            "both" quantity on a nist cell would read as R having missed
+#            it, when the absence is by design, not a gap. Pnist keeps the
+#            raw Praat rows for THE NIST TIER block, further down, which
+#            compares them directly against nist_certified.tsv.
+# ---------------------------------------------------------------------------
+if (!"tier" %in% names(mx))
+    stop("matrix.tsv needs a trailing `tier` column (options | sweep | nist) -- ",
+         "see docs/MEMO_TO_FABLE_TIERS_2026-08-28.md.", call. = FALSE)
+badTier <- setdiff(unique(mx$tier), c("options", "sweep", "nist"))
+if (length(badTier))
+    stop("matrix.tsv: unrecognised tier value(s): ", paste(badTier, collapse = ", "), call. = FALSE)
+tierOf <- setNames(mx$tier, mx$cell_id)
+
+nistCells  <- mx$cell_id[mx$tier == "nist"]
+Pnist      <- P[P$cell_id %in% nistCells, , drop = FALSE]
+P          <- P[!(P$cell_id %in% nistCells), , drop = FALSE]
+R          <- R[!(R$cell_id %in% nistCells), , drop = FALSE]
+mxContract <- mx[!(mx$cell_id %in% nistCells), , drop = FALSE]
+
+# ---------------------------------------------------------------------------
 # EXPANDING THE CONTRACT OVER THE 630 CELLS.
 # One pass. For every cell, every clause of its procedure whose `when` holds,
 # expanded over that clause's index set. The result is the flat list of
@@ -510,8 +538,8 @@ dsOf   <- setNames(mx$dataset, mx$cell_id)
 expCell <- character(0); expQty <- character(0); expSides <- character(0)
 expNote <- character(0)
 QTbyProc <- split(seq_len(nrow(QT)), QT$procedure)
-for (ci in seq_len(nrow(mx))) {
-    cell <- mx[ci, ]
+for (ci in seq_len(nrow(mxContract))) {
+    cell <- mxContract[ci, ]
     idxs <- QTbyProc[[cell$procedure]]
     if (is.null(idxs)) next
     for (qi in idxs) {
@@ -776,6 +804,81 @@ enforcementFor <- function(theId) {
          why = why)
 }
 
+# ---------------------------------------------------------------------------
+# THE NIST TIER. No R oracle: the plugin's own Praat column, in Pnist, is
+# compared directly against nist_certified.tsv's published constants. The
+# quantity name -> (label prefix, field) map mirrors validate/v19_nist_strd.R's
+# own `cv()` -- label is matched by PREFIX ("Between"/"Within"), because NIST
+# names the ANOVA rows per dataset ("Between Instrument", "Between
+# Treatment", ...); "Certified R-Squared" is exact. Every row this loop
+# produces is added to `rows` under bucket NIST_AGREE / NIST_DISAGREE /
+# NIST_MISSING_PRAAT -- alongside, never mixed into, the options/sweep
+# buckets above -- so reconciliation.tsv carries one file, one `tier`
+# column, and the balance invariant below can still be asked of each tier
+# on its own.
+# ---------------------------------------------------------------------------
+NIST_MAP <- list(
+    f            = list(prefix = "Between", field = 4L),
+    df_between   = list(prefix = "Between", field = 1L),
+    ss_between   = list(prefix = "Between", field = 2L),
+    ms_between   = list(prefix = "Between", field = 3L),
+    df_within    = list(prefix = "Within",  field = 1L),
+    ss_within    = list(prefix = "Within",  field = 2L),
+    ms_within    = list(prefix = "Within",  field = 3L),
+    eta_squared  = list(prefix = "Certified R-Squared", field = 1L, exact = TRUE)
+)
+bareNistName <- function(ds) sub("_input$", "", sub("^nist_", "", ds))
+
+nNistExpected <- 0L; nNistAgree <- 0L; nNistDisagree <- 0L; nNistMissingPraat <- 0L
+nistAgreeRows <- list()   # cell_id-tagged, so agreement_by_procedure.tsv can count per (procedure, cellSet)
+if (length(nistCells)) {
+    nistCertPath <- file.path(kitDir, "nist_certified.tsv")
+    if (!file.exists(nistCertPath))
+        stop("compare.R needs nist_certified.tsv beside it for the nist tier -- the ",
+             "published NIST StRD constants each nist-tier Praat cell is compared ",
+             "against.", call. = FALSE)
+    ncLines <- readLines(nistCertPath, warn = FALSE)
+    NC <- read.delim(text = ncLines[!startsWith(ncLines, "#")], sep = "\t",
+                     colClasses = "character", quote = "")
+    PnistVal <- setNames(Pnist$value, paste(Pnist$cell_id, Pnist$quantity, sep = "\r"))
+    for (cid in nistCells) {
+        ds <- bareNistName(unname(dsOf[[cid]]))
+        for (q in names(NIST_MAP)) {
+            spec <- NIST_MAP[[q]]
+            crow <- if (isTRUE(spec$exact))
+                NC[NC$dataset == ds & NC$label == spec$prefix & NC$field == as.character(spec$field), ]
+            else
+                NC[NC$dataset == ds & startsWith(NC$label, spec$prefix) & NC$field == as.character(spec$field), ]
+            if (nrow(crow) != 1L) next   # this dataset's SOURCES.txt did not certify this field
+            nNistExpected <- nNistExpected + 1L
+            cv <- num(crow$certified[1])
+            pvChr <- PnistVal[[paste(cid, q, sep = "\r")]]
+            pv <- num(pvChr)
+            if (is.null(pvChr) || is.na(pv)) {
+                nNistMissingPraat <- nNistMissingPraat + 1L
+                add(bucket = "NIST_MISSING_PRAAT", id = "", cell_id = cid, quantity = q,
+                    praat = "", r = as.character(cv),
+                    source = sprintf("nist_certified.tsv / %s field %d", spec$prefix, spec$field))
+            } else if (agree(pv, cv)) {
+                # NOT added to the shared agreeRows/agreements_all.tsv: that file (and
+                # nAgree/nCompared, which SUMMARY.md's "What was compared" section and
+                # the generate-then-verify leg both cross-check) is options+sweep scope,
+                # per task 5's own file list -- the nist tier gets its own count, printed
+                # from nNistAgree, in its own SUMMARY.md section instead.
+                nNistAgree <- nNistAgree + 1L
+                nistAgreeRows[[length(nistAgreeRows) + 1L]] <- list(cell_id = cid, quantity = q)
+            } else {
+                nNistDisagree <- nNistDisagree + 1L
+                add(bucket = "NIST_DISAGREE", id = "", cell_id = cid, quantity = q,
+                    praat = pvChr, r = as.character(cv),
+                    source = sprintf("nist_certified.tsv / %s field %d", spec$prefix, spec$field))
+            }
+        }
+    }
+}
+nNistCompared <- nNistAgree + nNistDisagree
+nNistBalances <- (nNistCompared + nNistMissingPraat) == nNistExpected
+
 out <- do.call(rbind, lapply(rows, function(r) as.data.frame(r, stringsAsFactors = FALSE)))
 if (is.null(out)) out <- data.frame(bucket = character(), id = character(),
     cell_id = character(), quantity = character(), praat = character(),
@@ -802,6 +905,7 @@ if (nrow(out)) {
 } else {
     out$enforcement <- character(); out$why <- character()
 }
+out$tier <- if (nrow(out)) unname(tierOf[out$cell_id]) else character(0)
 write.table(out, file.path(resultsDir, "reconciliation.tsv"), sep = "\t",
             quote = FALSE, row.names = FALSE)
 
@@ -843,8 +947,8 @@ cat(sprintf("  UNEXPLAINED %6d\n", nUnexplained))
 cat("\n--- completeness against quantities.tsv ---\n")
 cat(sprintf("  contract clauses read        : %d over %d procedures\n",
             nrow(QT), length(unique(QT$procedure))))
-cat(sprintf("  contracted quantities, expanded over the %d cells : %d\n",
-            nrow(mx), nrow(EXP)))
+cat(sprintf("  contracted quantities, expanded over the %d cells (options+sweep; nist has no contract) : %d\n",
+            nrow(mxContract), nrow(EXP)))
 cat(sprintf("  EXPECTED  %6d   (a `both` clause is expected of each runner)\n", nExpected))
 cat(sprintf("  REPORTED  %6d\n", nReported))
 cat(sprintf("  MISSING   %6d\n", nMissing))
@@ -999,9 +1103,62 @@ if (balances) {
     cat("  across) all three categories. See results/reconciliation.tsv.\n")
 }
 
+# ---------------------------------------------------------------------------
+# THE BALANCE INVARIANT, SPLIT PER TIER AND IN TOTAL (Ian's ruling,
+# docs/MEMO_TO_FABLE_TIERS_2026-08-28.md). The block just above already IS
+# options + sweep combined (P/R had the nist cells split out of them well
+# before it ran); this restates it per tier, so a row cannot escape by being
+# filed under the wrong one, and adds the nist tier's own accounting, which
+# has no Praat-vs-R contract to balance against -- only "did every
+# certified field this run owed get compared", which is asked directly.
+# ---------------------------------------------------------------------------
+tierSubBalance <- function(tierName) {
+    # %in%, not == : a stale audit/praat_results.tsv can still carry a
+    # cell_id matrix.tsv has since retired ("never reused, never renumbered
+    # in place" -- matrix.tsv's own header). tierOf[] is then NA for it, and
+    # NA == tierName is NA, not FALSE -- which both mis-subsets a data frame
+    # (an NA logical index inserts a phantom all-NA row rather than
+    # excluding it) and poisons sum() on any bucket vector it touches. %in%
+    # never returns NA, so an orphaned cell_id is excluded from every tier,
+    # exactly as it should be, rather than corrupting all of them.
+    Pt <- P[unname(tierOf[P$cell_id]) %in% tierName, , drop = FALSE]
+    Rt <- R[unname(tierOf[R$cell_id]) %in% tierName, , drop = FALSE]
+    sharedT <- length(intersect(Pt$key, Rt$key))
+    totT <- nrow(Pt) + nrow(Rt) - sharedT
+    agT  <- sum(unname(tierOf[vapply(agreeRows, `[[`, "", "cell_id")]) %in% tierName)
+    ctT  <- sum(out$bucket %in% c("CONTRACT_ONLY_PRAAT", "CONTRACT_ONLY_R", "CONTRACT_UNDEFINED",
+                                   "CONTRACT_MISSING_PARTNER") & out$tier %in% tierName)
+    dOST <- sum(out$bucket %in% c("DECLARED_ONLY_PRAAT", "DECLARED_ONLY_R") & out$tier %in% tierName)
+    dDT  <- sum(out$bucket == "DECLARED" & out$tier %in% tierName)
+    uxT  <- sum(out$bucket %in% c("UNEXPLAINED", "UNMATCHED_PRAAT", "UNMATCHED_R") & out$tier %in% tierName)
+    sumT <- agT + ctT + dOST + dDT
+    gapT <- totT - (sumT + uxT)
+    list(agree = agT, docAbsent = ctT + dOST, tolBounded = dDT, unexplained = uxT,
+         total = totT, gap = gapT, balances = gapT == 0)
+}
+cat("\n--- the balance invariant, per tier (each tier's own compared + documented-absent + tolerance-bounded = total) ---\n")
+tierBal <- list()
+for (tn in c("options", "sweep")) {
+    b <- tierSubBalance(tn); tierBal[[tn]] <- b
+    cat(sprintf("  %-8s compared=%-6d documented-absent=%-6d tolerance-bounded=%-6d unexplained=%-6d  total=%-6d  %s\n",
+                tn, b$agree, b$docAbsent, b$tolBounded, b$unexplained, b$total,
+                if (b$balances) "HOLDS" else sprintf("FAILS (gap %d)", b$gap)))
+}
+cat(sprintf("  %-8s (no R oracle) certified-fields-expected=%-6d compared=%-6d missing-from-praat=%-6d  %s\n",
+            "nist", nNistExpected, nNistCompared, nNistMissingPraat,
+            if (nNistBalances) "HOLDS" else "FAILS"))
+if (nNistDisagree)
+    cat(sprintf("    of the %d compared, %d disagree with the certified constant beyond tolerance -- bucket NIST_DISAGREE.\n",
+                nNistCompared, nNistDisagree))
+allTiersBalance <- tierBal[["options"]]$balances && tierBal[["sweep"]]$balances && nNistBalances
+cat(sprintf("\n  TOTAL, all three tiers: %d cells (options %d, sweep %d, nist %d) -- %s\n",
+            nrow(mx), sum(mx$tier == "options"), sum(mx$tier == "sweep"), sum(mx$tier == "nist"),
+            if (allTiersBalance) "every tier's balance HOLDS" else "at least one tier's balance FAILS"))
+
 cat("\n---------------------------------------------------------\n")
-if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0 && balances) {
-    cat("  GREEN. Every row is accounted for AND every contracted quantity arrived.\n")
+if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0 && balances &&
+    allTiersBalance && nNistDisagree == 0) {
+    cat("  GREEN. Every row is accounted for AND every contracted quantity arrived, across all three tiers.\n")
 } else {
     cat("  NOT GREEN.\n")
     if (nUnexplained)
@@ -1015,6 +1172,11 @@ if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0 && bal
     if (!balances)
         cat(sprintf("    balance invariant FAILS -- gap of %d key(s); see 'the balance invariant' above.\n",
                     abs(balanceGap)))
+    if (!allTiersBalance)
+        cat("    at least one tier's OWN balance invariant FAILS -- see 'the balance invariant, per tier' above.\n")
+    if (nNistDisagree)
+        cat(sprintf("    %d nist-tier value(s) disagree with the certified constant beyond tolerance -- bucket NIST_DISAGREE.\n",
+                    nNistDisagree))
     cat("  See results/reconciliation.tsv.\n")
     cat("  A run that compares fewer quantities than the contract requires is not green,\n")
     cat("  however well the ones present agree.\n")
@@ -1199,7 +1361,7 @@ EXC <- data.frame(
     analysis = out$cell_id[excIdx], quantity = out$quantity[excIdx],
     plugin_value = out$praat[excIdx], r_value = out$r[excIdx],
     relative_difference = sprintf("%.2e", relDiff(out$praat[excIdx], out$r[excIdx])),
-    reason = out$reader[excIdx])
+    reason = out$reader[excIdx], tier = out$tier[excIdx])
 EXC <- EXC[order(EXC$analysis, EXC$quantity), ]
 tsvWrite(EXC, "exceptions.tsv")
 
@@ -1211,7 +1373,9 @@ kindOf <- function(bucket, id) {
     ifelse(bucket %in% c("CONTRACT_ONLY_R", "DECLARED_ONLY_R"), "reported by R only (documented)",
     ifelse(bucket == "CONTRACT_UNDEFINED", "undefined marker, one side (documented)",
     ifelse(bucket == "CONTRACT_MISSING_PARTNER", "both sides: no value defined (documented)",
-    "NOT DOCUMENTED -- see enforcement/why in reconciliation.tsv"))))))
+    ifelse(bucket == "NIST_DISAGREE", "differs from the NIST certified value beyond tolerance",
+    ifelse(bucket == "NIST_MISSING_PRAAT", "certified field not reported by the plugin",
+    "NOT DOCUMENTED -- see enforcement/why in reconciliation.tsv"))))))))
 }
 DIS <- data.frame(
     analysis = out$cell_id, quantity = out$quantity,
@@ -1219,7 +1383,7 @@ DIS <- data.frame(
     relative_difference = ifelse(!is.na(num(out$praat)) & !is.na(num(out$r)),
                                   sprintf("%.2e", relDiff(out$praat, out$r)), ""),
     kind = kindOf(out$bucket, out$id),
-    reason = out$reader)
+    reason = out$reader, tier = out$tier)
 DIS <- DIS[order(DIS$analysis, DIS$quantity), ]
 tsvWrite(DIS, "disagreements_all.tsv")
 
@@ -1247,24 +1411,32 @@ oneSidedDocBuckets <- c("CONTRACT_ONLY_PRAAT", "CONTRACT_ONLY_R", "CONTRACT_UNDE
 agreeCellId <- vapply(agreeRows, function(r) r$cell_id, "")
 agreeProc <- unname(procOf[agreeCellId])
 mxPosthoc <- setNames(if ("posthoc" %in% names(mx)) mx$posthoc else rep("", nrow(mx)), mx$cell_id)
-buildAgreementRow <- function(procName, cellSet, posthocLabel) {
-    nAgr  <- sum(agreeProc == procName & agreeCellId %in% cellSet)
-    nDiff <- sum(out$bucket == "DECLARED" & out$procedure == procName & out$cell_id %in% cellSet)
+nistAgreeCellId <- vapply(nistAgreeRows, function(r) r$cell_id, "")
+buildAgreementRow <- function(procName, cellSet, posthocLabel, tierLabel) {
+    # The nist tier has no DECLARED/CONTRACT bucket -- NIST_DISAGREE and
+    # NIST_MISSING_PRAAT stand in for "differing" and "one-sided" there, so a
+    # (procedure, tier) row reads the same shape whichever tier it is.
+    isNist <- identical(tierLabel, "nist")
+    nAgr  <- if (isNist) sum(nistAgreeCellId %in% cellSet) else sum(agreeProc == procName & agreeCellId %in% cellSet)
+    nDiff <- sum(out$bucket %in% c("DECLARED", "NIST_DISAGREE") & out$procedure == procName & out$cell_id %in% cellSet)
     nUnex <- sum(out$bucket == "UNEXPLAINED" & out$procedure == procName & out$cell_id %in% cellSet)
-    nOne  <- sum(out$bucket %in% oneSidedDocBuckets & out$procedure == procName & out$cell_id %in% cellSet)
+    nOne  <- sum(out$bucket %in% c(oneSidedDocBuckets, "NIST_MISSING_PRAAT") & out$procedure == procName & out$cell_id %in% cellSet)
     nComp <- nAgr + nDiff + nUnex
     data.frame(procedure = humanProc(procName), post_hoc = posthocLabel,
                quantities_compared = nComp, agreeing = nAgr, differing_documented = nDiff,
                one_sided_documented = nOne,
-               percent_agreement_of_compared = if (nComp) sprintf("%.2f%%", 100 * nAgr / nComp) else "n/a")
+               percent_agreement_of_compared = if (nComp) sprintf("%.2f%%", 100 * nAgr / nComp) else "n/a",
+               tier = tierLabel)
 }
 ABP <- list()
 for (procName in sort(unique(mx$procedure))) {
-    cellsAll <- mx$cell_id[mx$procedure == procName]
-    ABP[[length(ABP) + 1]] <- buildAgreementRow(procName, cellsAll, "")
-    ph <- mxPosthoc[cellsAll]
-    for (v in sort(unique(ph[nzchar(ph)]))) {
-        ABP[[length(ABP) + 1]] <- buildAgreementRow(procName, cellsAll[ph == v], v)
+    for (tierLabel in sort(unique(mx$tier[mx$procedure == procName]))) {
+        cellsAll <- mx$cell_id[mx$procedure == procName & mx$tier == tierLabel]
+        ABP[[length(ABP) + 1]] <- buildAgreementRow(procName, cellsAll, "", tierLabel)
+        ph <- mxPosthoc[cellsAll]
+        for (v in sort(unique(ph[nzchar(ph)]))) {
+            ABP[[length(ABP) + 1]] <- buildAgreementRow(procName, cellsAll[ph == v], v, tierLabel)
+        }
     }
 }
 ABP <- do.call(rbind, ABP)
@@ -1279,7 +1451,7 @@ tsvWrite(ABP, "agreement_by_procedure.tsv")
 # procedure, so it contributes nothing new here beyond what "Praat procedure"
 # already shows -- a known, disclosed coarseness, not an oversight.
 optionCols <- setdiff(names(mx), c("cell_id", "lane", "procedure", "dataset", "col_a", "col_b", "col_c",
-                                    "prereq", "expect", "note"))
+                                    "prereq", "expect", "note", "tier"))
 covLines <- c("# What the kit tests, procedure by procedure", "",
               "One row per plugin procedure: the Praat procedure name, the R functions",
               "the kit compares it against, the options the live run exercises, and how",
@@ -1313,16 +1485,23 @@ writeLines(covLines, file.path(resultsDir, "coverage.md"))
 
 # --- 11. SUMMARY.md ----------------------------------------------------------
 # Prose per family is the reader sentence, verbatim; only the counts and
-# worst-case numbers are filled from the run.
+# worst-case numbers are filled from the run. Same rule for the three tier
+# sections below: their prose comes from results_templates/tier_sections.md,
+# never string-built here (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_2026-08-28.md).
 famCounts <- if (nrow(out)) sort(table(out$clause[!is.na(out$clause)]), decreasing = TRUE) else integer(0)
+overallGreen <- nUnexplained == 0 && nMissing == 0 && nViolation == 0 && balances &&
+    allTiersBalance && nNistDisagree == 0
 sumLines <- c(sprintf("# Validation summary — EML Stats & Graphs against R"), "",
     sprintf("Run %s. Verdict: **%s**.", format(Sys.Date(), "%d %B %Y"),
-            if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && balances)
-                "green — every quantity accounted for" else "NOT GREEN — see results/reconciliation.tsv"),
+            if (overallGreen)
+                "green — every quantity accounted for, across all three tiers" else "NOT GREEN — see results/reconciliation.tsv"),
     "",
     "## What was compared", "",
-    sprintf("The kit ran %d analyses through %d of the plugin's statistical procedures, and ran the same %d analyses in R. It then compared %d numerical results.",
-            nrow(mx), length(unique(mx$procedure)), nrow(mx), nCompared),
+    # nrow(mxContract), not nrow(mx): this sentence is specifically about the
+    # options + sweep tiers, the two run through BOTH Praat and R -- the nist
+    # tier (no R oracle) gets its own section below, with its own count.
+    sprintf("The kit ran %d analyses through %d of the plugin's statistical procedures (the options and sweep tiers), and ran the same %d analyses in R. It then compared %d numerical results.",
+            nrow(mxContract), length(unique(mxContract$procedure)), nrow(mxContract), nCompared),
     "",
     sprintf("**%d of %d agree** to at least nine significant digits (values at machine zero are compared absolutely, below 1e-12). The rest are listed in full in `exceptions.tsv` and `disagreements_all.tsv`, one row each, with the reason beside the numbers. There are no unexplained differences: an accounting identity inside the comparison proves every quantity from both programs landed in exactly one category (the balance invariant in `audit/VERDICT.txt`), and the run fails loudly if one ever doesn't.",
             nAgree, nCompared),
@@ -1334,6 +1513,36 @@ for (nm in names(famCounts)) {
     title <- titleCase(gsub("-", " ", nm))
     sumLines <- c(sumLines, sprintf("**%s (%d).** %s", title, famCounts[[nm]], txt), "")
 }
+
+# --- 11b. THREE TIERS, ONE SECTION EACH ------------------------------------
+.tierSecPath <- file.path(kitDir, "results_templates", "tier_sections.md")
+TIERSEC <- .parseReaderSentences(.tierSecPath)
+agreeTierVec <- unname(tierOf[agreeCellId])
+nCompTier  <- function(tn) sum(agreeTierVec %in% tn) +
+    sum(out$bucket == "DECLARED" & out$tier %in% tn) + sum(out$bucket == "UNEXPLAINED" & out$tier %in% tn)
+nAgreeTier <- function(tn) sum(agreeTierVec %in% tn)
+tierSection <- function(tierName, title, nCells) {
+    txt <- TIERSEC[[tierName]]
+    if (is.null(txt))
+        stop(sprintf(paste0(
+            "GENERATION HARD ERROR: no '## %s' section in ",
+            "results_templates/tier_sections.md -- every tier needs its question ",
+            "and oracle stated there before generation can write SUMMARY.md."),
+            tierName), call. = FALSE)
+    countLine <- if (identical(tierName, "nist"))
+        sprintf("**Count.** %d cells, %d certified fields compared, %d agree, %d disagree beyond tolerance.",
+                nCells, nNistCompared, nNistAgree, nNistDisagree)
+    else
+        sprintf("**Count.** %d cells, %d numerical comparisons, %d agree.",
+                nCells, nCompTier(tierName), nAgreeTier(tierName))
+    c(sprintf("### %s", title), "", txt, "", countLine, "")
+}
+sumLines <- c(sumLines, "## The three tiers", "",
+    "Three bodies of evidence, three different questions, one verdict: green requires all three fully accounted for (the balance invariant in `audit/VERDICT.txt`, run per tier and in total).", "",
+    tierSection("options", "The options tier", sum(mx$tier == "options")),
+    tierSection("sweep",   "The sweep tier",   sum(mx$tier == "sweep")),
+    tierSection("nist",    "The NIST tier",    sum(mx$tier == "nist")))
+
 sumLines <- c(sumLines, "## Run it yourself", "",
     "1. Open `RUN_ME_FIRST.praat` in Praat and run it.",
     "2. Source `run_analyses.R` in R.",

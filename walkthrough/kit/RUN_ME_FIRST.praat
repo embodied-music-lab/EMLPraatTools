@@ -276,10 +276,18 @@ endproc
 # columns (cell_id, lane, procedure, dataset, col_a, col_b, col_c, test,
 # posthoc, adjust, equal_var, group_order, conf, correction, prereq, expect,
 # note), header order verbatim from matrix.tsv. Output: .f$[1..17].
+#
+# THE TRAILING tier COLUMN (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_2026-08-28.md)
+# lands in .f$[18], one tab further out than the 17 fields every caller here
+# reads. The loop bound below is 17, not 16, precisely so that split, not
+# note (.f$[17]), swallows the rest of the line -- an unfixed 16-bound would
+# run the tier value straight onto the end of every cell's note, with a
+# literal embedded tab, which nothing downstream would ever separate again.
+# No caller reads .f$[18]; compare.R gets tier from matrix.tsv directly.
 # ----------------------------------------------------------------------------
 procedure emlKitSplit17: .line$
     .rest$ = .line$
-    for .c from 1 to 16
+    for .c from 1 to 17
         .tPos = index (.rest$, tab$)
         if .tPos = 0
             .f$ [.c] = .rest$
@@ -289,7 +297,7 @@ procedure emlKitSplit17: .line$
             .rest$ = mid$ (.rest$, .tPos + 1, length (.rest$) - .tPos)
         endif
     endfor
-    .f$ [17] = .rest$
+    .f$ [18] = .rest$
 endproc
 
 # ----------------------------------------------------------------------------

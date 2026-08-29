@@ -2,34 +2,54 @@
 =========================================================
   EML kit -- reconciliation of the two result tables
 =========================================================
-cells declared in matrix.tsv : 624
+cells declared in matrix.tsv : 656
 rows, Praat table            : 10797
-rows, R table                : 12002
+rows, R table                : 12660
 value comparisons made       : 10841
 
   AGREE        10792   (relative difference < 1e-9, or absolute < 1e-12 near zero)
-  CONTRACT      1067   (one-sided rows quantities.tsv accounts for)
+  CONTRACT      1725   (one-sided rows quantities.tsv accounts for)
   DECLARED       316   (differences and one-sided rows with a written reason)
   UNEXPLAINED     32
 
 --- completeness against quantities.tsv ---
   contract clauses read        : 234 over 17 procedures
-  contracted quantities, expanded over the 624 cells : 11827
-  EXPECTED   21793   (a `both` clause is expected of each runner)
-  REPORTED   21793
-  MISSING        0
+  contracted quantities, expanded over the 656 cells (options+sweep; nist has no contract) : 12394
+  EXPECTED   22911   (a `both` clause is expected of each runner)
+  REPORTED   22360
+  MISSING      551
   waived       625   (the side refused the cell; a refusal reports completely)
 
+  missing, by procedure:
+    emlRunAnovaAnalysis                  471
+    emlRunKWAnalysis                      80
+
+  missing, by quantity (top 12):
+    p                                               32
+    n                                               32
+    f                                               16
+    df_between                                      16
+    df_within                                       16
+    ss_between                                      16
+    ss_within                                       16
+    ss_total                                        16
+    ms_between                                      16
+    ms_within                                       16
+    eta_squared                                     16
+    posthoc_g1__g2_cohens_d                         16
+
 --- the standing kit: one property per procedure ---
+  (filtered run: walking only the 17 driven procedure(s); the reverse
+   ratchet -- a governed procedure this run never drove -- is suspended below.)
   emlAlphaInfluence                  complete   7 clause(s), 0 missing
   emlChiSquareIndependence           complete   9 clause(s), 0 missing
   emlCronbachAlpha                   complete   7 clause(s), 0 missing
-  emlRunAnovaAnalysis                complete  17 clause(s), 0 missing
+  emlRunAnovaAnalysis                RED       17 clause(s), 471 missing
   emlRunCorrelationAnalysis          complete  14 clause(s), 0 missing
   emlRunDescriptiveAnalysis          complete  18 clause(s), 0 missing
   emlRunFriedmanAnalysis             complete  11 clause(s), 0 missing
   emlRunGroupedRegression            complete  22 clause(s), 0 missing
-  emlRunKWAnalysis                   complete  10 clause(s), 0 missing
+  emlRunKWAnalysis                   RED       10 clause(s), 80 missing
   emlRunNormalityAnalysis            complete  10 clause(s), 0 missing
   emlRunPairedAnalysis               complete  18 clause(s), 0 missing
   emlRunPairwiseAnalysis             complete  17 clause(s), 0 missing
@@ -63,17 +83,26 @@ value comparisons made       : 10841
 
 --- the balance invariant: compared + documented-absent + tolerance-bounded = total ---
   compared            (AGREE)                                     10792
-  documented-absent   (CONTRACT one-sided + DECLARED one-sided)    1334
+  documented-absent   (CONTRACT one-sided + DECLARED one-sided)    1992
   tolerance-bounded   (DECLARED, both sides present, differ)         49
   -----------------------------------------------------------------------
-  sum of the three                                                12175
+  sum of the three                                                12833
   + UNEXPLAINED (outside all three)                                  32
-  =  12207   vs. total rows in play (nrow(P) + nrow(R) - shared keys):  12207
+  =  12865   vs. total rows in play (nrow(P) + nrow(R) - shared keys):  12865
   balance: HOLDS -- every observed key landed in exactly one category.
+
+--- the balance invariant, per tier (each tier's own compared + documented-absent + tolerance-bounded = total) ---
+  options  compared=10792  documented-absent=1334   tolerance-bounded=49     unexplained=0       total=12175   HOLDS
+  sweep    compared=0      documented-absent=658    tolerance-bounded=0      unexplained=0       total=658     HOLDS
+  nist     (no R oracle) certified-fields-expected=0      compared=0      missing-from-praat=0       HOLDS
+
+  TOTAL, all three tiers: 656 cells (options 624, sweep 32, nist 0) -- every tier's balance HOLDS
 
 ---------------------------------------------------------
   NOT GREEN.
     32 unexplained row(s)  -- bucket UNEXPLAINED / UNMATCHED_PRAAT / UNMATCHED_R.
+    551 contracted quantit(ies) MISSING -- bucket MISSING_PRAAT / MISSING_R.
+    2 standing-kit failure(s) -- see the per-procedure walk above.
   See results/reconciliation.tsv.
   A run that compares fewer quantities than the contract requires is not green,
   however well the ones present agree.

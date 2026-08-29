@@ -1,0 +1,13 @@
+One-way ANOVA -- value by grp (group_order=discovery)
+Levels (in order): G1, G2
+
+F(1,14)=3.1017 p=0.1
+eta^2: rstatix=0.1814 effectsize=0.1814
+
+  G1: n=8 mean=9.9203 sd=1.9043 median=9.7664
+  G2: n=8 mean=11.7507 sd=2.2394 median=11.8156
+
+Pairwise Cohen's d (first-minus-second):
+  g1__g2: effectsize=-0.8806 rstatix=-0.8806
+
+Tukey g1__g2: diff=-1.8304 [-4.0595, 0.3987] p.adj=0.1

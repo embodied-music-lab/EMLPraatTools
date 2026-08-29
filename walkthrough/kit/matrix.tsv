@@ -40,6 +40,20 @@
 #   prereq       a call that must run first in the same session, "proc:args"
 #   expect       ok | refuse -- a refusal that happens correctly is evidence
 #   note         why this cell is here, or why it refuses
+#   tier         options | sweep | nist -- which body of evidence this cell
+#                belongs to (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_2026-08-28.md):
+#                  options  the 624 cells above -- the plugin's own option space,
+#                           oracled against R packages.
+#                  sweep    the designed shape grid, k in {2,3,5} x balance x
+#                           ties x variance ratio (validate/v18_sweep_parity.R),
+#                           oracled against base R in run_analyses.R like any
+#                           other cell -- no new runner.
+#                  nist     NIST StRD certified ANOVA datasets
+#                           (validate/v19_nist_strd.R). No R oracle: compare.R
+#                           compares the Praat column against nist_certified.tsv's
+#                           published constants directly.
+#                compare.R's balance invariant runs per tier and in total, so a
+#                row cannot escape by being filed under the wrong one.
 #
 # GROUP ORDER IS RESULT-AFFECTING, WHICH IS WHY IT IS AN AXIS.
 # Measured on Praat 6.6.30, v11_twoway_input, SPL_dB by voice_type:
@@ -103,628 +117,671 @@
 # stats/eml-psychometrics.praat and stats/eml-categorical.praat. There is
 # nothing left to rebuild for the survey rows to run.
 # ===========================================================================
-cell_id	lane	procedure	dataset	col_a	col_b	col_c	test	posthoc	adjust	equal_var	group_order	conf	correction	prereq	expect	note
-c0001	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		parametric			0	discovery				ok	labels already alphabetical: group order is an invariance check here
-c0002	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		parametric			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here
-c0003	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		parametric			1	discovery				ok	labels already alphabetical: group order is an invariance check here
-c0004	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		parametric			1	alphabetical				ok	labels already alphabetical: group order is an invariance check here
-c0005	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		nonparametric			0	discovery				ok	labels already alphabetical: group order is an invariance check here
-c0006	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		nonparametric			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here
-c0007	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		both			0	discovery				ok	labels already alphabetical: group order is an invariance check here
-c0008	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		both			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here
-c0009	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		parametric			0	discovery				ok	labels already alphabetical: group order is an invariance check here
-c0010	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		parametric			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here
-c0011	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		parametric			1	discovery				ok	labels already alphabetical: group order is an invariance check here
-c0012	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		parametric			1	alphabetical				ok	labels already alphabetical: group order is an invariance check here
-c0013	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		nonparametric			0	discovery				ok	labels already alphabetical: group order is an invariance check here
-c0014	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		nonparametric			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here
-c0015	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		both			0	discovery				ok	labels already alphabetical: group order is an invariance check here
-c0016	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		both			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here
-c0017	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		parametric			0	discovery				ok	
-c0018	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		parametric			0	alphabetical				ok	
-c0019	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		parametric			1	discovery				ok	
-c0020	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		parametric			1	alphabetical				ok	
-c0021	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		nonparametric			0	discovery				ok	
-c0022	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		nonparametric			0	alphabetical				ok	
-c0023	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		both			0	discovery				ok	
-c0024	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		both			0	alphabetical				ok	
-c0025	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		parametric			0	discovery				ok	
-c0026	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		parametric			0	alphabetical				ok	
-c0027	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		parametric			1	discovery				ok	
-c0028	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		parametric			1	alphabetical				ok	
-c0029	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		nonparametric			0	discovery				ok	
-c0030	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		nonparametric			0	alphabetical				ok	
-c0031	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		both			0	discovery				ok	
-c0032	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		both			0	alphabetical				ok	
-c0033	analysis	emlRunTwoGroupAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		parametric			0	discovery				refuse	voice_type has 3 groups; this test compares exactly 2
-c0034	analysis	emlRunTwoGroupAnalysis	v73_directional_input	x	fam		parametric			0	discovery				refuse	fam has 5 groups; this test compares exactly 2
-c0035	analysis	emlRunAnovaAnalysis	demo_3groups_input	SPL_dB	voice_type			0			discovery				ok	
-c0036	analysis	emlRunAnovaAnalysis	demo_3groups_input	SPL_dB	voice_type			0			alphabetical				ok	
-c0037	analysis	emlRunAnovaAnalysis	demo_3groups_input	SPL_dB	voice_type			1			discovery				ok	
-c0038	analysis	emlRunAnovaAnalysis	demo_3groups_input	SPL_dB	voice_type			1			alphabetical				ok	
-c0039	analysis	emlRunAnovaAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0			discovery				ok	
-c0040	analysis	emlRunAnovaAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0			alphabetical				ok	
-c0041	analysis	emlRunAnovaAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1			discovery				ok	
-c0042	analysis	emlRunAnovaAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1			alphabetical				ok	
-c0043	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0			discovery				ok	
-c0044	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0			alphabetical				ok	
-c0045	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1			discovery				ok	
-c0046	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1			alphabetical				ok	
-c0047	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0			discovery				ok	
-c0048	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0			alphabetical				ok	
-c0049	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1			discovery				ok	
-c0050	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1			alphabetical				ok	
-c0051	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0			discovery				ok	
-c0052	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0			alphabetical				ok	
-c0053	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1			discovery				ok	
-c0054	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1			alphabetical				ok	
-c0055	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0			discovery				ok	
-c0056	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0			alphabetical				ok	
-c0057	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1			discovery				ok	
-c0058	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1			alphabetical				ok	
-c0059	analysis	emlRunAnovaAnalysis	v08_twogroup_input	jitter_pct	group			0			discovery				ok	
-c0060	analysis	emlRunAnovaAnalysis	v08_twogroup_input	jitter_pct	group			0			alphabetical				ok	
-c0061	analysis	emlRunAnovaAnalysis	v08_twogroup_input	jitter_pct	group			1			discovery				ok	
-c0062	analysis	emlRunAnovaAnalysis	v08_twogroup_input	jitter_pct	group			1			alphabetical				ok	
-c0063	analysis	emlRunAnovaAnalysis	v11_twoway_input	SPL_dB	voice_type			0			discovery				ok	
-c0064	analysis	emlRunAnovaAnalysis	v11_twoway_input	SPL_dB	voice_type			0			alphabetical				ok	
-c0065	analysis	emlRunAnovaAnalysis	v11_twoway_input	SPL_dB	voice_type			1			discovery				ok	
-c0066	analysis	emlRunAnovaAnalysis	v11_twoway_input	SPL_dB	voice_type			1			alphabetical				ok	
-c0067	analysis	emlRunAnovaAnalysis	v73_directional_input	x	fam			0			discovery				ok	
-c0068	analysis	emlRunAnovaAnalysis	v73_directional_input	x	fam			0			alphabetical				ok	
-c0069	analysis	emlRunAnovaAnalysis	v73_directional_input	x	fam			1			discovery				ok	
-c0070	analysis	emlRunAnovaAnalysis	v73_directional_input	x	fam			1			alphabetical				ok	
-c0071	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			0			discovery				ok	
-c0072	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			0			alphabetical				ok	
-c0073	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			1			discovery				ok	
-c0074	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			1			alphabetical				ok	
-c0076	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off
-c0077	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bonferroni		discovery				ok	
-c0078	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	holm		discovery				ok	
-c0079	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bh		discovery				ok	
-c0080	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off
-c0081	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok	
-c0082	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	holm		alphabetical				ok	
-c0083	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bh		alphabetical				ok	
-c0084	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off
-c0085	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok	
-c0086	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok	
-c0087	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok	
-c0088	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off
-c0089	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok	
-c0090	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok	
-c0091	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok	
-c0092	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off
-c0093	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bonferroni		discovery				ok	
-c0094	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	holm		discovery				ok	
-c0095	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bh		discovery				ok	
-c0096	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off
-c0097	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok	
-c0098	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	holm		alphabetical				ok	
-c0099	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bh		alphabetical				ok	
-c0100	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off
-c0101	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok	
-c0102	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok	
-c0103	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok	
-c0104	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off
-c0105	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok	
-c0106	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok	
-c0107	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok	
-c0108	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off
-c0109	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bonferroni		discovery				ok	
-c0110	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	holm		discovery				ok	
-c0111	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bh		discovery				ok	
-c0112	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off
-c0113	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok	
-c0114	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	holm		alphabetical				ok	
-c0115	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bh		alphabetical				ok	
-c0116	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off
-c0117	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok	
-c0118	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok	
-c0119	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok	
-c0120	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off
-c0121	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok	
-c0122	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok	
-c0123	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok	
-c0124	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			0	holm		discovery				ok	adjustment unread with Dunn off
-c0125	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bonferroni		discovery				ok	
-c0126	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	holm		discovery				ok	
-c0127	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bh		discovery				ok	
-c0128	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			0	holm		alphabetical				ok	adjustment unread with Dunn off
-c0129	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bonferroni		alphabetical				ok	
-c0130	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	holm		alphabetical				ok	
-c0131	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bh		alphabetical				ok	
-c0132	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off
-c0133	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bonferroni		discovery				ok	
-c0134	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	holm		discovery				ok	
-c0135	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bh		discovery				ok	
-c0136	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off
-c0137	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok	
-c0138	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	holm		alphabetical				ok	
-c0139	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bh		alphabetical				ok	
-c0140	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			0	holm		discovery				ok	adjustment unread with Dunn off
-c0141	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bonferroni		discovery				ok	
-c0142	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	holm		discovery				ok	
-c0143	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bh		discovery				ok	
-c0144	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			0	holm		alphabetical				ok	adjustment unread with Dunn off
-c0145	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bonferroni		alphabetical				ok	
-c0146	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	holm		alphabetical				ok	
-c0147	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bh		alphabetical				ok	
-c0148	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			0	holm		discovery				ok	adjustment unread with Dunn off
-c0149	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bonferroni		discovery				ok	
-c0150	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	holm		discovery				ok	
-c0151	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bh		discovery				ok	
-c0152	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			0	holm		alphabetical				ok	adjustment unread with Dunn off
-c0153	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bonferroni		alphabetical				ok	
-c0154	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	holm		alphabetical				ok	
-c0155	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bh		alphabetical				ok	
-c0157	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bonferroni		discovery				ok	
-c0158	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		holm		discovery				ok	
-c0159	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bh		discovery				ok	
-c0160	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		bonferroni		discovery				ok	
-c0161	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		holm		discovery				ok	
-c0162	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		bh		discovery				ok	
-c0163	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		bonferroni		discovery				ok	
-c0164	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		holm		discovery				ok	
-c0165	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		bh		discovery				ok	
-c0166	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0167	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bonferroni		alphabetical				ok	
-c0168	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		holm		alphabetical				ok	
-c0169	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bh		alphabetical				ok	
-c0170	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		bonferroni		alphabetical				ok	
-c0171	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		holm		alphabetical				ok	
-c0172	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		bh		alphabetical				ok	
-c0173	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		bonferroni		alphabetical				ok	
-c0174	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		holm		alphabetical				ok	
-c0175	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		bh		alphabetical				ok	
-c0176	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0177	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		bonferroni		discovery				ok	
-c0178	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		holm		discovery				ok	
-c0179	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		bh		discovery				ok	
-c0180	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		bonferroni		discovery				ok	
-c0181	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		holm		discovery				ok	
-c0182	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		bh		discovery				ok	
-c0183	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		discovery				ok	
-c0184	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		discovery				ok	
-c0185	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		discovery				ok	
-c0186	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0187	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		bonferroni		alphabetical				ok	
-c0188	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		holm		alphabetical				ok	
-c0189	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		bh		alphabetical				ok	
-c0190	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		bonferroni		alphabetical				ok	
-c0191	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		holm		alphabetical				ok	
-c0192	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		bh		alphabetical				ok	
-c0193	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		alphabetical				ok	
-c0194	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		alphabetical				ok	
-c0195	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		alphabetical				ok	
-c0196	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0197	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		bonferroni		discovery				ok	
-c0198	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		holm		discovery				ok	
-c0199	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		bh		discovery				ok	
-c0200	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		bonferroni		discovery				ok	
-c0201	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		holm		discovery				ok	
-c0202	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		bh		discovery				ok	
-c0203	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		bonferroni		discovery				ok	
-c0204	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		holm		discovery				ok	
-c0205	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		bh		discovery				ok	
-c0206	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0207	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		bonferroni		alphabetical				ok	
-c0208	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		holm		alphabetical				ok	
-c0209	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		bh		alphabetical				ok	
-c0210	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		bonferroni		alphabetical				ok	
-c0211	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		holm		alphabetical				ok	
-c0212	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		bh		alphabetical				ok	
-c0213	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		bonferroni		alphabetical				ok	
-c0214	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		holm		alphabetical				ok	
-c0215	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		bh		alphabetical				ok	
-c0216	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0217	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		bonferroni		discovery				ok	
-c0218	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		holm		discovery				ok	
-c0219	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		bh		discovery				ok	
-c0220	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		bonferroni		discovery				ok	
-c0221	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		holm		discovery				ok	
-c0222	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		bh		discovery				ok	
-c0223	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		discovery				ok	
-c0224	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		discovery				ok	
-c0225	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		discovery				ok	
-c0226	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0227	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		bonferroni		alphabetical				ok	
-c0228	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		holm		alphabetical				ok	
-c0229	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		bh		alphabetical				ok	
-c0230	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		bonferroni		alphabetical				ok	
-c0231	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		holm		alphabetical				ok	
-c0232	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		bh		alphabetical				ok	
-c0233	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		alphabetical				ok	
-c0234	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		alphabetical				ok	
-c0235	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		alphabetical				ok	
-c0236	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0237	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		bonferroni		discovery				ok	
-c0238	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		holm		discovery				ok	
-c0239	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		bh		discovery				ok	
-c0240	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		bonferroni		discovery				ok	
-c0241	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		holm		discovery				ok	
-c0242	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		bh		discovery				ok	
-c0243	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		bonferroni		discovery				ok	
-c0244	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		holm		discovery				ok	
-c0245	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		bh		discovery				ok	
-c0246	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0247	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		bonferroni		alphabetical				ok	
-c0248	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		holm		alphabetical				ok	
-c0249	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		bh		alphabetical				ok	
-c0250	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		bonferroni		alphabetical				ok	
-c0251	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		holm		alphabetical				ok	
-c0252	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		bh		alphabetical				ok	
-c0253	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		bonferroni		alphabetical				ok	
-c0254	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		holm		alphabetical				ok	
-c0255	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		bh		alphabetical				ok	
-c0256	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0257	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		bonferroni		discovery				ok	
-c0258	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		holm		discovery				ok	
-c0259	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		bh		discovery				ok	
-c0260	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		bonferroni		discovery				ok	
-c0261	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		holm		discovery				ok	
-c0262	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		bh		discovery				ok	
-c0263	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		discovery				ok	
-c0264	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		discovery				ok	
-c0265	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		discovery				ok	
-c0266	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0267	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		bonferroni		alphabetical				ok	
-c0268	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		holm		alphabetical				ok	
-c0269	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		bh		alphabetical				ok	
-c0270	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		bonferroni		alphabetical				ok	
-c0271	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		holm		alphabetical				ok	
-c0272	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		bh		alphabetical				ok	
-c0273	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		alphabetical				ok	
-c0274	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		alphabetical				ok	
-c0275	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		alphabetical				ok	
-c0276	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0277	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		bonferroni		discovery				ok	
-c0278	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		holm		discovery				ok	
-c0279	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		bh		discovery				ok	
-c0280	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		bonferroni		discovery				ok	
-c0281	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		holm		discovery				ok	
-c0282	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		bh		discovery				ok	
-c0283	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		bonferroni		discovery				ok	
-c0284	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		holm		discovery				ok	
-c0285	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		bh		discovery				ok	
-c0286	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0287	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		bonferroni		alphabetical				ok	
-c0288	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		holm		alphabetical				ok	
-c0289	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		bh		alphabetical				ok	
-c0290	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		bonferroni		alphabetical				ok	
-c0291	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		holm		alphabetical				ok	
-c0292	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		bh		alphabetical				ok	
-c0293	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		bonferroni		alphabetical				ok	
-c0294	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		holm		alphabetical				ok	
-c0295	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		bh		alphabetical				ok	
-c0296	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0297	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		bonferroni		discovery				ok	
-c0298	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		holm		discovery				ok	
-c0299	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		bh		discovery				ok	
-c0300	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		bonferroni		discovery				ok	
-c0301	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		holm		discovery				ok	
-c0302	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		bh		discovery				ok	
-c0303	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		bonferroni		discovery				ok	
-c0304	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		holm		discovery				ok	
-c0305	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		bh		discovery				ok	
-c0306	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0307	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		bonferroni		alphabetical				ok	
-c0308	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		holm		alphabetical				ok	
-c0309	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		bh		alphabetical				ok	
-c0310	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		bonferroni		alphabetical				ok	
-c0311	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		holm		alphabetical				ok	
-c0312	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		bh		alphabetical				ok	
-c0313	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		bonferroni		alphabetical				ok	
-c0314	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		holm		alphabetical				ok	
-c0315	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		bh		alphabetical				ok	
-c0316	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0317	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		bonferroni		discovery				ok	
-c0318	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		holm		discovery				ok	
-c0319	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		bh		discovery				ok	
-c0320	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		bonferroni		discovery				ok	
-c0321	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		holm		discovery				ok	
-c0322	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		bh		discovery				ok	
-c0323	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		bonferroni		discovery				ok	
-c0324	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		holm		discovery				ok	
-c0325	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		bh		discovery				ok	
-c0326	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0327	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		bonferroni		alphabetical				ok	
-c0328	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		holm		alphabetical				ok	
-c0329	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		bh		alphabetical				ok	
-c0330	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		bonferroni		alphabetical				ok	
-c0331	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		holm		alphabetical				ok	
-c0332	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		bh		alphabetical				ok	
-c0333	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		bonferroni		alphabetical				ok	
-c0334	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		holm		alphabetical				ok	
-c0335	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		bh		alphabetical				ok	
-c0336	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0337	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		bonferroni		discovery				ok	
-c0338	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		holm		discovery				ok	
-c0339	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		bh		discovery				ok	
-c0340	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		bonferroni		discovery				ok	
-c0341	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		holm		discovery				ok	
-c0342	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		bh		discovery				ok	
-c0343	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		bonferroni		discovery				ok	
-c0344	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		holm		discovery				ok	
-c0345	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		bh		discovery				ok	
-c0346	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0347	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		bonferroni		alphabetical				ok	
-c0348	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		holm		alphabetical				ok	
-c0349	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		bh		alphabetical				ok	
-c0350	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		bonferroni		alphabetical				ok	
-c0351	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		holm		alphabetical				ok	
-c0352	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		bh		alphabetical				ok	
-c0353	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		bonferroni		alphabetical				ok	
-c0354	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		holm		alphabetical				ok	
-c0355	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		bh		alphabetical				ok	
-c0356	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none
-c0357	analysis	emlRunTwoWayAnalysis	v11_twoway_input	SPL_dB	voice_type	task									ok	
-c0358	analysis	emlRunTwoWayAnalysis	v11_twoway_input	SPL_dB	task	voice_type									ok	factors swapped: same model, reversed reporting order
-c0359	analysis	emlRunTwoWayAnalysis	v11_twoway_input	subject	voice_type	task									refuse	data column subject holds no numbers
-c0360	analysis	emlRunPairedAnalysis	demo_paired_input	jitter_pre	jitter_post		parametric								ok	
-c0361	analysis	emlRunPairedAnalysis	demo_paired_input	jitter_pre	jitter_post		nonparametric								ok	
-c0362	analysis	emlRunPairedAnalysis	demo_paired_input	jitter_pre	jitter_post		both								ok	
-c0363	analysis	emlRunPairedAnalysis	demo_paired_input	HNR_pre	HNR_post		parametric								ok	
-c0364	analysis	emlRunPairedAnalysis	demo_paired_input	HNR_pre	HNR_post		nonparametric								ok	
-c0365	analysis	emlRunPairedAnalysis	demo_paired_input	HNR_pre	HNR_post		both								ok	
-c0366	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_medium		parametric								ok	
-c0367	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_medium		nonparametric								ok	
-c0368	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_medium		both								ok	
-c0369	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_medium	SPL_loud		parametric								ok	
-c0370	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_medium	SPL_loud		nonparametric								ok	
-c0371	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_medium	SPL_loud		both								ok	
-c0372	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_loud		parametric								ok	
-c0373	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_loud		nonparametric								ok	
-c0374	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_loud		both								ok	
-c0375	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		parametric								ok	
-c0376	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		nonparametric								ok	
-c0377	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		both								ok	
-c0378	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		parametric								ok	n = 2, the floor the guard allows
-c0379	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		nonparametric								ok	n = 2, the floor the guard allows
-c0380	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		both								ok	n = 2, the floor the guard allows
-c0381	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		parametric								ok	one non-numeric cell: dropped as missing, not refused
-c0382	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		nonparametric								ok	one non-numeric cell: dropped as missing, not refused
-c0383	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		both								ok	one non-numeric cell: dropped as missing, not refused
-c0384	analysis	emlRunPairedAnalysis	rp_r3_paired_input	SPL_soft	SPL_medium		both								refuse	every pair has the same difference: no variance for a paired test
-c0385	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	singing_F0_Hz		pearson								ok	
-c0386	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	singing_F0_Hz		spearman								ok	
-c0387	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	singing_F0_Hz		both								ok	
-c0388	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	age_years		pearson								ok	
-c0389	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	age_years		spearman								ok	
-c0390	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	age_years		both								ok	
-c0391	analysis	emlRunCorrelationAnalysis	v12_correlation_input	singing_F0_Hz	age_years		pearson								ok	
-c0392	analysis	emlRunCorrelationAnalysis	v12_correlation_input	singing_F0_Hz	age_years		spearman								ok	
-c0393	analysis	emlRunCorrelationAnalysis	v12_correlation_input	singing_F0_Hz	age_years		both								ok	
-c0394	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	vibrato_regularity_pct		pearson								ok	
-c0395	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	vibrato_regularity_pct		spearman								ok	
-c0396	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	vibrato_regularity_pct		both								ok	
-c0397	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	experience_yrs		pearson								ok	
-c0398	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	experience_yrs		spearman								ok	
-c0399	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	experience_yrs		both								ok	
-c0400	analysis	emlRunCorrelationAnalysis	v13_regression_input	vibrato_regularity_pct	experience_yrs		pearson								ok	
-c0401	analysis	emlRunCorrelationAnalysis	v13_regression_input	vibrato_regularity_pct	experience_yrs		spearman								ok	
-c0402	analysis	emlRunCorrelationAnalysis	v13_regression_input	vibrato_regularity_pct	experience_yrs		both								ok	
-c0403	analysis	emlRunCorrelationAnalysis	v13_regression_neg_input	practice_hrs_wk	vibrato_regularity_pct		pearson								ok	negative relationship
-c0404	analysis	emlRunCorrelationAnalysis	v13_regression_neg_input	practice_hrs_wk	vibrato_regularity_pct		spearman								ok	negative relationship
-c0405	analysis	emlRunCorrelationAnalysis	v13_regression_neg_input	practice_hrs_wk	vibrato_regularity_pct		both								ok	negative relationship
-c0406	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	shimmer_pct		pearson								ok	
-c0407	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	shimmer_pct		spearman								ok	
-c0408	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	shimmer_pct		both								ok	
-c0409	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	jitter_pct		pearson								ok	
-c0410	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	jitter_pct		spearman								ok	
-c0411	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	jitter_pct		both								ok	
-c0412	analysis	emlRunCorrelationAnalysis	v15_normality_input	shimmer_pct	jitter_pct		pearson								ok	
-c0413	analysis	emlRunCorrelationAnalysis	v15_normality_input	shimmer_pct	jitter_pct		spearman								ok	
-c0414	analysis	emlRunCorrelationAnalysis	v15_normality_input	shimmer_pct	jitter_pct		both								ok	
-c0415	analysis	emlRunCorrelationAnalysis	demo_rm3_input	SPL_soft	SPL_loud		pearson								ok	
-c0416	analysis	emlRunCorrelationAnalysis	demo_rm3_input	SPL_soft	SPL_loud		spearman								ok	
-c0417	analysis	emlRunCorrelationAnalysis	demo_rm3_input	SPL_soft	SPL_loud		both								ok	
-c0418	analysis	emlRunCorrelationAnalysis	rp_r2_rmanova_input	soft	medium		both								refuse	DEFECT D-CORR-1: n<3 guard fires but .recResult$ is never initialised before the guards; the run ABORTS instead of refusing
-c0419	analysis	emlRunCorrelationAnalysis	rp_r3_paired_input	SPL_soft	SPL_medium		both								refuse	DEFECT D-CORR-2: zero variance; @emlPearsonCorrelation leaves .r unassigned on error, so the run ABORTS instead of refusing
-c0420	analysis	emlRunDescriptiveAnalysis	demo_3groups_input	SPL_dB											ok	
-c0421	analysis	emlRunDescriptiveAnalysis	demo_3groups_input	vibrato_rate_Hz											ok	
-c0422	analysis	emlRunDescriptiveAnalysis	demo_3groups_b_input	SPL_dB											ok	
-c0423	analysis	emlRunDescriptiveAnalysis	demo_3groups_b_input	vibrato_rate_Hz											ok	
-c0424	analysis	emlRunDescriptiveAnalysis	v09_anova_tukey_input	SPL_dB											ok	
-c0425	analysis	emlRunDescriptiveAnalysis	v09_anova_tukey_input	vibrato_rate_Hz											ok	
-c0426	analysis	emlRunDescriptiveAnalysis	v08_twogroup_input	F0_Hz											ok	
-c0427	analysis	emlRunDescriptiveAnalysis	v08_twogroup_input	jitter_pct											ok	
-c0428	analysis	emlRunDescriptiveAnalysis	v11_twoway_input	SPL_dB											ok	
-c0429	analysis	emlRunDescriptiveAnalysis	v12_correlation_input	speaking_F0_Hz											ok	
-c0430	analysis	emlRunDescriptiveAnalysis	v12_correlation_input	singing_F0_Hz											ok	
-c0431	analysis	emlRunDescriptiveAnalysis	v12_correlation_input	age_years											ok	
-c0432	analysis	emlRunDescriptiveAnalysis	v13_regression_input	practice_hrs_wk											ok	
-c0433	analysis	emlRunDescriptiveAnalysis	v13_regression_input	vibrato_regularity_pct											ok	
-c0434	analysis	emlRunDescriptiveAnalysis	v13_regression_input	experience_yrs											ok	
-c0435	analysis	emlRunDescriptiveAnalysis	v13_regression_neg_input	practice_hrs_wk											ok	
-c0436	analysis	emlRunDescriptiveAnalysis	v13_regression_neg_input	vibrato_regularity_pct											ok	
-c0437	analysis	emlRunDescriptiveAnalysis	v15_normality_input	F0_Hz											ok	
-c0438	analysis	emlRunDescriptiveAnalysis	v15_normality_input	shimmer_pct											ok	
-c0439	analysis	emlRunDescriptiveAnalysis	v15_normality_input	jitter_pct											ok	
-c0440	analysis	emlRunDescriptiveAnalysis	demo_paired_input	jitter_pre											ok	
-c0441	analysis	emlRunDescriptiveAnalysis	demo_paired_input	jitter_post											ok	
-c0442	analysis	emlRunDescriptiveAnalysis	demo_paired_input	HNR_pre											ok	
-c0443	analysis	emlRunDescriptiveAnalysis	demo_paired_input	HNR_post											ok	
-c0444	analysis	emlRunDescriptiveAnalysis	demo_rm3_input	SPL_soft											ok	
-c0445	analysis	emlRunDescriptiveAnalysis	demo_rm3_input	SPL_medium											ok	
-c0446	analysis	emlRunDescriptiveAnalysis	demo_rm3_input	SPL_loud											ok	
-c0447	analysis	emlRunDescriptiveAnalysis	rp_r1_rmanova_input	soft											ok	
-c0448	analysis	emlRunDescriptiveAnalysis	rp_r1_rmanova_input	medium											ok	
-c0449	analysis	emlRunDescriptiveAnalysis	rp_r1_rmanova_input	loud											ok	
-c0450	analysis	emlRunDescriptiveAnalysis	rp_r2_rmanova_input	soft											ok	n = 2
-c0451	analysis	emlRunDescriptiveAnalysis	rp_r2_rmanova_input	medium											ok	n = 2
-c0452	analysis	emlRunDescriptiveAnalysis	rp_r2_rmanova_input	loud											ok	n = 2
-c0453	analysis	emlRunDescriptiveAnalysis	rp_r3_paired_input	SPL_soft											ok	constant column: zero variance
-c0454	analysis	emlRunDescriptiveAnalysis	rp_r3_paired_input	SPL_medium											ok	constant column: zero variance
-c0455	analysis	emlRunDescriptiveAnalysis	rp_r3_paired_input	SPL_loud											ok	constant column: zero variance
-c0456	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_soft											ok	one non-numeric cell (n/a): dropped as missing, disclosed
-c0457	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_medium											ok	
-c0458	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_loud											ok	
-c0460	analysis	emlRunDescriptiveAnalysis	v73_directional_input	idx											ok	
-c0461	analysis	emlRunDescriptiveAnalysis	v73_directional_input	x											ok	
-c0462	analysis	emlRunNormalityAnalysis	demo_3groups_input	SPL_dB			both								ok	
-c0463	analysis	emlRunNormalityAnalysis	demo_3groups_input	vibrato_rate_Hz			both								ok	
-c0464	analysis	emlRunNormalityAnalysis	demo_3groups_b_input	SPL_dB			both								ok	
-c0465	analysis	emlRunNormalityAnalysis	demo_3groups_b_input	vibrato_rate_Hz			both								ok	
-c0466	analysis	emlRunNormalityAnalysis	v09_anova_tukey_input	SPL_dB			both								ok	
-c0467	analysis	emlRunNormalityAnalysis	v09_anova_tukey_input	vibrato_rate_Hz			both								ok	
-c0468	analysis	emlRunNormalityAnalysis	v08_twogroup_input	F0_Hz			both								ok	
-c0469	analysis	emlRunNormalityAnalysis	v08_twogroup_input	jitter_pct			both								ok	
-c0470	analysis	emlRunNormalityAnalysis	v11_twoway_input	SPL_dB			both								ok	
-c0471	analysis	emlRunNormalityAnalysis	v12_correlation_input	speaking_F0_Hz			both								ok	
-c0472	analysis	emlRunNormalityAnalysis	v12_correlation_input	singing_F0_Hz			both								ok	
-c0473	analysis	emlRunNormalityAnalysis	v12_correlation_input	age_years			both								ok	
-c0474	analysis	emlRunNormalityAnalysis	v13_regression_input	practice_hrs_wk			both								ok	
-c0475	analysis	emlRunNormalityAnalysis	v13_regression_input	vibrato_regularity_pct			both								ok	
-c0476	analysis	emlRunNormalityAnalysis	v13_regression_input	experience_yrs			both								ok	
-c0477	analysis	emlRunNormalityAnalysis	v13_regression_neg_input	practice_hrs_wk			both								ok	
-c0478	analysis	emlRunNormalityAnalysis	v13_regression_neg_input	vibrato_regularity_pct			both								ok	
-c0479	analysis	emlRunNormalityAnalysis	v15_normality_input	F0_Hz			both								ok	
-c0480	analysis	emlRunNormalityAnalysis	v15_normality_input	shimmer_pct			both								ok	
-c0481	analysis	emlRunNormalityAnalysis	v15_normality_input	jitter_pct			both								ok	
-c0482	analysis	emlRunNormalityAnalysis	demo_paired_input	jitter_pre			both								ok	
-c0483	analysis	emlRunNormalityAnalysis	demo_paired_input	jitter_post			both								ok	
-c0484	analysis	emlRunNormalityAnalysis	demo_paired_input	HNR_pre			both								ok	
-c0485	analysis	emlRunNormalityAnalysis	demo_paired_input	HNR_post			both								ok	
-c0486	analysis	emlRunNormalityAnalysis	demo_rm3_input	SPL_soft			both								ok	
-c0487	analysis	emlRunNormalityAnalysis	demo_rm3_input	SPL_medium			both								ok	
-c0488	analysis	emlRunNormalityAnalysis	demo_rm3_input	SPL_loud			both								ok	
-c0489	analysis	emlRunNormalityAnalysis	rp_r1_rmanova_input	soft			both								ok	
-c0490	analysis	emlRunNormalityAnalysis	rp_r1_rmanova_input	medium			both								ok	
-c0491	analysis	emlRunNormalityAnalysis	rp_r1_rmanova_input	loud			both								ok	
-c0492	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	soft			both								ok	n = 2, below Shapiro-Wilk's floor
-c0493	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	medium			both								ok	n = 2, below Shapiro-Wilk's floor
-c0494	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	loud			both								ok	n = 2, below Shapiro-Wilk's floor
-c0495	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_soft			both								ok	constant column: Shapiro-Wilk has no variance to work on
-c0496	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_medium			both								ok	constant column: Shapiro-Wilk has no variance to work on
-c0497	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_loud			both								ok	constant column: Shapiro-Wilk has no variance to work on
-c0498	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_soft			both								ok	non-numeric cells dropped as missing
-c0499	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_medium			both								ok	non-numeric cells dropped as missing
-c0500	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_loud			both								ok	non-numeric cells dropped as missing
-c0502	analysis	emlRunNormalityAnalysis	v73_directional_input	idx			both								ok	
-c0503	analysis	emlRunNormalityAnalysis	v73_directional_input	x			both								ok	
-c0504	analysis	emlRunRegressionAnalysis	v13_regression_input	vibrato_regularity_pct	practice_hrs_wk										ok	
-c0505	analysis	emlRunRegressionAnalysis	v13_regression_input	practice_hrs_wk	vibrato_regularity_pct										ok	reversed: response and predictor exchanged
-c0506	analysis	emlRunRegressionAnalysis	v13_regression_input	vibrato_regularity_pct	experience_yrs										ok	
-c0507	analysis	emlRunRegressionAnalysis	v13_regression_neg_input	vibrato_regularity_pct	practice_hrs_wk										ok	negative slope: signed R
-c0508	analysis	emlRunRegressionAnalysis	v13_regression_neg_input	practice_hrs_wk	vibrato_regularity_pct										ok	reversed, negative slope
-c0509	analysis	emlRunRegressionAnalysis	v12_correlation_input	singing_F0_Hz	speaking_F0_Hz										ok	
-c0510	analysis	emlRunRegressionAnalysis	v12_correlation_input	speaking_F0_Hz	singing_F0_Hz										ok	reversed
-c0511	analysis	emlRunRegressionAnalysis	v15_normality_input	jitter_pct	shimmer_pct										ok	
-c0512	analysis	emlRunRegressionAnalysis	demo_rm3_input	SPL_loud	SPL_soft										ok	
-c0513	analysis	emlRunRegressionAnalysis	rp_r2_rmanova_input	medium	soft										refuse	need at least 3 rows for regression
-c0514	analysis	emlRunGroupedRegression	v09_anova_tukey_input	SPL_dB	vibrato_rate_Hz	voice_type					discovery			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first
-c0515	analysis	emlRunGroupedRegression	v09_anova_tukey_input	SPL_dB	vibrato_rate_Hz	voice_type					alphabetical			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first
-c0516	analysis	emlRunGroupedRegression	demo_3groups_input	SPL_dB	vibrato_rate_Hz	voice_type					discovery			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first
-c0517	analysis	emlRunGroupedRegression	demo_3groups_input	SPL_dB	vibrato_rate_Hz	voice_type					alphabetical			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first
-c0518	analysis	emlRunGroupedRegression	v73_directional_input	idx	x	fam					discovery			emlRunRegressionAnalysis:x,idx	ok	reads emlLinearRegression.* from the overall fit; call it first
-c0519	analysis	emlRunGroupedRegression	v73_directional_input	idx	x	fam					alphabetical			emlRunRegressionAnalysis:x,idx	ok	reads emlLinearRegression.* from the overall fit; call it first
-c0520	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				0	holm						ok	adjustment unread with post hoc off
-c0521	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bonferroni						ok	
-c0522	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok	
-c0523	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bh						ok	
-c0524	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				0	holm						ok	conditions reversed: post-hoc pair labels and signs flip; adjustment unread with post hoc off
-c0525	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bonferroni						ok	conditions reversed: post-hoc pair labels and signs flip
-c0526	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	holm						ok	conditions reversed: post-hoc pair labels and signs flip
-c0527	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bh						ok	conditions reversed: post-hoc pair labels and signs flip
-c0528	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				0	holm						ok	perfectly additive: zero subject x condition residual; adjustment unread with post hoc off
-c0529	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bonferroni						ok	perfectly additive: zero subject x condition residual
-c0530	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	holm						ok	perfectly additive: zero subject x condition residual
-c0531	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bh						ok	perfectly additive: zero subject x condition residual
-c0532	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				0	holm						ok	n = 2; adjustment unread with post hoc off
-c0533	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bonferroni						ok	n = 2
-c0534	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	holm						ok	n = 2
-c0535	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bh						ok	n = 2
-c0536	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				0	holm						ok	k = 2, the floor the orchestrator allows; adjustment unread with post hoc off
-c0537	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bonferroni						ok	k = 2, the floor the orchestrator allows
-c0538	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	holm						ok	k = 2, the floor the orchestrator allows
-c0539	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bh						ok	k = 2, the floor the orchestrator allows
-c0540	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				0	holm						ok	adjustment unread with post hoc off
-c0541	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bonferroni						ok	
-c0542	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok	
-c0543	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bh						ok	
-c0544	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				0	holm						ok	conditions reversed: post-hoc pair labels and signs flip; adjustment unread with post hoc off
-c0545	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bonferroni						ok	conditions reversed: post-hoc pair labels and signs flip
-c0546	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	holm						ok	conditions reversed: post-hoc pair labels and signs flip
-c0547	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bh						ok	conditions reversed: post-hoc pair labels and signs flip
-c0548	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				0	holm						ok	perfectly additive: zero subject x condition residual; adjustment unread with post hoc off
-c0549	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bonferroni						ok	perfectly additive: zero subject x condition residual
-c0550	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	holm						ok	perfectly additive: zero subject x condition residual
-c0551	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bh						ok	perfectly additive: zero subject x condition residual
-c0552	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				0	holm						ok	n = 2; adjustment unread with post hoc off
-c0553	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bonferroni						ok	n = 2
-c0554	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	holm						ok	n = 2
-c0555	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bh						ok	n = 2
-c0556	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				0	holm						ok	k = 2, the floor the orchestrator allows; adjustment unread with post hoc off
-c0557	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bonferroni						ok	k = 2, the floor the orchestrator allows
-c0558	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	holm						ok	k = 2, the floor the orchestrator allows
-c0559	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bh						ok	k = 2, the floor the orchestrator allows
-c0560	analysis	emlRunRepeatedMeasuresAnalysis	rp_r3_paired_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						refuse	every value identical: no variance to partition
-c0561	analysis	emlRunFriedmanAnalysis	rp_r3_paired_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok	every value identical: no variance to partition; Friedman ranks and survives where RM-ANOVA refuses
-c0562	analysis	emlRunRepeatedMeasuresAnalysis	rp_r6_describe_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						refuse	zero subject x condition residual on the 4 complete rows
-c0563	analysis	emlRunFriedmanAnalysis	rp_r6_describe_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok	zero subject x condition residual on the 4 complete rows; Friedman ranks and survives where RM-ANOVA refuses
-c0566	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.90			ok	
-c0567	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.95			ok	
-c0568	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.99			ok	
-c0569	survey	emlCronbachAlpha	lane_survey_alpha_2item									0.90			ok	k = 2: alpha-if-deleted is undefined for every item
-c0570	survey	emlCronbachAlpha	lane_survey_alpha_2item									0.95			ok	k = 2: alpha-if-deleted is undefined for every item
-c0571	survey	emlCronbachAlpha	lane_survey_alpha_2item									0.99			ok	k = 2: alpha-if-deleted is undefined for every item
-c0572	survey	emlCronbachAlpha	lane_survey_alpha_missing									0.90			ok	listwise deletion disclosure
-c0573	survey	emlCronbachAlpha	lane_survey_alpha_missing									0.95			ok	listwise deletion disclosure
-c0574	survey	emlCronbachAlpha	lane_survey_alpha_missing									0.99			ok	listwise deletion disclosure
-c0575	survey	emlCronbachAlpha	lane_survey_alpha_revnotrev									0.90			ok	one item scored the wrong way round
-c0576	survey	emlCronbachAlpha	lane_survey_alpha_revnotrev									0.95			ok	one item scored the wrong way round
-c0577	survey	emlCronbachAlpha	lane_survey_alpha_revnotrev									0.99			ok	one item scored the wrong way round
-c0578	survey	emlCronbachAlpha	lane_survey_influence_deviant									0.90			ok	
-c0579	survey	emlCronbachAlpha	lane_survey_influence_deviant									0.95			ok	
-c0580	survey	emlCronbachAlpha	lane_survey_influence_deviant									0.99			ok	
-c0581	survey	emlCronbachAlpha	lane_survey_influence_missdev									0.90			ok	
-c0582	survey	emlCronbachAlpha	lane_survey_influence_missdev									0.95			ok	
-c0583	survey	emlCronbachAlpha	lane_survey_influence_missdev									0.99			ok	
-c0584	survey	emlCronbachAlpha	lane_survey_influence_n3									0.90			ok	n = 3: the Feldt CI floor
-c0585	survey	emlCronbachAlpha	lane_survey_influence_n3									0.95			ok	n = 3: the Feldt CI floor
-c0586	survey	emlCronbachAlpha	lane_survey_influence_n3									0.99			ok	n = 3: the Feldt CI floor
-c0587	survey	emlCronbachAlpha	lane_survey_chisq_2x2_balanced									0.95			refuse	2 respondents: alpha needs at least 3
-c0588	survey	emlAlphaInfluence	lane_survey_alpha_clean												ok	
-c0589	survey	emlAlphaInfluence	lane_survey_alpha_2item												ok	k = 2: alpha-if-deleted is undefined for every item
-c0590	survey	emlAlphaInfluence	lane_survey_alpha_missing												ok	listwise deletion disclosure
-c0591	survey	emlAlphaInfluence	lane_survey_alpha_revnotrev												ok	one item scored the wrong way round
-c0592	survey	emlAlphaInfluence	lane_survey_influence_deviant												ok	
-c0593	survey	emlAlphaInfluence	lane_survey_influence_missdev												ok	
-c0594	survey	emlAlphaInfluence	lane_survey_influence_n3												ok	n = 3: the Feldt CI floor
-c0595	survey	emlAlphaInfluence	lane_survey_chisq_2x2_balanced												refuse	2 respondents: leave-one-out needs at least 3
-c0596	survey	emlChiSquareIndependence	lane_survey_chisq_2x2_balanced										0		ok	2x2: Yates moves the statistic
-c0597	survey	emlChiSquareIndependence	lane_survey_chisq_2x2_balanced										1		ok	2x2: Yates moves the statistic
-c0598	survey	emlChiSquareIndependence	lane_survey_chisq_2x2_sparse										0		ok	2x2 with expected counts below 5
-c0599	survey	emlChiSquareIndependence	lane_survey_chisq_2x2_sparse										1		ok	2x2 with expected counts below 5
-c0600	survey	emlChiSquareIndependence	lane_survey_chisq_3x4										0		ok	3x4: correction is ignored, so the pair is an invariance check
-c0601	survey	emlChiSquareIndependence	lane_survey_chisq_3x4										1		ok	3x4: correction is ignored, so the pair is an invariance check
-c0602	survey	emlChiSquareIndependence	lane_survey_chisq_zerocell										0		ok	a zero cell with positive row and column totals
-c0603	survey	emlChiSquareIndependence	lane_survey_chisq_zerocell										1		ok	a zero cell with positive row and column totals
-c0604	survey	emlWilsonInterval	lane_survey_wilson_cases	central								0.90			ok	
-c0605	survey	emlWilsonInterval	lane_survey_wilson_cases	central								0.95			ok	
-c0606	survey	emlWilsonInterval	lane_survey_wilson_cases	central								0.99			ok	
-c0607	survey	emlWilsonInterval	lane_survey_wilson_cases	near_zero								0.90			ok	
-c0608	survey	emlWilsonInterval	lane_survey_wilson_cases	near_zero								0.95			ok	
-c0609	survey	emlWilsonInterval	lane_survey_wilson_cases	near_zero								0.99			ok	
-c0610	survey	emlWilsonInterval	lane_survey_wilson_cases	near_one								0.90			ok	
-c0611	survey	emlWilsonInterval	lane_survey_wilson_cases	near_one								0.95			ok	
-c0612	survey	emlWilsonInterval	lane_survey_wilson_cases	near_one								0.99			ok	
-c0613	survey	emlWilsonInterval	lane_survey_wilson_cases	n_small								0.90			ok	
-c0614	survey	emlWilsonInterval	lane_survey_wilson_cases	n_small								0.95			ok	
-c0615	survey	emlWilsonInterval	lane_survey_wilson_cases	n_small								0.99			ok	
-c0616	survey	emlWilsonInterval	lane_survey_wilson_cases	n_large								0.90			ok	
-c0617	survey	emlWilsonInterval	lane_survey_wilson_cases	n_large								0.95			ok	
-c0618	survey	emlWilsonInterval	lane_survey_wilson_cases	n_large								0.99			ok	
-c0619	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero								0.90			ok	endpoint: the interval must still have positive width
-c0620	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero								0.95			ok	endpoint: the interval must still have positive width
-c0621	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero								0.99			ok	endpoint: the interval must still have positive width
-c0622	survey	emlWilsonInterval	lane_survey_wilson_cases	x_equals_n								0.90			ok	endpoint: the interval must still have positive width
-c0623	survey	emlWilsonInterval	lane_survey_wilson_cases	x_equals_n								0.95			ok	endpoint: the interval must still have positive width
-c0624	survey	emlWilsonInterval	lane_survey_wilson_cases	x_equals_n								0.99			ok	endpoint: the interval must still have positive width
-c0625	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero_conf99								0.90			ok	endpoint: the interval must still have positive width
-c0626	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero_conf99								0.95			ok	endpoint: the interval must still have positive width
-c0627	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero_conf99								0.99			ok	endpoint: the interval must still have positive width
-c0628	survey	emlWilsonInterval	lane_survey_wilson_cases	x_n_conf90								0.90			ok	endpoint: the interval must still have positive width
-c0629	survey	emlWilsonInterval	lane_survey_wilson_cases	x_n_conf90								0.95			ok	endpoint: the interval must still have positive width
-c0630	survey	emlWilsonInterval	lane_survey_wilson_cases	x_n_conf90								0.99			ok	endpoint: the interval must still have positive width
+cell_id	lane	procedure	dataset	col_a	col_b	col_c	test	posthoc	adjust	equal_var	group_order	conf	correction	prereq	expect	note	tier
+c0001	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		parametric			0	discovery				ok	labels already alphabetical: group order is an invariance check here	options
+c0002	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		parametric			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here	options
+c0003	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		parametric			1	discovery				ok	labels already alphabetical: group order is an invariance check here	options
+c0004	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		parametric			1	alphabetical				ok	labels already alphabetical: group order is an invariance check here	options
+c0005	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		nonparametric			0	discovery				ok	labels already alphabetical: group order is an invariance check here	options
+c0006	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		nonparametric			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here	options
+c0007	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		both			0	discovery				ok	labels already alphabetical: group order is an invariance check here	options
+c0008	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	F0_Hz	group		both			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here	options
+c0009	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		parametric			0	discovery				ok	labels already alphabetical: group order is an invariance check here	options
+c0010	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		parametric			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here	options
+c0011	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		parametric			1	discovery				ok	labels already alphabetical: group order is an invariance check here	options
+c0012	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		parametric			1	alphabetical				ok	labels already alphabetical: group order is an invariance check here	options
+c0013	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		nonparametric			0	discovery				ok	labels already alphabetical: group order is an invariance check here	options
+c0014	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		nonparametric			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here	options
+c0015	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		both			0	discovery				ok	labels already alphabetical: group order is an invariance check here	options
+c0016	analysis	emlRunTwoGroupAnalysis	v08_twogroup_input	jitter_pct	group		both			0	alphabetical				ok	labels already alphabetical: group order is an invariance check here	options
+c0017	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		parametric			0	discovery				ok		options
+c0018	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		parametric			0	alphabetical				ok		options
+c0019	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		parametric			1	discovery				ok		options
+c0020	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		parametric			1	alphabetical				ok		options
+c0021	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		nonparametric			0	discovery				ok		options
+c0022	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		nonparametric			0	alphabetical				ok		options
+c0023	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		both			0	discovery				ok		options
+c0024	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	voice_type		both			0	alphabetical				ok		options
+c0025	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		parametric			0	discovery				ok		options
+c0026	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		parametric			0	alphabetical				ok		options
+c0027	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		parametric			1	discovery				ok		options
+c0028	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		parametric			1	alphabetical				ok		options
+c0029	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		nonparametric			0	discovery				ok		options
+c0030	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		nonparametric			0	alphabetical				ok		options
+c0031	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		both			0	discovery				ok		options
+c0032	analysis	emlRunTwoGroupAnalysis	v11_twoway_input	SPL_dB	task		both			0	alphabetical				ok		options
+c0033	analysis	emlRunTwoGroupAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		parametric			0	discovery				refuse	voice_type has 3 groups; this test compares exactly 2	options
+c0034	analysis	emlRunTwoGroupAnalysis	v73_directional_input	x	fam		parametric			0	discovery				refuse	fam has 5 groups; this test compares exactly 2	options
+c0035	analysis	emlRunAnovaAnalysis	demo_3groups_input	SPL_dB	voice_type			0			discovery				ok		options
+c0036	analysis	emlRunAnovaAnalysis	demo_3groups_input	SPL_dB	voice_type			0			alphabetical				ok		options
+c0037	analysis	emlRunAnovaAnalysis	demo_3groups_input	SPL_dB	voice_type			1			discovery				ok		options
+c0038	analysis	emlRunAnovaAnalysis	demo_3groups_input	SPL_dB	voice_type			1			alphabetical				ok		options
+c0039	analysis	emlRunAnovaAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0			discovery				ok		options
+c0040	analysis	emlRunAnovaAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0			alphabetical				ok		options
+c0041	analysis	emlRunAnovaAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1			discovery				ok		options
+c0042	analysis	emlRunAnovaAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1			alphabetical				ok		options
+c0043	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0			discovery				ok		options
+c0044	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0			alphabetical				ok		options
+c0045	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1			discovery				ok		options
+c0046	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1			alphabetical				ok		options
+c0047	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0			discovery				ok		options
+c0048	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0			alphabetical				ok		options
+c0049	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1			discovery				ok		options
+c0050	analysis	emlRunAnovaAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1			alphabetical				ok		options
+c0051	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0			discovery				ok		options
+c0052	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0			alphabetical				ok		options
+c0053	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1			discovery				ok		options
+c0054	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1			alphabetical				ok		options
+c0055	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0			discovery				ok		options
+c0056	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0			alphabetical				ok		options
+c0057	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1			discovery				ok		options
+c0058	analysis	emlRunAnovaAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1			alphabetical				ok		options
+c0059	analysis	emlRunAnovaAnalysis	v08_twogroup_input	jitter_pct	group			0			discovery				ok		options
+c0060	analysis	emlRunAnovaAnalysis	v08_twogroup_input	jitter_pct	group			0			alphabetical				ok		options
+c0061	analysis	emlRunAnovaAnalysis	v08_twogroup_input	jitter_pct	group			1			discovery				ok		options
+c0062	analysis	emlRunAnovaAnalysis	v08_twogroup_input	jitter_pct	group			1			alphabetical				ok		options
+c0063	analysis	emlRunAnovaAnalysis	v11_twoway_input	SPL_dB	voice_type			0			discovery				ok		options
+c0064	analysis	emlRunAnovaAnalysis	v11_twoway_input	SPL_dB	voice_type			0			alphabetical				ok		options
+c0065	analysis	emlRunAnovaAnalysis	v11_twoway_input	SPL_dB	voice_type			1			discovery				ok		options
+c0066	analysis	emlRunAnovaAnalysis	v11_twoway_input	SPL_dB	voice_type			1			alphabetical				ok		options
+c0067	analysis	emlRunAnovaAnalysis	v73_directional_input	x	fam			0			discovery				ok		options
+c0068	analysis	emlRunAnovaAnalysis	v73_directional_input	x	fam			0			alphabetical				ok		options
+c0069	analysis	emlRunAnovaAnalysis	v73_directional_input	x	fam			1			discovery				ok		options
+c0070	analysis	emlRunAnovaAnalysis	v73_directional_input	x	fam			1			alphabetical				ok		options
+c0071	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			0			discovery				ok		options
+c0072	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			0			alphabetical				ok		options
+c0073	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			1			discovery				ok		options
+c0074	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			1			alphabetical				ok		options
+c0076	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0077	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
+c0078	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	holm		discovery				ok		options
+c0079	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bh		discovery				ok		options
+c0080	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0081	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
+c0082	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
+c0083	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
+c0084	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0085	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok		options
+c0086	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok		options
+c0087	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok		options
+c0088	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0089	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok		options
+c0090	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok		options
+c0091	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok		options
+c0092	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0093	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
+c0094	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	holm		discovery				ok		options
+c0095	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bh		discovery				ok		options
+c0096	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0097	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
+c0098	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
+c0099	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
+c0100	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0101	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok		options
+c0102	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok		options
+c0103	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok		options
+c0104	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0105	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok		options
+c0106	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok		options
+c0107	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok		options
+c0108	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0109	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
+c0110	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	holm		discovery				ok		options
+c0111	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bh		discovery				ok		options
+c0112	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0113	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
+c0114	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
+c0115	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
+c0116	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0117	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok		options
+c0118	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok		options
+c0119	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok		options
+c0120	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0121	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok		options
+c0122	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok		options
+c0123	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok		options
+c0124	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0125	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bonferroni		discovery				ok		options
+c0126	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	holm		discovery				ok		options
+c0127	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bh		discovery				ok		options
+c0128	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0129	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bonferroni		alphabetical				ok		options
+c0130	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	holm		alphabetical				ok		options
+c0131	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bh		alphabetical				ok		options
+c0132	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0133	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
+c0134	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	holm		discovery				ok		options
+c0135	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bh		discovery				ok		options
+c0136	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0137	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
+c0138	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
+c0139	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
+c0140	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0141	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bonferroni		discovery				ok		options
+c0142	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	holm		discovery				ok		options
+c0143	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bh		discovery				ok		options
+c0144	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0145	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bonferroni		alphabetical				ok		options
+c0146	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	holm		alphabetical				ok		options
+c0147	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bh		alphabetical				ok		options
+c0148	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0149	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bonferroni		discovery				ok		options
+c0150	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	holm		discovery				ok		options
+c0151	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bh		discovery				ok		options
+c0152	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0153	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bonferroni		alphabetical				ok		options
+c0154	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	holm		alphabetical				ok		options
+c0155	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bh		alphabetical				ok		options
+c0157	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bonferroni		discovery				ok		options
+c0158	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		holm		discovery				ok		options
+c0159	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bh		discovery				ok		options
+c0160	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		bonferroni		discovery				ok		options
+c0161	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		holm		discovery				ok		options
+c0162	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		bh		discovery				ok		options
+c0163	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		bonferroni		discovery				ok		options
+c0164	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		holm		discovery				ok		options
+c0165	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		bh		discovery				ok		options
+c0166	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0167	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bonferroni		alphabetical				ok		options
+c0168	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		holm		alphabetical				ok		options
+c0169	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bh		alphabetical				ok		options
+c0170	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		bonferroni		alphabetical				ok		options
+c0171	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		holm		alphabetical				ok		options
+c0172	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		student		bh		alphabetical				ok		options
+c0173	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		bonferroni		alphabetical				ok		options
+c0174	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		holm		alphabetical				ok		options
+c0175	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		wilcoxon		bh		alphabetical				ok		options
+c0176	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0177	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		bonferroni		discovery				ok		options
+c0178	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		holm		discovery				ok		options
+c0179	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		bh		discovery				ok		options
+c0180	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		bonferroni		discovery				ok		options
+c0181	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		holm		discovery				ok		options
+c0182	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		bh		discovery				ok		options
+c0183	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		discovery				ok		options
+c0184	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		discovery				ok		options
+c0185	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		discovery				ok		options
+c0186	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0187	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		bonferroni		alphabetical				ok		options
+c0188	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		holm		alphabetical				ok		options
+c0189	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		welch		bh		alphabetical				ok		options
+c0190	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		bonferroni		alphabetical				ok		options
+c0191	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		holm		alphabetical				ok		options
+c0192	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		student		bh		alphabetical				ok		options
+c0193	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		alphabetical				ok		options
+c0194	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		alphabetical				ok		options
+c0195	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		alphabetical				ok		options
+c0196	analysis	emlRunPairwiseAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0197	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		bonferroni		discovery				ok		options
+c0198	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		holm		discovery				ok		options
+c0199	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		bh		discovery				ok		options
+c0200	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		bonferroni		discovery				ok		options
+c0201	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		holm		discovery				ok		options
+c0202	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		bh		discovery				ok		options
+c0203	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		bonferroni		discovery				ok		options
+c0204	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		holm		discovery				ok		options
+c0205	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		bh		discovery				ok		options
+c0206	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0207	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		bonferroni		alphabetical				ok		options
+c0208	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		holm		alphabetical				ok		options
+c0209	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		welch		bh		alphabetical				ok		options
+c0210	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		bonferroni		alphabetical				ok		options
+c0211	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		holm		alphabetical				ok		options
+c0212	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		student		bh		alphabetical				ok		options
+c0213	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		bonferroni		alphabetical				ok		options
+c0214	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		holm		alphabetical				ok		options
+c0215	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		wilcoxon		bh		alphabetical				ok		options
+c0216	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	SPL_dB	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0217	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		bonferroni		discovery				ok		options
+c0218	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		holm		discovery				ok		options
+c0219	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		bh		discovery				ok		options
+c0220	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		bonferroni		discovery				ok		options
+c0221	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		holm		discovery				ok		options
+c0222	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		bh		discovery				ok		options
+c0223	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		discovery				ok		options
+c0224	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		discovery				ok		options
+c0225	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		discovery				ok		options
+c0226	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0227	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		bonferroni		alphabetical				ok		options
+c0228	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		holm		alphabetical				ok		options
+c0229	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		welch		bh		alphabetical				ok		options
+c0230	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		bonferroni		alphabetical				ok		options
+c0231	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		holm		alphabetical				ok		options
+c0232	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		student		bh		alphabetical				ok		options
+c0233	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		alphabetical				ok		options
+c0234	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		alphabetical				ok		options
+c0235	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		alphabetical				ok		options
+c0236	analysis	emlRunPairwiseAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0237	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		bonferroni		discovery				ok		options
+c0238	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		holm		discovery				ok		options
+c0239	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		bh		discovery				ok		options
+c0240	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		bonferroni		discovery				ok		options
+c0241	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		holm		discovery				ok		options
+c0242	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		bh		discovery				ok		options
+c0243	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		bonferroni		discovery				ok		options
+c0244	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		holm		discovery				ok		options
+c0245	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		bh		discovery				ok		options
+c0246	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0247	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		bonferroni		alphabetical				ok		options
+c0248	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		holm		alphabetical				ok		options
+c0249	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		welch		bh		alphabetical				ok		options
+c0250	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		bonferroni		alphabetical				ok		options
+c0251	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		holm		alphabetical				ok		options
+c0252	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		student		bh		alphabetical				ok		options
+c0253	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		bonferroni		alphabetical				ok		options
+c0254	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		holm		alphabetical				ok		options
+c0255	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		wilcoxon		bh		alphabetical				ok		options
+c0256	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	SPL_dB	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0257	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		bonferroni		discovery				ok		options
+c0258	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		holm		discovery				ok		options
+c0259	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		bh		discovery				ok		options
+c0260	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		bonferroni		discovery				ok		options
+c0261	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		holm		discovery				ok		options
+c0262	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		bh		discovery				ok		options
+c0263	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		discovery				ok		options
+c0264	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		discovery				ok		options
+c0265	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		discovery				ok		options
+c0266	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0267	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		bonferroni		alphabetical				ok		options
+c0268	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		holm		alphabetical				ok		options
+c0269	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		welch		bh		alphabetical				ok		options
+c0270	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		bonferroni		alphabetical				ok		options
+c0271	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		holm		alphabetical				ok		options
+c0272	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		student		bh		alphabetical				ok		options
+c0273	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		bonferroni		alphabetical				ok		options
+c0274	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		holm		alphabetical				ok		options
+c0275	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		wilcoxon		bh		alphabetical				ok		options
+c0276	analysis	emlRunPairwiseAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0277	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		bonferroni		discovery				ok		options
+c0278	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		holm		discovery				ok		options
+c0279	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		bh		discovery				ok		options
+c0280	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		bonferroni		discovery				ok		options
+c0281	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		holm		discovery				ok		options
+c0282	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		bh		discovery				ok		options
+c0283	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		bonferroni		discovery				ok		options
+c0284	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		holm		discovery				ok		options
+c0285	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		bh		discovery				ok		options
+c0286	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0287	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		bonferroni		alphabetical				ok		options
+c0288	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		holm		alphabetical				ok		options
+c0289	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		welch		bh		alphabetical				ok		options
+c0290	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		bonferroni		alphabetical				ok		options
+c0291	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		holm		alphabetical				ok		options
+c0292	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		student		bh		alphabetical				ok		options
+c0293	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		bonferroni		alphabetical				ok		options
+c0294	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		holm		alphabetical				ok		options
+c0295	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		wilcoxon		bh		alphabetical				ok		options
+c0296	analysis	emlRunPairwiseAnalysis	v08_twogroup_input	jitter_pct	group		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0297	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		bonferroni		discovery				ok		options
+c0298	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		holm		discovery				ok		options
+c0299	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		bh		discovery				ok		options
+c0300	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		bonferroni		discovery				ok		options
+c0301	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		holm		discovery				ok		options
+c0302	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		bh		discovery				ok		options
+c0303	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		bonferroni		discovery				ok		options
+c0304	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		holm		discovery				ok		options
+c0305	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		bh		discovery				ok		options
+c0306	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0307	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		bonferroni		alphabetical				ok		options
+c0308	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		holm		alphabetical				ok		options
+c0309	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		welch		bh		alphabetical				ok		options
+c0310	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		bonferroni		alphabetical				ok		options
+c0311	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		holm		alphabetical				ok		options
+c0312	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		student		bh		alphabetical				ok		options
+c0313	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		bonferroni		alphabetical				ok		options
+c0314	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		holm		alphabetical				ok		options
+c0315	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		wilcoxon		bh		alphabetical				ok		options
+c0316	analysis	emlRunPairwiseAnalysis	v11_twoway_input	SPL_dB	voice_type		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0317	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		bonferroni		discovery				ok		options
+c0318	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		holm		discovery				ok		options
+c0319	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		bh		discovery				ok		options
+c0320	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		bonferroni		discovery				ok		options
+c0321	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		holm		discovery				ok		options
+c0322	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		bh		discovery				ok		options
+c0323	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		bonferroni		discovery				ok		options
+c0324	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		holm		discovery				ok		options
+c0325	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		bh		discovery				ok		options
+c0326	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0327	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		bonferroni		alphabetical				ok		options
+c0328	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		holm		alphabetical				ok		options
+c0329	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		welch		bh		alphabetical				ok		options
+c0330	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		bonferroni		alphabetical				ok		options
+c0331	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		holm		alphabetical				ok		options
+c0332	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		student		bh		alphabetical				ok		options
+c0333	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		bonferroni		alphabetical				ok		options
+c0334	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		holm		alphabetical				ok		options
+c0335	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		wilcoxon		bh		alphabetical				ok		options
+c0336	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	fam		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0337	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		bonferroni		discovery				ok		options
+c0338	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		holm		discovery				ok		options
+c0339	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		bh		discovery				ok		options
+c0340	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		bonferroni		discovery				ok		options
+c0341	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		holm		discovery				ok		options
+c0342	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		bh		discovery				ok		options
+c0343	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		bonferroni		discovery				ok		options
+c0344	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		holm		discovery				ok		options
+c0345	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		bh		discovery				ok		options
+c0346	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		scheffe		none		discovery				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0347	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		bonferroni		alphabetical				ok		options
+c0348	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		holm		alphabetical				ok		options
+c0349	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		welch		bh		alphabetical				ok		options
+c0350	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		bonferroni		alphabetical				ok		options
+c0351	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		holm		alphabetical				ok		options
+c0352	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		student		bh		alphabetical				ok		options
+c0353	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		bonferroni		alphabetical				ok		options
+c0354	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		holm		alphabetical				ok		options
+c0355	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		wilcoxon		bh		alphabetical				ok		options
+c0356	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		scheffe		none		alphabetical				ok	Scheffe takes no adjustment; bound to the wizard's own none	options
+c0357	analysis	emlRunTwoWayAnalysis	v11_twoway_input	SPL_dB	voice_type	task									ok		options
+c0358	analysis	emlRunTwoWayAnalysis	v11_twoway_input	SPL_dB	task	voice_type									ok	factors swapped: same model, reversed reporting order	options
+c0359	analysis	emlRunTwoWayAnalysis	v11_twoway_input	subject	voice_type	task									refuse	data column subject holds no numbers	options
+c0360	analysis	emlRunPairedAnalysis	demo_paired_input	jitter_pre	jitter_post		parametric								ok		options
+c0361	analysis	emlRunPairedAnalysis	demo_paired_input	jitter_pre	jitter_post		nonparametric								ok		options
+c0362	analysis	emlRunPairedAnalysis	demo_paired_input	jitter_pre	jitter_post		both								ok		options
+c0363	analysis	emlRunPairedAnalysis	demo_paired_input	HNR_pre	HNR_post		parametric								ok		options
+c0364	analysis	emlRunPairedAnalysis	demo_paired_input	HNR_pre	HNR_post		nonparametric								ok		options
+c0365	analysis	emlRunPairedAnalysis	demo_paired_input	HNR_pre	HNR_post		both								ok		options
+c0366	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_medium		parametric								ok		options
+c0367	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_medium		nonparametric								ok		options
+c0368	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_medium		both								ok		options
+c0369	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_medium	SPL_loud		parametric								ok		options
+c0370	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_medium	SPL_loud		nonparametric								ok		options
+c0371	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_medium	SPL_loud		both								ok		options
+c0372	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_loud		parametric								ok		options
+c0373	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_loud		nonparametric								ok		options
+c0374	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_loud		both								ok		options
+c0375	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		parametric								ok		options
+c0376	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		nonparametric								ok		options
+c0377	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		both								ok		options
+c0378	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		parametric								ok	n = 2, the floor the guard allows	options
+c0379	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		nonparametric								ok	n = 2, the floor the guard allows	options
+c0380	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		both								ok	n = 2, the floor the guard allows	options
+c0381	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		parametric								ok	one non-numeric cell: dropped as missing, not refused	options
+c0382	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		nonparametric								ok	one non-numeric cell: dropped as missing, not refused	options
+c0383	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		both								ok	one non-numeric cell: dropped as missing, not refused	options
+c0384	analysis	emlRunPairedAnalysis	rp_r3_paired_input	SPL_soft	SPL_medium		both								refuse	every pair has the same difference: no variance for a paired test	options
+c0385	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	singing_F0_Hz		pearson								ok		options
+c0386	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	singing_F0_Hz		spearman								ok		options
+c0387	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	singing_F0_Hz		both								ok		options
+c0388	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	age_years		pearson								ok		options
+c0389	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	age_years		spearman								ok		options
+c0390	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	age_years		both								ok		options
+c0391	analysis	emlRunCorrelationAnalysis	v12_correlation_input	singing_F0_Hz	age_years		pearson								ok		options
+c0392	analysis	emlRunCorrelationAnalysis	v12_correlation_input	singing_F0_Hz	age_years		spearman								ok		options
+c0393	analysis	emlRunCorrelationAnalysis	v12_correlation_input	singing_F0_Hz	age_years		both								ok		options
+c0394	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	vibrato_regularity_pct		pearson								ok		options
+c0395	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	vibrato_regularity_pct		spearman								ok		options
+c0396	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	vibrato_regularity_pct		both								ok		options
+c0397	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	experience_yrs		pearson								ok		options
+c0398	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	experience_yrs		spearman								ok		options
+c0399	analysis	emlRunCorrelationAnalysis	v13_regression_input	practice_hrs_wk	experience_yrs		both								ok		options
+c0400	analysis	emlRunCorrelationAnalysis	v13_regression_input	vibrato_regularity_pct	experience_yrs		pearson								ok		options
+c0401	analysis	emlRunCorrelationAnalysis	v13_regression_input	vibrato_regularity_pct	experience_yrs		spearman								ok		options
+c0402	analysis	emlRunCorrelationAnalysis	v13_regression_input	vibrato_regularity_pct	experience_yrs		both								ok		options
+c0403	analysis	emlRunCorrelationAnalysis	v13_regression_neg_input	practice_hrs_wk	vibrato_regularity_pct		pearson								ok	negative relationship	options
+c0404	analysis	emlRunCorrelationAnalysis	v13_regression_neg_input	practice_hrs_wk	vibrato_regularity_pct		spearman								ok	negative relationship	options
+c0405	analysis	emlRunCorrelationAnalysis	v13_regression_neg_input	practice_hrs_wk	vibrato_regularity_pct		both								ok	negative relationship	options
+c0406	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	shimmer_pct		pearson								ok		options
+c0407	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	shimmer_pct		spearman								ok		options
+c0408	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	shimmer_pct		both								ok		options
+c0409	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	jitter_pct		pearson								ok		options
+c0410	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	jitter_pct		spearman								ok		options
+c0411	analysis	emlRunCorrelationAnalysis	v15_normality_input	F0_Hz	jitter_pct		both								ok		options
+c0412	analysis	emlRunCorrelationAnalysis	v15_normality_input	shimmer_pct	jitter_pct		pearson								ok		options
+c0413	analysis	emlRunCorrelationAnalysis	v15_normality_input	shimmer_pct	jitter_pct		spearman								ok		options
+c0414	analysis	emlRunCorrelationAnalysis	v15_normality_input	shimmer_pct	jitter_pct		both								ok		options
+c0415	analysis	emlRunCorrelationAnalysis	demo_rm3_input	SPL_soft	SPL_loud		pearson								ok		options
+c0416	analysis	emlRunCorrelationAnalysis	demo_rm3_input	SPL_soft	SPL_loud		spearman								ok		options
+c0417	analysis	emlRunCorrelationAnalysis	demo_rm3_input	SPL_soft	SPL_loud		both								ok		options
+c0418	analysis	emlRunCorrelationAnalysis	rp_r2_rmanova_input	soft	medium		both								refuse	DEFECT D-CORR-1: n<3 guard fires but .recResult$ is never initialised before the guards; the run ABORTS instead of refusing	options
+c0419	analysis	emlRunCorrelationAnalysis	rp_r3_paired_input	SPL_soft	SPL_medium		both								refuse	DEFECT D-CORR-2: zero variance; @emlPearsonCorrelation leaves .r unassigned on error, so the run ABORTS instead of refusing	options
+c0420	analysis	emlRunDescriptiveAnalysis	demo_3groups_input	SPL_dB											ok		options
+c0421	analysis	emlRunDescriptiveAnalysis	demo_3groups_input	vibrato_rate_Hz											ok		options
+c0422	analysis	emlRunDescriptiveAnalysis	demo_3groups_b_input	SPL_dB											ok		options
+c0423	analysis	emlRunDescriptiveAnalysis	demo_3groups_b_input	vibrato_rate_Hz											ok		options
+c0424	analysis	emlRunDescriptiveAnalysis	v09_anova_tukey_input	SPL_dB											ok		options
+c0425	analysis	emlRunDescriptiveAnalysis	v09_anova_tukey_input	vibrato_rate_Hz											ok		options
+c0426	analysis	emlRunDescriptiveAnalysis	v08_twogroup_input	F0_Hz											ok		options
+c0427	analysis	emlRunDescriptiveAnalysis	v08_twogroup_input	jitter_pct											ok		options
+c0428	analysis	emlRunDescriptiveAnalysis	v11_twoway_input	SPL_dB											ok		options
+c0429	analysis	emlRunDescriptiveAnalysis	v12_correlation_input	speaking_F0_Hz											ok		options
+c0430	analysis	emlRunDescriptiveAnalysis	v12_correlation_input	singing_F0_Hz											ok		options
+c0431	analysis	emlRunDescriptiveAnalysis	v12_correlation_input	age_years											ok		options
+c0432	analysis	emlRunDescriptiveAnalysis	v13_regression_input	practice_hrs_wk											ok		options
+c0433	analysis	emlRunDescriptiveAnalysis	v13_regression_input	vibrato_regularity_pct											ok		options
+c0434	analysis	emlRunDescriptiveAnalysis	v13_regression_input	experience_yrs											ok		options
+c0435	analysis	emlRunDescriptiveAnalysis	v13_regression_neg_input	practice_hrs_wk											ok		options
+c0436	analysis	emlRunDescriptiveAnalysis	v13_regression_neg_input	vibrato_regularity_pct											ok		options
+c0437	analysis	emlRunDescriptiveAnalysis	v15_normality_input	F0_Hz											ok		options
+c0438	analysis	emlRunDescriptiveAnalysis	v15_normality_input	shimmer_pct											ok		options
+c0439	analysis	emlRunDescriptiveAnalysis	v15_normality_input	jitter_pct											ok		options
+c0440	analysis	emlRunDescriptiveAnalysis	demo_paired_input	jitter_pre											ok		options
+c0441	analysis	emlRunDescriptiveAnalysis	demo_paired_input	jitter_post											ok		options
+c0442	analysis	emlRunDescriptiveAnalysis	demo_paired_input	HNR_pre											ok		options
+c0443	analysis	emlRunDescriptiveAnalysis	demo_paired_input	HNR_post											ok		options
+c0444	analysis	emlRunDescriptiveAnalysis	demo_rm3_input	SPL_soft											ok		options
+c0445	analysis	emlRunDescriptiveAnalysis	demo_rm3_input	SPL_medium											ok		options
+c0446	analysis	emlRunDescriptiveAnalysis	demo_rm3_input	SPL_loud											ok		options
+c0447	analysis	emlRunDescriptiveAnalysis	rp_r1_rmanova_input	soft											ok		options
+c0448	analysis	emlRunDescriptiveAnalysis	rp_r1_rmanova_input	medium											ok		options
+c0449	analysis	emlRunDescriptiveAnalysis	rp_r1_rmanova_input	loud											ok		options
+c0450	analysis	emlRunDescriptiveAnalysis	rp_r2_rmanova_input	soft											ok	n = 2	options
+c0451	analysis	emlRunDescriptiveAnalysis	rp_r2_rmanova_input	medium											ok	n = 2	options
+c0452	analysis	emlRunDescriptiveAnalysis	rp_r2_rmanova_input	loud											ok	n = 2	options
+c0453	analysis	emlRunDescriptiveAnalysis	rp_r3_paired_input	SPL_soft											ok	constant column: zero variance	options
+c0454	analysis	emlRunDescriptiveAnalysis	rp_r3_paired_input	SPL_medium											ok	constant column: zero variance	options
+c0455	analysis	emlRunDescriptiveAnalysis	rp_r3_paired_input	SPL_loud											ok	constant column: zero variance	options
+c0456	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_soft											ok	one non-numeric cell (n/a): dropped as missing, disclosed	options
+c0457	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_medium											ok		options
+c0458	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_loud											ok		options
+c0460	analysis	emlRunDescriptiveAnalysis	v73_directional_input	idx											ok		options
+c0461	analysis	emlRunDescriptiveAnalysis	v73_directional_input	x											ok		options
+c0462	analysis	emlRunNormalityAnalysis	demo_3groups_input	SPL_dB			both								ok		options
+c0463	analysis	emlRunNormalityAnalysis	demo_3groups_input	vibrato_rate_Hz			both								ok		options
+c0464	analysis	emlRunNormalityAnalysis	demo_3groups_b_input	SPL_dB			both								ok		options
+c0465	analysis	emlRunNormalityAnalysis	demo_3groups_b_input	vibrato_rate_Hz			both								ok		options
+c0466	analysis	emlRunNormalityAnalysis	v09_anova_tukey_input	SPL_dB			both								ok		options
+c0467	analysis	emlRunNormalityAnalysis	v09_anova_tukey_input	vibrato_rate_Hz			both								ok		options
+c0468	analysis	emlRunNormalityAnalysis	v08_twogroup_input	F0_Hz			both								ok		options
+c0469	analysis	emlRunNormalityAnalysis	v08_twogroup_input	jitter_pct			both								ok		options
+c0470	analysis	emlRunNormalityAnalysis	v11_twoway_input	SPL_dB			both								ok		options
+c0471	analysis	emlRunNormalityAnalysis	v12_correlation_input	speaking_F0_Hz			both								ok		options
+c0472	analysis	emlRunNormalityAnalysis	v12_correlation_input	singing_F0_Hz			both								ok		options
+c0473	analysis	emlRunNormalityAnalysis	v12_correlation_input	age_years			both								ok		options
+c0474	analysis	emlRunNormalityAnalysis	v13_regression_input	practice_hrs_wk			both								ok		options
+c0475	analysis	emlRunNormalityAnalysis	v13_regression_input	vibrato_regularity_pct			both								ok		options
+c0476	analysis	emlRunNormalityAnalysis	v13_regression_input	experience_yrs			both								ok		options
+c0477	analysis	emlRunNormalityAnalysis	v13_regression_neg_input	practice_hrs_wk			both								ok		options
+c0478	analysis	emlRunNormalityAnalysis	v13_regression_neg_input	vibrato_regularity_pct			both								ok		options
+c0479	analysis	emlRunNormalityAnalysis	v15_normality_input	F0_Hz			both								ok		options
+c0480	analysis	emlRunNormalityAnalysis	v15_normality_input	shimmer_pct			both								ok		options
+c0481	analysis	emlRunNormalityAnalysis	v15_normality_input	jitter_pct			both								ok		options
+c0482	analysis	emlRunNormalityAnalysis	demo_paired_input	jitter_pre			both								ok		options
+c0483	analysis	emlRunNormalityAnalysis	demo_paired_input	jitter_post			both								ok		options
+c0484	analysis	emlRunNormalityAnalysis	demo_paired_input	HNR_pre			both								ok		options
+c0485	analysis	emlRunNormalityAnalysis	demo_paired_input	HNR_post			both								ok		options
+c0486	analysis	emlRunNormalityAnalysis	demo_rm3_input	SPL_soft			both								ok		options
+c0487	analysis	emlRunNormalityAnalysis	demo_rm3_input	SPL_medium			both								ok		options
+c0488	analysis	emlRunNormalityAnalysis	demo_rm3_input	SPL_loud			both								ok		options
+c0489	analysis	emlRunNormalityAnalysis	rp_r1_rmanova_input	soft			both								ok		options
+c0490	analysis	emlRunNormalityAnalysis	rp_r1_rmanova_input	medium			both								ok		options
+c0491	analysis	emlRunNormalityAnalysis	rp_r1_rmanova_input	loud			both								ok		options
+c0492	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	soft			both								ok	n = 2, below Shapiro-Wilk's floor	options
+c0493	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	medium			both								ok	n = 2, below Shapiro-Wilk's floor	options
+c0494	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	loud			both								ok	n = 2, below Shapiro-Wilk's floor	options
+c0495	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_soft			both								ok	constant column: Shapiro-Wilk has no variance to work on	options
+c0496	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_medium			both								ok	constant column: Shapiro-Wilk has no variance to work on	options
+c0497	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_loud			both								ok	constant column: Shapiro-Wilk has no variance to work on	options
+c0498	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_soft			both								ok	non-numeric cells dropped as missing	options
+c0499	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_medium			both								ok	non-numeric cells dropped as missing	options
+c0500	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_loud			both								ok	non-numeric cells dropped as missing	options
+c0502	analysis	emlRunNormalityAnalysis	v73_directional_input	idx			both								ok		options
+c0503	analysis	emlRunNormalityAnalysis	v73_directional_input	x			both								ok		options
+c0504	analysis	emlRunRegressionAnalysis	v13_regression_input	vibrato_regularity_pct	practice_hrs_wk										ok		options
+c0505	analysis	emlRunRegressionAnalysis	v13_regression_input	practice_hrs_wk	vibrato_regularity_pct										ok	reversed: response and predictor exchanged	options
+c0506	analysis	emlRunRegressionAnalysis	v13_regression_input	vibrato_regularity_pct	experience_yrs										ok		options
+c0507	analysis	emlRunRegressionAnalysis	v13_regression_neg_input	vibrato_regularity_pct	practice_hrs_wk										ok	negative slope: signed R	options
+c0508	analysis	emlRunRegressionAnalysis	v13_regression_neg_input	practice_hrs_wk	vibrato_regularity_pct										ok	reversed, negative slope	options
+c0509	analysis	emlRunRegressionAnalysis	v12_correlation_input	singing_F0_Hz	speaking_F0_Hz										ok		options
+c0510	analysis	emlRunRegressionAnalysis	v12_correlation_input	speaking_F0_Hz	singing_F0_Hz										ok	reversed	options
+c0511	analysis	emlRunRegressionAnalysis	v15_normality_input	jitter_pct	shimmer_pct										ok		options
+c0512	analysis	emlRunRegressionAnalysis	demo_rm3_input	SPL_loud	SPL_soft										ok		options
+c0513	analysis	emlRunRegressionAnalysis	rp_r2_rmanova_input	medium	soft										refuse	need at least 3 rows for regression	options
+c0514	analysis	emlRunGroupedRegression	v09_anova_tukey_input	SPL_dB	vibrato_rate_Hz	voice_type					discovery			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0515	analysis	emlRunGroupedRegression	v09_anova_tukey_input	SPL_dB	vibrato_rate_Hz	voice_type					alphabetical			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0516	analysis	emlRunGroupedRegression	demo_3groups_input	SPL_dB	vibrato_rate_Hz	voice_type					discovery			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0517	analysis	emlRunGroupedRegression	demo_3groups_input	SPL_dB	vibrato_rate_Hz	voice_type					alphabetical			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0518	analysis	emlRunGroupedRegression	v73_directional_input	idx	x	fam					discovery			emlRunRegressionAnalysis:x,idx	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0519	analysis	emlRunGroupedRegression	v73_directional_input	idx	x	fam					alphabetical			emlRunRegressionAnalysis:x,idx	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0520	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				0	holm						ok	adjustment unread with post hoc off	options
+c0521	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bonferroni						ok		options
+c0522	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok		options
+c0523	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bh						ok		options
+c0524	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				0	holm						ok	conditions reversed: post-hoc pair labels and signs flip; adjustment unread with post hoc off	options
+c0525	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bonferroni						ok	conditions reversed: post-hoc pair labels and signs flip	options
+c0526	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	holm						ok	conditions reversed: post-hoc pair labels and signs flip	options
+c0527	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bh						ok	conditions reversed: post-hoc pair labels and signs flip	options
+c0528	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				0	holm						ok	perfectly additive: zero subject x condition residual; adjustment unread with post hoc off	options
+c0529	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bonferroni						ok	perfectly additive: zero subject x condition residual	options
+c0530	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	holm						ok	perfectly additive: zero subject x condition residual	options
+c0531	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bh						ok	perfectly additive: zero subject x condition residual	options
+c0532	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				0	holm						ok	n = 2; adjustment unread with post hoc off	options
+c0533	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bonferroni						ok	n = 2	options
+c0534	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	holm						ok	n = 2	options
+c0535	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bh						ok	n = 2	options
+c0536	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				0	holm						ok	k = 2, the floor the orchestrator allows; adjustment unread with post hoc off	options
+c0537	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bonferroni						ok	k = 2, the floor the orchestrator allows	options
+c0538	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	holm						ok	k = 2, the floor the orchestrator allows	options
+c0539	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bh						ok	k = 2, the floor the orchestrator allows	options
+c0540	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				0	holm						ok	adjustment unread with post hoc off	options
+c0541	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bonferroni						ok		options
+c0542	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok		options
+c0543	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bh						ok		options
+c0544	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				0	holm						ok	conditions reversed: post-hoc pair labels and signs flip; adjustment unread with post hoc off	options
+c0545	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bonferroni						ok	conditions reversed: post-hoc pair labels and signs flip	options
+c0546	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	holm						ok	conditions reversed: post-hoc pair labels and signs flip	options
+c0547	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bh						ok	conditions reversed: post-hoc pair labels and signs flip	options
+c0548	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				0	holm						ok	perfectly additive: zero subject x condition residual; adjustment unread with post hoc off	options
+c0549	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bonferroni						ok	perfectly additive: zero subject x condition residual	options
+c0550	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	holm						ok	perfectly additive: zero subject x condition residual	options
+c0551	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bh						ok	perfectly additive: zero subject x condition residual	options
+c0552	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				0	holm						ok	n = 2; adjustment unread with post hoc off	options
+c0553	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bonferroni						ok	n = 2	options
+c0554	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	holm						ok	n = 2	options
+c0555	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bh						ok	n = 2	options
+c0556	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				0	holm						ok	k = 2, the floor the orchestrator allows; adjustment unread with post hoc off	options
+c0557	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bonferroni						ok	k = 2, the floor the orchestrator allows	options
+c0558	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	holm						ok	k = 2, the floor the orchestrator allows	options
+c0559	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bh						ok	k = 2, the floor the orchestrator allows	options
+c0560	analysis	emlRunRepeatedMeasuresAnalysis	rp_r3_paired_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						refuse	every value identical: no variance to partition	options
+c0561	analysis	emlRunFriedmanAnalysis	rp_r3_paired_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok	every value identical: no variance to partition; Friedman ranks and survives where RM-ANOVA refuses	options
+c0562	analysis	emlRunRepeatedMeasuresAnalysis	rp_r6_describe_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						refuse	zero subject x condition residual on the 4 complete rows	options
+c0563	analysis	emlRunFriedmanAnalysis	rp_r6_describe_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok	zero subject x condition residual on the 4 complete rows; Friedman ranks and survives where RM-ANOVA refuses	options
+c0566	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.90			ok		options
+c0567	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.95			ok		options
+c0568	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.99			ok		options
+c0569	survey	emlCronbachAlpha	lane_survey_alpha_2item									0.90			ok	k = 2: alpha-if-deleted is undefined for every item	options
+c0570	survey	emlCronbachAlpha	lane_survey_alpha_2item									0.95			ok	k = 2: alpha-if-deleted is undefined for every item	options
+c0571	survey	emlCronbachAlpha	lane_survey_alpha_2item									0.99			ok	k = 2: alpha-if-deleted is undefined for every item	options
+c0572	survey	emlCronbachAlpha	lane_survey_alpha_missing									0.90			ok	listwise deletion disclosure	options
+c0573	survey	emlCronbachAlpha	lane_survey_alpha_missing									0.95			ok	listwise deletion disclosure	options
+c0574	survey	emlCronbachAlpha	lane_survey_alpha_missing									0.99			ok	listwise deletion disclosure	options
+c0575	survey	emlCronbachAlpha	lane_survey_alpha_revnotrev									0.90			ok	one item scored the wrong way round	options
+c0576	survey	emlCronbachAlpha	lane_survey_alpha_revnotrev									0.95			ok	one item scored the wrong way round	options
+c0577	survey	emlCronbachAlpha	lane_survey_alpha_revnotrev									0.99			ok	one item scored the wrong way round	options
+c0578	survey	emlCronbachAlpha	lane_survey_influence_deviant									0.90			ok		options
+c0579	survey	emlCronbachAlpha	lane_survey_influence_deviant									0.95			ok		options
+c0580	survey	emlCronbachAlpha	lane_survey_influence_deviant									0.99			ok		options
+c0581	survey	emlCronbachAlpha	lane_survey_influence_missdev									0.90			ok		options
+c0582	survey	emlCronbachAlpha	lane_survey_influence_missdev									0.95			ok		options
+c0583	survey	emlCronbachAlpha	lane_survey_influence_missdev									0.99			ok		options
+c0584	survey	emlCronbachAlpha	lane_survey_influence_n3									0.90			ok	n = 3: the Feldt CI floor	options
+c0585	survey	emlCronbachAlpha	lane_survey_influence_n3									0.95			ok	n = 3: the Feldt CI floor	options
+c0586	survey	emlCronbachAlpha	lane_survey_influence_n3									0.99			ok	n = 3: the Feldt CI floor	options
+c0587	survey	emlCronbachAlpha	lane_survey_chisq_2x2_balanced									0.95			refuse	2 respondents: alpha needs at least 3	options
+c0588	survey	emlAlphaInfluence	lane_survey_alpha_clean												ok		options
+c0589	survey	emlAlphaInfluence	lane_survey_alpha_2item												ok	k = 2: alpha-if-deleted is undefined for every item	options
+c0590	survey	emlAlphaInfluence	lane_survey_alpha_missing												ok	listwise deletion disclosure	options
+c0591	survey	emlAlphaInfluence	lane_survey_alpha_revnotrev												ok	one item scored the wrong way round	options
+c0592	survey	emlAlphaInfluence	lane_survey_influence_deviant												ok		options
+c0593	survey	emlAlphaInfluence	lane_survey_influence_missdev												ok		options
+c0594	survey	emlAlphaInfluence	lane_survey_influence_n3												ok	n = 3: the Feldt CI floor	options
+c0595	survey	emlAlphaInfluence	lane_survey_chisq_2x2_balanced												refuse	2 respondents: leave-one-out needs at least 3	options
+c0596	survey	emlChiSquareIndependence	lane_survey_chisq_2x2_balanced										0		ok	2x2: Yates moves the statistic	options
+c0597	survey	emlChiSquareIndependence	lane_survey_chisq_2x2_balanced										1		ok	2x2: Yates moves the statistic	options
+c0598	survey	emlChiSquareIndependence	lane_survey_chisq_2x2_sparse										0		ok	2x2 with expected counts below 5	options
+c0599	survey	emlChiSquareIndependence	lane_survey_chisq_2x2_sparse										1		ok	2x2 with expected counts below 5	options
+c0600	survey	emlChiSquareIndependence	lane_survey_chisq_3x4										0		ok	3x4: correction is ignored, so the pair is an invariance check	options
+c0601	survey	emlChiSquareIndependence	lane_survey_chisq_3x4										1		ok	3x4: correction is ignored, so the pair is an invariance check	options
+c0602	survey	emlChiSquareIndependence	lane_survey_chisq_zerocell										0		ok	a zero cell with positive row and column totals	options
+c0603	survey	emlChiSquareIndependence	lane_survey_chisq_zerocell										1		ok	a zero cell with positive row and column totals	options
+c0604	survey	emlWilsonInterval	lane_survey_wilson_cases	central								0.90			ok		options
+c0605	survey	emlWilsonInterval	lane_survey_wilson_cases	central								0.95			ok		options
+c0606	survey	emlWilsonInterval	lane_survey_wilson_cases	central								0.99			ok		options
+c0607	survey	emlWilsonInterval	lane_survey_wilson_cases	near_zero								0.90			ok		options
+c0608	survey	emlWilsonInterval	lane_survey_wilson_cases	near_zero								0.95			ok		options
+c0609	survey	emlWilsonInterval	lane_survey_wilson_cases	near_zero								0.99			ok		options
+c0610	survey	emlWilsonInterval	lane_survey_wilson_cases	near_one								0.90			ok		options
+c0611	survey	emlWilsonInterval	lane_survey_wilson_cases	near_one								0.95			ok		options
+c0612	survey	emlWilsonInterval	lane_survey_wilson_cases	near_one								0.99			ok		options
+c0613	survey	emlWilsonInterval	lane_survey_wilson_cases	n_small								0.90			ok		options
+c0614	survey	emlWilsonInterval	lane_survey_wilson_cases	n_small								0.95			ok		options
+c0615	survey	emlWilsonInterval	lane_survey_wilson_cases	n_small								0.99			ok		options
+c0616	survey	emlWilsonInterval	lane_survey_wilson_cases	n_large								0.90			ok		options
+c0617	survey	emlWilsonInterval	lane_survey_wilson_cases	n_large								0.95			ok		options
+c0618	survey	emlWilsonInterval	lane_survey_wilson_cases	n_large								0.99			ok		options
+c0619	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero								0.90			ok	endpoint: the interval must still have positive width	options
+c0620	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero								0.95			ok	endpoint: the interval must still have positive width	options
+c0621	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero								0.99			ok	endpoint: the interval must still have positive width	options
+c0622	survey	emlWilsonInterval	lane_survey_wilson_cases	x_equals_n								0.90			ok	endpoint: the interval must still have positive width	options
+c0623	survey	emlWilsonInterval	lane_survey_wilson_cases	x_equals_n								0.95			ok	endpoint: the interval must still have positive width	options
+c0624	survey	emlWilsonInterval	lane_survey_wilson_cases	x_equals_n								0.99			ok	endpoint: the interval must still have positive width	options
+c0625	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero_conf99								0.90			ok	endpoint: the interval must still have positive width	options
+c0626	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero_conf99								0.95			ok	endpoint: the interval must still have positive width	options
+c0627	survey	emlWilsonInterval	lane_survey_wilson_cases	x_zero_conf99								0.99			ok	endpoint: the interval must still have positive width	options
+c0628	survey	emlWilsonInterval	lane_survey_wilson_cases	x_n_conf90								0.90			ok	endpoint: the interval must still have positive width	options
+c0629	survey	emlWilsonInterval	lane_survey_wilson_cases	x_n_conf90								0.95			ok	endpoint: the interval must still have positive width	options
+c0630	survey	emlWilsonInterval	lane_survey_wilson_cases	x_n_conf90								0.99			ok	endpoint: the interval must still have positive width	options
+c0631	analysis	emlRunAnovaAnalysis	sweep_c01_input	value	grp			1			discovery				ok	sweep tier: k=2 n=16 (8-8) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c01, ANOVA+Tukey oracled against base R	sweep
+c0632	analysis	emlRunKWAnalysis	sweep_c01_input	value	grp			0			discovery				ok	sweep tier: k=2 n=16 (8-8) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c01, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0633	analysis	emlRunAnovaAnalysis	sweep_c02_input	value	grp			1			discovery				ok	sweep tier: k=2 n=6 (3-3) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c02, ANOVA+Tukey oracled against base R	sweep
+c0634	analysis	emlRunKWAnalysis	sweep_c02_input	value	grp			0			discovery				ok	sweep tier: k=2 n=6 (3-3) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c02, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0635	analysis	emlRunAnovaAnalysis	sweep_c03_input	value	grp			1			discovery				ok	sweep tier: k=2 n=35 (30-5) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c03, ANOVA+Tukey oracled against base R	sweep
+c0636	analysis	emlRunKWAnalysis	sweep_c03_input	value	grp			0			discovery				ok	sweep tier: k=2 n=35 (30-5) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c03, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0637	analysis	emlRunAnovaAnalysis	sweep_c04_input	value	grp			1			discovery				ok	sweep tier: k=2 n=24 (12-12) balance=equal ties=none var_ratio=10.0:1 -- validate/v18_sweep_parity.R case c04, ANOVA+Tukey oracled against base R	sweep
+c0638	analysis	emlRunKWAnalysis	sweep_c04_input	value	grp			0			discovery				ok	sweep tier: k=2 n=24 (12-12) balance=equal ties=none var_ratio=10.0:1 -- validate/v18_sweep_parity.R case c04, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0639	analysis	emlRunAnovaAnalysis	sweep_c05_input	value	grp			1			discovery				ok	sweep tier: k=2 n=24 (12-12) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c05, ANOVA+Tukey oracled against base R	sweep
+c0640	analysis	emlRunKWAnalysis	sweep_c05_input	value	grp			0			discovery				ok	sweep tier: k=2 n=24 (12-12) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c05, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0641	analysis	emlRunAnovaAnalysis	sweep_c06_input	value	grp			1			discovery				ok	sweep tier: k=3 n=24 (8-8-8) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c06, ANOVA+Tukey oracled against base R	sweep
+c0642	analysis	emlRunKWAnalysis	sweep_c06_input	value	grp			0			discovery				ok	sweep tier: k=3 n=24 (8-8-8) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c06, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0643	analysis	emlRunAnovaAnalysis	sweep_c07_input	value	grp			1			discovery				ok	sweep tier: k=3 n=9 (3-3-3) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c07, ANOVA+Tukey oracled against base R	sweep
+c0644	analysis	emlRunKWAnalysis	sweep_c07_input	value	grp			0			discovery				ok	sweep tier: k=3 n=9 (3-3-3) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c07, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0645	analysis	emlRunAnovaAnalysis	sweep_c08_input	value	grp			1			discovery				ok	sweep tier: k=3 n=47 (30-12-5) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c08, ANOVA+Tukey oracled against base R	sweep
+c0646	analysis	emlRunKWAnalysis	sweep_c08_input	value	grp			0			discovery				ok	sweep tier: k=3 n=47 (30-12-5) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c08, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0647	analysis	emlRunAnovaAnalysis	sweep_c09_input	value	grp			1			discovery				ok	sweep tier: k=3 n=43 (14-9-20) balance=mild ties=moderate var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c09, ANOVA+Tukey oracled against base R	sweep
+c0648	analysis	emlRunKWAnalysis	sweep_c09_input	value	grp			0			discovery				ok	sweep tier: k=3 n=43 (14-9-20) balance=mild ties=moderate var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c09, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0649	analysis	emlRunAnovaAnalysis	sweep_c10_input	value	grp			1			discovery				ok	sweep tier: k=3 n=42 (14-14-14) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c10, ANOVA+Tukey oracled against base R	sweep
+c0650	analysis	emlRunKWAnalysis	sweep_c10_input	value	grp			0			discovery				ok	sweep tier: k=3 n=42 (14-14-14) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c10, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0651	analysis	emlRunAnovaAnalysis	sweep_c11_input	value	grp			1			discovery				ok	sweep tier: k=3 n=60 (20-20-20) balance=equal ties=none var_ratio=10.0:1 -- validate/v18_sweep_parity.R case c11, ANOVA+Tukey oracled against base R	sweep
+c0652	analysis	emlRunKWAnalysis	sweep_c11_input	value	grp			0			discovery				ok	sweep tier: k=3 n=60 (20-20-20) balance=equal ties=none var_ratio=10.0:1 -- validate/v18_sweep_parity.R case c11, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0653	analysis	emlRunAnovaAnalysis	sweep_c12_input	value	grp			1			discovery				ok	sweep tier: k=3 n=30 (10-10-10) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c12, ANOVA+Tukey oracled against base R	sweep
+c0654	analysis	emlRunKWAnalysis	sweep_c12_input	value	grp			0			discovery				ok	sweep tier: k=3 n=30 (10-10-10) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c12, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0655	analysis	emlRunAnovaAnalysis	sweep_c13_input	value	grp			1			discovery				ok	sweep tier: k=5 n=30 (6-6-6-6-6) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c13, ANOVA+Tukey oracled against base R	sweep
+c0656	analysis	emlRunKWAnalysis	sweep_c13_input	value	grp			0			discovery				ok	sweep tier: k=5 n=30 (6-6-6-6-6) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c13, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0657	analysis	emlRunAnovaAnalysis	sweep_c14_input	value	grp			1			discovery				ok	sweep tier: k=5 n=65 (18-4-11-7-25) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c14, ANOVA+Tukey oracled against base R	sweep
+c0658	analysis	emlRunKWAnalysis	sweep_c14_input	value	grp			0			discovery				ok	sweep tier: k=5 n=65 (18-4-11-7-25) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c14, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0659	analysis	emlRunAnovaAnalysis	sweep_c15_input	value	grp			1			discovery				ok	sweep tier: k=5 n=60 (12-12-12-12-12) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c15, ANOVA+Tukey oracled against base R	sweep
+c0660	analysis	emlRunKWAnalysis	sweep_c15_input	value	grp			0			discovery				ok	sweep tier: k=5 n=60 (12-12-12-12-12) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c15, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0661	analysis	emlRunAnovaAnalysis	sweep_c16_input	value	grp			1			discovery				ok	sweep tier: k=3 n=600 (200-200-200) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c16, ANOVA+Tukey oracled against base R	sweep
+c0662	analysis	emlRunKWAnalysis	sweep_c16_input	value	grp			0			discovery				ok	sweep tier: k=3 n=600 (200-200-200) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c16, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0663	analysis	emlRunAnovaAnalysis	nist_AtmWtAg_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset AtmWtAg -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0664	analysis	emlRunAnovaAnalysis	nist_SiRstv_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset SiRstv -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0665	analysis	emlRunAnovaAnalysis	nist_SmLs01_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset SmLs01 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0666	analysis	emlRunAnovaAnalysis	nist_SmLs02_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset SmLs02 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0667	analysis	emlRunAnovaAnalysis	nist_SmLs03_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset SmLs03 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0668	analysis	emlRunAnovaAnalysis	nist_SmLs04_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset SmLs04 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0669	analysis	emlRunAnovaAnalysis	nist_SmLs05_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset SmLs05 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0670	analysis	emlRunAnovaAnalysis	nist_SmLs06_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset SmLs06 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0671	analysis	emlRunAnovaAnalysis	nist_SmLs07_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset SmLs07 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0672	analysis	emlRunAnovaAnalysis	nist_SmLs08_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset SmLs08 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0673	analysis	emlRunAnovaAnalysis	nist_SmLs09_input	value	grp			0			discovery				ok	nist tier: NIST StRD certified dataset SmLs09 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist

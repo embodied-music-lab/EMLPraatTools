@@ -1,0 +1,34 @@
+One-way ANOVA -- value by grp (group_order=discovery)
+Levels (in order): G1, G2, G3, G4, G5
+
+F(4,60)=17.1069 p=2.065e-09
+eta^2: rstatix=0.5328 effectsize=0.5328
+
+  G1: n=18 mean=10.4811 sd=2.0711 median=10.3461
+  G2: n=4 mean=12.5048 sd=1.5812 median=12.9443
+  G3: n=11 mean=11.0547 sd=0.8259 median=11.2399
+  G4: n=7 mean=13.5936 sd=1.5106 median=13.5666
+  G5: n=25 mean=14.4082 sd=1.7148 median=14.4197
+
+Pairwise Cohen's d (first-minus-second):
+  g1__g2: effectsize=-1.0092 rstatix=-1.0092
+  g1__g3: effectsize=-0.3338 rstatix=-0.3338
+  g1__g4: effectsize=-1.6039 rstatix=-1.6039
+  g1__g5: effectsize=-2.0992 rstatix=-2.0992
+  g2__g3: effectsize=1.3816 rstatix=1.3816
+  g2__g4: effectsize=-0.7096 rstatix=-0.7096
+  g2__g5: effectsize=-1.1193 rstatix=-1.1193
+  g3__g4: effectsize=-2.2424 rstatix=-2.2424
+  g3__g5: effectsize=-2.2227 rstatix=-2.2227
+  g4__g5: effectsize=-0.4860 rstatix=-0.4860
+
+Tukey g1__g2: diff=-2.0237 [-4.6521, 0.6047] p.adj=0.207
+Tukey g1__g3: diff=-0.5736 [-2.3934, 1.2462] p.adj=0.9008
+Tukey g1__g4: diff=-3.1125 [-5.2306, -0.9945] p.adj=0.001036
+Tukey g1__g5: diff=-3.9271 [-5.3970, -2.4572] p.adj=3.31e-09
+Tukey g2__g3: diff=1.4501 [-1.3262, 4.2264] p.adj=0.5863
+Tukey g2__g4: diff=-1.0888 [-4.0692, 1.8915] p.adj=0.8417
+Tukey g2__g5: diff=-1.9034 [-4.4640, 0.6573] p.adj=0.2376
+Tukey g3__g4: diff=-2.5389 [-4.8380, -0.2399] p.adj=0.02331
+Tukey g3__g5: diff=-3.3535 [-5.0739, -1.6331] p.adj=8.588e-06
+Tukey g4__g5: diff=-0.8146 [-2.8479, 1.2188] p.adj=0.7918
