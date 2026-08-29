@@ -1,0 +1,4 @@
+Normality -- HNR_pre (n=20, 0 undefined)
+
+Shapiro-Wilk: W=0.9540 p=0.4311
+skewness=-0.2075 kurtosis=0.2388 (psych::describe)

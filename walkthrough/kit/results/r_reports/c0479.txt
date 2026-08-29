@@ -1,0 +1,4 @@
+Normality -- F0_Hz (n=40, 0 undefined)
+
+Shapiro-Wilk: W=0.9719 p=0.4115
+skewness=-0.1597 kurtosis=-0.8681 (psych::describe)

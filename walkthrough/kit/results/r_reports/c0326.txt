@@ -1,0 +1,12 @@
+Pairwise (scheffe, adjust=none) -- x by fam (group_order=discovery)
+
+  welch__paired: diff=-2.6667 F=1.3028 [-6.4185,1.0851] (alpha=0.0500)
+  welch__corr: diff=6.4286 F=8.0968 [2.8006,10.0565] (alpha=0.0500)
+  welch__perfect: diff=9.0000 F=13.6026 [5.0814,12.9186] (alpha=0.0500)
+  welch__mwu: diff=9.5000 F=8.6605 [4.3161,14.6839] (alpha=0.0500)
+  paired__corr: diff=9.0952 F=17.9527 [5.6481,12.5423] (alpha=0.0500)
+  paired__perfect: diff=11.6667 F=24.9355 [7.9149,15.4185] (alpha=0.0500)
+  paired__mwu: diff=12.1667 F=14.9152 [7.1077,17.2256] (alpha=0.0500)
+  corr__perfect: diff=2.5714 F=1.2955 [-1.0565,6.1994] (alpha=0.0500)
+  corr__mwu: diff=3.0714 F=0.9857 [-1.8964,8.0392] (alpha=0.0500)
+  perfect__mwu: diff=0.5000 F=0.0240 [-4.6839,5.6839] (alpha=0.0500)

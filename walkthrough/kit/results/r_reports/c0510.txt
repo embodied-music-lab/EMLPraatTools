@@ -1,0 +1,5 @@
+Simple regression -- speaking_F0_Hz ~ singing_F0_Hz (n=30)
+
+speaking_F0_Hz = -1.1059 + 0.4711 * singing_F0_Hz
+R^2=0.9371 adjR^2=0.9349 residual SE=11.2205
+slope: t=20.4272 p=2.329e-18

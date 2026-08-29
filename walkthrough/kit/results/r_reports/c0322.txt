@@ -1,0 +1,12 @@
+Pairwise (student, adjust=bh) -- x by fam (group_order=discovery)
+
+  welch__paired: diff=-2.6667 t=-2.2112 df=20.00 p=0.03883 p.adj=0.04854 (pairwise.t.test p.adj=0.05008) d=-0.9468
+  welch__corr: diff=6.4286 t=4.6883 df=22.00 p=0.0001124 p.adj=0.0001873 (pairwise.t.test p.adj=0.0001935) d=1.9411
+  welch__perfect: diff=9.0000 t=8.1408 df=18.00 p=1.91e-07 p.adj=6.366e-07 (pairwise.t.test p.adj=5.09e-06) d=3.6407
+  welch__mwu: diff=9.5000 t=5.7071 df=12.00 p=9.802e-05 p.adj=0.0001873 (pairwise.t.test p.adj=8.225e-06) d=3.3764
+  paired__corr: diff=9.0952 t=7.6370 df=24.00 p=7.109e-08 p.adj=3.554e-07 (pairwise.t.test p.adj=NA) d=3.0044
+  paired__perfect: diff=11.6667 t=12.9408 df=20.00 p=3.542e-11 p.adj=3.542e-10 (pairwise.t.test p.adj=NA) d=5.5409
+  paired__mwu: diff=12.1667 t=9.1867 df=14.00 p=2.643e-07 p.adj=6.608e-07 (pairwise.t.test p.adj=3.371e-07) d=5.3040
+  corr__perfect: diff=2.5714 t=2.2258 df=22.00 p=0.03659 p.adj=0.04854 (pairwise.t.test p.adj=NA) d=0.9216
+  corr__mwu: diff=3.0714 t=1.7334 df=16.00 p=0.1023 p.adj=0.1136 (pairwise.t.test p.adj=0.02234) d=0.9827
+  perfect__mwu: diff=0.5000 t=0.5855 df=12.00 p=0.569 p.adj=0.569 (pairwise.t.test p.adj=0.5531) d=0.3464

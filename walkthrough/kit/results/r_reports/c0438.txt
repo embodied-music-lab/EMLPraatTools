@@ -1,0 +1,5 @@
+Descriptives -- shimmer_pct (n=40 valid, 0 undefined)
+
+mean=2.2135 sd=1.0984 median=2.0150 min=0.6364 max=5.1596
+skewness=0.8452 kurtosis=0.0900 (psych::describe)
+95% CI of the mean: [1.8623, 2.5648] (stats::t.test)

@@ -1,0 +1,8 @@
+Two-group comparison -- SPL_dB by voice_type
+group_order=discovery  group1=Soprano  group2=Alto
+
+Soprano: n=24 mean=95.2605 sd=5.8572 median=95.2702
+Alto: n=24 mean=89.1342 sd=4.9841 median=90.3394
+
+Welch t-test: t=3.9024 df=44.85 p=0.0003166
+Cohen's d: effectsize=1.1265 rstatix=1.1265 | Hedges' g (effectsize)=1.1080

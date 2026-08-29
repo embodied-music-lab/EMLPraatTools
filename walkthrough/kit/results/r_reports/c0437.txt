@@ -1,0 +1,5 @@
+Descriptives -- F0_Hz (n=40 valid, 0 undefined)
+
+mean=185.6705 sd=26.7146 median=188.2082 min=128.3998 max=231.2516
+skewness=-0.1597 kurtosis=-0.8681 (psych::describe)
+95% CI of the mean: [177.1268, 194.2143] (stats::t.test)

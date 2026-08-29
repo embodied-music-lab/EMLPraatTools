@@ -1,0 +1,3 @@
+Paired comparison -- jitter_pre vs jitter_post (n=20, 0 excluded)
+
+Paired t-test: t=7.7260 df=19 p=2.801e-07, Cohen's d_z: effectsize=1.7276 rstatix=1.7276

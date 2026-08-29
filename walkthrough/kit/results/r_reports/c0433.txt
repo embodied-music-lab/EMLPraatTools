@@ -1,0 +1,5 @@
+Descriptives -- vibrato_regularity_pct (n=25 valid, 0 undefined)
+
+mean=79.3547 sd=15.8890 median=79.4814 min=46.0921 max=100.0000
+skewness=-0.4285 kurtosis=-0.6749 (psych::describe)
+95% CI of the mean: [72.7961, 85.9134] (stats::t.test)

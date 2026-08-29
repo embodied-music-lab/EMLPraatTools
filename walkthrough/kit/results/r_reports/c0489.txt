@@ -1,0 +1,4 @@
+Normality -- soft (n=4, 0 undefined)
+
+Shapiro-Wilk: W=0.9826 p=0.917
+skewness=-0.1613 kurtosis=-2.0582 (psych::describe)

@@ -1,0 +1,25 @@
+One-way ANOVA -- x by slot (group_order=alphabetical)
+Levels (in order): a, b, x, y
+
+F(3,46)=14.7281 p=7.412e-07
+eta^2: rstatix=0.4899 effectsize=0.4899
+
+  a: n=13 mean=10.4615 sd=4.2351 median=11.0000
+  b: n=13 mean=13.0769 sd=5.3923 median=14.0000
+  x: n=12 mean=3.5833 sd=1.9287 median=3.5000
+  y: n=12 mean=5.4167 sd=3.6777 median=4.2000
+
+Pairwise Cohen's d (first-minus-second):
+  a__b: effectsize=-0.5394 rstatix=-0.5394
+  a__x: effectsize=2.0611 rstatix=2.0611
+  a__y: effectsize=1.2681 rstatix=1.2681
+  b__x: effectsize=2.3060 rstatix=2.3060
+  b__y: effectsize=1.6467 rstatix=1.6467
+  x__y: effectsize=-0.6243 rstatix=-0.6243
+
+Tukey a__b: diff=-2.6154 [-6.8478, 1.6170] p.adj=0.3631
+Tukey a__x: diff=6.8782 [2.5586, 11.1979] p.adj=0.0005912
+Tukey a__y: diff=5.0449 [0.7252, 9.3645] p.adj=0.01622
+Tukey b__x: diff=9.4936 [5.1739, 13.8132] p.adj=2.774e-06
+Tukey b__y: diff=7.6603 [3.3406, 11.9799] p.adj=0.0001253
+Tukey x__y: diff=-1.8333 [-6.2385, 2.5719] p.adj=0.6857

@@ -1,0 +1,15 @@
+One-way ANOVA -- vibrato_rate_Hz by voice_type (group_order=discovery)
+Levels (in order): Soprano, Mezzo, Alto
+
+F(2,42)=3.5049 p=0.03911
+eta^2: rstatix=0.1430 effectsize=0.1430
+
+  Soprano: n=15 mean=5.7283 sd=0.6509 median=5.8797
+  Mezzo: n=15 mean=5.5242 sd=0.8659 median=5.2113
+  Alto: n=15 mean=5.0931 sd=0.4202 median=5.2051
+
+Pairwise Cohen's d (first-minus-second):
+  soprano__mezzo: effectsize=0.2665 rstatix=0.2665
+  soprano__alto: effectsize=1.1594 rstatix=1.1594
+  mezzo__alto: effectsize=0.6334 rstatix=0.6334
+

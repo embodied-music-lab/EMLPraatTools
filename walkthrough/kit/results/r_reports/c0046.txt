@@ -1,0 +1,18 @@
+One-way ANOVA -- SPL_dB by voice_type (group_order=alphabetical)
+Levels (in order): Alto, Mezzo, Soprano
+
+F(2,42)=14.5814 p=1.552e-05
+eta^2: rstatix=0.4098 effectsize=0.4098
+
+  Alto: n=15 mean=84.8140 sd=3.7923 median=85.0104
+  Mezzo: n=15 mean=88.8375 sd=4.3184 median=88.8319
+  Soprano: n=15 mean=92.4641 sd=3.4877 median=92.6103
+
+Pairwise Cohen's d (first-minus-second):
+  alto__mezzo: effectsize=-0.9901 rstatix=-0.9901
+  alto__soprano: effectsize=-2.0999 rstatix=-2.0999
+  mezzo__soprano: effectsize=-0.9239 rstatix=-0.9239
+
+Tukey alto__mezzo: diff=-4.0236 [-7.4668, -0.5803] p.adj=0.01866
+Tukey alto__soprano: diff=-7.6502 [-11.0934, -4.2069] p.adj=8.559e-06
+Tukey mezzo__soprano: diff=-3.6266 [-7.0698, -0.1834] p.adj=0.03703

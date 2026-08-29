@@ -1,0 +1,1 @@
+REFUSED: Alpha needs at least 3 complete respondents; 2 arrived and 2 remained after listwise deletion.

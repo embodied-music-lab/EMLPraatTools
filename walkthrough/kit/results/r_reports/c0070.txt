@@ -1,0 +1,34 @@
+One-way ANOVA -- x by fam (group_order=alphabetical)
+Levels (in order): corr, mwu, paired, perfect, welch
+
+F(4,45)=38.3889 p=5.751e-14
+eta^2: rstatix=0.7734 effectsize=0.7734
+
+  corr: n=14 mean=5.5714 sd=3.4114 median=4.7000
+  mwu: n=4 mean=2.5000 sd=1.2910 median=2.5000
+  paired: n=12 mean=14.6667 sd=2.4985 median=14.5000
+  perfect: n=10 mean=3.0000 sd=1.4907 median=3.0000
+  welch: n=10 mean=12.0000 sd=3.1623 median=11.5000
+
+Pairwise Cohen's d (first-minus-second):
+  corr__mwu: effectsize=0.9827 rstatix=0.9827
+  corr__paired: effectsize=-3.0044 rstatix=-3.0044
+  corr__perfect: effectsize=0.9216 rstatix=0.9216
+  corr__welch: effectsize=-1.9411 rstatix=-1.9411
+  mwu__paired: effectsize=-5.3040 rstatix=-5.3040
+  mwu__perfect: effectsize=-0.3464 rstatix=-0.3464
+  mwu__welch: effectsize=-3.3764 rstatix=-3.3764
+  paired__perfect: effectsize=5.5409 rstatix=5.5409
+  paired__welch: effectsize=0.9468 rstatix=0.9468
+  perfect__welch: effectsize=-3.6407 rstatix=-3.6407
+
+Tukey corr__mwu: diff=3.0714 [-1.3237, 7.4665] p.adj=0.2894
+Tukey corr__paired: diff=-9.0952 [-12.1450, -6.0455] p.adj=7.046e-10
+Tukey corr__perfect: diff=2.5714 [-0.6383, 5.7812] p.adj=0.1715
+Tukey corr__welch: diff=-6.4286 [-9.6383, -3.2188] p.adj=8.643e-06
+Tukey mwu__paired: diff=-12.1667 [-16.6424, -7.6909] p.adj=8.608e-09
+Tukey mwu__perfect: diff=-0.5000 [-5.0863, 4.0863] p.adj=0.9979
+Tukey mwu__welch: diff=-9.5000 [-14.0863, -4.9137] p.adj=4.468e-06
+Tukey paired__perfect: diff=11.6667 [8.3474, 14.9860] p.adj=5.665e-12
+Tukey paired__welch: diff=2.6667 [-0.6526, 5.9860] p.adj=0.1694
+Tukey perfect__welch: diff=-9.0000 [-12.4669, -5.5331] p.adj=2.787e-08

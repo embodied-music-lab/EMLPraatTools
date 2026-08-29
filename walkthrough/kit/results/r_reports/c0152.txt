@@ -1,0 +1,7 @@
+Kruskal-Wallis -- x by slot (group_order=alphabetical)
+Levels: a, b, x, y
+
+H(3)=21.1304 p=9.891e-05 n=50
+eta^2[H]: rstatix(kruskal_effsize)=0.3941 effectsize(rank_eta_squared)=0.3941
+epsilon^2 (rank): effectsize(rank_epsilon_squared)=0.4312 [no rstatix counterpart in this installed version]
+

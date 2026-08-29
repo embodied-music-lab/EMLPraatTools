@@ -1,0 +1,5 @@
+Chi-square test of independence -- lane_survey_chisq_zerocell (correction=FALSE)
+chi-square(1)=9.4359 p=0.002128
+Cramer's V: rstatix=0.6405 effectsize=0.6405 | Bergsma bias-corrected=0.6182
+min expected=3.4783, cells<5: 2/4
+

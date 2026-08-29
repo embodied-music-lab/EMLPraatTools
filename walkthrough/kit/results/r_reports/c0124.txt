@@ -1,0 +1,7 @@
+Kruskal-Wallis -- jitter_pct by group (group_order=discovery)
+Levels: Control, Patient
+
+H(1)=22.6654 p=1.928e-06 n=40
+eta^2[H]: rstatix(kruskal_effsize)=0.5701 effectsize(rank_eta_squared)=0.5701
+epsilon^2 (rank): effectsize(rank_epsilon_squared)=0.5812 [no rstatix counterpart in this installed version]
+

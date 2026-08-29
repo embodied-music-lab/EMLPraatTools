@@ -1,0 +1,5 @@
+Descriptives -- HNR_pre (n=20 valid, 0 undefined)
+
+mean=17.7609 sd=4.0884 median=17.4344 min=7.8014 max=25.4251
+skewness=-0.2075 kurtosis=0.2388 (psych::describe)
+95% CI of the mean: [15.8475, 19.6743] (stats::t.test)

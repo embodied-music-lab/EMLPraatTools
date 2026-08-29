@@ -1,0 +1,5 @@
+Descriptives -- singing_F0_Hz (n=30 valid, 0 undefined)
+
+mean=325.1428 sd=90.3384 median=295.3789 min=192.9261 max=511.9178
+skewness=0.4402 kurtosis=-1.0693 (psych::describe)
+95% CI of the mean: [291.4099, 358.8757] (stats::t.test)

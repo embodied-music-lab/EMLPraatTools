@@ -1,0 +1,5 @@
+Simple regression -- jitter_pct ~ shimmer_pct (n=40)
+
+jitter_pct = 1.2446 + -0.0249 * shimmer_pct
+R^2=0.0028 adjR^2=-0.0235 residual SE=0.5281
+slope: t=-0.3238 p=0.7479

@@ -1,0 +1,13 @@
+One-way ANOVA -- jitter_pct by group (group_order=alphabetical)
+Levels (in order): Control, Patient
+
+F(1,38)=44.3075 p=7.2e-08
+eta^2: rstatix=0.5383 effectsize=0.5383
+
+  Control: n=20 mean=0.7993 sd=0.3281 median=0.7860
+  Patient: n=20 mean=2.1414 sd=0.8399 median=2.3425
+
+Pairwise Cohen's d (first-minus-second):
+  control__patient: effectsize=-2.1049 rstatix=-2.1049
+
+Tukey control__patient: diff=-1.3421 [-1.7503, -0.9339] p.adj=7.2e-08

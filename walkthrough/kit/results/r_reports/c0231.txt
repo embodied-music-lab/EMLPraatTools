@@ -1,0 +1,5 @@
+Pairwise (student, adjust=holm) -- vibrato_rate_Hz by voice_type (group_order=alphabetical)
+
+  alto__mezzo: diff=-0.6486 t=-2.8181 df=28.00 p=0.008764 p.adj=0.01753 (pairwise.t.test p.adj=0.01901) d=-1.0290
+  alto__soprano: diff=-0.7014 t=-3.4627 df=28.00 p=0.001737 p.adj=0.00521 (pairwise.t.test p.adj=0.005476) d=-1.2644
+  mezzo__soprano: diff=-0.0528 t=-0.2113 df=28.00 p=0.8342 p.adj=0.8342 (pairwise.t.test p.adj=0.8343) d=-0.0771

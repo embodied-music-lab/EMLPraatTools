@@ -1,0 +1,6 @@
+Repeated-measures ANOVA (afex::aov_ez, GG correction) -- SPL_loud, SPL_medium, SPL_soft
+n=20 k=3
+F(2.000,38.000)=583.1232 p=3.036e-29
+Greenhouse-Geisser epsilon=0.8486, GG-corrected p=3.728e-25
+partial eta^2 (effectsize)=0.9684
+

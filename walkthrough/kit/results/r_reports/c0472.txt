@@ -1,0 +1,4 @@
+Normality -- singing_F0_Hz (n=30, 0 undefined)
+
+Shapiro-Wilk: W=0.9374 p=0.07763
+skewness=0.4402 kurtosis=-1.0693 (psych::describe)

@@ -1,0 +1,10 @@
+Repeated-measures ANOVA (afex::aov_ez, GG correction) -- SPL_soft, SPL_medium, SPL_loud
+n=20 k=3
+F(2.000,38.000)=583.1232 p=3.036e-29
+Greenhouse-Geisser epsilon=0.8486, GG-corrected p=3.728e-25
+partial eta^2 (effectsize)=0.9684
+
+Post hoc paired t (bonferroni-adjusted, level=0.9833):
+  spl_soft__spl_medium: diff=-10.8900 [-12.6633,-9.1168] p=1.538e-12 p.adj=4.615e-12
+  spl_soft__spl_loud: diff=-21.6648 [-22.9398,-20.3899] p=1.069e-20 p.adj=3.206e-20
+  spl_medium__spl_loud: diff=-10.7748 [-12.6590,-8.8906] p=5.431e-12 p.adj=1.629e-11

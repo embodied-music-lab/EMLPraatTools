@@ -1,0 +1,5 @@
+Two-way ANOVA (Type II SS, car::Anova) -- SPL_dB by voice_type * task
+
+voice_type (a): F(1,44)=78.1980 p=2.571e-11 partial_eta2=0.6399 eta2=0.2487
+task (b): F(1,44)=189.6295 p=1.477e-17 partial_eta2=0.8117 eta2=0.6031
+voice_type__task (a:b): F(1,44)=2.5749 p=0.1157 partial_eta2=0.0553 eta2=0.0082

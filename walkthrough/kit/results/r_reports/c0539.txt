@@ -1,0 +1,8 @@
+Repeated-measures ANOVA (afex::aov_ez, GG correction) -- jitter_pre, jitter_post
+n=20 k=2
+F(1.000,19.000)=59.6906 p=2.801e-07
+Greenhouse-Geisser correction not applicable (k=2 conditions, 1 df; sphericity is trivial).
+partial eta^2 (effectsize)=0.7585
+
+Post hoc paired t (bh-adjusted, level=0.9500):
+  jitter_pre__jitter_post: diff=0.7285 [0.5311,0.9258] p=2.801e-07 p.adj=2.801e-07

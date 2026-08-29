@@ -1,0 +1,8 @@
+Cronbach's alpha -- lane_survey_influence_n3 (conf=0.95)
+n=3 (excluded 0) k=4
+alpha=0.8992  CI[0.2684, 0.9974] (psych::alpha / psych::alpha.ci, Feldt)
+
+  alpha if item item1 deleted = 0.8400
+  alpha if item item2 deleted = 0.9107
+  alpha if item item3 deleted = 0.8438
+  alpha if item item4 deleted = 0.8710

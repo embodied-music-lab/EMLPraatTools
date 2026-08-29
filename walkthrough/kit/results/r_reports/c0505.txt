@@ -1,0 +1,5 @@
+Simple regression -- practice_hrs_wk ~ vibrato_regularity_pct (n=25)
+
+practice_hrs_wk = -12.1979 + 0.3089 * vibrato_regularity_pct
+R^2=0.8101 adjR^2=0.8018 residual SE=2.4279
+slope: t=9.9041 p=9.167e-10

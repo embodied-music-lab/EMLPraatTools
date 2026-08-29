@@ -1,0 +1,4 @@
+Correlation -- practice_hrs_wk with experience_yrs (n=25)
+
+Pearson: r=0.8947 t(23)=9.6056 p=1.624e-09
+Spearman: rho=0.9325 p=1.171e-11 (exact/AS89) ; asymptotic p=1.171e-11

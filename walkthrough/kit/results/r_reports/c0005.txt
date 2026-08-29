@@ -1,0 +1,8 @@
+Two-group comparison -- F0_Hz by group
+group_order=discovery  group1=Control  group2=Patient
+
+Control: n=20 mean=123.6534 sd=15.7460 median=123.0998
+Patient: n=20 mean=133.9342 sd=25.3121 median=135.4197
+
+Mann-Whitney: U1=138.0 U2=262.0 p=0.0965
+Rank-biserial r (effectsize)=-0.3100 | wilcox_r = Z/sqrt(N), unsigned (rstatix)=0.2652

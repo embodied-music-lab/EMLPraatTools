@@ -1,0 +1,4 @@
+Paired comparison -- soft vs medium (n=4, 0 excluded)
+
+Paired t-test: all differences identical (zero variance) -- omitted.
+Wilcoxon signed-rank: W=0.0 p=0.07186, rank-biserial r (effectsize)=-1.0000, wilcox_r (rstatix)=1.0000

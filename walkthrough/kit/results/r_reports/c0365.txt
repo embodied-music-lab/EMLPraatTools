@@ -1,0 +1,4 @@
+Paired comparison -- HNR_pre vs HNR_post (n=20, 0 excluded)
+
+Paired t-test: t=-10.6827 df=19 p=1.798e-09, Cohen's d_z: effectsize=-2.3887 rstatix=-2.3887
+Wilcoxon signed-rank: W=0.0 p=1.907e-06, rank-biserial r (effectsize)=-1.0000, wilcox_r (rstatix)=0.8765

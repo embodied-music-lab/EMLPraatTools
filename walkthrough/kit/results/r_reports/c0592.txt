@@ -1,0 +1,24 @@
+Alpha respondent influence (leave-one-out via psych::alpha) -- lane_survey_influence_deviant
+n=20 k=5 alpha_full=0.8098
+
+largest |delta| = 0.0845 at original row 14
+  row 1 removed: delta=-0.0005
+  row 2 removed: delta=0.0030
+  row 3 removed: delta=-0.0330
+  row 4 removed: delta=-0.0230
+  row 5 removed: delta=0.0073
+  row 6 removed: delta=-0.0291
+  row 7 removed: delta=0.0073
+  row 8 removed: delta=0.0028
+  row 9 removed: delta=0.0019
+  row 10 removed: delta=0.0039
+  row 11 removed: delta=-0.0358
+  row 12 removed: delta=0.0045
+  row 13 removed: delta=-0.0083
+  row 14 removed: delta=0.0845
+  row 15 removed: delta=-0.0095
+  row 16 removed: delta=0.0040
+  row 17 removed: delta=-0.0050
+  row 18 removed: delta=-0.0057
+  row 19 removed: delta=0.0028
+  row 20 removed: delta=0.0058

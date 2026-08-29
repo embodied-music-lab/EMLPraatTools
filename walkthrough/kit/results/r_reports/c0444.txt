@@ -1,0 +1,5 @@
+Descriptives -- SPL_soft (n=20 valid, 0 undefined)
+
+mean=72.4646 sd=2.7435 median=72.9915 min=68.0803 max=77.3414
+skewness=-0.0301 kurtosis=-1.3866 (psych::describe)
+95% CI of the mean: [71.1806, 73.7486] (stats::t.test)

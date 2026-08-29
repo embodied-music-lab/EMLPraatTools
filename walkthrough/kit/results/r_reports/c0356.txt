@@ -1,0 +1,8 @@
+Pairwise (scheffe, adjust=none) -- x by slot (group_order=alphabetical)
+
+  a__b: diff=-2.6154 F=0.9044 [-7.2230,1.9922] (alpha=0.0500)
+  a__x: diff=6.8782 F=6.0047 [2.1756,11.5808] (alpha=0.0500)
+  a__y: diff=5.0449 F=3.2303 [0.3422,9.7475] (alpha=0.0500)
+  b__x: diff=9.4936 F=11.4393 [4.7910,14.1962] (alpha=0.0500)
+  b__y: diff=7.6603 F=7.4477 [2.9576,12.3629] (alpha=0.0500)
+  x__y: diff=-1.8333 F=0.4102 [-6.6291,2.9624] (alpha=0.0500)

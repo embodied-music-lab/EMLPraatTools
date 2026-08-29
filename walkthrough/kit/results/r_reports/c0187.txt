@@ -1,0 +1,5 @@
+Pairwise (welch, adjust=bonferroni) -- vibrato_rate_Hz by voice_type (group_order=alphabetical)
+
+  alto__mezzo: diff=-0.4310 [-1.0796,0.2175] (level=0.9833) t=-1.7345 df=20.25 p=0.09803 p.adj=0.2941 (pairwise.t.test p.adj=0.2941) d=-0.6334
+  alto__soprano: diff=-0.6352 [-1.1501,-0.1202] (level=0.9833) t=-3.1750 df=23.94 p=0.004088 p.adj=0.01226 (pairwise.t.test p.adj=0.01226) d=-1.1594
+  mezzo__soprano: diff=-0.2041 [-0.9199,0.5116] (level=0.9833) t=-0.7298 df=25.99 p=0.472 p.adj=1 (pairwise.t.test p.adj=1) d=-0.2665

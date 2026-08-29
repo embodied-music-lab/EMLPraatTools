@@ -1,0 +1,5 @@
+Pairwise (student, adjust=bonferroni) -- SPL_dB by voice_type (group_order=alphabetical)
+
+  alto__mezzo: diff=-2.6737 [-6.9168,1.5693] (level=0.9833) t=-1.6047 df=28.00 p=0.1198 p.adj=0.3594 (pairwise.t.test p.adj=0.3622) d=-0.5859
+  alto__soprano: diff=-8.7407 [-12.6407,-4.8407] (level=0.9833) t=-5.7072 df=28.00 p=4.035e-06 p.adj=1.211e-05 (pairwise.t.test p.adj=2.942e-05) d=-2.0840
+  mezzo__soprano: diff=-6.0670 [-9.2293,-2.9046] (level=0.9833) t=-4.8854 df=28.00 p=3.794e-05 p.adj=0.0001138 (pairwise.t.test p.adj=0.0001368) d=-1.7839

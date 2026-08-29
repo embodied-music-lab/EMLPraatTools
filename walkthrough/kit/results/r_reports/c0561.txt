@@ -1,0 +1,9 @@
+Friedman test -- SPL_soft, SPL_medium, SPL_loud
+n=6 k=3
+chi-square(2)=NaN p=NaN
+Kendall's W: rstatix=NaN effectsize=NaN
+
+Post hoc Wilcoxon signed-rank (holm-adjusted):
+  spl_soft__spl_medium: hl-diff=0.0000 (wilcox.test est=NaN) p=NA p.adj=NA
+  spl_soft__spl_loud: hl-diff=0.0000 (wilcox.test est=NaN) p=NA p.adj=NA
+  spl_medium__spl_loud: hl-diff=0.0000 (wilcox.test est=NaN) p=NA p.adj=NA

@@ -1,0 +1,4 @@
+Normality -- speaking_F0_Hz (n=30, 0 undefined)
+
+Shapiro-Wilk: W=0.9628 p=0.3647
+skewness=0.4853 kurtosis=-0.5457 (psych::describe)

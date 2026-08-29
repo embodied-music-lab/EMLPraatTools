@@ -1,0 +1,3 @@
+Correlation -- F0_Hz with jitter_pct (n=40)
+
+Pearson: r=-0.1074 t(38)=-0.6661 p=0.5094

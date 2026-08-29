@@ -1,0 +1,4 @@
+Normality -- experience_yrs (n=25, 0 undefined)
+
+Shapiro-Wilk: W=0.9811 p=0.9055
+skewness=0.1832 kurtosis=-0.7232 (psych::describe)

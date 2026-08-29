@@ -1,0 +1,3 @@
+Paired comparison -- SPL_soft vs SPL_loud (n=20, 0 excluded)
+
+Wilcoxon signed-rank: W=0.0 p=1.907e-06, rank-biserial r (effectsize)=-1.0000, wilcox_r (rstatix)=0.8765

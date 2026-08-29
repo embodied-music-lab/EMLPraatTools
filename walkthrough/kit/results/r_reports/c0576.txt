@@ -1,0 +1,9 @@
+Cronbach's alpha -- lane_survey_alpha_revnotrev (conf=0.95)
+n=24 (excluded 0) k=5
+alpha=-0.1410  CI[-1.0662, 0.4469] (psych::alpha / psych::alpha.ci, Feldt)
+
+  alpha if item item1 deleted = -0.5459
+  alpha if item item2 deleted = -0.6611
+  alpha if item item3 deleted = 0.7639
+  alpha if item item4 deleted = -1.7294
+  alpha if item item5 deleted = -1.0432

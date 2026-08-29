@@ -1,0 +1,8 @@
+Two-group comparison -- SPL_dB by task
+group_order=alphabetical  group1=Singing  group2=Speech
+
+Singing: n=24 mean=96.9674 sd=4.3702 median=97.8877
+Speech: n=24 mean=87.4273 sd=3.4851 median=88.1127
+
+Mann-Whitney: U1=562.0 U2=14.0 p=3.151e-11
+Rank-biserial r (effectsize)=0.9514 | wilcox_r = Z/sqrt(N), unsigned (rstatix)=0.8155

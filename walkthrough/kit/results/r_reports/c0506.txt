@@ -1,0 +1,5 @@
+Simple regression -- vibrato_regularity_pct ~ experience_yrs (n=25)
+
+vibrato_regularity_pct = 55.9763 + 2.2742 * experience_yrs
+R^2=0.6121 adjR^2=0.5952 residual SE=10.1094
+slope: t=6.0238 p=3.832e-06

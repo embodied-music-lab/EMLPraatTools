@@ -1,0 +1,5 @@
+Pairwise (scheffe, adjust=none) -- SPL_dB by voice_type (group_order=discovery)
+
+  soprano__mezzo: diff=3.6266 F=3.2739 [0.0300,7.2232] (alpha=0.0500)
+  soprano__alto: diff=7.6502 F=14.5684 [4.0536,11.2467] (alpha=0.0500)
+  mezzo__alto: diff=4.0236 F=4.0299 [0.4270,7.6202] (alpha=0.0500)

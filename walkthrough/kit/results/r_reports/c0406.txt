@@ -1,0 +1,3 @@
+Correlation -- F0_Hz with shimmer_pct (n=40)
+
+Pearson: r=0.1461 t(38)=0.9104 p=0.3684

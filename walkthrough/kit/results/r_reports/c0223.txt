@@ -1,0 +1,5 @@
+Pairwise (wilcoxon, adjust=bonferroni) -- vibrato_rate_Hz by voice_type (group_order=discovery)
+
+  soprano__mezzo: hl-diff=0.0878 (wilcox.test est=0.0878) [-0.6247,0.6966] (level=0.9833) U1=118.0 p=0.8381 p.adj=1 rb=0.0489
+  soprano__alto: hl-diff=0.6877 (wilcox.test est=0.6877) [0.1247,1.3144] (level=0.9833) U1=184.0 p=0.002306 p.adj=0.006919 rb=0.6356
+  mezzo__alto: hl-diff=0.6340 (wilcox.test est=0.6340) [0.0391,1.2993] (level=0.9833) U1=171.0 p=0.01452 p.adj=0.04356 rb=0.5200

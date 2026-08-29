@@ -1,0 +1,5 @@
+Descriptives -- practice_hrs_wk (n=25 valid, 0 undefined)
+
+mean=8.9500 sd=4.4108 median=8.9500 min=1.7500 max=16.1500
+skewness=0.0000 kurtosis=-1.3487 (psych::describe)
+95% CI of the mean: [7.1293, 10.7707] (stats::t.test)

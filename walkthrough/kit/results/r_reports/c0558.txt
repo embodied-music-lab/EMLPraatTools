@@ -1,0 +1,7 @@
+Friedman test -- jitter_pre, jitter_post
+n=20 k=2
+chi-square(1)=12.8000 p=0.0003466
+Kendall's W: rstatix=0.6400 effectsize=0.6400
+
+Post hoc Wilcoxon signed-rank (holm-adjusted):
+  jitter_pre__jitter_post: hl-diff=0.7563 (wilcox.test est=0.7563) p=9.537e-06 p.adj=9.537e-06

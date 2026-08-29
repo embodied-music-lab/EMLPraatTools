@@ -1,0 +1,2 @@
+Wilson score interval -- case 'x_n_conf90' (x=5, n=5, conf=0.90)
+p_hat=1.0000  CI[0.6489, 1.0000] (stats::prop.test, correct=FALSE)

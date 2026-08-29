@@ -1,0 +1,5 @@
+Descriptives -- experience_yrs (n=25 valid, 0 undefined)
+
+mean=10.2800 sd=5.4660 median=11.0000 min=1.0000 max=22.0000
+skewness=0.1832 kurtosis=-0.7232 (psych::describe)
+95% CI of the mean: [8.0238, 12.5362] (stats::t.test)

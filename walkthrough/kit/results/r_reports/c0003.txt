@@ -1,0 +1,8 @@
+Two-group comparison -- F0_Hz by group
+group_order=discovery  group1=Control  group2=Patient
+
+Control: n=20 mean=123.6534 sd=15.7460 median=123.0998
+Patient: n=20 mean=133.9342 sd=25.3121 median=135.4197
+
+Student t-test: t=-1.5423 df=38.00 p=0.1313
+Cohen's d: effectsize=-0.4877 rstatix=-0.4877 | Hedges' g (effectsize)=-0.4780

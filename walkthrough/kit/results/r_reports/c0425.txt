@@ -1,0 +1,5 @@
+Descriptives -- vibrato_rate_Hz (n=45 valid, 0 undefined)
+
+mean=5.4701 sd=0.5644 median=5.3208 min=4.4361 max=6.7088
+skewness=0.4302 kurtosis=-0.6400 (psych::describe)
+95% CI of the mean: [5.3005, 5.6396] (stats::t.test)

@@ -1,0 +1,3 @@
+Pairwise (welch, adjust=bh) -- jitter_pct by group (group_order=discovery)
+
+  control__patient: diff=-1.3421 t=-6.6564 df=24.67 p=6.039e-07 p.adj=6.039e-07 (pairwise.t.test p.adj=6.039e-07) d=-2.1049

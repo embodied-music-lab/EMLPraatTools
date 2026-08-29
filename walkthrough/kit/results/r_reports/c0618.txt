@@ -1,0 +1,2 @@
+Wilson score interval -- case 'n_large' (x=700, n=1000, conf=0.99)
+p_hat=0.7000  CI[0.6615, 0.7359] (stats::prop.test, correct=FALSE)

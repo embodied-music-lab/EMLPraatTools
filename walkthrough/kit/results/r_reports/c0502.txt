@@ -1,0 +1,4 @@
+Normality -- idx (n=50, 0 undefined)
+
+Shapiro-Wilk: W=0.9217 p=0.002713
+skewness=0.3138 kurtosis=-1.0355 (psych::describe)

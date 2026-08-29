@@ -1,0 +1,2 @@
+Wilson score interval -- case 'central' (x=10, n=20, conf=0.95)
+p_hat=0.5000  CI[0.2993, 0.7007] (stats::prop.test, correct=FALSE)

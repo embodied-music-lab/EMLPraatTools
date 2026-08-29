@@ -1,0 +1,4 @@
+Normality -- age_years (n=30, 0 undefined)
+
+Shapiro-Wilk: W=0.9135 p=0.01822
+skewness=-0.0728 kurtosis=-1.5607 (psych::describe)

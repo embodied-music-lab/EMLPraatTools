@@ -1,0 +1,12 @@
+Pairwise (wilcoxon, adjust=bonferroni) -- x by fam (group_order=alphabetical)
+
+  corr__mwu: hl-diff=2.6500 (wilcox.test est=2.5365) [-2.0001,10.4000] (level=0.9950) U1=45.0 p=0.0791 p.adj=0.791 rb=0.6071
+  corr__paired: hl-diff=-9.4000 (wilcox.test est=-9.2570) [-13.0000,-5.0001] (level=0.9950) U1=4.0 p=4.293e-05 p.adj=0.0004293 rb=-0.9524
+  corr__perfect: hl-diff=2.0000 (wilcox.test est=2.0000) [-1.0000,6.8000] (level=0.9950) U1=103.0 p=0.05596 p.adj=0.5596 rb=0.4714
+  corr__welch: hl-diff=-6.4000 (wilcox.test est=-6.4000) [-11.0000,-1.8000] (level=0.9950) U1=13.0 p=0.0009338 p.adj=0.009338 rb=-0.8143
+  mwu__paired: hl-diff=-12.0000 (wilcox.test est=-12.0000) [-18.0000,-7.0000] (level=0.9950) U1=0.0 p=0.004289 p.adj=0.04289 rb=-1.0000
+  mwu__perfect: hl-diff=-0.5000 (wilcox.test est=-0.5000) [-4.0000,3.0000] (level=0.9950) U1=16.0 p=0.6139 p.adj=1 rb=-0.2000
+  mwu__welch: hl-diff=-9.0000 (wilcox.test est=-8.9999) [-17.0000,-4.0000] (level=0.9950) U1=0.0 p=0.005713 p.adj=0.05713 rb=-1.0000
+  paired__perfect: hl-diff=11.5000 (wilcox.test est=11.2733) [9.0000,14.9999] (level=0.9950) U1=120.0 p=8.417e-05 p.adj=0.0008417 rb=1.0000
+  paired__welch: hl-diff=3.0000 (wilcox.test est=2.9999) [-2.0000,7.0000] (level=0.9950) U1=91.5 p=0.03987 p.adj=0.3987 rb=0.5250
+  perfect__welch: hl-diff=-8.5000 (wilcox.test est=-8.2715) [-13.0001,-5.0001] (level=0.9950) U1=0.0 p=0.0001756 p.adj=0.001756 rb=-1.0000

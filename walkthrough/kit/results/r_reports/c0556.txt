@@ -1,0 +1,5 @@
+Friedman test -- jitter_pre, jitter_post
+n=20 k=2
+chi-square(1)=12.8000 p=0.0003466
+Kendall's W: rstatix=0.6400 effectsize=0.6400
+

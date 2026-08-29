@@ -1,0 +1,10 @@
+Kruskal-Wallis -- SPL_dB by voice_type (group_order=discovery)
+Levels: Soprano, Alto
+
+H(1)=8.6943 p=0.003192 n=48
+eta^2[H]: rstatix(kruskal_effsize)=0.1673 effectsize(rank_eta_squared)=0.1673
+epsilon^2 (rank): effectsize(rank_epsilon_squared)=0.1850 [no rstatix counterpart in this installed version]
+
+Dunn's test (bonferroni-adjusted):
+  soprano__alto: z=2.9486 p=0.003192 p.adj=0.003192
+    rank-biserial r (effectsize)=0.4965 ; wilcox_r Z/sqrt(N) (rstatix)=0.4256

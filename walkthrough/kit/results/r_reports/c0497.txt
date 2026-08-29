@@ -1,0 +1,4 @@
+Normality -- SPL_loud (n=6, 0 undefined)
+
+Shapiro-Wilk not computed (n out of [3,5000] or zero range).
+skewness=NaN kurtosis=NaN (psych::describe)

@@ -1,0 +1,1 @@
+REFUSED: Zero subject-by-condition residual variance on the 4 complete case(s) (error SS=0); the F-ratio is undefined or degenerate.

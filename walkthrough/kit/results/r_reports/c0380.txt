@@ -1,0 +1,4 @@
+Paired comparison -- soft vs medium (n=2, 0 excluded)
+
+Paired t-test: t=-9.0000 df=1 p=0.07045, Cohen's d_z: effectsize=-6.3640 rstatix=-6.3640
+Wilcoxon signed-rank: W=0.0 p=0.5, rank-biserial r (effectsize)=-1.0000, wilcox_r (rstatix)=0.9487

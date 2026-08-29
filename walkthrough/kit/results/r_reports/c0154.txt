@@ -1,0 +1,20 @@
+Kruskal-Wallis -- x by slot (group_order=alphabetical)
+Levels: a, b, x, y
+
+H(3)=21.1304 p=9.891e-05 n=50
+eta^2[H]: rstatix(kruskal_effsize)=0.3941 effectsize(rank_eta_squared)=0.3941
+epsilon^2 (rank): effectsize(rank_epsilon_squared)=0.4312 [no rstatix counterpart in this installed version]
+
+Dunn's test (holm-adjusted):
+  a__b: z=-1.0510 p=0.2933 p.adj=0.5866
+    rank-biserial r (effectsize)=-0.4142 ; wilcox_r Z/sqrt(N) (rstatix)=0.3532
+  a__x: z=3.0221 p=0.002511 p.adj=0.01004
+    rank-biserial r (effectsize)=0.7949 ; wilcox_r Z/sqrt(N) (rstatix)=0.6762
+  a__y: z=2.1640 p=0.03047 p.adj=0.0914
+    rank-biserial r (effectsize)=0.6026 ; wilcox_r Z/sqrt(N) (rstatix)=0.5117
+  b__x: z=4.0518 p=5.083e-05 p.adj=0.000305
+    rank-biserial r (effectsize)=0.7949 ; wilcox_r Z/sqrt(N) (rstatix)=0.6763
+  b__y: z=3.1937 p=0.001405 p.adj=0.007023
+    rank-biserial r (effectsize)=0.7051 ; wilcox_r Z/sqrt(N) (rstatix)=0.5989
+  x__y: z=-0.8414 p=0.4001 p.adj=0.5866
+    rank-biserial r (effectsize)=-0.2639 ; wilcox_r Z/sqrt(N) (rstatix)=0.2249

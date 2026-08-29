@@ -1,0 +1,9 @@
+Grouped regression -- x ~ idx by fam (group_order=alphabetical)
+
+Overall: slope=1.0506 intercept=4.8340 R^2=0.1151 n=50
+
+  corr (n=14): slope=1.3536 intercept=0.1571 R^2=0.6782 p=0.0002948
+  mwu (n=4): slope=2.0000 intercept=-0.5000 R^2=0.8000 p=0.1056
+  paired (n=12): slope=0.5429 intercept=12.7667 R^2=0.1502 p=0.2132
+  perfect (n=10): slope=0.0000 intercept=3.0000 R^2=0.0000 p=1
+  welch (n=10): slope=1.5000 intercept=7.5000 R^2=0.5000 p=0.0222

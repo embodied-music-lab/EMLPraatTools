@@ -1,0 +1,5 @@
+Descriptives -- jitter_post (n=20 valid, 0 undefined)
+
+mean=1.9671 sd=0.9175 median=2.2803 min=0.5277 max=3.4235
+skewness=-0.1988 kurtosis=-1.4034 (psych::describe)
+95% CI of the mean: [1.5377, 2.3965] (stats::t.test)

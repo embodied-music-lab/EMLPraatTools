@@ -1,0 +1,5 @@
+Descriptives -- idx (n=50 valid, 0 undefined)
+
+mean=3.2800 sd=1.7733 median=3.0000 min=1.0000 max=7.0000
+skewness=0.3138 kurtosis=-1.0355 (psych::describe)
+95% CI of the mean: [2.7760, 3.7840] (stats::t.test)

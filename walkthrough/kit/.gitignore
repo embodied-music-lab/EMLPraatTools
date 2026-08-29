@@ -1,5 +1,1 @@
-audit/*
-!audit/.gitkeep
-!audit/README.md
-results/*
-!results/.gitkeep
+# Generated output is tracked: the kit is audited by readers who do not run it.

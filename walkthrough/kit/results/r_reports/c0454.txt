@@ -1,0 +1,5 @@
+Descriptives -- SPL_medium (n=6 valid, 0 undefined)
+
+mean=80.0000 sd=0.0000 median=80.0000 min=80.0000 max=80.0000
+skewness=NaN kurtosis=NaN (psych::describe)
+95% CI of the mean: undefined (zero variance -- t.test's own precondition fails).

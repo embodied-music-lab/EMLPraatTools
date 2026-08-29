@@ -1,0 +1,7 @@
+Kruskal-Wallis -- vibrato_rate_Hz by voice_type (group_order=alphabetical)
+Levels: Alto, Mezzo, Soprano
+
+H(2)=3.0887 p=0.2135 n=45
+eta^2[H]: rstatix(kruskal_effsize)=0.0259 effectsize(rank_eta_squared)=0.0259
+epsilon^2 (rank): effectsize(rank_epsilon_squared)=0.0702 [no rstatix counterpart in this installed version]
+

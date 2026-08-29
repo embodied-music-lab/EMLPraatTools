@@ -1,0 +1,4 @@
+Normality -- shimmer_pct (n=40, 0 undefined)
+
+Shapiro-Wilk: W=0.9279 p=0.01377
+skewness=0.8452 kurtosis=0.0900 (psych::describe)

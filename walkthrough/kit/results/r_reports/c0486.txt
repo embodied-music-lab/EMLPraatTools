@@ -1,0 +1,4 @@
+Normality -- SPL_soft (n=20, 0 undefined)
+
+Shapiro-Wilk: W=0.9464 p=0.3163
+skewness=-0.0301 kurtosis=-1.3866 (psych::describe)

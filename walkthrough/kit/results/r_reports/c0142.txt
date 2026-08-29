@@ -1,0 +1,28 @@
+Kruskal-Wallis -- x by fam (group_order=discovery)
+Levels: welch, paired, corr, perfect, mwu
+
+H(4)=35.9961 p=2.899e-07 n=50
+eta^2[H]: rstatix(kruskal_effsize)=0.7110 effectsize(rank_eta_squared)=0.7110
+epsilon^2 (rank): effectsize(rank_epsilon_squared)=0.7346 [no rstatix counterpart in this installed version]
+
+Dunn's test (holm-adjusted):
+  welch__paired: z=-1.0817 p=0.2794 p.adj=0.8088
+    rank-biserial r (effectsize)=-0.5250 ; wilcox_r Z/sqrt(N) (rstatix)=0.4452
+  welch__corr: z=2.6158 p=0.008901 p.adj=0.0445
+    rank-biserial r (effectsize)=0.8143 ; wilcox_r Z/sqrt(N) (rstatix)=0.6816
+  welch__perfect: z=3.6025 p=0.0003151 p.adj=0.002206
+    rank-biserial r (effectsize)=1.0000 ; wilcox_r Z/sqrt(N) (rstatix)=0.8474
+  welch__mwu: z=2.9962 p=0.002734 p.adj=0.0164
+    rank-biserial r (effectsize)=1.0000 ; wilcox_r Z/sqrt(N) (rstatix)=0.7576
+  paired__corr: z=3.9305 p=8.478e-05 p.adj=0.000763
+    rank-biserial r (effectsize)=0.9524 ; wilcox_r Z/sqrt(N) (rstatix)=0.8074
+  paired__perfect: z=4.8445 p=1.27e-06 p.adj=1.27e-05
+    rank-biserial r (effectsize)=1.0000 ; wilcox_r Z/sqrt(N) (rstatix)=0.8454
+  paired__mwu: z=3.8724 p=0.0001078 p.adj=0.0008622
+    rank-biserial r (effectsize)=1.0000 ; wilcox_r Z/sqrt(N) (rstatix)=0.7292
+  corr__perfect: z=1.2753 p=0.2022 p.adj=0.8088
+    rank-biserial r (effectsize)=0.4714 ; wilcox_r Z/sqrt(N) (rstatix)=0.3962
+  corr__mwu: z=1.2161 p=0.2239 p.adj=0.8088
+    rank-biserial r (effectsize)=0.6071 ; wilcox_r Z/sqrt(N) (rstatix)=0.4264
+  perfect__mwu: z=0.2729 p=0.7849 p.adj=0.8088
+    rank-biserial r (effectsize)=0.2000 ; wilcox_r Z/sqrt(N) (rstatix)=0.1541

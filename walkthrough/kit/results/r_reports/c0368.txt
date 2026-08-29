@@ -1,0 +1,4 @@
+Paired comparison -- SPL_soft vs SPL_medium (n=20, 0 excluded)
+
+Paired t-test: t=-16.1214 df=19 p=1.538e-12, Cohen's d_z: effectsize=-3.6049 rstatix=-3.6049
+Wilcoxon signed-rank: W=0.0 p=1.907e-06, rank-biserial r (effectsize)=-1.0000, wilcox_r (rstatix)=0.8765

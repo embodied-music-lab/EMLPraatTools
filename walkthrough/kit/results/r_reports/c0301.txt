@@ -1,0 +1,3 @@
+Pairwise (student, adjust=holm) -- SPL_dB by voice_type (group_order=discovery)
+
+  soprano__alto: diff=6.1263 t=3.9024 df=46.00 p=0.0003088 p.adj=0.0003088 (pairwise.t.test p.adj=0.0003166) d=1.1265

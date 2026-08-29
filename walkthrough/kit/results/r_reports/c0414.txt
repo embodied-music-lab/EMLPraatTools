@@ -1,0 +1,4 @@
+Correlation -- shimmer_pct with jitter_pct (n=40)
+
+Pearson: r=-0.0525 t(38)=-0.3238 p=0.7479
+Spearman: rho=-0.0313 p=0.8475 (exact/AS89) ; asymptotic p=0.8478

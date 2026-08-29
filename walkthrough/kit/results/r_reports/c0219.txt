@@ -1,0 +1,5 @@
+Pairwise (welch, adjust=bh) -- vibrato_rate_Hz by voice_type (group_order=discovery)
+
+  soprano__mezzo: diff=0.0528 t=0.2113 df=27.01 p=0.8343 p.adj=0.8343 (pairwise.t.test p.adj=0.8343) d=0.0771
+  soprano__alto: diff=0.7014 t=3.4627 df=26.57 p=0.001825 p.adj=0.005476 (pairwise.t.test p.adj=0.005476) d=1.2644
+  mezzo__alto: diff=0.6486 t=2.8181 df=24.06 p=0.009507 p.adj=0.01426 (pairwise.t.test p.adj=0.01426) d=1.0290

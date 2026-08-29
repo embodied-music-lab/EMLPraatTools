@@ -1,0 +1,4 @@
+Normality -- SPL_medium (n=5, 0 undefined)
+
+Shapiro-Wilk: W=0.9868 p=0.9672
+skewness=0.0000 kurtosis=-1.9120 (psych::describe)

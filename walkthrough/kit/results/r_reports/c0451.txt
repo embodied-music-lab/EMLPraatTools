@@ -1,0 +1,5 @@
+Descriptives -- medium (n=2 valid, 0 undefined)
+
+mean=15.5000 sd=2.1213 median=15.5000 min=14.0000 max=17.0000
+skewness=0.0000 kurtosis=-2.7500 (psych::describe)
+95% CI of the mean: [-3.5593, 34.5593] (stats::t.test)

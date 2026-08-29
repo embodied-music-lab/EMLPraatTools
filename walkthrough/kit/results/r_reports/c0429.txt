@@ -1,0 +1,5 @@
+Descriptives -- speaking_F0_Hz (n=30 valid, 0 undefined)
+
+mean=152.0816 sd=43.9668 median=146.6831 min=80.0000 max=257.2705
+skewness=0.4853 kurtosis=-0.5457 (psych::describe)
+95% CI of the mean: [135.6641, 168.4991] (stats::t.test)

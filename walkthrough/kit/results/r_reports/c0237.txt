@@ -1,0 +1,5 @@
+Pairwise (welch, adjust=bonferroni) -- SPL_dB by voice_type (group_order=discovery)
+
+  soprano__mezzo: diff=5.5295 [1.9232,9.1358] (level=0.9833) t=3.9048 df=27.97 p=0.000543 p.adj=0.001629 (pairwise.t.test p.adj=0.001629) d=1.4258
+  soprano__alto: diff=7.7757 [3.8816,11.6699] (level=0.9833) t=5.0939 df=27.23 p=2.314e-05 p.adj=6.942e-05 (pairwise.t.test p.adj=6.942e-05) d=1.8600
+  mezzo__alto: diff=2.2462 [-1.7020,6.1944] (level=0.9833) t=1.4504 df=27.50 p=0.1582 p.adj=0.4747 (pairwise.t.test p.adj=0.4747) d=0.5296

@@ -1,0 +1,3 @@
+Correlation -- practice_hrs_wk with vibrato_regularity_pct (n=25)
+
+Pearson: r=0.9000 t(23)=9.9041 p=9.167e-10

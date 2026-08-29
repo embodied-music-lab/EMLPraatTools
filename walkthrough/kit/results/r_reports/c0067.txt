@@ -1,0 +1,24 @@
+One-way ANOVA -- x by fam (group_order=discovery)
+Levels (in order): welch, paired, corr, perfect, mwu
+
+F(4,45)=38.3889 p=5.751e-14
+eta^2: rstatix=0.7734 effectsize=0.7734
+
+  welch: n=10 mean=12.0000 sd=3.1623 median=11.5000
+  paired: n=12 mean=14.6667 sd=2.4985 median=14.5000
+  corr: n=14 mean=5.5714 sd=3.4114 median=4.7000
+  perfect: n=10 mean=3.0000 sd=1.4907 median=3.0000
+  mwu: n=4 mean=2.5000 sd=1.2910 median=2.5000
+
+Pairwise Cohen's d (first-minus-second):
+  welch__paired: effectsize=-0.9468 rstatix=-0.9468
+  welch__corr: effectsize=1.9411 rstatix=1.9411
+  welch__perfect: effectsize=3.6407 rstatix=3.6407
+  welch__mwu: effectsize=3.3764 rstatix=3.3764
+  paired__corr: effectsize=3.0044 rstatix=3.0044
+  paired__perfect: effectsize=5.5409 rstatix=5.5409
+  paired__mwu: effectsize=5.3040 rstatix=5.3040
+  corr__perfect: effectsize=0.9216 rstatix=0.9216
+  corr__mwu: effectsize=0.9827 rstatix=0.9827
+  perfect__mwu: effectsize=0.3464 rstatix=0.3464
+

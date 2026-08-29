@@ -1,0 +1,5 @@
+Simple regression -- SPL_loud ~ SPL_soft (n=20)
+
+SPL_loud = 44.2425 + 0.6884 * SPL_soft
+R^2=0.4722 adjR^2=0.4429 residual SE=2.0514
+slope: t=4.0132 p=0.0008155

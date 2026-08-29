@@ -1,0 +1,3 @@
+Pairwise (wilcoxon, adjust=holm) -- SPL_dB by voice_type (group_order=discovery)
+
+  soprano__alto: hl-diff=6.1657 (wilcox.test est=6.1657) U1=431.0 p=0.00273 p.adj=0.00273 rb=0.4965

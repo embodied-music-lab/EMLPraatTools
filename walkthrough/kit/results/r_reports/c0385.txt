@@ -1,0 +1,3 @@
+Correlation -- speaking_F0_Hz with singing_F0_Hz (n=30)
+
+Pearson: r=0.9680 t(28)=20.4272 p=2.329e-18

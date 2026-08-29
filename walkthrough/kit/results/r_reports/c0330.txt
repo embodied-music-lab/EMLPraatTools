@@ -1,0 +1,12 @@
+Pairwise (student, adjust=bonferroni) -- x by fam (group_order=alphabetical)
+
+  corr__mwu: diff=3.0714 [-2.6909,8.8337] (level=0.9950) t=1.7334 df=16.00 p=0.1023 p.adj=1 (pairwise.t.test p.adj=0.1564) d=0.9827
+  corr__paired: diff=-9.0952 [-12.7759,-5.4146] (level=0.9950) t=-7.6370 df=24.00 p=7.109e-08 p.adj=7.109e-07 (pairwise.t.test p.adj=5.421e-07) d=-3.0044
+  corr__perfect: diff=2.5714 [-1.0317,6.1746] (level=0.9950) t=2.2258 df=22.00 p=0.03659 p.adj=0.3659 (pairwise.t.test p.adj=0.2154) d=0.9216
+  corr__welch: diff=-6.4286 [-10.7051,-2.1521] (level=0.9950) t=-4.6883 df=22.00 p=0.0001124 p.adj=0.001124 (pairwise.t.test p.adj=0.001161) d=-1.9411
+  mwu__paired: diff=-12.1667 [-16.5711,-7.7622] (level=0.9950) t=-9.1867 df=14.00 p=2.643e-07 p.adj=2.643e-06 (pairwise.t.test p.adj=NA) d=-5.3040
+  mwu__perfect: diff=-0.5000 [-3.4276,2.4276] (level=0.9950) t=-0.5855 df=12.00 p=0.569 p.adj=1 (pairwise.t.test p.adj=NA) d=-0.3464
+  mwu__welch: diff=-9.5000 [-15.2069,-3.7931] (level=0.9950) t=-5.7071 df=12.00 p=9.802e-05 p.adj=0.0009802 (pairwise.t.test p.adj=4.112e-05) d=-3.3764
+  paired__perfect: diff=11.6667 [8.8237,14.5096] (level=0.9950) t=12.9408 df=20.00 p=3.542e-11 p.adj=3.542e-10 (pairwise.t.test p.adj=NA) d=5.5409
+  paired__welch: diff=2.6667 [-1.1363,6.4697] (level=0.9950) t=2.2112 df=20.00 p=0.03883 p.adj=0.3883 (pairwise.t.test p.adj=0.4507) d=0.9468
+  perfect__welch: diff=-9.0000 [-12.5339,-5.4661] (level=0.9950) t=-8.1408 df=18.00 p=1.91e-07 p.adj=1.91e-06 (pairwise.t.test p.adj=2.036e-05) d=-3.6407

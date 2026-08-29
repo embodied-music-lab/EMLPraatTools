@@ -1,0 +1,4 @@
+Normality -- SPL_loud (n=20, 0 undefined)
+
+Shapiro-Wilk: W=0.9075 p=0.05704
+skewness=-0.5805 kurtosis=-0.7700 (psych::describe)

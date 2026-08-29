@@ -1,0 +1,5 @@
+Descriptives -- SPL_medium (n=20 valid, 0 undefined)
+
+mean=83.3546 sd=3.6745 median=83.4706 min=75.3102 max=89.2843
+skewness=-0.0894 kurtosis=-0.6427 (psych::describe)
+95% CI of the mean: [81.6349, 85.0743] (stats::t.test)

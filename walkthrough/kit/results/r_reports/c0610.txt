@@ -1,0 +1,2 @@
+Wilson score interval -- case 'near_one' (x=49, n=50, conf=0.90)
+p_hat=0.9800  CI[0.9152, 0.9955] (stats::prop.test, correct=FALSE)

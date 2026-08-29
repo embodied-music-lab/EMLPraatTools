@@ -1,0 +1,5 @@
+Friedman test -- soft, medium, loud
+n=2 k=3
+chi-square(2)=4.0000 p=0.1353
+Kendall's W: rstatix=1.0000 effectsize=1.0000
+

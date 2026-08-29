@@ -1,0 +1,4 @@
+Correlation -- practice_hrs_wk with vibrato_regularity_pct (n=25)
+
+Pearson: r=-0.9852 t(23)=-27.5901 p=3.946e-19
+Spearman: rho=-0.9792 p=6.339e-07 (exact/AS89) ; asymptotic p=1.927e-17

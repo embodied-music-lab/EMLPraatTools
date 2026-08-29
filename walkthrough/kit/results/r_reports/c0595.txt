@@ -1,0 +1,1 @@
+REFUSED: Respondent influence needs at least 3 complete respondents (leave-one-out on fewer would rest on a single row); 2 arrived and 2 remained after listwise deletion.

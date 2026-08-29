@@ -1,0 +1,4 @@
+Cronbach's alpha -- lane_survey_alpha_2item (conf=0.95)
+n=12 (excluded 0) k=2
+alpha=0.2869  CI[-1.4773, 0.7947] (psych::alpha / psych::alpha.ci, Feldt)
+

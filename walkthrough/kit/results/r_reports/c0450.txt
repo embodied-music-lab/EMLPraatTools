@@ -1,0 +1,5 @@
+Descriptives -- soft (n=2 valid, 0 undefined)
+
+mean=11.0000 sd=1.4142 median=11.0000 min=10.0000 max=12.0000
+skewness=0.0000 kurtosis=-2.7500 (psych::describe)
+95% CI of the mean: [-1.7062, 23.7062] (stats::t.test)

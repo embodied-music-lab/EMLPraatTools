@@ -1,0 +1,8 @@
+Two-group comparison -- jitter_pct by group
+group_order=alphabetical  group1=Control  group2=Patient
+
+Control: n=20 mean=0.7993 sd=0.3281 median=0.7860
+Patient: n=20 mean=2.1414 sd=0.8399 median=2.3425
+
+Student t-test: t=-6.6564 df=38.00 p=7.2e-08
+Cohen's d: effectsize=-2.1049 rstatix=-2.1049 | Hedges' g (effectsize)=-2.0631

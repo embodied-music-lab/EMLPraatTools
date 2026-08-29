@@ -1,0 +1,4 @@
+Correlation -- SPL_soft with SPL_loud (n=20)
+
+Pearson: r=0.6872 t(18)=4.0132 p=0.0008155
+Spearman: rho=0.6211 p=0.004222 (exact/AS89) ; asymptotic p=0.003473

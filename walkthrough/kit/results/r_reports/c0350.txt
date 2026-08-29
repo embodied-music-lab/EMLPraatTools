@@ -1,0 +1,8 @@
+Pairwise (student, adjust=bonferroni) -- x by slot (group_order=alphabetical)
+
+  a__b: diff=-2.6154 [-8.0829,2.8521] (level=0.9917) t=-1.3753 df=24.00 p=0.1817 p.adj=1 (pairwise.t.test p.adj=1) d=-0.5394
+  a__x: diff=6.8782 [3.0223,10.7341] (level=0.9917) t=5.1486 df=23.00 p=3.229e-05 p.adj=0.0001938 (pairwise.t.test p.adj=0.0003549) d=2.0611
+  a__y: diff=5.0449 [0.4483,9.6415] (level=0.9917) t=3.1678 df=23.00 p=0.004297 p.adj=0.02578 (pairwise.t.test p.adj=0.02473) d=1.2681
+  b__x: diff=9.4936 [4.7367,14.2505] (level=0.9917) t=5.7603 df=23.00 p=7.227e-06 p.adj=4.336e-05 (pairwise.t.test p.adj=NA) d=2.3060
+  b__y: diff=7.6603 [2.2854,13.0351] (level=0.9917) t=4.1135 df=23.00 p=0.0004242 p.adj=0.002545 (pairwise.t.test p.adj=0.002501) d=1.6467
+  x__y: diff=-1.8333 [-5.3080,1.6414] (level=0.9917) t=-1.5293 df=22.00 p=0.1404 p.adj=0.8426 (pairwise.t.test p.adj=0.8699) d=-0.6243

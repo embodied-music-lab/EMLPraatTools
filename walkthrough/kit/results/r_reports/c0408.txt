@@ -1,0 +1,4 @@
+Correlation -- F0_Hz with shimmer_pct (n=40)
+
+Pearson: r=0.1461 t(38)=0.9104 p=0.3684
+Spearman: rho=0.2520 p=0.1167 (exact/AS89) ; asymptotic p=0.1168

@@ -1,0 +1,4 @@
+Normality -- jitter_pct (n=40, 0 undefined)
+
+Shapiro-Wilk: W=0.9774 p=0.5934
+skewness=0.3085 kurtosis=-0.0318 (psych::describe)

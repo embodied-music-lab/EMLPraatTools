@@ -1,0 +1,5 @@
+Pairwise (student, adjust=bonferroni) -- vibrato_rate_Hz by voice_type (group_order=discovery)
+
+  soprano__mezzo: diff=0.2288 [-0.3548,0.8125] (level=0.9833) t=0.9984 df=28.00 p=0.3266 p.adj=0.9799 (pairwise.t.test p.adj=0.98) d=0.3646
+  soprano__alto: diff=0.4396 [-0.0359,0.9151] (level=0.9833) t=2.3543 df=28.00 p=0.0258 p.adj=0.07741 (pairwise.t.test p.adj=0.08522) d=0.8597
+  mezzo__alto: diff=0.2108 [-0.2466,0.6681] (level=0.9833) t=1.1735 df=28.00 p=0.2505 p.adj=0.7514 (pairwise.t.test p.adj=0.7602) d=0.4285

@@ -1,0 +1,5 @@
+Descriptives -- loud (n=2 valid, 0 undefined)
+
+mean=21.5000 sd=0.7071 median=21.5000 min=21.0000 max=22.0000
+skewness=0.0000 kurtosis=-2.7500 (psych::describe)
+95% CI of the mean: [15.1469, 27.8531] (stats::t.test)

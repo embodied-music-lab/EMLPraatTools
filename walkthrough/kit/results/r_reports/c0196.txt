@@ -1,0 +1,5 @@
+Pairwise (scheffe, adjust=none) -- vibrato_rate_Hz by voice_type (group_order=alphabetical)
+
+  alto__mezzo: diff=-0.4310 F=1.5482 [-1.0526,0.1906] (alpha=0.0500)
+  alto__soprano: diff=-0.6352 F=3.3619 [-1.2568,-0.0136] (alpha=0.0500)
+  mezzo__soprano: diff=-0.2041 F=0.3472 [-0.8257,0.4175] (alpha=0.0500)

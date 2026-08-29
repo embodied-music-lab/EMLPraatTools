@@ -1,0 +1,10 @@
+Repeated-measures ANOVA (afex::aov_ez, GG correction) -- soft, medium, loud
+n=2 k=3
+F(2.000,2.000)=111.0000 p=0.008929
+Greenhouse-Geisser: not available -- afex returned NA epsilon (singular error SSP matrix on this design); its Pr(>F[GG]) of 0 is a sentinel, not a p-value, and is not reported.
+partial eta^2 (effectsize)=0.9911
+
+Post hoc paired t (bh-adjusted, level=0.9500):
+  soft__medium: diff=-4.5000 [-10.8531,1.8531] p=0.07045 p.adj=0.1051
+  soft__loud: diff=-10.5000 [-16.8531,-4.1469] p=0.03029 p.adj=0.09088
+  medium__loud: diff=-6.0000 [-18.7062,6.7062] p=0.1051 p.adj=0.1051

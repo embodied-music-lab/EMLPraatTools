@@ -1,0 +1,7 @@
+Kruskal-Wallis -- x by fam (group_order=alphabetical)
+Levels: corr, mwu, paired, perfect, welch
+
+H(4)=35.9961 p=2.899e-07 n=50
+eta^2[H]: rstatix(kruskal_effsize)=0.7110 effectsize(rank_eta_squared)=0.7110
+epsilon^2 (rank): effectsize(rank_epsilon_squared)=0.7346 [no rstatix counterpart in this installed version]
+

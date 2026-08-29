@@ -1,0 +1,7 @@
+Kruskal-Wallis -- SPL_dB by voice_type (group_order=alphabetical)
+Levels: Alto, Mezzo, Soprano
+
+H(2)=22.7648 p=1.139e-05 n=45
+eta^2[H]: rstatix(kruskal_effsize)=0.4944 effectsize(rank_eta_squared)=0.4944
+epsilon^2 (rank): effectsize(rank_epsilon_squared)=0.5174 [no rstatix counterpart in this installed version]
+

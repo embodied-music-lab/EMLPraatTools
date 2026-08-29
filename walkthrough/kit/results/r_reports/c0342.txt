@@ -1,0 +1,8 @@
+Pairwise (student, adjust=bh) -- x by slot (group_order=discovery)
+
+  a__b: diff=-2.6154 t=-1.3753 df=24.00 p=0.1817 p.adj=0.1817 (pairwise.t.test p.adj=0.1824) d=-0.5394
+  a__x: diff=6.8782 t=5.1486 df=23.00 p=3.229e-05 p.adj=9.688e-05 (pairwise.t.test p.adj=0.0001775) d=2.0611
+  a__y: diff=5.0449 t=3.1678 df=23.00 p=0.004297 p.adj=0.006445 (pairwise.t.test p.adj=0.006183) d=1.2681
+  b__x: diff=9.4936 t=5.7603 df=23.00 p=7.227e-06 p.adj=4.336e-05 (pairwise.t.test p.adj=NA) d=2.3060
+  b__y: diff=7.6603 t=4.1135 df=23.00 p=0.0004242 p.adj=0.0008484 (pairwise.t.test p.adj=0.0008336) d=1.6467
+  x__y: diff=-1.8333 t=-1.5293 df=22.00 p=0.1404 p.adj=0.1685 (pairwise.t.test p.adj=0.174) d=-0.6243

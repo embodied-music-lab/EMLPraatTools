@@ -1,0 +1,5 @@
+Pairwise (wilcoxon, adjust=holm) -- SPL_dB by voice_type (group_order=discovery)
+
+  soprano__mezzo: hl-diff=5.5327 (wilcox.test est=5.5327) U1=187.0 p=0.001408 p.adj=0.002816 rb=0.6622
+  soprano__alto: hl-diff=7.5002 (wilcox.test est=7.5002) U1=211.0 p=6.55e-06 p.adj=1.965e-05 rb=0.8756
+  mezzo__alto: hl-diff=2.0838 (wilcox.test est=2.0838) U1=141.0 p=0.2496 p.adj=0.2496 rb=0.2533

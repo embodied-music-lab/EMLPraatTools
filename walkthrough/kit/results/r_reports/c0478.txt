@@ -1,0 +1,4 @@
+Normality -- vibrato_regularity_pct (n=25, 0 undefined)
+
+Shapiro-Wilk: W=0.9627 p=0.4714
+skewness=-0.0601 kurtosis=-1.2668 (psych::describe)

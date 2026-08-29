@@ -1,0 +1,83 @@
+
+=========================================================
+  EML kit -- reconciliation of the two result tables
+=========================================================
+cells declared in matrix.tsv : 624
+rows, Praat table            : 10797
+rows, R table                : 12002
+value comparisons made       : 10841
+
+  AGREE        10792   (relative difference < 1e-9, or absolute < 1e-12 near zero)
+  CONTRACT      1067   (one-sided rows quantities.tsv accounts for)
+  DECLARED       316   (differences and one-sided rows with a written reason)
+  UNEXPLAINED     32
+
+--- completeness against quantities.tsv ---
+  contract clauses read        : 234 over 17 procedures
+  contracted quantities, expanded over the 624 cells : 11827
+  EXPECTED   21793   (a `both` clause is expected of each runner)
+  REPORTED   21793
+  MISSING        0
+  waived       625   (the side refused the cell; a refusal reports completely)
+
+--- the standing kit: one property per procedure ---
+  emlAlphaInfluence                  complete   7 clause(s), 0 missing
+  emlChiSquareIndependence           complete   9 clause(s), 0 missing
+  emlCronbachAlpha                   complete   7 clause(s), 0 missing
+  emlRunAnovaAnalysis                complete  17 clause(s), 0 missing
+  emlRunCorrelationAnalysis          complete  14 clause(s), 0 missing
+  emlRunDescriptiveAnalysis          complete  18 clause(s), 0 missing
+  emlRunFriedmanAnalysis             complete  11 clause(s), 0 missing
+  emlRunGroupedRegression            complete  22 clause(s), 0 missing
+  emlRunKWAnalysis                   complete  10 clause(s), 0 missing
+  emlRunNormalityAnalysis            complete  10 clause(s), 0 missing
+  emlRunPairedAnalysis               complete  18 clause(s), 0 missing
+  emlRunPairwiseAnalysis             complete  17 clause(s), 0 missing
+  emlRunRegressionAnalysis           complete  17 clause(s), 0 missing
+  emlRunRepeatedMeasuresAnalysis     complete  17 clause(s), 0 missing
+  emlRunTwoGroupAnalysis             complete  21 clause(s), 0 missing
+  emlRunTwoWayAnalysis               complete  15 clause(s), 0 missing
+  emlWilsonInterval                  complete   4 clause(s), 0 missing
+  walked 17 procedures.
+
+--- declared, by cause ---
+  D-WILCOXEST      261  DOCUMENTED ABSENCE, R-side, under the definition-over-implementation
+  D-TWOWAY-PRECISION    18  PRECISION CEILING, NOT A DISAGREEMENT. @emlRunTwoWayAnalysis does no
+  D-WORDING         15  Refusal wording differs between implementations. That the same cells
+  D-PTUKEY-MID      10  TIER 2 OF THE ptukey QUADRATURE FAMILY, ruled 27 August 2026. Same d
+  D-ALPHA2ITEM       6  Alpha-if-item-deleted on a two-item scale would leave one item, for 
+  D-PTUKEY           4  EXTREME-TAIL QUADRATURE, DIAGNOSED 27 AUGUST 2026, AND ENVIRONMENT-D
+  D-ALPHADROP        2  Leave-one-out alpha on the n = 3 fixture reaches a two-respondent su
+
+  D-PTUKEY-MID bound: observed max relative difference 8.25e-07, declared limit 1e-05 -- HOLDS
+
+  D-PTUKEY bound: observed max relative difference 0.00127, declared limit 0.005 -- HOLDS
+
+  D-TWOWAY-PRECISION bound: observed max relative difference 1.22e-08, declared limit 2e-08 -- HOLDS
+
+--- refusals ---
+  matrix.tsv declares 11 cells expect=refuse
+  Praat refused/skipped 24 cells; R refused/skipped 20
+  declared refusals missed by Praat: 0 
+  declared refusals missed by R:     0 
+
+--- the balance invariant: compared + documented-absent + tolerance-bounded = total ---
+  compared            (AGREE)                                     10792
+  documented-absent   (CONTRACT one-sided + DECLARED one-sided)    1334
+  tolerance-bounded   (DECLARED, both sides present, differ)         49
+  -----------------------------------------------------------------------
+  sum of the three                                                12175
+  + UNEXPLAINED (outside all three)                                  32
+  =  12207   vs. total rows in play (nrow(P) + nrow(R) - shared keys):  12207
+  balance: HOLDS -- every observed key landed in exactly one category.
+
+---------------------------------------------------------
+  NOT GREEN.
+    32 unexplained row(s)  -- bucket UNEXPLAINED / UNMATCHED_PRAAT / UNMATCHED_R.
+  See results/reconciliation.tsv.
+  A run that compares fewer quantities than the contract requires is not green,
+  however well the ones present agree.
+---------------------------------------------------------
+full detail: /home/claude/repo/walkthrough/kit/results/reconciliation.tsv
+this verdict: /home/claude/repo/walkthrough/kit/audit/VERDICT.txt
+

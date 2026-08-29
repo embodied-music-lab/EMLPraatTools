@@ -1,0 +1,8 @@
+Pairwise (welch, adjust=bonferroni) -- x by slot (group_order=discovery)
+
+  a__b: diff=-2.6154 [-8.1103,2.8796] (level=0.9917) t=-1.3753 df=22.72 p=0.1824 p.adj=1 (pairwise.t.test p.adj=1) d=-0.5394
+  a__x: diff=6.8782 [3.0011,10.7553] (level=0.9917) t=5.2915 df=17.06 p=5.916e-05 p.adj=0.0003549 (pairwise.t.test p.adj=0.0003549) d=2.0611
+  a__y: diff=5.0449 [0.4737,9.6160] (level=0.9917) t=3.1863 df=22.92 p=0.004122 p.adj=0.02473 (pairwise.t.test p.adj=0.02473) d=1.2681
+  b__x: diff=9.4936 [4.6594,14.3278] (level=0.9917) t=5.9490 df=15.24 p=2.499e-05 p.adj=0.00015 (pairwise.t.test p.adj=NA) d=2.3060
+  b__y: diff=7.6603 [2.3259,12.9947] (level=0.9917) t=4.1767 df=21.25 p=0.0004168 p.adj=0.002501 (pairwise.t.test p.adj=0.002501) d=1.6467
+  x__y: diff=-1.8333 [-5.4210,1.7543] (level=0.9917) t=-1.5293 df=16.63 p=0.145 p.adj=0.8699 (pairwise.t.test p.adj=0.8699) d=-0.6243

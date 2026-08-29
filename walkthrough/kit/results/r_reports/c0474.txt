@@ -1,0 +1,4 @@
+Normality -- practice_hrs_wk (n=25, 0 undefined)
+
+Shapiro-Wilk: W=0.9794 p=0.8739
+skewness=0.0732 kurtosis=-0.7854 (psych::describe)

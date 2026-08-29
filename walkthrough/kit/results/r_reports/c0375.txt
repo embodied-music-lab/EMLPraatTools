@@ -1,0 +1,1 @@
+REFUSED: No paired test could be run: n=4 complete pairs and every pair has the same difference (zero variance in the differences).

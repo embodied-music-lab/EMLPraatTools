@@ -1,0 +1,8 @@
+Pairwise (wilcoxon, adjust=bonferroni) -- x by slot (group_order=discovery)
+
+  a__b: hl-diff=-3.0000 (wilcox.test est=-3.0000) [-7.9999,2.0001] (level=0.9917) U1=49.5 p=0.0759 p.adj=0.4554 rb=-0.4142
+  a__x: hl-diff=8.0000 (wilcox.test est=8.0000) [3.0000,11.0000] (level=0.9917) U1=140.0 p=0.0007978 p.adj=0.004787 rb=0.7949
+  a__y: hl-diff=6.0000 (wilcox.test est=6.0000) [-0.2000,9.9999] (level=0.9917) U1=125.0 p=0.01137 p.adj=0.0682 rb=0.6026
+  b__x: hl-diff=11.0000 (wilcox.test est=11.0000) [5.0000,14.0000] (level=0.9917) U1=140.0 p=0.0007959 p.adj=0.004776 rb=0.7949
+  b__y: hl-diff=9.0000 (wilcox.test est=8.9999) [1.8000,13.6000] (level=0.9917) U1=133.0 p=0.003005 p.adj=0.01803 rb=0.7051
+  x__y: hl-diff=-1.0000 (wilcox.test est=-1.0000) [-6.2000,2.0000] (level=0.9917) U1=53.0 p=0.2834 p.adj=1 rb=-0.2639

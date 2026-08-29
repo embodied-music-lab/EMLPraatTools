@@ -1,0 +1,5 @@
+Friedman test -- SPL_loud, SPL_medium, SPL_soft
+n=20 k=3
+chi-square(2)=40.0000 p=2.061e-09
+Kendall's W: rstatix=1.0000 effectsize=1.0000
+

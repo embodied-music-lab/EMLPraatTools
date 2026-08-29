@@ -1,0 +1,7 @@
+Grouped regression -- vibrato_rate_Hz ~ SPL_dB by voice_type (group_order=alphabetical)
+
+Overall: slope=0.0323 intercept=2.5756 R^2=0.0616 n=45
+
+  Alto (n=15): slope=0.0359 intercept=2.0338 R^2=0.1963 p=0.09815
+  Mezzo (n=15): slope=-0.0624 intercept=11.0062 R^2=0.0769 p=0.317
+  Soprano (n=15): slope=0.0150 intercept=4.3202 R^2=0.0044 p=0.8138
