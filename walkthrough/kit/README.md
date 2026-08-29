@@ -90,12 +90,12 @@ on both sides. The documented cases so far are on the R side.
    R's own exact-branch answer on the same data. It is recorded so
    nobody spends time diagnosing it.
 
-If you disagree with any of these three readings, we want to hear it.
-And we assume the plugin contains undiscovered edge-case errors of the
+Please test these assumptions and let me know if you disagree.
+I also assume the plugin contains undiscovered edge-case errors of the
 same kind: an unusual data shape or a boundary condition producing a
 wrong number that these fixtures never exercise. If you find or suspect
-one, tell us the analysis, the data that produced it, and the value you
-expected, and we will add it to the kit as a fixture.
+one, tell me the analysis, the data that produced it, and the value you
+expected, and I will add it to the kit as a fixture.
 
 `run_analyses.R` is about 1,100 lines of commented R, organized by
 procedure family. Reading it and checking that each R call is the right
