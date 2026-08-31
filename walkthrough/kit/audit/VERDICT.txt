@@ -61,7 +61,7 @@ value comparisons made       : 10841
 --- declared, by cause ---
   D-WILCOXEST      261  DOCUMENTED ABSENCE, R-side, under the definition-over-implementation
   D-TWOWAY-PRECISION    18  PRECISION CEILING, NOT A DISAGREEMENT. @emlRunTwoWayAnalysis does no
-  D-WORDING         15  Refusal wording differs between implementations. That the same cells
+  D-WORDING         15  Refusal wording differs between implementations. That the SET of cel
   D-PTUKEY-MID      10  TIER 2 OF THE ptukey QUADRATURE FAMILY, ruled 27 August 2026. Same d
   D-ALPHA2ITEM       6  Alpha-if-item-deleted on a two-item scale would leave one item, for 
   D-PTUKEY           4  EXTREME-TAIL QUADRATURE, DIAGNOSED 27 AUGUST 2026, AND ENVIRONMENT-D
@@ -73,11 +73,23 @@ value comparisons made       : 10841
 
   D-TWOWAY-PRECISION bound: observed max relative difference 1.22e-08, declared limit 2e-08 -- HOLDS
 
---- refusals ---
-  matrix.tsv declares 11 cells expect=refuse
-  Praat refused/skipped 24 cells; R refused/skipped 20
-  declared refusals missed by Praat: 0 
-  declared refusals missed by R:     0 
+--- results-file freshness ---
+  STALE: 6 cell_id(s) appear in a results file but not in matrix.tsv
+    Praat-only: c0075, c0156, c0459, c0501, c0564, c0565
+    R-only:     none
+  These rows were written against an older matrix. They are excluded from the
+  refusal arithmetic so they cannot masquerade as an implementation disagreement,
+  and they fail the run: regenerate the results files before the authoritative run.
+
+--- refusals: three-way set equality (declared, Praat, R) ---
+  matrix.tsv declares 20 cells expect=refuse
+  Praat refused/skipped 20 cells; R refused/skipped 20
+  matched (declared = Praat = R, all three agree): 20 cell(s)
+  declared refusals missing from Praat:       0 
+  declared refusals missing from R:            0 
+  Praat refusals not declared in matrix.tsv:   0 
+  R refusals not declared in matrix.tsv:       0 
+  asymmetric (exactly one side refused):       0 
 
 --- the balance invariant: compared + documented-absent + tolerance-bounded = total ---
   compared            (AGREE)                                     10792
@@ -99,6 +111,7 @@ value comparisons made       : 10841
 ---------------------------------------------------------
   NOT GREEN.
     32 unexplained row(s)  -- bucket UNEXPLAINED / UNMATCHED_PRAAT / UNMATCHED_R.
+    6 stale cell_id(s) in a results file -- regenerate the file; see freshness above.
     551 contracted quantit(ies) MISSING -- bucket MISSING_PRAAT / MISSING_R.
     2 standing-kit failure(s) -- see the per-procedure walk above.
   See results/reconciliation.tsv.

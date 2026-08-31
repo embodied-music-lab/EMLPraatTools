@@ -490,13 +490,13 @@ c0371	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_medium	SPL_loud		both				
 c0372	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_loud		parametric								ok		options
 c0373	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_loud		nonparametric								ok		options
 c0374	analysis	emlRunPairedAnalysis	demo_rm3_input	SPL_soft	SPL_loud		both								ok		options
-c0375	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		parametric								ok		options
+c0375	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		parametric								refuse	4 complete pairs, each with medium-soft = +10.0 exactly: zero variance in the paired differences, so the paired t-test refuses on both sides	options
 c0376	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		nonparametric								ok		options
 c0377	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		both								ok		options
 c0378	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		parametric								ok	n = 2, the floor the guard allows	options
 c0379	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		nonparametric								ok	n = 2, the floor the guard allows	options
 c0380	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		both								ok	n = 2, the floor the guard allows	options
-c0381	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		parametric								ok	one non-numeric cell: dropped as missing, not refused	options
+c0381	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		parametric								refuse	S03's SPL_soft is "n/a" and is dropped, leaving 4 complete pairs; those pairs' differences are each exactly 10.0 (zero variance), so the paired t-test refuses on both sides -- not merely a dropped row as the prior note claimed	options
 c0382	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		nonparametric								ok	one non-numeric cell: dropped as missing, not refused	options
 c0383	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		both								ok	one non-numeric cell: dropped as missing, not refused	options
 c0384	analysis	emlRunPairedAnalysis	rp_r3_paired_input	SPL_soft	SPL_medium		both								refuse	every pair has the same difference: no variance for a paired test	options
@@ -606,9 +606,9 @@ c0488	analysis	emlRunNormalityAnalysis	demo_rm3_input	SPL_loud			both								ok	
 c0489	analysis	emlRunNormalityAnalysis	rp_r1_rmanova_input	soft			both								ok		options
 c0490	analysis	emlRunNormalityAnalysis	rp_r1_rmanova_input	medium			both								ok		options
 c0491	analysis	emlRunNormalityAnalysis	rp_r1_rmanova_input	loud			both								ok		options
-c0492	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	soft			both								ok	n = 2, below Shapiro-Wilk's floor	options
-c0493	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	medium			both								ok	n = 2, below Shapiro-Wilk's floor	options
-c0494	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	loud			both								ok	n = 2, below Shapiro-Wilk's floor	options
+c0492	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	soft			both								refuse	rp_r2_rmanova_input has only 2 subjects (S01, S02); "soft" has 2 non-missing values against Shapiro-Wilk's floor of 3, so normality testing refuses on both sides	options
+c0493	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	medium			both								refuse	rp_r2_rmanova_input has only 2 subjects (S01, S02); "medium" has 2 non-missing values against Shapiro-Wilk's floor of 3, so normality testing refuses on both sides	options
+c0494	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	loud			both								refuse	rp_r2_rmanova_input has only 2 subjects (S01, S02); "loud" has 2 non-missing values against Shapiro-Wilk's floor of 3, so normality testing refuses on both sides	options
 c0495	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_soft			both								ok	constant column: Shapiro-Wilk has no variance to work on	options
 c0496	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_medium			both								ok	constant column: Shapiro-Wilk has no variance to work on	options
 c0497	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_loud			both								ok	constant column: Shapiro-Wilk has no variance to work on	options
@@ -641,10 +641,10 @@ c0524	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium
 c0525	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bonferroni						ok	conditions reversed: post-hoc pair labels and signs flip	options
 c0526	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	holm						ok	conditions reversed: post-hoc pair labels and signs flip	options
 c0527	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bh						ok	conditions reversed: post-hoc pair labels and signs flip	options
-c0528	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				0	holm						ok	perfectly additive: zero subject x condition residual; adjustment unread with post hoc off	options
-c0529	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bonferroni						ok	perfectly additive: zero subject x condition residual	options
-c0530	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	holm						ok	perfectly additive: zero subject x condition residual	options
-c0531	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bh						ok	perfectly additive: zero subject x condition residual	options
+c0528	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				0	holm						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the F-ratio is undefined and the RM ANOVA refuses on both sides before adjust is ever read (posthoc off)	options
+c0529	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bonferroni						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the omnibus F-ratio is undefined and the RM ANOVA refuses on both sides before Bonferroni post hoc ever runs	options
+c0530	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	holm						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the omnibus F-ratio is undefined and the RM ANOVA refuses on both sides before Holm post hoc ever runs	options
+c0531	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bh						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the omnibus F-ratio is undefined and the RM ANOVA refuses on both sides before the BH post hoc ever runs	options
 c0532	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				0	holm						ok	n = 2; adjustment unread with post hoc off	options
 c0533	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bonferroni						ok	n = 2	options
 c0534	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	holm						ok	n = 2	options

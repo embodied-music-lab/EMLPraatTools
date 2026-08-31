@@ -322,9 +322,14 @@ DECLARED <- list(
                      "26 August. The bound is asserted below, not assumed.")),
 
     list(q = "^refuse_reason$", where = "diff", id = "D-WORDING",
-         why = paste("Refusal wording differs between implementations. That the same cells",
-                     "refuse is asserted separately, and does hold: both sides refused 24",
-                     "cells and neither missed a declared refusal.")),
+         why = paste("Refusal wording differs between implementations. That the SET of cells",
+                     "that refuse is the same one is asserted separately, three ways at once",
+                     "(declared in matrix.tsv, actually refused by Praat, actually refused by",
+                     "R): 20 cells refuse on all three and match. Four more (c0075, c0156,",
+                     "c0564, c0565) refuse in Praat only -- R produced no rows for them at",
+                     "all, not a computed answer -- and are surfaced as an open asymmetry,",
+                     "not silently waived here or resolved as a difference this clause",
+                     "covers.")),
 
     list(q = "^alpha_if_deleted_.*_undefined$", where = "praat", id = "D-ALPHA2ITEM",
          why = paste("Alpha-if-item-deleted on a two-item scale would leave one item, for",
@@ -782,11 +787,52 @@ oneSided(setdiff(P$key, R$key), P, "praat")
 oneSided(setdiff(R$key, P$key), R, "r")
 for (m in missRows) rows[[length(rows) + 1L]] <- m
 
-# --- the refusal assertion: same cells refuse, whatever the wording ---------
-refP <- sort(unique(P$cell_id[P$quantity %in% c("refused", "skipped")]))
-refR <- sort(unique(R$cell_id[R$quantity %in% c("refused", "skipped")]))
+# -----------------------------------------------------------------------
+# THE REFUSAL ASSERTION: SET EQUALITY, NOT A ONE-WAY WAIVER. Refusal wording
+# differs between implementations by design (D-WORDING); the SET of cells
+# that refuse does not get that latitude -- it is asserted to be identical
+# across three sources: what matrix.tsv declares, what Praat actually did,
+# and what R actually did. Five ways for that to fail, each reported and
+# each counted on its own, because a cell can land in more than one of them
+# at once and each is a distinct defect:
+#   missP / missR       -- matrix.tsv declares refuse=1 here, but that side
+#                           computed a real answer instead (the ORIGINAL,
+#                           one-directional check this block used to be)
+#   undeclaredP/R        -- a side refused a cell matrix.tsv never declared
+#                           expect=refuse for (the hole the one-directional
+#                           check could not see: a side going quiet on
+#                           something nobody wrote down)
+#   asymRefuse            -- exactly one side refused a cell the other side
+#                           did not, regardless of what matrix.tsv says --
+#                           the two implementations disagree about whether
+#                           the cell can be analysed at all, which is a
+#                           finding for Fable, not a thing this file resolves
+# A green run has all five empty. See mailbox/to-opus/
+# WORK_ORDER_NIST_UNIFICATION_2026-08-31.md, item 3.
+# -----------------------------------------------------------------------
+# STALENESS FIRST. A results file can carry cell_ids the matrix no longer
+# contains -- the file was written against an older matrix and never
+# regenerated. Those rows are not evidence about the plugin; they are evidence
+# that the file is old. They must not enter the refusal arithmetic, because a
+# cell that exists on one side only BECAUSE ITS FILE IS STALE would otherwise
+# read as the two implementations disagreeing about whether it can be analysed
+# -- a real finding manufactured out of a housekeeping failure. They are
+# reported under their own heading and they fail the run on their own, so the
+# authoritative run cannot happen on top of a stale file.
+matrixCells <- unique(mx$cell_id)
+staleP <- sort(setdiff(unique(P$cell_id), matrixCells))
+staleR <- sort(setdiff(unique(R$cell_id), matrixCells))
+staleCells <- sort(union(staleP, staleR))
+nStaleCells <- length(staleCells)
+
+refP <- sort(setdiff(unique(P$cell_id[P$quantity %in% c("refused", "skipped")]), staleCells))
+refR <- sort(setdiff(unique(R$cell_id[R$quantity %in% c("refused", "skipped")]), staleCells))
 declaredRefuse <- sort(mx$cell_id[mx$expect == "refuse"])
 missP <- setdiff(declaredRefuse, refP); missR <- setdiff(declaredRefuse, refR)
+undeclaredP <- setdiff(refP, declaredRefuse)
+undeclaredR <- setdiff(refR, declaredRefuse)
+asymRefuse  <- sort(union(setdiff(refP, refR), setdiff(refR, refP)))
+matchedRefuse <- sort(intersect(intersect(refP, refR), declaredRefuse))
 
 # ---------------------------------------------------------------------------
 # ANNOTATE EVERY ROW WITH ITS RULE'S REASON AND WHETHER THAT REASON IS
@@ -1140,14 +1186,43 @@ for (nm in names(maxRelSeen)) {
                 nm, maxRelSeen[[nm]], rule$maxrel, if (ok) "HOLDS" else "EXCEEDED"))
     if (!ok) nUnexplained <- nUnexplained + 1L
 }
-cat("\n--- refusals ---\n")
+cat("\n--- results-file freshness ---\n")
+if (nStaleCells == 0) {
+    cat("  every cell_id in both results files exists in matrix.tsv\n")
+} else {
+    cat(sprintf("  STALE: %d cell_id(s) appear in a results file but not in matrix.tsv\n", nStaleCells))
+    cat(sprintf("    Praat-only: %s\n", if (length(staleP)) paste(staleP, collapse = ", ") else "none"))
+    cat(sprintf("    R-only:     %s\n", if (length(staleR)) paste(staleR, collapse = ", ") else "none"))
+    cat("  These rows were written against an older matrix. They are excluded from the\n")
+    cat("  refusal arithmetic so they cannot masquerade as an implementation disagreement,\n")
+    cat("  and they fail the run: regenerate the results files before the authoritative run.\n")
+}
+
+cat("\n--- refusals: three-way set equality (declared, Praat, R) ---\n")
 cat(sprintf("  matrix.tsv declares %d cells expect=refuse\n", length(declaredRefuse)))
 cat(sprintf("  Praat refused/skipped %d cells; R refused/skipped %d\n", length(refP), length(refR)))
-cat(sprintf("  declared refusals missed by Praat: %d %s\n", length(missP),
-            if (length(missP)) paste0("(", paste(missP, collapse = ", "), ")") else ""))
-cat(sprintf("  declared refusals missed by R:     %d %s\n", length(missR),
-            if (length(missR)) paste0("(", paste(missR, collapse = ", "), ")") else ""))
-if (length(missP) || length(missR)) nUnexplained <- nUnexplained + length(missP) + length(missR)
+cat(sprintf("  matched (declared = Praat = R, all three agree): %d cell(s)\n", length(matchedRefuse)))
+.reportRefuseSet <- function(label, ids) {
+    cat(sprintf("  %s %d %s\n", label, length(ids),
+                if (length(ids)) paste0("(", paste(ids, collapse = ", "), ")") else ""))
+}
+.reportRefuseSet("declared refusals missing from Praat:      ", missP)
+.reportRefuseSet("declared refusals missing from R:           ", missR)
+.reportRefuseSet("Praat refusals not declared in matrix.tsv:  ", undeclaredP)
+.reportRefuseSet("R refusals not declared in matrix.tsv:      ", undeclaredR)
+.reportRefuseSet("asymmetric (exactly one side refused):      ", asymRefuse)
+# A refusal-set failure is a CELL-level defect. nUnexplained is a ROW-level
+# counter and the balance invariant checks it against a row total, so adding
+# cell counts to it corrupts an accounting identity rather than reporting a
+# defect. The five sets get their own counter, deduplicated (a cell can appear
+# in more than one set at once and is still one defective cell), and that
+# counter fails the run on its own without touching the row arithmetic.
+nRefuseSetFail <- length(unique(c(missP, missR, undeclaredP, undeclaredR, asymRefuse)))
+if (length(asymRefuse))
+    cat(sprintf(paste0("  NOT RESOLVED: the %d asymmetric cell(s) above are a disagreement between the\n",
+                        "  two implementations about whether the cell can be analysed at all. This run\n",
+                        "  does not decide that question -- it only refuses to stay quiet about it.\n"),
+                length(asymRefuse)))
 
 # ---------------------------------------------------------------------------
 # THE BALANCE INVARIANT -- Fable's ruling, verbatim: "the contract's arithmetic
@@ -1262,13 +1337,17 @@ cat(sprintf("\n  TOTAL, all three studies: %d cells (options %d, sweep %d, nist 
             if (allStudiesBalance) "every study's balance HOLDS" else "at least one study's balance FAILS"))
 
 cat("\n---------------------------------------------------------\n")
-if (nUnexplained == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0 && balances &&
+if (nUnexplained == 0 && nRefuseSetFail == 0 && nStaleCells == 0 && nMissing == 0 && nViolation == 0 && kitFail == 0 && balances &&
     allStudiesBalance && nNistDisagree == 0) {
     cat("  GREEN. Every row is accounted for AND every contracted quantity arrived, across all three studies.\n")
 } else {
     cat("  NOT GREEN.\n")
     if (nUnexplained)
         cat(sprintf("    %d unexplained row(s)  -- bucket UNEXPLAINED / UNMATCHED_PRAAT / UNMATCHED_R.\n", nUnexplained))
+    if (nStaleCells)
+        cat(sprintf("    %d stale cell_id(s) in a results file -- regenerate the file; see freshness above.\n", nStaleCells))
+    if (nRefuseSetFail)
+        cat(sprintf("    %d cell(s) where the declared, Praat and R refusal sets disagree -- see refusals above.\n", nRefuseSetFail))
     if (nMissing)
         cat(sprintf("    %d contracted quantit(ies) MISSING -- bucket MISSING_PRAAT / MISSING_R.\n", nMissing))
     if (nViolation)
@@ -1482,6 +1561,37 @@ EXC <- data.frame(
 EXC <- EXC[order(EXC$analysis, EXC$quantity), ]
 tsvWrite(EXC, "exceptions.tsv")
 
+# --- 6b. refusals.tsv -- matched refusals reported as EVIDENCE, not silence.
+# exceptions.tsv's columns (analysis/quantity/plugin_value/r_value/
+# relative_difference) are shaped for a NUMERIC disagreement on one quantity;
+# a matched refusal is a per-CELL fact (declared, Praat and R all agree the
+# cell cannot be analysed) with two prose reasons, not two numbers, so it
+# gets its own file rather than a numeric column stretched to fit. One row
+# per cell in matchedRefuse (declared expect=refuse, and both sides actually
+# refused -- the refusal assertion above, restated as evidence a reader can
+# see rather than a count they have to trust). The wording itself is
+# EXPECTED to differ (D-WORDING); the `reason` column carries that same
+# reader sentence, reused verbatim rather than invented, so this file needs
+# no new entry in reader_sentences.md.
+reasonP <- setNames(P$value[P$quantity == "refuse_reason"], P$cell_id[P$quantity == "refuse_reason"])
+reasonR <- setNames(R$value[R$quantity == "refuse_reason"], R$cell_id[R$quantity == "refuse_reason"])
+expectOf <- setNames(mx$expect, mx$cell_id)
+datasetOf <- setNames(mx$dataset, mx$cell_id)
+REF <- data.frame(
+    cell_id            = matchedRefuse,
+    procedure           = unname(procOf[matchedRefuse]),
+    dataset             = unname(datasetOf[matchedRefuse]),
+    declared_expect     = unname(expectOf[matchedRefuse]),
+    praat_refused       = "yes",
+    r_refused           = "yes",
+    praat_reason        = unname(reasonP[matchedRefuse]),
+    r_reason            = unname(reasonR[matchedRefuse]),
+    reason              = READER[["refusal-wording"]],
+    study               = unname(studyOf[matchedRefuse]),
+    stringsAsFactors = FALSE)
+REF <- REF[order(REF$cell_id), ]
+tsvWrite(REF, "refusals.tsv")
+
 # --- 7. disagreements_all.tsv -- every non-agreement, in full --------------
 kindOf <- function(bucket, id) {
     ifelse(bucket == "DECLARED" & id == "D-WORDING", "wording differs (both refuse)",
@@ -1606,7 +1716,7 @@ writeLines(covLines, file.path(resultsDir, "coverage.md"))
 # sections below: their prose comes from results_templates/study_sections.md,
 # never string-built here (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_2026-08-28.md).
 famCounts <- if (nrow(out)) sort(table(out$clause[!is.na(out$clause)]), decreasing = TRUE) else integer(0)
-overallGreen <- nUnexplained == 0 && nMissing == 0 && nViolation == 0 && balances &&
+overallGreen <- nUnexplained == 0 && nRefuseSetFail == 0 && nStaleCells == 0 && nMissing == 0 && nViolation == 0 && balances &&
     allStudiesBalance && nNistDisagree == 0
 sumLines <- c(sprintf("# Validation summary — EML Stats & Graphs against R"), "",
     sprintf("Run %s. Verdict: **%s**.", format(Sys.Date(), "%d %B %Y"),
@@ -1670,7 +1780,8 @@ sumLines <- c(sumLines, "## Run it yourself", "",
 writeLines(sumLines, file.path(resultsDir, "SUMMARY.md"))
 
 cat(sprintf("\ncompare.R: generation wrote SUMMARY.md, coverage.md, exceptions.tsv (%d rows),\n", nrow(EXC)))
-cat(sprintf("  agreement_by_procedure.tsv (%d rows), agreements_all.tsv (%d rows),\n", nrow(ABP), nrow(AGR)))
+cat(sprintf("  refusals.tsv (%d rows), agreement_by_procedure.tsv (%d rows), agreements_all.tsv (%d rows),\n",
+            nrow(REF), nrow(ABP), nrow(AGR)))
 cat(sprintf("  disagreements_all.tsv (%d rows) to %s\n", nrow(DIS), resultsDir))
 
 # =============================================================================
@@ -1713,7 +1824,7 @@ checkReasonMembership <- function(files) {
     }
     bad
 }
-.membershipFiles <- file.path(resultsDir, c("exceptions.tsv", "disagreements_all.tsv", "SUMMARY.md"))
+.membershipFiles <- file.path(resultsDir, c("exceptions.tsv", "refusals.tsv", "disagreements_all.tsv", "SUMMARY.md"))
 .membershipBad <- checkReasonMembership(.membershipFiles)
 if (length(.membershipBad)) {
     cat("\n--- READER-SENTENCE MEMBERSHIP: RED ---\n")
@@ -1723,7 +1834,7 @@ if (length(.membershipBad)) {
         length(.membershipBad)), call. = FALSE)
 } else {
     cat(sprintf(
-        "\nREADER-SENTENCE MEMBERSHIP: PASS -- every reason string in exceptions.tsv, disagreements_all.tsv\n  and SUMMARY.md byte-matches a sentence in results_templates/reader_sentences.md.\n"))
+        "\nREADER-SENTENCE MEMBERSHIP: PASS -- every reason string in exceptions.tsv, refusals.tsv,\n  disagreements_all.tsv and SUMMARY.md byte-matches a sentence in results_templates/reader_sentences.md.\n"))
 }
 
 # =============================================================================
