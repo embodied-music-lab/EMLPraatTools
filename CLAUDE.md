@@ -273,11 +273,61 @@ artefacts, two contracts — do not lower ours. The rest bites silently:
 - Two PraatGen rules are knowingly unmet, pending Ian's adjudication: leading
   `;` comments (~4,900 of them) and `+=`. Do not sweep either.
 
-## Agent brief discipline — read narrowly
+## Token economy for delegated work
 
-Every agent brief inherits these. They exist because one stage-2 agent spent
-279 KB of tool results, of which the largest share was thirteen full reads of
-one 36 KB file.
+These rules govern how much a delegated task is given and asked to return.
+They apply to every Agent call and every workflow `agent()` task, all models,
+all projects. Most token waste is not the wrong model; it is the right model
+handed too much and returning too much.
+
+1. **Input discipline.** A task prompt carries the slice it needs, never the
+   file. Search first; hand line ranges or excerpts. Never spawn an agent to
+   read what a one-line search in the parent answers.
+
+2. **Output discipline.** Every task prompt states the shape of the return:
+   "return the verdict line and the three numbers, not the transcript."
+   Unrequested narration is pure spend and pollutes the parent's context for
+   every later turn.
+
+3. **Split mixed tasks.** A search-then-edit job runs as two cheap agents, not
+   one expensive one. The searcher's findings become a small prompt for the
+   editor; the editor never re-searches.
+
+4. **One verification, at the end, scoped to the diff.** Builders build and do
+   not self-verify. One agent verifies everything once, checking what the
+   changes touch and the interactions between them. Full test suites run at
+   gates, not per task.
+
+5. **Reuse instead of rerun.** On a retry or extension of a workflow, resume
+   the prior run so unchanged tasks return from cache; never relaunch from
+   scratch. An agent that regenerates a file that already exists on disk,
+   instead of reading it, is a defect.
+
+6. **Fail fast on a broken premise.** Every task carries an abort condition:
+   "if the file does not contain X, stop and report -- do not improvise." An
+   agent continuing confidently past a wrong premise is the most expensive
+   failure mode there is.
+
+7. **Check for in-flight work before launching.** After a compaction or any
+   gap, read the running-task list before starting anything. A clean working
+   tree is not evidence that no agent is running -- an agent still reading
+   produces no edits and looks identical to one that never started. Duplicate
+   launches have cost hundreds of thousands of tokens in a single incident.
+
+8. **Narrow scope per task.** One task, one small stated scope, quick finish.
+   Long everything-rerunning jobs block interaction, hide failures, and
+   correlate with dropped work. Verify only what the change touches; re-run
+   the rest separately and deliberately.
+
+9. **Search tools and absence claims.** ripgrep is the default search tool,
+   but it skips gitignored paths by default -- generated output directories
+   included. A zero-hit search that supports an "it doesn't exist" claim must
+   be rerun with `--no-ignore` before the claim is made.
+
+### How a brief reads narrowly
+
+The specifics behind rule 1, learned from an agent that spent 279 KB of tool
+results, the largest share being thirteen full reads of one 36 KB file:
 
 - Read a file in full once, to orient. After that, `sed -n` on known ranges.
 - Use `grep -n` to locate. Never read a whole file to find a line.
@@ -285,5 +335,8 @@ one 36 KB file.
   fail loudly when they do not apply; a confirming read buys nothing.
 - No brief carries more than three substantive tasks. Beyond that the agent
   cannot hold the work in view and starts re-reading to recover context.
+  Measured: an eight-task brief cost 182k, a six-task brief 318k.
 - Validators report counts only. Full output belongs behind a failure.
 - Name the model in every brief and every task label.
+- State an estimate before launching and the actual after. Without the pair
+  there is no way to tell an expensive job from a badly briefed one.
