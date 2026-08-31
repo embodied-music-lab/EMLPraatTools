@@ -172,7 +172,12 @@ emlVocabGlance$ = "r.squared adj.r.squared sigma statistic p.value df"
 emlVocabAugment$ = ".fitted .se.fit .resid .std.resid .hat .cooksd .rank"
 
 emlResult_MAXCOL = 40
-emlResult_MAXROW = 4000
+# RAISED FROM 4000 ON 31 AUGUST 2026. The NIST StRD datasets SmLs03, SmLs06
+# and SmLs09 export 18,009 rows, so the old cap aborted them before the
+# result store could write anything -- the failure looked like a missing
+# export rather than a refused one. 25000 clears the largest certified
+# dataset with room, and the cap still exists to catch a runaway table.
+emlResult_MAXROW = 25000
 
 
 # ----------------------------------------------------------------------------
