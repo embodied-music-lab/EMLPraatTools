@@ -1820,12 +1820,12 @@ nSkippedNist <- 0L
 for (i in seq_len(nrow(mat))) {
     row <- as.list(mat[i, , drop = FALSE])
     if (!emlKitRowSelected(row$procedure)) { nSkippedByFilter <- nSkippedByFilter + 1L; next }
-    # THE NIST TIER HAS NO R ORACLE (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_
-    # 2026-08-28.md): compare.R compares that tier's Praat column directly
+    # THE NIST STUDY HAS NO R ORACLE (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_
+    # 2026-08-28.md): compare.R compares that study's Praat column directly
     # against nist_certified.tsv's published constants, so this runner writes
     # no result row and no report for it -- same "no row of any kind"
     # contract @emlKitRowSelected already keeps for a filtered-out row.
-    if (identical(row$tier, "nist")) { nSkippedNist <- nSkippedNist + 1L; next }
+    if (identical(row$study, "nist")) { nSkippedNist <- nSkippedNist + 1L; next }
     fn <- dispatch[[row$procedure]]
     if (is.null(fn)) {
         refuseCell(row$cell_id, sprintf("No R handler registered for procedure '%s'.", row$procedure))
@@ -1841,7 +1841,7 @@ if (nzchar(emlKitProcFilter)) {
     cat(sprintf("run_analyses.R: row filter '%s' active -- %d of %d matrix rows skipped outright (no result row, no report).\n",
                 emlKitProcFilter, nSkippedByFilter, nrow(mat)))
 }
-cat(sprintf("run_analyses.R: %d nist-tier row(s) skipped outright -- no R oracle for that tier (no result row, no report).\n",
+cat(sprintf("run_analyses.R: %d nist-study row(s) skipped outright -- no R oracle for that study (no result row, no report).\n",
             nSkippedNist))
 
 flushResults(file.path(outDir, "r_results.tsv"))
@@ -1849,7 +1849,7 @@ cat(sprintf("run_analyses.R: wrote %d result rows to %s\n", length(RESULTS$rows)
 # nrow(mat) - nSkippedByFilter - nSkippedNist, not nrow(mat): a filtered run
 # writes (or rewrites) exactly one report per SELECTED, non-nist row -- every
 # dispatch path ends in writeReport(), directly or via
-# refuseCell()/skipCell() -- and a row the filter or the nist-tier skip above
+# refuseCell()/skipCell() -- and a row the filter or the nist-study skip above
 # passed over gets none. Printing the unfiltered total here would overstate
 # what this run actually wrote and contradict @emlKitRowSelected's own "no
 # report file of any kind" contract for a skipped row.

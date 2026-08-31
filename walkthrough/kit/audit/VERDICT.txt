@@ -91,12 +91,12 @@ value comparisons made       : 10841
   =  12865   vs. total rows in play (nrow(P) + nrow(R) - shared keys):  12865
   balance: HOLDS -- every observed key landed in exactly one category.
 
---- the balance invariant, per tier (each tier's own compared + documented-absent + tolerance-bounded = total) ---
+--- the balance invariant, per study (each study's own compared + documented-absent + tolerance-bounded = total) ---
   options  compared=10792  documented-absent=1334   tolerance-bounded=49     unexplained=0       total=12175   HOLDS
   sweep    compared=0      documented-absent=658    tolerance-bounded=0      unexplained=0       total=658     HOLDS
   nist     (no R oracle) certified-fields-expected=0      compared=0      missing-from-praat=0       HOLDS
 
-  TOTAL, all three tiers: 656 cells (options 624, sweep 32, nist 0) -- every tier's balance HOLDS
+  TOTAL, all three studies: 656 cells (options 624, sweep 32, nist 0) -- every study's balance HOLDS
 
 ---------------------------------------------------------
   NOT GREEN.

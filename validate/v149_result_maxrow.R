@@ -1,5 +1,5 @@
 # ============================================================================
-# v20 — Result-store row cap: emlResult_MAXROW
+# v149 — Result-store row cap: emlResult_MAXROW
 #
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
@@ -60,7 +60,7 @@ augment_nRows   <- as.numeric(val("augment_nRows"))
 files_written   <- as.numeric(val("files_written"))
 
 # --- the constant itself ----------------------------------------------------
-check_true("v20", "emlResult_MAXROW is at least the NIST StRD row count (18009)",
+check_true("v149", "emlResult_MAXROW is at least the NIST StRD row count (18009)",
            maxrow_constant >= NIST_ROWS)
 
 # --- the actual export, driven for real -------------------------------------
@@ -70,12 +70,12 @@ check_true("v20", "emlResult_MAXROW is at least the NIST StRD row count (18009)"
 # mere presence in the capture is already evidence against an abort; the
 # value check pins that the FULL 18,009 rows were accepted, not a truncated
 # subset.
-check_true("v20", "an 18009-row table is accepted by @emlAugmentFrom (no abort)",
+check_true("v149", "an 18009-row table is accepted by @emlAugmentFrom (no abort)",
            isTRUE(!is.na(augment_nRows)) && augment_nRows == NIST_ROWS)
 
 # The export must have actually written the augment file, not merely
 # accepted the row count and stopped short at write time.
-check_true("v20", "@emlResultWrite wrote the augment file for the 18009-row table",
+check_true("v149", "@emlResultWrite wrote the augment file for the 18009-row table",
            isTRUE(!is.na(files_written)) && files_written >= 1)
 
 # --- the exported artefact, checked independently of the probe's own count --
@@ -87,7 +87,7 @@ if (!file.exists(csv_path)) {
          " — run harness/resultmaxrow/run.sh first")
 }
 csv_data_rows <- length(readLines(csv_path, warn = FALSE)) - 1L  # minus header
-check_true("v20", "the exported augment CSV itself contains 18009 data rows",
+check_true("v149", "the exported augment CSV itself contains 18009 data rows",
            csv_data_rows == NIST_ROWS)
 
 if (!exists("EML_SUITE")) { eml_report("v20 result-store row cap"); eml_exit() }

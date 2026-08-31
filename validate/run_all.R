@@ -129,12 +129,12 @@ scripts <- c(
     # check at this level.
     "v20_shipping_anova_broom.R"
     ,
-    # v20_result_maxrow is the result-store row cap: emlResult_MAXROW, raised
+    # v149_result_maxrow is the result-store row cap: emlResult_MAXROW, raised
     # from 4000 to 25000 on 31 Aug 2026 so the NIST StRD datasets SmLs03,
     # SmLs06, SmLs09 (18,009 rows) clear it. Reads a harness probe, not a GUI
     # capture — this is a boundary condition on a constant, not a printed
     # number.
-    "v20_result_maxrow.R"
+    "v149_result_maxrow.R"
     ,
     # v21 is the rest of the CSV migration: the other ten shipping paths in
     # broom's three-file shape, every file written by the orchestrator the
