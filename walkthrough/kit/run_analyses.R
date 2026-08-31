@@ -1816,16 +1816,19 @@ cat(sprintf("run_analyses.R: %d rows read from %s\n", nrow(mat), matrixPath))
 
 startTime <- Sys.time()
 nSkippedByFilter <- 0L
-nSkippedNist <- 0L
 for (i in seq_len(nrow(mat))) {
     row <- as.list(mat[i, , drop = FALSE])
     if (!emlKitRowSelected(row$procedure)) { nSkippedByFilter <- nSkippedByFilter + 1L; next }
-    # THE NIST STUDY HAS NO R ORACLE (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_
-    # 2026-08-28.md): compare.R compares that study's Praat column directly
-    # against nist_certified.tsv's published constants, so this runner writes
-    # no result row and no report for it -- same "no row of any kind"
-    # contract @emlKitRowSelected already keeps for a filtered-out row.
-    if (identical(row$study, "nist")) { nSkippedNist <- nSkippedNist + 1L; next }
+    # THE NIST STUDY IS NO LONGER SKIPPED HERE. There is still no R oracle
+    # for a nist cell's PASS/FAIL -- compare.R judges the plugin against
+    # nist_certified.tsv's published constants directly, never against this
+    # runner's value -- but base R's own value on the same file is now the
+    # yardstick compare.R uses for how many digits the plugin may trail it
+    # by (mailbox/to-fable/MEMO_NIST_CRITERION_SHAPE_2026-08-31.md). That
+    # computation is not new: a nist row's procedure is emlRunAnovaAnalysis
+    # exactly like any other one-way ANOVA cell, so process_anova's own
+    # aov() below IS the same base-R computation
+    # validate/v19_nist_strd.R's loop runs, reached instead of reimplemented.
     fn <- dispatch[[row$procedure]]
     if (is.null(fn)) {
         refuseCell(row$cell_id, sprintf("No R handler registered for procedure '%s'.", row$procedure))
@@ -1841,17 +1844,15 @@ if (nzchar(emlKitProcFilter)) {
     cat(sprintf("run_analyses.R: row filter '%s' active -- %d of %d matrix rows skipped outright (no result row, no report).\n",
                 emlKitProcFilter, nSkippedByFilter, nrow(mat)))
 }
-cat(sprintf("run_analyses.R: %d nist-study row(s) skipped outright -- no R oracle for that study (no result row, no report).\n",
-            nSkippedNist))
 
 flushResults(file.path(outDir, "r_results.tsv"))
 cat(sprintf("run_analyses.R: wrote %d result rows to %s\n", length(RESULTS$rows), file.path(outDir, "r_results.tsv")))
-# nrow(mat) - nSkippedByFilter - nSkippedNist, not nrow(mat): a filtered run
-# writes (or rewrites) exactly one report per SELECTED, non-nist row -- every
-# dispatch path ends in writeReport(), directly or via
-# refuseCell()/skipCell() -- and a row the filter or the nist-study skip above
-# passed over gets none. Printing the unfiltered total here would overstate
-# what this run actually wrote and contradict @emlKitRowSelected's own "no
-# report file of any kind" contract for a skipped row.
-cat(sprintf("run_analyses.R: %d per-cell reports written to %s\n", nrow(mat) - nSkippedByFilter - nSkippedNist, reportDir))
+# nrow(mat) - nSkippedByFilter, not nrow(mat): a filtered run writes (or
+# rewrites) exactly one report per SELECTED row, nist rows included now --
+# every dispatch path ends in writeReport(), directly or via
+# refuseCell()/skipCell() -- and a row the filter passed over gets none.
+# Printing the unfiltered total here would overstate what this run actually
+# wrote and contradict @emlKitRowSelected's own "no report file of any kind"
+# contract for a skipped row.
+cat(sprintf("run_analyses.R: %d per-cell reports written to %s\n", nrow(mat) - nSkippedByFilter, reportDir))
 cat(sprintf("run_analyses.R: done in %.1f s\n", elapsed))

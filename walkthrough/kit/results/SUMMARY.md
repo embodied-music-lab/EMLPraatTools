@@ -1,20 +1,22 @@
 # Validation summary — EML Stats & Graphs against R
 
-Run 28 August 2026. Verdict: **NOT GREEN — see results/reconciliation.tsv**.
+Run 31 August 2026. Verdict: **NOT GREEN — see results/reconciliation.tsv**.
 
 ## What was compared
 
-The kit ran 624 analyses through 17 of the plugin's statistical procedures, and ran the same 624 analyses in R. It then compared 10841 numerical results.
+The kit ran 656 analyses through 17 of the plugin's statistical procedures (the options and sweep studies), and ran the same 656 analyses in R. It then compared 10841 numerical results.
 
 **10792 of 10841 agree** to at least nine significant digits (values at machine zero are compared absolutely, below 1e-12). The rest are listed in full in `exceptions.tsv` and `disagreements_all.tsv`, one row each, with the reason beside the numbers. There are no unexplained differences: an accounting identity inside the comparison proves every quantity from both programs landed in exactly one category (the balance invariant in `audit/VERDICT.txt`), and the run fails loudly if one ever doesn't.
 
 ## The documented differences, in plain terms
 
+**Sweep (626).** This row belongs to the sweep study, a grid of group-count and imbalance shapes that is otherwise checked against R exactly like any other analysis. Here the plugin side of this particular shape was not run in this pass, so there is nothing on that side to set beside R's value yet; it is listed as incomplete, not as a documented difference between the two programs.
+
 **Pairwise Oracle Cross Check (432).** Holm and Benjamini-Hochberg correction define no per-pair confidence level, so there is no interval for the plugin or R to print here (see pairwise-interval-scope). In its place R checks itself: the adjusted p-value from its primary per-pair test is compared against a second, independent computation, `stats::pairwise.t.test` with unpooled variances, run down its own code path. R verifying R; the plugin has no counterpart, and none is owed.
 
 **R Shift Estimate (261).** R's `wilcox.test` reports a shift estimate found by searching its own test statistic, which differs slightly from the textbook Hodges-Lehmann definition. The plugin computes the definition, that quantity is compared, and R's search result is recorded beside it rather than imitated.
 
-**Rank Test Effect Size (160).** For the Kruskal-Wallis test R reports eta-squared and the plugin reports epsilon-squared. Both summarise the same effect, neither is derivable from the other, and each side reports its own choice.
+**Rank Test Effect Size (192).** For the Kruskal-Wallis test R reports eta-squared and the plugin reports epsilon-squared. Both summarise the same effect, neither is derivable from the other, and each side reports its own choice.
 
 **Extra Shape Statistics (158).** R's `describe` emits a second pair of skewness and kurtosis values using a different estimator from the one both programs already agree on. The plugin reports one estimator; R reports two, and the second has no counterpart here.
 
@@ -57,6 +59,28 @@ The kit ran 624 analyses through 17 of the plugin's statistical procedures, and 
 **Kendalls W Derived (3).** The plugin computes Kendall's W at the point it assembles results rather than inside the test itself, so it appears on some rows where R's own output has no place for it.
 
 **Alpha Three Person Sample (2).** Dropping one respondent leaves two, and one item then has no variance. R's package deletes that item and computes on the rest; the plugin keeps it. The plugin matches the textbook formula, which gives -8/3 exactly.
+
+## The three studies
+
+Three bodies of evidence, three different questions, one verdict: green requires all three fully accounted for (the balance invariant in `audit/VERDICT.txt`, run per study and in total).
+
+### The options study
+
+The kit's original question, asked over the plugin's own option space: every lawful combination of test, post hoc, adjustment, variance assumption, group order and confidence level the plugin's dialogs and wrappers can produce. Oracle: R's own statistics packages -- rstatix, effectsize, car, afex, multcomp, nortest, coin, psych -- computed cell for cell in `run_analyses.R`.
+
+**Count.** 624 cells, 10841 numerical comparisons, 10792 agree.
+
+### The sweep study
+
+A different question from the options study, asked over a designed grid of shapes the demo tables never produce: k in {2, 3, 5}, n per cell from 3 to 200, balanced and 6:1 unbalanced, tie-free through heavily tied, homoscedastic and 10:1 heteroscedastic. Where the options study asks whether a printed report is right, this study asks whether the ANOVA, Tukey and Kruskal-Wallis procedures behind it stay right on shapes those reports never exercise. Oracle: base R's own `aov`, `TukeyHSD` and `kruskal.test`, computed in `run_analyses.R` exactly like any other cell -- no new runner (`validate/v18_sweep_parity.R` carries the grid's original derivation).
+
+**Count.** 32 cells, 0 numerical comparisons, 0 agree.
+
+### The NIST study
+
+A question the other two studies cannot ask, because both of them compare the plugin against a second implementation that could share its mistakes: does the plugin agree with values certified to fifteen significant digits by an outside body, computed in multiple-precision arithmetic? Oracle: the National Institute of Standards and Technology's own published constants (`nist_certified.tsv`), cited by dataset. There is no R oracle for this study -- `compare.R` compares the plugin's own column against those constants directly (`validate/v19_nist_strd.R` carries the harder, difficulty-graded version of this same question).
+
+**Count.** 11 cells, 0 certified fields compared, 0 agree, 0 disagree beyond tolerance.
 
 ## Run it yourself
 

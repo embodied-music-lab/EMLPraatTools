@@ -1,26 +1,32 @@
-procedure	post_hoc	quantities_compared	agreeing	differing_documented	one_sided_documented	percent_agreement_of_compared
-Alpha Influence		166	164	2	0	98.80%
-Chi Square Independence		64	64	0	16	100.00%
-Cronbach Alpha		215	215	0	6	100.00%
-Anova Analysis		1056	1042	14	72	98.67%
-Anova Analysis	0	384	384	0	0	100.00%
-Anova Analysis	1	672	658	14	72	97.92%
-Correlation Analysis		224	222	2	77	99.11%
-Descriptive Analysis		650	650	0	94	100.00%
-Friedman Analysis		285	285	0	78	100.00%
-Friedman Analysis	0	35	35	0	0	100.00%
-Friedman Analysis	1	250	250	0	78	100.00%
-Grouped Regression		238	238	0	6	100.00%
-KW Analysis		1264	1264	0	160	100.00%
-KW Analysis	0	100	100	0	40	100.00%
-KW Analysis	1	1164	1164	0	120	100.00%
-Normality Analysis		310	310	0	76	100.00%
-Paired Analysis		314	311	3	47	99.04%
-Pairwise Analysis		4864	4864	0	648	100.00%
-Regression Analysis		155	154	1	0	99.35%
-Repeated Measures Analysis		326	320	6	32	98.16%
-Repeated Measures Analysis	0	53	52	1	8	98.11%
-Repeated Measures Analysis	1	273	268	5	24	98.17%
-Two Group Analysis		548	546	2	16	99.64%
-Two Way Analysis		54	35	19	6	64.81%
-Wilson Interval		108	108	0	0	100.00%
+procedure	post_hoc	quantities_compared	agreeing	differing_documented	one_sided_documented	percent_agreement_of_compared	study
+Alpha Influence		166	164	2	0	98.80%	options
+Chi Square Independence		64	64	0	16	100.00%	options
+Cronbach Alpha		215	215	0	6	100.00%	options
+Anova Analysis		0	0	0	98	n/a	nist
+Anova Analysis	0	0	0	0	98	n/a	nist
+Anova Analysis		1056	1042	14	72	98.67%	options
+Anova Analysis	0	384	384	0	0	100.00%	options
+Anova Analysis	1	672	658	14	72	97.92%	options
+Anova Analysis		0	0	0	546	n/a	sweep
+Anova Analysis	1	0	0	0	546	n/a	sweep
+Correlation Analysis		224	222	2	77	99.11%	options
+Descriptive Analysis		650	650	0	94	100.00%	options
+Friedman Analysis		285	285	0	78	100.00%	options
+Friedman Analysis	0	35	35	0	0	100.00%	options
+Friedman Analysis	1	250	250	0	78	100.00%	options
+Grouped Regression		238	238	0	6	100.00%	options
+KW Analysis		1264	1264	0	160	100.00%	options
+KW Analysis	0	100	100	0	40	100.00%	options
+KW Analysis	1	1164	1164	0	120	100.00%	options
+KW Analysis		0	0	0	112	n/a	sweep
+KW Analysis	0	0	0	0	112	n/a	sweep
+Normality Analysis		310	310	0	76	100.00%	options
+Paired Analysis		314	311	3	47	99.04%	options
+Pairwise Analysis		4864	4864	0	648	100.00%	options
+Regression Analysis		155	154	1	0	99.35%	options
+Repeated Measures Analysis		326	320	6	32	98.16%	options
+Repeated Measures Analysis	0	53	52	1	8	98.11%	options
+Repeated Measures Analysis	1	273	268	5	24	98.17%	options
+Two Group Analysis		548	546	2	16	99.64%	options
+Two Way Analysis		54	35	19	6	64.81%	options
+Wilson Interval		108	108	0	0	100.00%	options

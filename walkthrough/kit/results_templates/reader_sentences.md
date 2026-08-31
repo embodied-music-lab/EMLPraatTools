@@ -152,3 +152,19 @@ p-value from its primary per-pair test is compared against a second,
 independent computation, `stats::pairwise.t.test` with unpooled variances,
 run down its own code path. R verifying R; the plugin has no counterpart,
 and none is owed.
+
+## sweep
+Rows: ~32. This row belongs to the sweep study, a grid of group-count and
+imbalance shapes that is otherwise checked against R exactly like any other
+analysis. Here the plugin side of this particular shape was not run in this
+pass, so there is nothing on that side to set beside R's value yet; it is
+listed as incomplete, not as a documented difference between the two
+programs.
+
+## nist
+Rows: ~99. This row belongs to the NIST study, which is never checked
+against R at all -- it is checked directly against a published reference
+number instead, in its own part of the report. Here the plugin side of this
+particular case was not run in this pass, so there is no plugin value yet to
+set beside that published number; it is listed as incomplete, not as a
+disagreement with the reference.

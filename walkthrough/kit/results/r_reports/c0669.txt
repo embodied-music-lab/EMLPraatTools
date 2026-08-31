@@ -1,0 +1,54 @@
+One-way ANOVA -- value by grp (group_order=discovery)
+Levels (in order): 1, 2, 3, 4, 5, 6, 7, 8, 9
+
+F(8,1800)=201.0000 p=4.037e-243
+eta^2: rstatix=0.4718 effectsize=0.4718
+
+  1: n=201 mean=1000000.4000 sd=0.1000 median=1000000.4000
+  2: n=201 mean=1000000.3000 sd=0.1000 median=1000000.3000
+  3: n=201 mean=1000000.5000 sd=0.1000 median=1000000.5000
+  4: n=201 mean=1000000.3000 sd=0.1000 median=1000000.3000
+  5: n=201 mean=1000000.5000 sd=0.1000 median=1000000.5000
+  6: n=201 mean=1000000.3000 sd=0.1000 median=1000000.3000
+  7: n=201 mean=1000000.5000 sd=0.1000 median=1000000.5000
+  8: n=201 mean=1000000.3000 sd=0.1000 median=1000000.3000
+  9: n=201 mean=1000000.5000 sd=0.1000 median=1000000.5000
+
+Pairwise Cohen's d (first-minus-second):
+  1__2: effectsize=1.0000 rstatix=1.0000
+  1__3: effectsize=-1.0000 rstatix=-1.0000
+  1__4: effectsize=1.0000 rstatix=1.0000
+  1__5: effectsize=-1.0000 rstatix=-1.0000
+  1__6: effectsize=1.0000 rstatix=1.0000
+  1__7: effectsize=-1.0000 rstatix=-1.0000
+  1__8: effectsize=1.0000 rstatix=1.0000
+  1__9: effectsize=-1.0000 rstatix=-1.0000
+  2__3: effectsize=-2.0000 rstatix=-2.0000
+  2__4: effectsize=0.0000 rstatix=0.0000
+  2__5: effectsize=-2.0000 rstatix=-2.0000
+  2__6: effectsize=0.0000 rstatix=0.0000
+  2__7: effectsize=-2.0000 rstatix=-2.0000
+  2__8: effectsize=0.0000 rstatix=0.0000
+  2__9: effectsize=-2.0000 rstatix=-2.0000
+  3__4: effectsize=2.0000 rstatix=2.0000
+  3__5: effectsize=0.0000 rstatix=0.0000
+  3__6: effectsize=2.0000 rstatix=2.0000
+  3__7: effectsize=0.0000 rstatix=0.0000
+  3__8: effectsize=2.0000 rstatix=2.0000
+  3__9: effectsize=0.0000 rstatix=0.0000
+  4__5: effectsize=-2.0000 rstatix=-2.0000
+  4__6: effectsize=0.0000 rstatix=0.0000
+  4__7: effectsize=-2.0000 rstatix=-2.0000
+  4__8: effectsize=0.0000 rstatix=0.0000
+  4__9: effectsize=-2.0000 rstatix=-2.0000
+  5__6: effectsize=2.0000 rstatix=2.0000
+  5__7: effectsize=0.0000 rstatix=0.0000
+  5__8: effectsize=2.0000 rstatix=2.0000
+  5__9: effectsize=0.0000 rstatix=0.0000
+  6__7: effectsize=-2.0000 rstatix=-2.0000
+  6__8: effectsize=0.0000 rstatix=0.0000
+  6__9: effectsize=-2.0000 rstatix=-2.0000
+  7__8: effectsize=2.0000 rstatix=2.0000
+  7__9: effectsize=0.0000 rstatix=0.0000
+  8__9: effectsize=-2.0000 rstatix=-2.0000
+

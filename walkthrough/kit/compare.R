@@ -88,6 +88,11 @@ dir.create(auditDir, showWarnings = FALSE)
 resultsDir <- file.path(kitDir, "results")
 dir.create(resultsDir, showWarnings = FALSE)
 
+# lre() -- REUSED, never rewritten, from validate/lre.R (the same function
+# validate/v19_nist_strd.R scores the plugin's NIST cells with). kitDir is
+# walkthrough/kit; the repo root is two levels up.
+source(file.path(dirname(dirname(kitDir)), "validate", "lre.R"))
+
 need <- file.path(auditDir, c("praat_results.tsv", "r_results.tsv"))
 missing <- need[!file.exists(need)]
 if (length(missing)) {
@@ -502,18 +507,24 @@ testOf <- setNames(mx$test, mx$cell_id)
 dsOf   <- setNames(mx$dataset, mx$cell_id)
 
 # ---------------------------------------------------------------------------
-# THREE STUDIES (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_2026-08-28.md):
+# THREE STUDIES (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_2026-08-28.md; the
+# NIST criterion itself, mailbox/to-fable/MEMO_NIST_CRITERION_SHAPE_2026-08-31.md):
 #   options  the plugin's own option space, oracled against R packages.
 #   sweep    the designed shape grid, oracled against base R exactly like
 #            any other cell -- it shares the machinery below untouched.
-#   nist     NIST StRD certified datasets. NO R ORACLE: R never runs these
-#            cells (run_analyses.R skips study=="nist" outright), so a nist
-#            row is split out of P/R here, before the Praat-vs-R contract
-#            machinery below ever sees it -- otherwise every contracted
-#            "both" quantity on a nist cell would read as R having missed
-#            it, when the absence is by design, not a gap. Pnist keeps the
-#            raw Praat rows for THE NIST STUDY block, further down, which
-#            compares them directly against nist_certified.tsv.
+#   nist     NIST StRD certified datasets. NO R ORACLE FOR PASS/FAIL: a nist
+#            cell's plugin value is judged against nist_certified.tsv's
+#            published constant directly, never against R's own value, so a
+#            nist row is split out of P/R here, before the Praat-vs-R
+#            contract machinery below ever sees it -- otherwise every
+#            contracted "both" quantity on a nist cell would read as R
+#            having missed it, when the absence from that machinery is by
+#            design. run_analyses.R DOES now run these cells (base R via
+#            aov(), the same computation every other ANOVA cell gets) --
+#            Rnist keeps that column so THE NIST STUDY block, further down,
+#            can use base R's own distance from the certified constant as
+#            the yardstick the plugin is allowed to trail by SLACK digits.
+#            Pnist keeps the raw Praat rows the plugin is actually scored on.
 # ---------------------------------------------------------------------------
 if (!"study" %in% names(mx))
     stop("matrix.tsv needs a trailing `study` column (options | sweep | nist) -- ",
@@ -525,6 +536,7 @@ studyOf <- setNames(mx$study, mx$cell_id)
 
 nistCells  <- mx$cell_id[mx$study == "nist"]
 Pnist      <- P[P$cell_id %in% nistCells, , drop = FALSE]
+Rnist      <- R[R$cell_id %in% nistCells, , drop = FALSE]
 P          <- P[!(P$cell_id %in% nistCells), , drop = FALSE]
 R          <- R[!(R$cell_id %in% nistCells), , drop = FALSE]
 mxContract <- mx[!(mx$cell_id %in% nistCells), , drop = FALSE]
@@ -805,27 +817,54 @@ enforcementFor <- function(theId) {
 }
 
 # ---------------------------------------------------------------------------
-# THE NIST STUDY. No R oracle: the plugin's own Praat column, in Pnist, is
-# compared directly against nist_certified.tsv's published constants. The
-# quantity name -> (label prefix, field) map mirrors validate/v19_nist_strd.R's
-# own `cv()` -- label is matched by PREFIX ("Between"/"Within"), because NIST
-# names the ANOVA rows per dataset ("Between Instrument", "Between
-# Treatment", ...); "Certified R-Squared" is exact. Every row this loop
-# produces is added to `rows` under bucket NIST_AGREE / NIST_DISAGREE /
-# NIST_MISSING_PRAAT -- alongside, never mixed into, the options/sweep
-# buckets above -- so reconciliation.tsv carries one file, one `study`
-# column, and the balance invariant below can still be asked of each study
-# on its own.
+# THE NIST STUDY (mailbox/to-fable/MEMO_NIST_CRITERION_SHAPE_2026-08-31.md).
+# ONE RULE, TWO SHAPES, mirroring validate/v19_nist_strd.R exactly -- lre()
+# itself is sourced from validate/lre.R above and never reimplemented here:
+#
+#   df.between, df.within   EXACT INTEGERS. Pass is `==` against the
+#            certified integer. This branch never calls lre() or agree() --
+#            there is no shared code path from here into the LRE branch
+#            below, so the relative-error rule is unreachable for df BY
+#            CONSTRUCTION, not merely skipped by a guard.
+#   every other certified quantity, residual.sd included:
+#            plugin_lre = lre(plugin value, certified); r_lre = lre(base R's
+#            value, certified) -- base R now runs every nist cell too (moved
+#            into process_anova via run_analyses.R, task 2), so Rnist carries
+#            it. The plugin passes when plugin_lre is no more than SLACK
+#            digits below r_lre. No separate residual-SD assertion: residual
+#            SD is sqrt(ms_within), scored by the SAME rule as every other
+#            quantity here, off the ms_within values both sides already
+#            report -- not a new check invented for it.
+#
+# The quantity name -> (label prefix, field) map mirrors validate/
+# v19_nist_strd.R's own `cv()` -- label is matched by PREFIX ("Between"/
+# "Within"), because NIST names the ANOVA rows per dataset ("Between
+# Instrument", "Between Treatment", ...); "Certified R-Squared" and
+# "Standard Deviation" are matched exactly. A disagreeing or missing row is
+# added to `rows` under bucket NIST_DISAGREE / NIST_MISSING_PRAAT --
+# alongside, never mixed into, the options/sweep buckets above -- so
+# reconciliation.tsv carries one file, one `study` column, and the balance
+# invariant below can still be asked of each study on its own. Its ledger
+# columns for a nist row are digits_praat / digits_r / min_required_digits /
+# digit_margin / status -- NOT the raw-error-ratio praat/r columns the
+# options/sweep buckets use, because a raw ratio is exactly the rule this
+# study does not apply. On the exact-integer branch digits_praat/digits_r
+# hold the two compared integers themselves (there is no digit count to
+# report, because lre() never ran), and min_required_digits/digit_margin are
+# blank.
 # ---------------------------------------------------------------------------
+NIST_SLACK <- 1.0   # significant digits the plugin may trail base R by (validate/v19_nist_strd.R's SLACK)
 NIST_MAP <- list(
-    f            = list(prefix = "Between", field = 4L),
-    df_between   = list(prefix = "Between", field = 1L),
-    ss_between   = list(prefix = "Between", field = 2L),
-    ms_between   = list(prefix = "Between", field = 3L),
-    df_within    = list(prefix = "Within",  field = 1L),
-    ss_within    = list(prefix = "Within",  field = 2L),
-    ms_within    = list(prefix = "Within",  field = 3L),
-    eta_squared  = list(prefix = "Certified R-Squared", field = 1L, exact = TRUE)
+    df_between   = list(prefix = "Between", field = 1L, kind = "int"),
+    ss_between   = list(prefix = "Between", field = 2L, kind = "lre"),
+    ms_between   = list(prefix = "Between", field = 3L, kind = "lre"),
+    f            = list(prefix = "Between", field = 4L, kind = "lre"),
+    df_within    = list(prefix = "Within",  field = 1L, kind = "int"),
+    ss_within    = list(prefix = "Within",  field = 2L, kind = "lre"),
+    ms_within    = list(prefix = "Within",  field = 3L, kind = "lre"),
+    eta_squared  = list(prefix = "Certified R-Squared", field = 1L, exact = TRUE, kind = "lre"),
+    residual_sd  = list(prefix = "Standard Deviation",  field = 1L, exact = TRUE, kind = "lre",
+                        deriveFrom = "ms_within")
 )
 bareNistName <- function(ds) sub("_input$", "", sub("^nist_", "", ds))
 
@@ -841,6 +880,15 @@ if (length(nistCells)) {
     NC <- read.delim(text = ncLines[!startsWith(ncLines, "#")], sep = "\t",
                      colClasses = "character", quote = "")
     PnistVal <- setNames(Pnist$value, paste(Pnist$cell_id, Pnist$quantity, sep = "\r"))
+    RnistVal <- setNames(Rnist$value, paste(Rnist$cell_id, Rnist$quantity, sep = "\r"))
+    nistValOf <- function(tbl, cid, qty) {
+        # tbl is a NAMED CHARACTER VECTOR (setNames(...$value, ...)), not a
+        # list: `[[` on a name that is not present errors ("subscript out of
+        # bounds") rather than returning NULL, so presence is checked first.
+        k <- paste(cid, qty, sep = "\r")
+        if (!(k %in% names(tbl))) return(NA_character_)
+        unname(tbl[[k]])
+    }
     for (cid in nistCells) {
         ds <- bareNistName(unname(dsOf[[cid]]))
         for (q in names(NIST_MAP)) {
@@ -852,26 +900,62 @@ if (length(nistCells)) {
             if (nrow(crow) != 1L) next   # this dataset's SOURCES.txt did not certify this field
             nNistExpected <- nNistExpected + 1L
             cv <- num(crow$certified[1])
-            pvChr <- PnistVal[[paste(cid, q, sep = "\r")]]
-            pv <- num(pvChr)
-            if (is.null(pvChr) || is.na(pv)) {
+            certSrc <- sprintf("nist_certified.tsv / %s field %d", spec$prefix, spec$field)
+
+            # residual_sd has no Output of its own on either side: it is
+            # derived from ms_within (sqrt), the quantity both sides DO
+            # report -- not a new assertion, just this quantity read off an
+            # existing one before the same LRE rule below scores it.
+            srcQty <- if (!is.null(spec$deriveFrom)) spec$deriveFrom else q
+            pvChr <- nistValOf(PnistVal, cid, srcQty)
+            rvChr <- nistValOf(RnistVal, cid, srcQty)
+            pvRaw <- num(pvChr); rvRaw <- num(rvChr)
+            pv <- if (!is.null(spec$deriveFrom)) (if (is.na(pvRaw)) NA_real_ else sqrt(pvRaw)) else pvRaw
+            rv <- if (!is.null(spec$deriveFrom)) (if (is.na(rvRaw)) NA_real_ else sqrt(rvRaw)) else rvRaw
+
+            if (is.na(pvChr) || is.na(pv)) {
                 nNistMissingPraat <- nNistMissingPraat + 1L
                 add(bucket = "NIST_MISSING_PRAAT", id = "", cell_id = cid, quantity = q,
-                    praat = "", r = as.character(cv),
-                    source = sprintf("nist_certified.tsv / %s field %d", spec$prefix, spec$field))
-            } else if (agree(pv, cv)) {
-                # NOT added to the shared agreeRows/agreements_all.tsv: that file (and
-                # nAgree/nCompared, which SUMMARY.md's "What was compared" section and
-                # the generate-then-verify leg both cross-check) is options+sweep scope,
-                # per task 5's own file list -- the nist study gets its own count, printed
-                # from nNistAgree, in its own SUMMARY.md section instead.
+                    digits_praat = "", digits_r = "", min_required_digits = "", digit_margin = "",
+                    status = "MISSING_PRAAT", source = certSrc)
+                next
+            }
+
+            if (identical(spec$kind, "int")) {
+                pass <- isTRUE(pv == cv)
+                if (pass) {
+                    nNistAgree <- nNistAgree + 1L
+                    nistAgreeRows[[length(nistAgreeRows) + 1L]] <- list(cell_id = cid, quantity = q)
+                } else {
+                    nNistDisagree <- nNistDisagree + 1L
+                    add(bucket = "NIST_DISAGREE", id = "", cell_id = cid, quantity = q,
+                        digits_praat = as.character(pv), digits_r = as.character(rv),
+                        min_required_digits = "", digit_margin = "",
+                        status = "FAIL (exact-integer df)", source = certSrc)
+                }
+                next
+            }
+
+            # LRE RULE, everything else. plugin_lre/r_lre are absolute LRE
+            # against the certified constant; the pass criterion compares
+            # them to each other (base R as the yardstick), never a raw
+            # error ratio.
+            plugin_lre <- lre(pv, cv)
+            r_lre      <- lre(rv, cv)
+            minReq     <- if (is.finite(r_lre)) r_lre - NIST_SLACK else NA_real_
+            margin     <- if (is.finite(plugin_lre) && is.finite(minReq)) plugin_lre - minReq else NA_real_
+            pass       <- is.finite(plugin_lre) && is.finite(minReq) && plugin_lre >= minReq
+            if (pass) {
                 nNistAgree <- nNistAgree + 1L
                 nistAgreeRows[[length(nistAgreeRows) + 1L]] <- list(cell_id = cid, quantity = q)
             } else {
                 nNistDisagree <- nNistDisagree + 1L
                 add(bucket = "NIST_DISAGREE", id = "", cell_id = cid, quantity = q,
-                    praat = pvChr, r = as.character(cv),
-                    source = sprintf("nist_certified.tsv / %s field %d", spec$prefix, spec$field))
+                    digits_praat = sprintf("%.2f", plugin_lre),
+                    digits_r = sprintf("%.2f", r_lre),
+                    min_required_digits = if (is.finite(minReq)) sprintf("%.2f", minReq) else "",
+                    digit_margin = if (is.finite(margin)) sprintf("%.2f", margin) else "",
+                    status = "FAIL (LRE below base R - SLACK)", source = certSrc)
             }
         }
     }
@@ -879,7 +963,29 @@ if (length(nistCells)) {
 nNistCompared <- nNistAgree + nNistDisagree
 nNistBalances <- (nNistCompared + nNistMissingPraat) == nNistExpected
 
-out <- do.call(rbind, lapply(rows, function(r) as.data.frame(r, stringsAsFactors = FALSE)))
+# UNION-FILLED RBIND. options/sweep rows carry (bucket, id, cell_id,
+# quantity, praat, r, source); nist rows carry (bucket, id, cell_id,
+# quantity, digits_praat, digits_r, min_required_digits, digit_margin,
+# status, source) instead -- a nist row has no raw-error-ratio praat/r pair
+# to show, so it does not carry one. base rbind() on data.frames refuses
+# mismatched columns, so the union of every row's names is taken first and
+# any column absent on a given row is filled "" (never NA -- matching this
+# file's own convention, e.g. id="" on every non-CONTRACT row) rather than
+# widening every options/sweep add() call to name five nist-only columns it
+# has nothing to put in.
+out <- if (length(rows)) {
+    # base::names, explicitly: the contract-expansion loop above this point
+    # assigns a top-level `names <- tmpl` (this file is a script, not a
+    # function, so that reassigns the GLOBAL `names`). `names(r)` in call
+    # position still finds the base function regardless, but a BARE `names`
+    # passed as lapply's FUN argument is evaluated as an ordinary variable
+    # and would pick up that shadowed character vector instead.
+    allNames <- unique(unlist(lapply(rows, base::names)))
+    do.call(rbind, lapply(rows, function(r) {
+        r[setdiff(allNames, base::names(r))] <- ""
+        as.data.frame(r[allNames], stringsAsFactors = FALSE)
+    }))
+} else NULL
 if (is.null(out)) out <- data.frame(bucket = character(), id = character(),
     cell_id = character(), quantity = character(), praat = character(),
     r = character(), source = character())
@@ -1279,7 +1385,7 @@ CONTRACT_CLAUSE_RULES <- list(
 
 # --- 4. THE LOOKUP, AND THE HARD ERROR --------------------------------------
 .missingClauses <- list()
-readerClauseFor <- function(bucket, id, procedure, quantity) {
+readerClauseFor <- function(bucket, id, procedure, quantity, study) {
     if (nzchar(id) && id != "CONTRACT") {
         cl <- unname(ID_TO_CLAUSE[id])
         if (is.na(cl) || !length(cl)) return(NA_character_)
@@ -1293,12 +1399,23 @@ readerClauseFor <- function(bucket, id, procedure, quantity) {
         if (!is.null(r$bucketExclude) && grepl(r$bucketExclude, bucket)) next
         return(r$clause)
     }
+    # THE SWEEP/NIST FALLBACK. No CONTRACT_CLAUSE_RULES entry names every one
+    # of the sweep grid's own ANOVA/Kruskal-Wallis quantities individually --
+    # there is no per-quantity story to tell, because the cause is the same
+    # for all of them (the plugin side of that cell was not run in this
+    # pass, not a per-quantity difference) -- and the nist study carries no
+    # contract at all (mxContract's own comment). A CONTRACT_MISSING_PARTNER
+    # row on either study still needs a reader sentence before generation can
+    # proceed; the honest one is the study's own, not an invented
+    # per-quantity one.
+    if (identical(bucket, "CONTRACT_MISSING_PARTNER") && study %in% c("sweep", "nist"))
+        return(study)
     NA_character_
 }
 
 if (nrow(out)) {
     out$procedure <- unname(procOf[out$cell_id])
-    out$clause <- mapply(readerClauseFor, out$bucket, out$id, out$procedure, out$quantity)
+    out$clause <- mapply(readerClauseFor, out$bucket, out$id, out$procedure, out$quantity, out$study)
     docBuckets <- c("DECLARED", "DECLARED_ONLY_PRAAT", "DECLARED_ONLY_R",
                      "CONTRACT_ONLY_PRAAT", "CONTRACT_ONLY_R", "CONTRACT_UNDEFINED",
                      "CONTRACT_MISSING_PARTNER")

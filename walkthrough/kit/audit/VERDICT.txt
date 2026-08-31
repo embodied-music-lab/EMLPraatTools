@@ -2,7 +2,7 @@
 =========================================================
   EML kit -- reconciliation of the two result tables
 =========================================================
-cells declared in matrix.tsv : 656
+cells declared in matrix.tsv : 667
 rows, Praat table            : 10797
 rows, R table                : 12660
 value comparisons made       : 10841
@@ -39,8 +39,6 @@ value comparisons made       : 10841
     posthoc_g1__g2_cohens_d                         16
 
 --- the standing kit: one property per procedure ---
-  (filtered run: walking only the 17 driven procedure(s); the reverse
-   ratchet -- a governed procedure this run never drove -- is suspended below.)
   emlAlphaInfluence                  complete   7 clause(s), 0 missing
   emlChiSquareIndependence           complete   9 clause(s), 0 missing
   emlCronbachAlpha                   complete   7 clause(s), 0 missing
@@ -94,9 +92,9 @@ value comparisons made       : 10841
 --- the balance invariant, per study (each study's own compared + documented-absent + tolerance-bounded = total) ---
   options  compared=10792  documented-absent=1334   tolerance-bounded=49     unexplained=0       total=12175   HOLDS
   sweep    compared=0      documented-absent=658    tolerance-bounded=0      unexplained=0       total=658     HOLDS
-  nist     (no R oracle) certified-fields-expected=0      compared=0      missing-from-praat=0       HOLDS
+  nist     (no R oracle) certified-fields-expected=98     compared=0      missing-from-praat=98      HOLDS
 
-  TOTAL, all three studies: 656 cells (options 624, sweep 32, nist 0) -- every study's balance HOLDS
+  TOTAL, all three studies: 667 cells (options 624, sweep 32, nist 11) -- every study's balance HOLDS
 
 ---------------------------------------------------------
   NOT GREEN.

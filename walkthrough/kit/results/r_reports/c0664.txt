@@ -1,0 +1,24 @@
+One-way ANOVA -- value by grp (group_order=discovery)
+Levels (in order): 1, 2, 3, 4, 5
+
+F(4,20)=1.1805 p=0.3494
+eta^2: rstatix=0.1910 effectsize=0.1910
+
+  1: n=5 mean=196.2431 sd=0.0875 median=196.2569
+  2: n=5 mean=196.2443 sd=0.1380 median=196.3042
+  3: n=5 mean=196.1670 sd=0.0937 median=196.1811
+  4: n=5 mean=196.1481 sd=0.1042 median=196.1494
+  5: n=5 mean=196.1432 sd=0.0884 median=196.1850
+
+Pairwise Cohen's d (first-minus-second):
+  1__2: effectsize=-0.0106 rstatix=-0.0106
+  1__3: effectsize=0.8390 rstatix=0.8390
+  1__4: effectsize=0.9867 rstatix=0.9867
+  1__5: effectsize=1.1350 rstatix=1.1350
+  2__3: effectsize=0.6552 rstatix=0.6552
+  2__4: effectsize=0.7865 rstatix=0.7865
+  2__5: effectsize=0.8720 rstatix=0.8720
+  3__4: effectsize=0.1905 rstatix=0.1905
+  3__5: effectsize=0.2610 rstatix=0.2610
+  4__5: effectsize=0.0507 rstatix=0.0507
+
