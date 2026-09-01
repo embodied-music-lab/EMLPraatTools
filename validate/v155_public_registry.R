@@ -26,8 +26,13 @@
 #                            got a previous validator in this repo rejected.
 #   4. EROSION               a procedure that presents itself as a
 #                            user-facing entry point -- the emlRun* name
-#                            pattern, or a graph-type dispatch branch -- but
-#                            carries no registry row fails the suite.
+#                            pattern, a graph-type dispatch branch, or a
+#                            door registration in setup.praat (an ACTIVE
+#                            `Add menu command:` / `Add action command:`
+#                            line) -- but carries no registry row fails the
+#                            suite. One documented exception: emlRun* names
+#                            on the RUN_EXCLUSIONS list below, each carrying
+#                            its own reason, are not erosion by decision.
 #
 # CHECK 2'S METHOD, and why it is a regex over source text rather than a
 # call-graph walk. The registry cares about the literal TEXT a generated
@@ -44,20 +49,30 @@
 # ("@emlTestSection: "@emlCronbachAlpha -- refusals""), never as code being
 # assembled for a generated script.
 #
-# THREE NAMED FALSE POSITIVES survive that exclusion and are exempted below,
+# FOUR NAMED FALSE POSITIVES survive that exclusion and are exempted below,
 # each with the reason inline -- the same convention v107's EXEMPT list uses
 # for commands that legitimately do not record. A name that regex-matches
 # and is in neither the registry nor this exemption list is a NEW finding,
 # not a silent pass: the check names it and fails.
 #
-# CHECK 4'S SOURCE-2 HALF only covers the graph-type dispatch table
+# CHECK 4'S SOURCE-2 HALF (4b) only covers the graph-type dispatch table
 # (@emlGraphsDispatchDraw's `graph_type = N` branches, the concrete
 # mechanism the ruling's own memo discusses) plus the QQ door named by hand.
-# It would NOT catch an entirely new kind of door -- a fresh top-level tool
-# added to setup.praat that funnels through no dispatch table at all. That
-# is a known limit of this check, stated here rather than left to be
-# discovered later; source 1's half (every emlRun* name) has no such gap,
-# because it re-derives the whole population from the tree every run.
+# By itself it would NOT catch an entirely new kind of door -- a fresh
+# top-level tool added to setup.praat that funnels through no dispatch
+# table at all. That gap is closed by 4c below, which re-derives, from
+# setup.praat itself, every ACTIVE `Add menu command:` / `Add action
+# command:` line's target script and scans that script's own text for real
+# @eml(Run|Draw)... call sites. 4c is a fresh-every-run derivation, like
+# source 1's half, not a hand-kept list -- restoring emlDrawLMMForest's
+# withdrawn menu entry (scripts/eml-lmm.praat, which calls it directly)
+# would trip 4c the day the entry comes back, before anyone remembers to
+# add a row. 4c's own honest limit: it scans only the file the door names
+# DIRECTLY, one level, not files that script goes on to `include` -- a name
+# introduced only inside a further include from a door script would not be
+# caught. Source 1's half (every emlRun* name) has no comparable gap of any
+# kind, because it re-derives the whole population from the tree every run
+# with no notion of "one level" at all.
 #
 # Base R only. Reads source; drives nothing.
 # ============================================================================
@@ -193,6 +208,19 @@ EXEMPT <- c(
         "exitScript: developer error message inside @emlAugmentNum",
         "(\"... called before @emlAugmentFrom.\"), not code assembled for",
         "emission. @emlAugmentFrom is never itself recorder-emitted."),
+    emlRunReliabilityAnalysis = paste(
+        "stats/eml-analysis.praat:4068 builds the literal",
+        "\"@emlRunReliabilityAnalysis: data, ...\" as the .code$ argument to",
+        "@emlRecordAnalysisStep, but the procedure sets .error$",
+        "unconditionally (it is an unimplemented stub, v1.2 item 7) and",
+        "@emlRecordAnalysisStep (stats/eml-record.praat ~line 1319) takes",
+        "its \"if .error$ <> \"\" ... refusal ... goto END\" branch before",
+        ".code$ is ever read whenever .error$ is non-empty -- which, here,",
+        "is always. The .code$ literal is therefore dead text; the second",
+        "grep hit for this name (eml-analysis.praat:4115) is prose in a",
+        "comment, matching nothing this check's quote-anchored pattern",
+        "would call a call. Removed from the registry by the same ruling",
+        "(RUN_EXCLUSIONS above carries the full reason)."),
     emlRenderResultSettings = paste(
         "stats/eml-output.praat ~line 1090: the match is inside the",
         "procedure's OWN .error$ self-diagnostic (\"@emlRenderResultSettings",
@@ -295,10 +323,55 @@ for (f in plugin_files) {
 all_procs <- unique(all_procs)
 run_pattern_procs <- grep("^emlRun[A-Z]", all_procs, value = TRUE)
 
-missing_run <- setdiff(run_pattern_procs, reg_names)
+# EXPLICIT, DOCUMENTED EXCLUSION LIST -- the only way an emlRun* name may be
+# absent from the registry without failing this check. Fable's ruling on
+# emlRunReliabilityAnalysis: "Table S2 documents working public surface; an
+# unconditional-error stub is not surface" -- so its row came out of
+# REGISTRY.tsv. Left as a bare setdiff() that would have made removing the
+# row silently defeat 4a, which is the opposite of what a check named
+# EROSION is for. Adding a name here is therefore a deliberate, reviewable
+# act: it must carry its own reason, inline, same convention as CHECK 2's
+# EXEMPT list above -- and the two checks immediately below hold this list
+# accountable rather than trusting it blind: an excluded name that is no
+# longer an emlRun* procedure at all, or that no longer needs excluding
+# because a row now covers it, is flagged rather than left to go stale.
+RUN_EXCLUSIONS <- c(
+    emlRunReliabilityAnalysis = paste(
+        "Unimplemented stub (v1.2 item 7), stats/eml-analysis.praat:",
+        "unconditionally sets .error$ and computes nothing; has no real",
+        "call site anywhere in the plugin (the two other hits for this",
+        "name are the recorder assembling call TEXT into a generated",
+        "script, and a comment -- not calls). Excluded from",
+        "REGISTRY.tsv by ruling (Fable, 2026-09-01: 'an unconditional-",
+        "error stub is not surface') and excluded here from the erosion",
+        "check for the same reason -- unimplemented; excluded until it",
+        "works.")
+)
+
+for (nm in names(RUN_EXCLUSIONS)) {
+    attest(V, sprintf("erosion check excludes emlRun* name: %s", nm), RUN_EXCLUSIONS[[nm]])
+}
+
+stale_exclusions <- setdiff(names(RUN_EXCLUSIONS), run_pattern_procs)
 check_true(V,
-           sprintf("every emlRun* procedure in the tree has a registry row (found %d)%s",
-                   length(run_pattern_procs),
+           sprintf("RUN_EXCLUSIONS names are all still real emlRun* procedures in the tree (not stale)%s",
+                   if (length(stale_exclusions))
+                       paste0(" -- STALE, remove from the list: ", paste(stale_exclusions, collapse = ", "))
+                   else ""),
+           length(stale_exclusions) == 0L)
+
+redundant_exclusions <- intersect(names(RUN_EXCLUSIONS), reg_names)
+check_true(V,
+           sprintf("RUN_EXCLUSIONS names are still absent from the registry (the exclusion is still needed)%s",
+                   if (length(redundant_exclusions))
+                       paste0(" -- now registered, exclusion is redundant: ", paste(redundant_exclusions, collapse = ", "))
+                   else ""),
+           length(redundant_exclusions) == 0L)
+
+missing_run <- setdiff(setdiff(run_pattern_procs, reg_names), names(RUN_EXCLUSIONS))
+check_true(V,
+           sprintf("every emlRun* procedure in the tree has a registry row, or a documented exclusion (found %d, %d excluded)%s",
+                   length(run_pattern_procs), length(intersect(run_pattern_procs, names(RUN_EXCLUSIONS))),
                    if (length(missing_run))
                        paste0(" -- MISSING: ", paste(missing_run, collapse = ", "))
                    else ""),
@@ -348,12 +421,75 @@ check_true(V,
                    else ""),
            length(missing_draw) == 0L)
 
-attest(V,
-       "erosion check's source-2 half is scoped to the graph-type dispatch table",
-       "A brand-new top-level door that funnels through no dispatch table (not a graph_type branch, not an emlRun* name) would not be caught by this check. See the file header.")
+# ---- 4c. every ACTIVE door registration's directly-called emlRun*/emlDraw* -
+# procedure has a registry row ----------------------------------------------
+# Closes the gap named above: 4a only catches an emlRun*-named procedure and
+# 4b only catches a graph-type dispatch branch, so neither would notice a
+# withdrawn tool's menu entry coming back if the tool calls a differently-
+# named procedure directly. This half re-derives, from setup.praat, every
+# ACTIVE (uncommented) `Add menu command:` / `Add action command:` line's
+# target script (`scripts/....praat`), then scans that script's own source
+# text for real @eml(Run|Draw)... CALL SITES -- a call statement, `@emlFoo`
+# or `@emlFoo:` sitting at the start of a line after only whitespace, never
+# preceded by a quote (which is what a string literal assembling recorder
+# text, CHECK 2's target, would show instead). This is exactly the guard
+# that makes it safe today for emlDrawLMMForest to have no registry row:
+# its menu entry is withdrawn, so scripts/eml-lmm.praat (which calls
+# @emlDrawLMMForest directly) is not an active door and 4c does not scan it
+# -- restore that entry and 4c scans the script, finds the call, and fails
+# until a row exists. See the demonstration attestation below.
+setup_path <- file.path(plug, "setup.praat")
+door_scripts <- character(0)
+if (file.exists(setup_path)) {
+    setup_lines <- readLines(setup_path, warn = FALSE)
+    active_door_lines <- setup_lines[grepl("^\\s*Add (menu|action) command:", setup_lines)]
+    dm <- gregexpr("scripts/[A-Za-z0-9_.-]+\\.praat", active_door_lines)
+    door_scripts <- unique(unlist(regmatches(active_door_lines, dm)))
+}
+check_true(V,
+           sprintf("setup.praat parsed for active door registrations (found %d target scripts)",
+                   length(door_scripts)),
+           length(door_scripts) > 0L)
+
+door_call_pat <- "^\\s*@eml(Run|Draw)[A-Za-z0-9_]*"
+door_hit_locs <- list()  # name -> character vector of "script:line"
+for (ds in door_scripts) {
+    dpath <- file.path(plug, ds)
+    if (!file.exists(dpath)) next
+    dlines <- tryCatch(readLines(dpath, warn = FALSE), error = function(e) character(0))
+    for (i in seq_along(dlines)) {
+        if (grepl(door_call_pat, dlines[i])) {
+            cap <- regmatches(dlines[i], regexpr("@eml(Run|Draw)[A-Za-z0-9_]*", dlines[i]))
+            nm <- sub("^@", "", cap)
+            door_hit_locs[[nm]] <- c(door_hit_locs[[nm]], sprintf("%s:%d", ds, i))
+        }
+    }
+}
+door_names <- names(door_hit_locs)
+missing_door <- setdiff(door_names, reg_names)
+check_true(V,
+           sprintf("every active door's directly-called emlRun*/emlDraw* procedure has a registry row (%d door scripts scanned, %d names found)%s",
+                   length(door_scripts), length(door_names),
+                   if (length(missing_door))
+                       paste0(" -- MISSING: ", paste(missing_door, collapse = ", "))
+                   else ""),
+           length(missing_door) == 0L)
+if (length(missing_door)) {
+    for (nm in missing_door) {
+        cat(sprintf("      %s found at: %s\n", nm, paste(door_hit_locs[[nm]], collapse = "; ")))
+    }
+}
 
 attest(V,
-       "erosion check demonstrated: temporarily deleting a registry row made this exact check fail, restoring the row made it pass again, and the restored file was confirmed byte-identical to the original (sha256)",
+       "erosion check's source-2 half: 4b is scoped to the graph-type dispatch table; 4c covers active door registrations generally",
+       "4b alone would not catch a brand-new top-level door that funnels through no dispatch table. 4c closes that: it re-derives setup.praat's active door-to-script wiring fresh every run and scans each door script's own text for direct emlRun*/emlDraw* call sites. 4c's own remaining limit: one level only -- a call reachable solely through a further `include` inside the door script would not be seen. See the file header.")
+
+attest(V,
+       "erosion check demonstrated (4a): temporarily deleting a registry row made this exact check fail, restoring the row made it pass again, and the restored file was confirmed byte-identical to the original (sha256)",
        "Demonstrated by hand during authoring, 2026-09-01: emlRunPairedAnalysis's row removed, `Rscript validate/v155_public_registry.R` run and observed to FAIL check 4a naming it, the row restored verbatim, re-run observed to PASS, and `sha256sum` before/after matched. Not re-run automatically on every suite pass because doing so would mean this file mutating REGISTRY.tsv on disk as a side effect of validation, which is worse than the property it would be proving.")
+
+attest(V,
+       "erosion check demonstrated (4c, door registration): a scratch copy of the plugin tree with emlDrawLMMForest's withdrawn menu entry restored made this exact check FAIL naming emlDrawLMMForest, and the real repository's setup.praat was never touched",
+       "Demonstrated by hand during authoring, 2026-09-01, entirely in /tmp -- see the agent's report for the exact commands and their output, including the sha256sum proving the real setup.praat in this repository was read-only throughout. setup.praat is outside this task's file boundary (two other agents are editing it live), so the demonstration ran against a scratch copy rather than the tracked file: a scratch `Add menu command:` line for \"Linear Mixed Model...\" -> scripts/eml-lmm.praat was added, `Rscript` run against the scratch tree and observed to FAIL 4c naming emlDrawLMMForest at scripts/eml-lmm.praat, then the scratch copy was discarded (not reverted -- there was nothing in the real tree to revert).")
 
 if (!exists("EML_SUITE")) { eml_report("v155 -- the public registry"); eml_exit() }

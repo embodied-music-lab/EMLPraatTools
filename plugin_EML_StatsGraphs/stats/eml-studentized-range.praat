@@ -50,6 +50,26 @@
 #    accuracy; this translation computes the complement of every term before
 #    summing, so no subtraction from a number near 1 occurs. That change is
 #    the reason the port exists and it is the only structural difference.
+#
+# 5. WAVE-TWO REFINEMENT (1 September 2026, Opus). R's own outer-panel
+#    width (and this port's original translation of it) resolves the
+#    chi-scale density's spread; it does not resolve the OUTER INTEGRAND,
+#    which at small df and a large q is a spike concentrated against s = 0
+#    inside that first panel, not spread across it -- measured directly
+#    (k=10, df=3, q=365.08223058929093, the worst cell in walkthrough/kit/
+#    reference/srange_reference.tsv): the original single 16-point rule on
+#    that first panel returned 3.5645e-7 against a converged 1.0000e-6, 64%
+#    low, while every later panel measured exactly 0. Two adaptive
+#    quadrature schemes were tried and rejected on measured wall-clock cost
+#    (see @emlStudentizedRangeQ's and @eml_srqPanelOneGeometric's own
+#    headers for the numbers); the fix kept is a fixed, cheap geometric
+#    sub-panel mesh applied to that first outer panel only, gated by a
+#    one-level coarse-vs-half-split check so it only runs where the check
+#    shows the panel actually needs it. This is refinement of the outer
+#    integral's OWN quadrature, not a change to Hartley's integral, the
+#    chi-scale density, or the complement algebra above -- the four
+#    procedures below still compute the identical published double
+#    integral; they resolve one region of it more finely.
 # ---------------------------------------------------------------------------
 #
 # WHY THIS FILE EXISTS. Praat's built-in `Get TukeyQ:` computes the upper
@@ -137,9 +157,17 @@
 #                                 direct complement, for one w and cc
 #   @eml_srqWprobComplement   -- internal: the above raised to the rr power,
 #                                 complemented directly
+#   @eml_srqOuterPanel16      -- internal: one 16-point Gauss-Legendre
+#                                 evaluation of the outer (chi-scale)
+#                                 integrand over an arbitrary s-interval
+#   @eml_srqPanelOneGeometric -- internal: fixed geometric sub-panel
+#                                 refinement of the outer integral's first
+#                                 panel, where the wave-two fix lives (see
+#                                 the origin notice's item 5 and this
+#                                 procedure's own header)
 #
 # Dependencies: None (uses only Praat built-ins: gaussQ, lnGamma, ln, exp,
-# sqrt, pow via ^).
+# sqrt, pow via ^, zero#).
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -237,6 +265,28 @@ procedure eml_srqRangeComplement: .w, .cc
     if .domHi < 8
         .domHi = 8
     endif
+    # Capped at 40 regardless of w: measured directly in this Praat (loop
+    # printing exp(-0.5*u*u) for u = 35..45) that phi(u) is exactly 0.0 in
+    # double precision from u = 39 on -- ln(smallest positive double) is
+    # about -744, and -0.5*u*u passes that at u = sqrt(2*744) ~ 38.6, one
+    # unit below this cutoff. Past that point the panel integrand
+    # phi(u)*Phi(u-w)*sumPow is not approximately zero, it IS the double
+    # 0.0, for every w, so no panel beyond u = 40 can contribute -- this is
+    # not a truncation of real mass (the domHi = w+8 rule above exists
+    # precisely because, for w up to the low 30s, mass genuinely does sit
+    # out near u = w and must not be cut off there; the header above
+    # documents w = 10.9602 losing mass at a FIXED u in [-8,8] for exactly
+    # that reason). The cap only engages once w+8 alone would already put
+    # every remaining panel past the underflow point, so it changes nothing
+    # for any w this procedure was calibrated against (w up to 25, domHi up
+    # to 33) and removes a real, measured cost: without it, an outer-panel
+    # node at s near an outer panel's far edge with large q (this
+    # procedure is called from every node of every outer panel -- see
+    # @eml_srqOuterPanel16) pays for dozens of width-4 panels that each
+    # evaluate to exactly 0, panel by panel, for no change in the answer.
+    if .domHi > 40
+        .domHi = 40
+    endif
     # Panel width 4: measured (debug sweep against the cc=2 closed form and
     # a cc=10 fine-grid reference, w up to 25) at worst-case relative error
     # ~2.5e-14 -- the integrand is smooth (phi and Phi have no
@@ -333,6 +383,119 @@ endproc
 
 
 # ============================================================================
+# @eml_srqOuterPanel16: .sLo, .sHi, .q, .k, .df, .nranges, .logConst
+# One 16-point Gauss-Legendre evaluation of the outer (chi-scale) integrand
+# density(s) * P(max of nranges ranges of k > q*s), over s in [.sLo, .sHi].
+# Factored out of @emlStudentizedRangeQ's outer loop so the dyadic doubling
+# refinement in that procedure (see its header for why the refinement is
+# there at all) can call this at whatever subdivision one outer panel
+# needs, without duplicating the 16-point rule per subdivision level.
+#
+# Output: .value -- the panel's contribution to the outer integral
+#         (survives only until the next call)
+# ============================================================================
+procedure eml_srqOuterPanel16: .sLo, .sHi, .q, .k, .df, .nranges, .logConst
+    .nlegq = 16
+    .ihalfq = 8
+    .xlegq# = {0.989400934991649932596154173450, 0.944575023073232576077988415535, 0.865631202387831743880467897712, 0.755404408355003033895101194847, 0.617876244402643748446671764049, 0.458016777657227386342419442984, 0.281603550779258913230460501460, 0.0950125098376374401853193354250}
+    .alegq# = {0.0271524594117540948517805724560, 0.0622535239386478928628438369944, 0.0951585116824927848099251076022, 0.124628971255533872052476282192, 0.149595988816576732081501730547, 0.169156519395002538189312079030, 0.182603415044923588866763667969, 0.189450610455068496285396723208}
+
+    .sCenter = (.sLo + .sHi) / 2
+    .sHalf = (.sHi - .sLo) / 2
+    .dfm1 = .df - 1
+    .value = 0
+    for .jj from 1 to .nlegq
+        if .ihalfq < .jj
+            .jx = .jj - .ihalfq
+            .sign = 1
+        else
+            .jx = .jj
+            .sign = -1
+        endif
+        .sNode = .sCenter + .sign * .xlegq# [.jx] * .sHalf
+
+        if .sNode > 0
+            .t1 = .logConst + (.dfm1 * ln (.sNode)) - (.df * .sNode * .sNode * 0.5)
+            @eml_srqWprobComplement: .q * .sNode, .nranges, .k
+            .compW = eml_srqWprobComplement.compW
+            .value = .value + (.compW * .alegq# [.jx]) * exp (.t1) * .sHalf
+        endif
+    endfor
+endproc
+
+
+# ============================================================================
+# @eml_srqPanelOneGeometric: .sHi, .q, .k, .df, .nranges, .logConst,
+#                            .geoW0, .geoRatio, .geoMaxSegs
+# Fixed (non-adaptive) geometric refinement of the FIRST outer panel,
+# [0, .sHi], built on @eml_srqOuterPanel16. Sub-panel widths start at
+# .geoW0 and grow by .geoRatio each step, so resolution concentrates near
+# s = 0 and thins out approaching .sHi, without any runtime convergence
+# check.
+#
+# WHY THE FIRST PANEL SPECIFICALLY, AND WHY A FIXED GEOMETRIC MESH RATHER
+# THAN ADAPTIVE REFINEMENT. Measured directly (k=10, df=3,
+# q=365.08223058929093, the worst cell in walkthrough/kit/reference/
+# srange_reference.tsv, instrumented panel-by-panel): with the ORIGINAL
+# single 16-point panel per outer panel, panel index 1 (s in
+# [0, sPanelWidth]) returned 3.5645e-7 against a converged 1.0000e-6 --
+# 64% low -- and panels 2 onward measured EXACTLY 0, confirming every case
+# checked (also k=5/df=3 and k=10/df=5 at their own p=1e-6 cells, and
+# k=5/df=3/q=56.818064) puts the entire missing mass in panel 1 alone; see
+# @emlStudentizedRangeQ's own panel-width comment for the fuller
+# measurement (why: density(s)*P(range>q*s) is a spike below s~0.02-0.05
+# at low df and large q, not spread across the panel). A general adaptive
+# scheme was tried first and both versions were measured directly against
+# this same worst cell: uniform dyadic doubling of the whole panel took
+# 36-37 wall-clock seconds (it kept re-evaluating the panel's expensive,
+# contribution-free far edge -- large w = q*s, and @eml_srqRangeComplement
+# cost scales with w -- at every doubling level); a depth-first adaptive
+# bisection that stopped subdividing once a sub-interval's coarse and fine
+# estimates already agreed brought that down to 17.8 seconds, still too
+# slow to run the full 107-cell reference grid inside validate/
+# v154_srange_against_reference.R's own 300-second-per-batch timeout (it
+# was still running the 85-cell forward batch alone past 300 seconds when
+# killed). Both adaptive versions paid 3 full inner-integral evaluations
+# (coarse + 2 fine) at EVERY sub-interval visited, including ones later
+# accepted as negligible -- the comparison itself was the expensive step.
+# A fixed geometric mesh needs exactly .geoMaxSegs (in practice ~12-16)
+# single evaluations, no comparisons: measured against the same worst
+# cell and two others (k=5/df=3/q=56.818064 against scipy's
+# 1.35899031916e-4, and k=10/df=5 at p=1e-6) with .geoW0 = 0.001,
+# .geoRatio = 1.4 (a python replica of this exact panel algebra, cross-
+# checked against @eml_srqOuterPanel16 line by line): relative error
+# 2.507e-10, 5.4e-12, and consistent agreement respectively -- comfortably
+# inside the acceptance rule's 1e-9, at a FIXED, small, predictable cost
+# per call regardless of (k, df, q). This is deliberately not general
+# (panel 1 only; a different sub-panel scheme is not searched for) because
+# every measurement above -- across every failing cell checked, not
+# assumed -- puts the defect there and nowhere else.
+#
+# Output: .value -- panel 1's contribution to the outer integral
+#         (survives only until the next call)
+# ============================================================================
+procedure eml_srqPanelOneGeometric: .sHi, .q, .k, .df, .nranges, .logConst,
+    ... .geoW0, .geoRatio, .geoMaxSegs
+    .segLo = 0
+    .segW = .geoW0
+    .segCount = 0
+    .value = 0
+    while .segLo < .sHi and .segCount < .geoMaxSegs
+        .segHi = .segLo + .segW
+        if .segHi > .sHi
+            .segHi = .sHi
+        endif
+        @eml_srqOuterPanel16: .segLo, .segHi, .q, .k, .df, .nranges,
+        ... .logConst
+        .value = .value + eml_srqOuterPanel16.value
+        .segLo = .segHi
+        .segW = .segW * .geoRatio
+        .segCount = .segCount + 1
+    endwhile
+endproc
+
+
+# ============================================================================
 # @emlStudentizedRangeQ: .q, .k, .df, .nranges
 # Upper-tail probability of the studentized range: P(Q > q), q the
 # studentized range statistic, k the number of means, df the error degrees
@@ -397,10 +560,6 @@ procedure emlStudentizedRangeQ: .q, .k, .df, .nranges
             .p = 1
             .ok = 1
         else
-            .nlegq = 16
-            .ihalfq = 8
-            .xlegq# = {0.989400934991649932596154173450, 0.944575023073232576077988415535, 0.865631202387831743880467897712, 0.755404408355003033895101194847, 0.617876244402643748446671764049, 0.458016777657227386342419442984, 0.281603550779258913230460501460, 0.0950125098376374401853193354250}
-            .alegq# = {0.0271524594117540948517805724560, 0.0622535239386478928628438369944, 0.0951585116824927848099251076022, 0.124628971255533872052476282192, 0.149595988816576732081501730547, 0.169156519395002538189312079030, 0.182603415044923588866763667969, 0.189450610455068496285396723208}
             # Relative, not absolute: the outer sum's own termination is
             # scaled to the running total, so a target p far below any
             # fixed absolute floor still gets an evaluated answer instead
@@ -419,6 +578,53 @@ procedure emlStudentizedRangeQ: .q, .k, .df, .nranges
             # that spread directly and was verified to resolve it (0.5 at
             # df=45 already matched a 5x finer panel to 12 digits; 0.1 at
             # df=500 likewise).
+            #
+            # THIS WIDTH RESOLVES THE CHI-SCALE DENSITY'S OWN SPREAD; IT DOES
+            # NOT RESOLVE THE OUTER INTEGRAND. Measured directly (instrumented
+            # panel-by-panel dump, k=10, df=3, q=365.08223058929093, the worst
+            # cell in walkthrough/kit/reference/srange_reference.tsv): the
+            # single fixed 16-point rule below, applied once over the first
+            # panel [0, sPanelWidth], returned 3.5645e-7 against a converged
+            # 1.0000e-6 -- 64% low -- while panel 2 onward measured exactly 0.
+            # A direct fine-grid evaluation of the same panel (scipy quad,
+            # matching this file's own complement algebra, cross-checked
+            # against the reference grid's own mpmath value to 10 significant
+            # figures: 1.0000000003e-6) shows why: the true integrand is not
+            # spread across the panel, it is a spike below s=0.02 that decays
+            # through 30+ orders of magnitude by s=0.05 -- the panel's chi-
+            # density term (s^(df-1), no branch point, per the outer-variable
+            # note above) is smooth, but density(s)*P(range>q*s) is not, at
+            # low df and large q, because P(range>q*s) itself collapses
+            # superexponentially as s grows past that spike. One 16-point
+            # rule spanning the whole panel cannot follow that collapse --
+            # this is discretisation error inside a single panel, not a
+            # truncation error at the domain edge (confirmed above: panels
+            # past the first contribute genuinely nothing, so widening the
+            # domain fixes nothing; only resolving the first panel does).
+            # A uniform-width sweep of that one panel (same measurement)
+            # confirms it is resolution, not domain: width 0.5 -> 64% low,
+            # 0.25 -> 18% low, 0.1 -> 1.1% low, 0.05 -> 2.3e-2% low, 0.02 ->
+            # 2.7e-10 relative -- monotonic, and accelerating once the panel
+            # is narrow enough for the 16-point rule's spectral convergence
+            # to engage on the spike itself. The fix is
+            # @eml_srqPanelOneGeometric, applied ONLY to outer panel index 1
+            # -- see that procedure's own header for the two adaptive
+            # schemes measured and rejected first on performance (one took
+            # 36-37 wall-clock seconds on the worst cell below, the other
+            # 17.8 seconds -- both too slow to run the full reference grid
+            # inside validate/v154_srange_against_reference.R's own
+            # 300-second batch timeout) and for why a FIXED geometric mesh,
+            # scoped to panel 1 alone, was measured sufficient across every
+            # failing cell checked instead. No hand-picked finer fixed
+            # WIDTH for the whole outer scheme is used, because the spike's
+            # location depends on q (and, empirically, worsens as k grows --
+            # a larger cc makes P(range>w) collapse faster in w, per
+            # @eml_srqRangeComplement's own SUM_j term, sharpening the spike
+            # further), so no single uniform width is safe for every
+            # (k, df, q) in the plugin's supported domain; the geometric
+            # mesh below is deliberately concentrated where the spike
+            # always sits (against s = 0, per every measurement above) and
+            # is cheap precisely because it is not trying to be general.
             .sPanelWidth = 3 / sqrt (.df)
             if .sPanelWidth > 0.5
                 .sPanelWidth = 0.5
@@ -426,7 +632,54 @@ procedure emlStudentizedRangeQ: .q, .k, .df, .nranges
 
             .f2 = .df * 0.5
             .logConst = (.f2 * ln (.df / 2)) - lnGamma (.f2) + ln (2)
-            .dfm1 = .df - 1
+
+            # Geometric mesh for panel 1 only (see @eml_srqPanelOneGeometric's
+            # header for the measurement behind these three numbers): start
+            # at width 0.005, grow by a factor of 2.0 each sub-panel (7
+            # sub-panels to cover a 0.5-wide first outer panel), capped at
+            # 40 sub-panels as a safety ceiling never reached in practice.
+            # A finer mesh (0.001 start, 1.4 ratio, ~16-20 sub-panels) was
+            # tried first and also measured accurate, but this coarser one
+            # measured the SAME 2.5e-10 to 5.4e-12 relative error on every
+            # case checked at roughly half the sub-panel count -- and
+            # @emlInvStudentizedRangeQ's bisection re-triggers this mesh on
+            # every iteration that lands in the tail, so halving its cost
+            # was needed to bring the full 22-row quantile batch back under
+            # validate/v154_srange_against_reference.R's 300-second timeout
+            # (see that procedure's own .relTol comment for the other half
+            # of that measurement).
+            .geoW0 = 0.005
+            .geoRatio = 2.0
+            .geoMaxSegs = 40
+
+            # TRIGGER for the geometric mesh, not an unconditional cost on
+            # every call. Measured directly: paying @eml_srqPanelOneGeometric
+            # on EVERY call (an early version of this fix) made an ordinary
+            # mid-tail case (k=3, df=20, alpha=.05, a single forward
+            # evaluation) cost 0.634s against the untouched original's
+            # 0.271s -- and @emlInvStudentizedRangeQ's bisection calls the
+            # forward procedure ~44-50 times, so that 2.3x became the
+            # difference between validate/v154_srange_against_reference.R's
+            # 22-row inverse batch finishing under its 300-second timeout
+            # and not (measured directly: the 18 "easy" rows alone, at
+            # roughly 28s apiece with the mesh unconditional, already
+            # exceeded 300s before the 4 hard rows were even reached). So
+            # panel 1 is first evaluated the cheap way (one
+            # @eml_srqOuterPanel16 call, same cost as every other panel);
+            # the mesh only runs if a single one-level bisection check
+            # (coarse whole-panel vs. the sum of its two halves) disagrees
+            # by more than .triggerRelTol. For a smooth, already-resolved
+            # panel 1 (every ordinary case) that check passes immediately --
+            # 3x panel 1's own cost, not 12-16x, and panel 1 is one of
+            # several outer panels, so the per-call overhead this adds is
+            # small. For a spiked panel 1 (the low-df, large-q cells this
+            # file exists to fix), coarse vs. halves disagree by an order
+            # of magnitude or more at the very first split (measured on the
+            # worst cell's own doubling sequence: level 0 -> level 1 already
+            # moved the estimate from 3.56e-7 to 1.18e-6, more than 3x) --
+            # nowhere near .triggerRelTol, so the mesh engages exactly
+            # where it is needed and nowhere else.
+            .triggerRelTol = 1e-6
 
             .ans = 0
             .maxPanels = 400
@@ -436,28 +689,35 @@ procedure emlStudentizedRangeQ: .q, .k, .df, .nranges
 
             while .i < .maxPanels and .keepGoing = 1
                 .i = .i + 1
-                .otsum = 0
-                .sCenter = (.i - 0.5) * .sPanelWidth
-                .sHalf = .sPanelWidth / 2
+                .sLo = (.i - 1) * .sPanelWidth
+                .sHi = .i * .sPanelWidth
 
-                for .jj from 1 to .nlegq
-                    if .ihalfq < .jj
-                        .jx = .jj - .ihalfq
-                        .sign = 1
-                    else
-                        .jx = .jj
-                        .sign = -1
-                    endif
-                    .sNode = .sCenter + .sign * .xlegq# [.jx] * .sHalf
+                @eml_srqOuterPanel16: .sLo, .sHi, .q, .k, .df, .nranges,
+                ... .logConst
+                .otsum = eml_srqOuterPanel16.value
 
-                    if .sNode > 0
-                        .t1 = .logConst + (.dfm1 * ln (.sNode)) - (.df * .sNode * .sNode * 0.5)
-                        @eml_srqWprobComplement: .q * .sNode, .nranges, .k
-                        .compW = eml_srqWprobComplement.compW
-                        .rotsum = (.compW * .alegq# [.jx]) * exp (.t1) * .sHalf
-                        .otsum = .otsum + .rotsum
+                if .i = 1
+                    .p1Mid = (.sLo + .sHi) / 2
+                    @eml_srqOuterPanel16: .sLo, .p1Mid, .q, .k, .df,
+                    ... .nranges, .logConst
+                    .p1FineL = eml_srqOuterPanel16.value
+                    @eml_srqOuterPanel16: .p1Mid, .sHi, .q, .k, .df,
+                    ... .nranges, .logConst
+                    .p1FineR = eml_srqOuterPanel16.value
+                    .p1Fine = .p1FineL + .p1FineR
+                    .p1Diff = abs (.p1Fine - .otsum)
+                    .p1Ref = abs (.p1Fine)
+                    if abs (.otsum) > .p1Ref
+                        .p1Ref = abs (.otsum)
                     endif
-                endfor
+                    if .p1Diff > .absFloor
+                    ... and .p1Diff > .triggerRelTol * .p1Ref
+                        @eml_srqPanelOneGeometric: .sHi, .q, .k, .df,
+                        ... .nranges, .logConst, .geoW0, .geoRatio,
+                        ... .geoMaxSegs
+                        .otsum = eml_srqPanelOneGeometric.value
+                    endif
+                endif
 
                 .ans = .ans + .otsum
 
@@ -539,7 +799,23 @@ procedure emlInvStudentizedRangeQ: .p, .k, .df, .nranges
     endif
 
     if .error$ = ""
-        .relTol = 1e-13
+        # 1e-10, not the far tighter tolerance a bracket-width stopping
+        # rule could otherwise justify: still two full orders of magnitude
+        # inside the acceptance rule's 1e-9 relative target (validate/
+        # v154_srange_against_reference.R), so the returned q keeps a
+        # comfortable safety margin, but each doubling of tolerance halves
+        # roughly one bisection iteration and @emlStudentizedRangeQ's own
+        # panel-1 fix (see that procedure's header) made each iteration
+        # markedly more expensive at low df -- measured directly: the
+        # full 22-row quantile batch this procedure is exercised against
+        # took ~360 wall-clock seconds at the previous 1e-13 (roughly 44
+        # bisection iterations per row), against
+        # validate/v154_srange_against_reference.R's own 300-second batch
+        # timeout. This does not touch WHY each iteration is more
+        # expensive now (that is the point of the fix); it only stops
+        # asking for more bracket precision than the acceptance rule
+        # needs.
+        .relTol = 1e-10
         .maxExpand = 80
         .maxBisect = 200
 

@@ -69,6 +69,114 @@ include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib
 # read at most once and cached by dataset name.
 # ============================================================================
 
+# ============================================================================
+# ENVIRONMENT CAPTURE AND VERSION ASSERTION.
+#
+# Fable's requirement (mailbox/to-opus/WORK_ORDER_TWOWAY_KERNEL_2026-08-31.md,
+# "What the authoritative run must capture", item 2) is that the run emits
+# its own environment into the results -- "a run without them is not the
+# authoritative run." RULING_PROVENANCE_AND_CANCELLATION sharpens that: the
+# Praat VERSION is ASSERTED against a pin and the run FAILS on mismatch, so
+# the evidence is self-attesting rather than a claim resting on whoever
+# happened to click Run. RULING_UNIQUENESS_SWEEP adds everything else this
+# block records -- OS class, kernel/arch string, repo commit, working-tree
+# cleanliness -- as PROVENANCE, recorded but NOT asserted, because it is
+# measured to vary between two machines at the SAME Praat version (the
+# far-tail studentised-range values differ across builds at identical
+# praatVersion) -- an assertion there would fail runs where every number in
+# the table is fine.
+#
+# THIS RUNS BEFORE ANYTHING ELSE, folders included: a run that is going to
+# refuse itself should refuse before doing any work, not after 25 minutes of
+# cells nobody asked for. On a version mismatch nothing under audit/ or
+# results/ is touched -- this block writes nothing until the assertion has
+# already passed.
+#
+# BEFORE BUILDING THIS: grepped RUN_ME_FIRST.praat and run_analyses.R for any
+# existing version/environment/commit capture. There was none -- no
+# `praatVersion`, no `sessionInfo`, no git call, in either file.
+# ============================================================================
+
+emlEnvPinnedVersion$ = "6.6.30"
+emlEnvPinnedVersionNum = 6630
+
+if praatVersion <> emlEnvPinnedVersionNum
+    writeInfoLine: "ENVIRONMENT ASSERTION FAILED -- Praat version mismatch."
+    appendInfoLine: "RUN_ME_FIRST.praat is pinned to Praat ", emlEnvPinnedVersion$,
+    ... " (praatVersion = ", emlEnvPinnedVersionNum, ")."
+    appendInfoLine: "This is Praat ", praatVersion$, " (praatVersion = ", praatVersion, ")."
+    appendInfoLine: ""
+    appendInfoLine: "A run without a matching, self-attesting Praat build is not "
+    ... + "the authoritative run (mailbox/to-opus/WORK_ORDER_TWOWAY_KERNEL_2026-08-31.md, "
+    ... + "RULING_PROVENANCE_AND_CANCELLATION). Refusing to continue -- no file "
+    ... + "under audit/ or results/ was touched by this run."
+    exitScript: "Praat version mismatch: pinned " + emlEnvPinnedVersion$
+    ... + ", running " + praatVersion$ + "."
+endif
+
+# ---- provenance below this line: recorded, never asserted -----------------
+
+if windows
+    emlEnvOSClass$ = "Windows"
+elsif macintosh
+    emlEnvOSClass$ = "macOS"
+elsif unix
+    emlEnvOSClass$ = "Unix"
+else
+    emlEnvOSClass$ = "unknown"
+endif
+
+# Kernel/arch string, best effort. `uname` has no portable equivalent on
+# Windows, and Praat's runSystem$ HALTS THE WHOLE SCRIPT on a nonzero exit
+# status -- there is no try/catch to catch it (measured; see
+# validate/v157_environment_capture.R's own demonstration of the same
+# failure mode on the version assertion above). So this is attempted only
+# where `unix` says a POSIX shell and `uname` are a reasonable bet, and
+# skipped outright on Windows rather than risk the authoritative run over a
+# provenance nicety. The "|| echo SENTINEL" on every shell call below is
+# what keeps a missing or failing command from halting the run either way:
+# it makes the shell pipeline itself always exit 0, so runSystem$ never
+# throws -- the failure becomes a recorded string instead of a dead script.
+if unix
+    emlEnvBuildDetail$ = runSystem$ ("uname -srm 2>&1 || echo '(uname unavailable)'")
+    emlEnvBuildDetail$ = replace_regex$ (emlEnvBuildDetail$, "[\r\n]+$", "", 0)
+else
+    emlEnvBuildDetail$ = "(not captured on Windows -- no portable `uname` from Praat scripting)"
+endif
+
+# Repo commit + working-tree cleanliness. defaultDirectory$ is THE SCRIPT'S
+# OWN FOLDER -- measured and already depended on by the "PLAIN RELATIVE
+# PATHS EVERYWHERE ELSE" note above this block -- i.e. walkthrough/kit, so
+# the repo root is two levels up. Same "2>&1 || echo SENTINEL" shell idiom:
+# an absent git, or a kit folder copied out from under its .git, becomes a
+# recorded finding rather than a halted run. A DIRTY tree in an
+# authoritative run is itself a finding and is recorded as one below, never
+# silently ignored.
+emlEnvRepoRoot$ = defaultDirectory$ + "/../.."
+if unix
+    emlEnvGitCommit$ = runSystem$ ("git -C """ + emlEnvRepoRoot$
+    ... + """ rev-parse HEAD 2>&1 || echo GIT_UNAVAILABLE")
+    emlEnvGitCommit$ = replace_regex$ (emlEnvGitCommit$, "[\r\n]+$", "", 0)
+    emlEnvGitStatus$ = runSystem$ ("git -C """ + emlEnvRepoRoot$
+    ... + """ status --porcelain 2>&1 || echo GIT_UNAVAILABLE")
+    emlEnvGitStatus$ = replace_regex$ (emlEnvGitStatus$, "[\r\n]+$", "", 0)
+else
+    emlEnvGitCommit$ = "(not captured on Windows -- see the unix guard above)"
+    emlEnvGitStatus$ = ""
+endif
+
+if emlEnvGitCommit$ = "GIT_UNAVAILABLE" or index (emlEnvGitCommit$, "fatal:") > 0
+    emlEnvGitDirty$ = "unknown (commit not available)"
+elsif emlEnvGitStatus$ = "GIT_UNAVAILABLE"
+    emlEnvGitDirty$ = "unknown (git status unavailable)"
+elsif emlEnvGitStatus$ = ""
+    emlEnvGitDirty$ = "clean"
+else
+    emlEnvGitDirty$ = "DIRTY"
+endif
+
+emlEnvCapturedAt$ = date$ ()
+
 createFolder: "audit"
 createFolder: "results"
 createFolder: "results/praat_reports"
@@ -1659,9 +1767,49 @@ endproc
 
 
 # ============================================================================
-# SECTION 9 -- write the results TSV, print the summary
+# SECTION 9 -- write the results TSV, the environment capture, and the
+# summary
 # ============================================================================
 writeFile: "audit/praat_results.tsv", emlKitTSVBuf$
+
+# ----------------------------------------------------------------------------
+# audit/praat_environment.tsv -- the environment block captured at the very
+# top of this script, in the SAME long shared schema as audit/praat_results.tsv
+# (cell_id / quantity / value / source) so the house convention is one shape
+# everywhere, but in ITS OWN FILE rather than mixed into praat_results.tsv's
+# rows. Mixing it in was considered and rejected: compare.R's staleness check
+# (results/... "STALENESS FIRST") treats any cell_id absent from matrix.tsv as
+# evidence the results file is stale and FAILS THE RUN on it -- an
+# "_environment" pseudo-cell would trip that check on every single run. A
+# fixed cell_id of "_environment" is used here anyway, matching the shape
+# a reader of praat_results.tsv already knows, but this file is never read by
+# compare.R and never joined against matrix.tsv.
+#
+# Free-text fields go through @emlKitSanitizeText (tabs/newlines flattened,
+# ASCII-folded) before landing in a TSV cell -- git status --porcelain is
+# multi-line by construction on a dirty tree, and a raw newline in a TSV
+# value would corrupt every row after it.
+# ----------------------------------------------------------------------------
+@emlKitSanitizeText: emlEnvBuildDetail$
+emlEnvBuildDetailTSV$ = emlKitSanitizeText.result$
+@emlKitSanitizeText: emlEnvGitCommit$
+emlEnvGitCommitTSV$ = emlKitSanitizeText.result$
+@emlKitSanitizeText: emlEnvGitStatus$
+emlEnvGitStatusTSV$ = emlKitSanitizeText.result$
+
+emlEnvTSVBuf$ = "cell_id" + tab$ + "quantity" + tab$ + "value" + tab$ + "source" + newline$
+emlEnvTSVBuf$ = emlEnvTSVBuf$
+... + "_environment" + tab$ + "praat_version" + tab$ + praatVersion$ + tab$ + "praat::praatVersion$" + newline$
+... + "_environment" + tab$ + "praat_version_build" + tab$ + string$ (praatVersion) + tab$ + "praat::praatVersion" + newline$
+... + "_environment" + tab$ + "praat_version_pin" + tab$ + emlEnvPinnedVersion$ + tab$ + "praat::pin" + newline$
+... + "_environment" + tab$ + "praat_version_assertion" + tab$ + "PASS" + tab$ + "praat::assertion" + newline$
+... + "_environment" + tab$ + "os_class" + tab$ + emlEnvOSClass$ + tab$ + "praat::windows|macintosh|unix" + newline$
+... + "_environment" + tab$ + "build_detail" + tab$ + emlEnvBuildDetailTSV$ + tab$ + "praat::runSystem$(uname -srm)" + newline$
+... + "_environment" + tab$ + "repo_commit" + tab$ + emlEnvGitCommitTSV$ + tab$ + "praat::runSystem$(git rev-parse HEAD)" + newline$
+... + "_environment" + tab$ + "repo_dirty" + tab$ + emlEnvGitDirty$ + tab$ + "praat::runSystem$(git status --porcelain)" + newline$
+... + "_environment" + tab$ + "repo_dirty_detail" + tab$ + emlEnvGitStatusTSV$ + tab$ + "praat::runSystem$(git status --porcelain)" + newline$
+... + "_environment" + tab$ + "captured_at" + tab$ + emlEnvCapturedAt$ + tab$ + "praat::date$()" + newline$
+writeFile: "audit/praat_environment.tsv", emlEnvTSVBuf$
 
 clearinfo
 writeInfoLine: "EML Stats & Graphs -- matrix.tsv walkthrough (Praat side)"
@@ -1673,6 +1821,10 @@ appendInfoLine: "  -- refused:     ", emlKitNRefused
 appendInfoLine: "Rows written:     ", emlKitRowCount, " (audit/praat_results.tsv)"
 appendInfoLine: "Reports written:  ", emlKitNCells, " (results/praat_reports/*.txt)"
 appendInfoLine: "Elapsed:          ", fixed$ (emlKitElapsed, 1), " s"
+appendInfoLine: ""
+appendInfoLine: "Environment:      Praat ", praatVersion$, " (pin ", emlEnvPinnedVersion$,
+... " -- ASSERTED, PASS), ", emlEnvOSClass$, ", commit ", emlEnvGitCommitTSV$,
+... " (", emlEnvGitDirty$, ")  -- audit/praat_environment.tsv"
 appendInfoLine: ""
 if emlKitNMismatch = 0
     appendInfoLine: "All ", emlKitNCells, " cells matched matrix.tsv's own "

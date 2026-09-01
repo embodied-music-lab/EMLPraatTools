@@ -1,7 +1,12 @@
 # ==========================================================================
 # REGISTRY — EML Stats & Graphs public procedure surface
-# Compiled: 2026-09-01  |  44 rows
+# Compiled: 2026-09-01  |  43 rows
 # Ruling: mailbox/to-opus/RULING_PUBLIC_SURFACE_2026-09-01.md
+# Correction (2026-09-01, Fable): emlRunReliabilityAnalysis's row removed --
+# "Table S2 documents working public surface; an unconditional-error stub is
+# not surface." It matches the emlRun* name pattern, so removing it moved it
+# onto validate/v155_public_registry.R's erosion-check exclusion list rather
+# than off the boundary silently -- see that file's RUN_EXCLUSIONS.
 #
 # A procedure is public if and only if it has a row in this file. Membership
 # is by INTENT, not reachability — Praat's `include` makes all procedures
@@ -26,12 +31,18 @@
 #                A row can carry more than one source; this is the audit
 #                trail for why the boundary sits where it does, not a
 #                ranking. See the compiling agent's report for the full
-#                trace, including two rows admitted by source 1 alone whose
-#                wiring toward source 2/3 exists on the page but cannot
-#                fire (emlRunReliabilityAnalysis is an unimplemented stub;
-#                emlRunLMMAnalysis's menu entry and wizard page are
+#                trace, including one row admitted by source 1 alone whose
+#                wiring toward source 2/3 exists on the page but cannot fire
+#                (emlRunLMMAnalysis's menu entry and wizard page are
 #                withdrawn) — kept in by the ruling's name-pattern test for
 #                source 1, which is explicitly NOT a reachability test.
+#                emlRunReliabilityAnalysis, the other source-1-alone case, is
+#                NOT kept in: it is an unimplemented stub (v1.2 item 7) with
+#                no real call site anywhere, so it never reaches Table S2 as
+#                documented public surface that cannot succeed (Fable's
+#                correction above). It is instead named on the erosion
+#                check's exclusion list so removing it here does not read as
+#                erosion of the emlRun* boundary.
 #
 # THIS FILE IS HAND-COMPILED, NOT YET GENERATED. The ruling's mechanism item
 # 3 (docs, the barrel and Table S2 generated FROM this file, with a text
@@ -62,7 +73,6 @@ emlRunDescriptiveAnalysis	stats/eml-analysis.praat	procedure emlRunDescriptiveAn
 emlRunRegressionAnalysis	stats/eml-analysis.praat	procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$	OLS simple linear regression of one dependent column on one predictor.	1,3
 emlRunGroupedRegression	stats/eml-analysis.praat	procedure emlRunGroupedRegression: .tableId, .predCol$, .respCol$, .groupCol$	Per-group OLS regression fits reported beside the overall fit, one line per group. No recorder hook exists for this call — see report.	1
 emlRunNormalityAnalysis	stats/eml-analysis.praat	procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$	Normality test for one numeric column — Shapiro-Wilk and/or skewness/kurtosis — with a plain-language recommendation.	1,3
-emlRunReliabilityAnalysis	stats/eml-analysis.praat	procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measure$, .scale$	Inter-rater reliability orchestrator. UNIMPLEMENTED STUB (v1.2 item 7): unconditionally sets .error$ and computes nothing; has no call site anywhere in the plugin, so its own recorder hook can only ever emit a refusal, never the call. See report.	1
 emlRunRepeatedMeasuresAnalysis	stats/eml-analysis.praat	procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$	Parametric repeated-measures ANOVA (wide format) with Greenhouse-Geisser correction and an optional post-hoc. .subjectCol$ is reserved and currently unread.	1,3
 emlRunFriedmanAnalysis	stats/eml-analysis.praat	procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$	Friedman test — nonparametric repeated measures, wide format — with an optional post-hoc.	1,3
 emlRunLMMAnalysis	stats/eml-lmm.praat	procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .doR2, .doCI	Linear mixed-effects model fit (lme4-style formula), REML/ML, pseudo-R² and Wald confidence intervals. Its menu entry and the wizard's mixed-model page are both currently withdrawn (untested, no oracle of any kind) — public by the emlRun* name pattern, not by any door today. See report.	1

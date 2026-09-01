@@ -4382,9 +4382,28 @@ procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .d
     @emlCSVInit
     ; RESULT STORE CLEAR ON ENTRY (API settlement item 4):
     ; This orchestrator does not declare, so it never populates the result
-    ; collectors. If a previous analysis populated them, @emlCSVInit alone
-    ; would leave stale data in the collectors. Calling @emlResultClearAll
-    ; ensures the LMM export is either empty or reports absence, never stale.
+    ; collectors, and @emlCSVInit above -- which is what makes the export
+    ; either empty or reports-absence, never stale; see the "Measured 14 Aug
+    ; 2026" paragraph above -- does not touch them either: it zeroes
+    ; emlResult_declared and the legacy emlCSV_* buffer only. Left alone,
+    ; emlTidy_*/emlGlance_*/emlAugment_* would carry the PREVIOUS analysis's
+    ; rows and columns for as long as this Praat process runs, unreachable
+    ; through @emlExportResultFiles today (it never reads them while
+    ; emlResult_declared = 0) but live to any caller that reads them
+    ; directly, and to any future declaring code this procedure might grow.
+    ; @emlResultClearAll zeroes exactly those three collectors, so an LMM run
+    ; never sits on top of a prior analysis's rows even though nothing
+    ; observable through the exporter currently depends on it.
+    ;
+    ; VERIFIED end-to-end 1 Sep 2026 (validate/v153_result_state.R), driving
+    ; @emlRunAnovaAnalysis then this procedure for real: with this line
+    ; present, emlTidy_nRows/emlGlance_nCols/emlAugment_nRows are 0/0/0 after
+    ; the LMM call; with it removed, they hold the ANOVA's 2/14/45. Export
+    ; state (declared=0, nWritten=0, reason="empty", no file contains
+    ; "One-way ANOVA") was IDENTICAL in both cases -- @emlCSVInit alone
+    ; already guarantees it, exactly as it has since the 14 Aug 2026 fix
+    ; above. So this call is real defensive hardening of the collector
+    ; globals, not a second, independent cause of export honesty.
     @emlResultClearAll
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists.

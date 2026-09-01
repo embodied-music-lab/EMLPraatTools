@@ -302,3 +302,92 @@
 10	500	8	0	0.000	-15	-1
 10	750	8	2	0.250	-15	-1
 10	1000	6	6	1.000	-11	-1
+
+# ============================================================================
+# APPENDED SECTION, 2026-09-01 (Opus, registry-corrections task, per Fable:
+# "my 120-cell R-vs-scipy bit-identity sweep is itself valuable -- it is a
+# measured piece of R's verified domain map and should be committed as such,
+# not only as a rebuttal"). This is an INDEPENDENT re-measurement, run fresh
+# for this entry -- the counts below are not copied from the retraction
+# narrative above; they were produced by the exact commands quoted, run here,
+# today, against real R 4.3.3 and scipy 1.17.1.
+#
+# GENERATING COMMANDS. Two steps: scipy fixes q (its own inverse, isf --
+# never R's qtukey, for the reason the Part 2 header above gives), then a
+# separate R process evaluates ptukey at that exact q and diffs it against
+# scipy's own sf(q) at the same q. Both commands are runnable verbatim.
+#
+#   python3 - <<'PY' > q_grid.tsv
+#   from scipy.stats import studentized_range
+#   alphas = [0.10, 0.05, 0.01]
+#   ks = list(range(2, 11))
+#   # This file's own Part 1 df list (above), restricted to df=5..500 --
+#   # the exact bound of the claim under test.
+#   dfs = [5,6,7,8,9,10,12,15,20,25,30,40,45,60,75,100,150,200,300,500]
+#   print("alpha\tk\tdf\tq\tscipy_sf")
+#   for alpha in alphas:
+#       for k in ks:
+#           for df in dfs:
+#               q = float(studentized_range.isf(alpha, k, df))
+#               sf = float(studentized_range.sf(q, k, df))
+#               print(f"{alpha}\t{k}\t{df}\t{q:.17g}\t{sf:.17g}")
+#   PY
+#
+#   Rscript -e '
+#   d <- read.delim("q_grid.tsv", stringsAsFactors = FALSE)
+#   d$r_sf <- mapply(function(q,k,df) ptukey(q, nmeans=k, df=df, lower.tail=FALSE),
+#                     d$q, d$k, d$df)
+#   d$absdiff <- abs(d$scipy_sf - d$r_sf)
+#   d$reldiff <- ifelse(d$scipy_sf == 0, NA, d$absdiff / abs(d$scipy_sf))
+#   pass <- (d$absdiff <= 1e-12) | (d$reldiff <= 1e-9)
+#   cat(sprintf("cells: %d\n", nrow(d)))
+#   cat(sprintf("cells with reldiff exactly 0.0: %d\n", sum(d$reldiff == 0)))
+#   cat(sprintf("cells passing the standard rule: %d (%.1f%%)\n", sum(pass), 100*mean(pass)))
+#   cat(sprintf("max reldiff: %.6g   median reldiff: %.6g\n", max(d$reldiff), median(d$reldiff)))
+#   '
+#
+# METHODOLOGY CHECK, before trusting the numbers below: the same two-command
+# method reproduced the retraction's own worked example EXACTLY --
+# k=3, df=16, q=3.6491389347607144: R gives 0.050000000000310685, scipy
+# gives 0.050000000000000044, matching the values quoted above digit for
+# digit. The method is sound; what follows is a wider sweep with it.
+#
+# MEASURED RESULT, 540 cells (3 alphas x 9 k's x 20 df's, df=5..500):
+#
+#     cells: 540
+#     cells with reldiff exactly 0.0: 0
+#     cells passing the standard rule: 375 (69.4%)
+#     max reldiff: 1.0922e-05   median reldiff: 1.87e-10
+#
+# THIS QUALIFIES THE "EXACTLY ZERO... in every cell" SENTENCE ABOVE. It does
+# not reinstate the retracted claim -- every difference measured here is
+# 1e5 to 1e13 times smaller than the genuine far-tail defect (up to 64%
+# relative, per MEMO_WAVE_TWO_2026-09-01) -- but "bit-identical" is not what
+# an independent run at full double precision, over this file's own df list,
+# actually produces. No cell in this sweep showed a literal 0.0 relative
+# difference; most differences are small enough (1e-10 to 1e-13, i.e.
+# agreement to 10-13 significant figures) to be operationally irrelevant,
+# but 165 of 540 cells (30.6%) miss even the file's own lenient standard
+# rule (abs<=1e-12 OR rel<=1e-9). This concentrates exactly where the
+# Part 1 table above already shows R's accuracy banding by df -- df=5
+# passes 10/27, df=75 passes 9/27, df=100 passes 2/27, df=500 passes 0/27 --
+# so it corroborates, rather than contradicts, this file's own pre-existing
+# per-(k,df) evidence table; the "exactly zero" narrative sentence above did
+# not.
+#
+# WORST 5 CELLS IN THIS SWEEP (all still small in absolute terms):
+#
+#   alpha   k   df   q            scipy_sf   r_sf           reldiff
+#   0.01    10  5    10.239256    0.01       0.010000109    1.0922e-05
+#   0.01    3   5    6.975737     0.01       0.009999944    5.5998e-06
+#   0.01    8   5    9.668689     0.01       0.009999963    3.6570e-06
+#   0.01    7   5    9.320882     0.01       0.009999968    3.1580e-06
+#   0.01    5   5    8.421491     0.01       0.010000023    2.2743e-06
+#
+# NOT VERIFIED HERE: whatever exact df grid produced the original "120
+# cells... exactly zero" claim -- it is not stated precisely enough
+# (k=2..10, df=5..500 does not factor into 120 against any obvious df
+# count) to reproduce cell-for-cell, so this section reproduces the
+# QUESTION with an explicit, disclosed grid of its own rather than
+# guessing at the original's exact df list.
+# ============================================================================

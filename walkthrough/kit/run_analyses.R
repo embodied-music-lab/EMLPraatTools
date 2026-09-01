@@ -158,6 +158,134 @@ suppressPackageStartupMessages({
 options(contrasts = c("contr.treatment", "contr.poly"))
 
 # =============================================================================
+# Environment capture -- Fable's requirement (mailbox/to-opus/
+# WORK_ORDER_TWOWAY_KERNEL_2026-08-31.md, "What the authoritative run must
+# capture", item 2): the run emits R's version and full sessionInfo()
+# -- every loaded package's version included -- plus OS, architecture and
+# the repo commit into the results: "a run without them is not the
+# authoritative run." Unlike the Praat side (RUN_ME_FIRST.praat), nothing
+# here is ASSERTED: RULING_PROVENANCE_AND_CANCELLATION ties the
+# fail-on-mismatch requirement to the Praat BUILD specifically, because
+# 6.6.30 is a pinned floor with a version number to check
+# (emlMinPraatVersion, plugin_EML_StatsGraphs/setup.praat) that the
+# validation evidence was produced against. This kit names no equivalent R
+# release to pin against, so R's version is recorded provenance here, same
+# as OS/arch/commit -- not a gate a run can fail.
+#
+# BEFORE BUILDING THIS: grepped run_analyses.R for any existing version /
+# sessionInfo / git capture (`grep -n -i "version|sessionInfo|environment|
+# commit|git rev|Sys\\."`). There was none.
+#
+# Placed AFTER the library() block above so sessionInfo() reflects every
+# package this run actually loaded, not just what's installed.
+# =============================================================================
+emlEnvRVersionString <- R.version.string
+emlEnvPlatform       <- R.version$platform
+emlEnvOSSysname      <- unname(Sys.info()[["sysname"]])
+emlEnvOSRelease      <- unname(Sys.info()[["release"]])
+emlEnvOSVersionText  <- unname(Sys.info()[["version"]])
+emlEnvMachine        <- unname(Sys.info()[["machine"]])
+emlEnvSessionInfoObj <- utils::sessionInfo()
+emlEnvSessionInfoTxt <- paste(capture.output(print(emlEnvSessionInfoObj)), collapse = "\n")
+
+# Every ATTACHED package's version, one row each -- the part of sessionInfo()
+# the work order calls out by name ("full sessionInfo (package versions)").
+# otherPkgs covers what this file library()'d; loadedOnly covers a
+# base/recommended package sessionInfo() reports as loaded-but-not-attached
+# (e.g. base itself). Both are real facts about what ran; neither is
+# guessed at from DESCRIPTION files on disk.
+emlEnvPkgVersions <- c(
+    vapply(emlEnvSessionInfoObj$otherPkgs,
+           function(p) p$Version, character(1)),
+    vapply(emlEnvSessionInfoObj$loadedOnly,
+           function(p) p$Version, character(1))
+)
+
+# --- repo commit + working-tree cleanliness ---------------------------------
+# Same "ask git, and if it is not there or errors, RECORD that rather than
+# let the run stop" contract as RUN_ME_FIRST.praat's matching block.
+# system2() only WARNS (never errors) on a nonzero exit and still returns the
+# captured text, so a git failure is read from the "status" attribute rather
+# than caught as a condition; Sys.which() is checked first so a missing git
+# binary never reaches system2() at all (that path DOES throw a hard R error
+# -- "error in running command" -- confirmed empirically, not inferred).
+emlEnvGitRoot <- dirname(dirname(kitDir))  # walkthrough/kit -> repo root; same
+                                            # relationship compare.R uses to
+                                            # find validate/lre.R
+if (nzchar(Sys.which("git"))) {
+    .gitRun <- function(...) {
+        out <- suppressWarnings(system2("git", c("-C", emlEnvGitRoot, ...),
+                                        stdout = TRUE, stderr = TRUE))
+        st <- attr(out, "status")
+        list(ok = is.null(st) || st == 0, text = paste(out, collapse = "\n"))
+    }
+    .gitCommit <- .gitRun("rev-parse", "HEAD")
+    .gitStatus <- .gitRun("status", "--porcelain")
+    emlEnvGitCommit <- if (.gitCommit$ok) .gitCommit$text else paste0("GIT_ERROR: ", .gitCommit$text)
+    emlEnvGitDirty  <- if (!.gitCommit$ok) {
+        "unknown (commit not available)"
+    } else if (!.gitStatus$ok) {
+        "unknown (git status unavailable)"
+    } else if (!nzchar(.gitStatus$text)) {
+        "clean"
+    } else {
+        "DIRTY"
+    }
+    emlEnvGitStatusText <- if (.gitStatus$ok) .gitStatus$text else paste0("GIT_ERROR: ", .gitStatus$text)
+} else {
+    emlEnvGitCommit     <- "GIT_UNAVAILABLE (git not found on PATH)"
+    emlEnvGitDirty      <- "unknown (git not found on PATH)"
+    emlEnvGitStatusText <- ""
+}
+
+emlEnvCapturedAt <- format(Sys.time(), "%a %b %d %H:%M:%S %Y", tz = "")
+
+# --- write audit/r_environment.tsv ------------------------------------------
+# SAME long shared schema as audit/r_results.tsv (cell_id / quantity / value
+# / source) -- the house convention -- but in ITS OWN FILE, not mixed into
+# r_results.tsv's rows: compare.R's staleness check (STALENESS FIRST, near
+# its bottom) treats any cell_id absent from matrix.tsv as evidence a
+# results file is stale and FAILS THE RUN on it, so an "_environment"
+# pseudo-cell mixed into r_results.tsv would trip that on every run. A fixed
+# cell_id of "_environment" is used anyway, matching the shape a reader of
+# r_results.tsv already knows; this file is simply never read by compare.R.
+# Multi-line/free text (sessionInfo(), git status --porcelain on a dirty
+# tree) is flattened to " | "-joined single lines so no value can break a
+# TSV row.
+.emlFlatten <- function(x) gsub("[\t\r\n]+", " | ", x, perl = TRUE)
+emlEnvRows <- list(
+    list("r_version", emlEnvRVersionString, "base::R.version.string"),
+    list("r_platform", emlEnvPlatform, "base::R.version$platform"),
+    list("os_sysname", emlEnvOSSysname, "base::Sys.info()"),
+    list("os_release", emlEnvOSRelease, "base::Sys.info()"),
+    list("os_version", .emlFlatten(emlEnvOSVersionText), "base::Sys.info()"),
+    list("machine", emlEnvMachine, "base::Sys.info()"),
+    list("repo_commit", .emlFlatten(emlEnvGitCommit), "r::system2(git rev-parse HEAD)"),
+    list("repo_dirty", emlEnvGitDirty, "r::system2(git status --porcelain)"),
+    list("repo_dirty_detail", .emlFlatten(emlEnvGitStatusText), "r::system2(git status --porcelain)"),
+    list("captured_at", emlEnvCapturedAt, "base::Sys.time()")
+)
+for (.pkg in names(emlEnvPkgVersions)) {
+    emlEnvRows[[length(emlEnvRows) + 1]] <- list(
+        paste0("package_version:", .pkg), unname(emlEnvPkgVersions[[.pkg]]), "utils::sessionInfo")
+}
+emlEnvDF <- data.frame(
+    cell_id  = "_environment",
+    quantity = vapply(emlEnvRows, `[[`, "", 1),
+    value    = vapply(emlEnvRows, `[[`, "", 2),
+    source   = vapply(emlEnvRows, `[[`, "", 3),
+    stringsAsFactors = FALSE
+)
+write.table(emlEnvDF, file.path(outDir, "r_environment.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
+# The full sessionInfo() text, verbatim and unflattened, alongside the
+# structured rows above -- same "structured TSV + full human-readable
+# companion" shape results/*_reports/<cell_id>.txt already uses for cells.
+writeLines(emlEnvSessionInfoTxt, file.path(outDir, "r_sessionInfo.txt"))
+cat(sprintf("run_analyses.R: environment captured -- %s, %s %s (%s), repo %s -- audit/r_environment.tsv\n",
+            emlEnvRVersionString, emlEnvOSSysname, emlEnvOSRelease, emlEnvMachine,
+            substr(emlEnvGitCommit, 1, 12)))
+
+# =============================================================================
 # Matrix reading
 # =============================================================================
 read_matrix <- function(path) {
