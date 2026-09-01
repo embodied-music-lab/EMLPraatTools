@@ -89,14 +89,20 @@ findCol <- function(names_, patterns, exclude = character(0)) {
 }
 colVowel <- findCol(names(d), c("^vowel$", "vowel"))
 colType  <- findCol(names(d), c("^type$", "^sex$", "type", "sex"))
-colF1    <- findCol(names(d), c("^f1$", "^f1 ", "f1"), exclude = c("f10", "f11", "f12", "f13"))
+# THE DEPENDENT VARIABLE IS F0, NOT F1 (Fable, RULING_CONSOLIDATED_KERNELS,
+# 1 Sep). This script originally looked for an F1-like column, which is wrong:
+# the manual's worked example analyses fundamental frequency by Vowel x Type.
+# F1 gives a vowel F near 900 and would never have matched the published
+# 7.625 / 13.346, so the check would have reported MISMATCH against correct
+# arithmetic and sent us hunting the wrong defect.
+colF0    <- findCol(names(d), c("^f0$", "^f0 ", "f0"), exclude = c("f01", "f02"))
 
-missing_ <- c(Vowel = colVowel, Type = colType, F1 = colF1)
+missing_ <- c(Vowel = colVowel, Type = colType, F0 = colF0)
 if (any(is.na(missing_))) {
     cat("REFUSING: could not unambiguously identify the columns this check needs.\n")
     cat("  Vowel factor:", ifelse(is.na(colVowel), "NOT FOUND", colVowel), "\n")
     cat("  Type/Sex factor:", ifelse(is.na(colType), "NOT FOUND", colType), "\n")
-    cat("  F1 data column:", ifelse(is.na(colF1), "NOT FOUND", colF1), "\n")
+    cat("  F0 data column:", ifelse(is.na(colF0), "NOT FOUND", colF0), "\n")
     cat("  Actual columns in the export:", paste(names(d), collapse = ", "), "\n")
     cat("  Fix the findCol() patterns above to match, then re-run. Not guessing\n")
     cat("  past this -- an unverified column pairing would silently produce the\n")
@@ -104,17 +110,17 @@ if (any(is.na(missing_))) {
     quit(save = "no", status = 0)
 }
 cat("Using Vowel column '", colVowel, "', Type/Sex column '", colType,
-    "', data column '", colF1, "'\n\n", sep = "")
+    "', data column '", colF0, "'\n\n", sep = "")
 
-d[[colF1]] <- as.numeric(d[[colF1]])
-keep <- !is.na(d[[colF1]]) & !is.na(d[[colVowel]]) & d[[colVowel]] != "" &
+d[[colF0]] <- as.numeric(d[[colF0]])
+keep <- !is.na(d[[colF0]]) & !is.na(d[[colVowel]]) & d[[colVowel]] != "" &
         !is.na(d[[colType]]) & d[[colType]] != ""
 if (any(!keep)) {
-    cat("Dropping", sum(!keep), "row(s) with a missing Vowel/Type/", colF1, "value.\n\n")
+    cat("Dropping", sum(!keep), "row(s) with a missing Vowel/Type/", colF0, "value.\n\n")
 }
 d <- d[keep, , drop = FALSE]
 
-both <- twoway_both_tables(d, colF1, colVowel, colType)
+both <- twoway_both_tables(d, colF0, colVowel, colType)
 kh <- both$kh; w <- both$wrong; c_ <- both$correct
 
 cat("Design: ", kh$r, " x ", kh$s, " = ", kh$rs, " cells, N = ", nrow(d), "\n", sep = "")
