@@ -7,6 +7,51 @@
 #
 # License: GPL-3.0-or-later
 #
+# ---------------------------------------------------------------------------
+# ORIGIN NOTICE -- required by RULING_PORT_ATTRIBUTION_2026-09-01.
+#
+# 1. SOURCE. Translated from R's src/nmath/ptukey.c, obtained 1 September 2026
+#    from https://raw.githubusercontent.com/wch/r-source/trunk/src/nmath/ptukey.c
+#    (r-source trunk; the same file ships in R 4.3.3, the version installed in
+#    the verification container and used as the comparison oracle throughout).
+#
+# 2. ORIGINAL COPYRIGHT AND LICENSE, verbatim from that file:
+#
+#      Mathlib : A C Library of Special Functions
+#      Copyright (C) 1998       Ross Ihaka
+#      Copyright (C) 2000--2007 The R Core Team
+#
+#      This program is free software; you can redistribute it and/or modify
+#      it under the terms of the GNU General Public License as published by
+#      the Free Software Foundation; either version 2 of the License, or
+#      (at your option) any later version.
+#
+#      This program is distributed in the hope that it will be useful,
+#      but WITHOUT ANY WARRANTY; without even the implied warranty of
+#      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#      GNU General Public License for more details.
+#
+#      You should have received a copy of the GNU General Public License
+#      along with this program; if not, a copy is available at
+#      https://www.R-project.org/Licenses/
+#
+# 3. THIS TRANSLATION is distributed as part of the EML Stats & Graphs plugin
+#    under the GNU General Public License version 3 or later. GPL-2-or-later
+#    permits redistribution under GPL-3; the origin notice above is preserved
+#    as that license requires.
+#
+# 4. WHAT CHANGED IN TRANSLATION. Language: C to Praat script. Every numeric
+#    constant is copied unchanged -- the 12- and 16-point Gauss-Legendre nodes
+#    and weights, the panel widths ulen1..ulen4 and their df breakpoints, the
+#    underflow cutoffs C1/C2/C3/eps1/eps2, and the upper integration limit
+#    bb = 8. The panel structure of the outer integral follows R's exactly.
+#    The one algorithmic departure is documented at length below: R computes
+#    the lower-tail sum and returns 1 - ans, which floors its far-tail
+#    accuracy; this translation computes the complement of every term before
+#    summing, so no subtraction from a number near 1 occurs. That change is
+#    the reason the port exists and it is the only structural difference.
+# ---------------------------------------------------------------------------
+#
 # WHY THIS FILE EXISTS. Praat's built-in `Get TukeyQ:` computes the upper
 # tail of the studentized range as `1 - CDF`. The CDF near 1 is accurate to
 # its own last bits; subtracting it from 1 destroys every significant digit
