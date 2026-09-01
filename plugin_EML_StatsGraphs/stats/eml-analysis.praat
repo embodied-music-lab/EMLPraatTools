@@ -582,14 +582,22 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     endif
 
     # Ensure pairwise Cohen's d matrix always exists
+    #
+    # ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_2026-09-01.md
+    # §5). This used to call @eml_getGroupData again for every (i, j)
+    # pair -- group j re-extracted for every pair it appeared in -- even
+    # though @emlOneWayAnova, just above, already extracted every group's
+    # vector once to run the F-test. It now reads
+    # emlOneWayAnova.groupData'g'#, the cache that call left behind, which
+    # is populated whether or not Tukey ran (@emlOneWayAnova's own single
+    # extraction loop runs unconditionally). The reporter reads; it does
+    # not re-extract.
     if .doTukey = 0
         emlOneWayAnova.dMatrix## = zero## (.nGroups, .nGroups)
         for .i from 1 to .nGroups - 1
-            @eml_getGroupData: .tableId, .dataCol$, .groupCol$, emlOneWayAnova.groupLabel$[.i]
-            .vi# = eml_getGroupData.data#
+            .vi# = emlOneWayAnova.groupData'.i'#
             for .j from .i + 1 to .nGroups
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$, emlOneWayAnova.groupLabel$[.j]
-                @emlCohenD: .vi#, eml_getGroupData.data#
+                @emlCohenD: .vi#, emlOneWayAnova.groupData'.j'#
                 if emlCohenD.error$ = ""
                     emlOneWayAnova.dMatrix## [.i, .j] = emlCohenD.d
                     emlOneWayAnova.dMatrix## [.j, .i] = -emlCohenD.d
@@ -1023,14 +1031,17 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
             .needRMatrix = 0
         endif
     endif
+    ; ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_2026-09-01.md
+    ; §5). This used to re-extract every pair from the table even though
+    ; @emlKruskalWallis, just above, already extracted every group once.
+    ; Reads emlKruskalWallis.groupData'g'#, the cache that call left
+    ; behind, instead.
     if .needRMatrix
         emlKruskalWallis.rMatrix## = zero## (.nGroups, .nGroups)
         for .i from 1 to .nGroups - 1
-            @eml_getGroupData: .tableId, .dataCol$, .groupCol$, emlKruskalWallis.groupName$[.i]
-            .vi# = eml_getGroupData.data#
+            .vi# = emlKruskalWallis.groupData'.i'#
             for .j from .i + 1 to .nGroups
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$, emlKruskalWallis.groupName$[.j]
-                @emlRankBiserialR: .vi#, eml_getGroupData.data#, 2
+                @emlRankBiserialR: .vi#, emlKruskalWallis.groupData'.j'#, 2
                 if emlRankBiserialR.error$ = ""
                     emlKruskalWallis.rMatrix## [.i, .j] = emlRankBiserialR.r
                     emlKruskalWallis.rMatrix## [.j, .i] = -emlRankBiserialR.r
@@ -1408,11 +1419,14 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
             ; C(k,2) pairs from the SAME k groups, so this is one pass over
             ; the groups, not per pair -- each row is counted once no matter
             ; how many pairs it appears in.
+            ; ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_2026-09
+            ; -01.md §5): @emlPairwiseT already extracted every group once
+            ; to run its own C(k,2) tests, and .groupN[.gi] is its own
+            ; cached per-group size, in the same group order as
+            ; .groupName$[.gi] above -- read it rather than re-extracting.
             .stN = 0
             for .gi from 1 to .recGroups
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
-                ... emlPublishInLabel$ [.gi]
-                .stN = .stN + eml_getGroupData.n
+                .stN = .stN + emlPairwiseT.groupN[.gi]
             endfor
         elsif .test$ = "wilcoxon"
             .stTest$ = "pairwise wilcoxon"
@@ -1429,11 +1443,11 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
             .stDiffMat## = emlPublishAbsentMatrix.m##
             ; .stN -- same definition and same reason as the t arm above:
             ; one pass over the k groups this run used, not per pair.
+            ; ONE EXTRACTION PER CASE, same reasoning as the t/Welch arm
+            ; above: read @emlPairwiseWilcoxon's own cached .groupN[.gi].
             .stN = 0
             for .gi from 1 to .recGroups
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
-                ... emlPublishInLabel$ [.gi]
-                .stN = .stN + eml_getGroupData.n
+                .stN = .stN + emlPairwiseWilcoxon.groupN[.gi]
             endfor
         elsif .test$ = "scheffe"
             .stTest$ = "scheffe"
@@ -2367,20 +2381,22 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 ; the block above the loop for why the call is made on
                 ; every row and the CORRECTION gates the result.
                 ;
-                ; Each producing call's .error$ is read BEFORE any other
-                ; field of that same call, per the error-read rule v134
-                ; lints: a pair whose column could not be re-read, or
-                ; whose combined sample is entirely tied, leaves its
-                ; estimate and its interval undefined rather than
-                ; carrying a zero that reads as "no shift".
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
-                    ... emlPairwiseWilcoxon.groupName$ [.iGroup]
-                .hlErrI$ = eml_getGroupData.error$
-                .hlI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
-                    ... emlPairwiseWilcoxon.groupName$ [.jGroup]
-                .hlErrJ$ = eml_getGroupData.error$
-                .hlJ# = eml_getGroupData.data#
+                ; ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_
+                ; 2026-09-01.md §5). THE VECTORS USED TO BE RE-READ FROM
+                ; THE TABLE here, through @eml_getGroupData, on every one
+                ; of the C(k,2) pairs -- even though @emlPairwiseWilcoxon,
+                ; above, already extracted every group once to run its own
+                ; tests. They now read emlPairwiseWilcoxon.groupData'g'#,
+                ; the cache that call left behind, instead. The .hlErrI$ /
+                ; .hlErrJ$ gate below stays: a cache read cannot itself
+                ; fail (both groups were already extracted successfully to
+                ; reach this point), but the shape is kept so a future
+                ; change to what feeds .hlI# / .hlJ# does not silently
+                ; drop the error-read discipline v134 lints.
+                .hlErrI$ = ""
+                .hlI# = emlPairwiseWilcoxon.groupData'.iGroup'#
+                .hlErrJ$ = ""
+                .hlJ# = emlPairwiseWilcoxon.groupData'.jGroup'#
 
                 .hlEstFlat# [.pair] = undefined
                 .hlLowFlat# [.pair] = undefined

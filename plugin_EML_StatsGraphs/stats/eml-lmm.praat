@@ -4380,6 +4380,12 @@ procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .d
     ; Praat script can -- @emlRunLMMAnalysis and @emlExportResultFiles are
     ; both callable directly -- and that is the path this closes.
     @emlCSVInit
+    ; RESULT STORE CLEAR ON ENTRY (API settlement item 4):
+    ; This orchestrator does not declare, so it never populates the result
+    ; collectors. If a previous analysis populated them, @emlCSVInit alone
+    ; would leave stale data in the collectors. Calling @emlResultClearAll
+    ; ensures the LMM export is either empty or reports absence, never stale.
+    @emlResultClearAll
     .error$ = ""
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""

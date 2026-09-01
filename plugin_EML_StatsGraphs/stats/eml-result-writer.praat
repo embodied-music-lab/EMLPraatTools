@@ -502,7 +502,33 @@ endproc
 #   .skipped$ — newline-separated "verb: reason", so an absent file is
 #               explained rather than looking like a failure
 # ----------------------------------------------------------------------------
-# ----------------------------------------------------------------------------
+
+# ============================================================================
+# @emlResultClearAll
+# Clears all three collectors: tidy, glance, augment. Call at the start of
+# an analysis to ensure a clean slate. This is distinct from @emlCSVInit,
+# which clears the declaration flag and legacy buffer only.
+#
+# Does NOT clear the extra-frame slots (post-hoc, effect sizes). Those are
+# managed by @emlResultClearExtras when needed.
+# ============================================================================
+procedure emlResultClearAll
+    emlTidy_nRows = 0
+    emlTidy_nCols = 0
+    emlGlance_nCols = 0
+    emlAugment_nRows = 0
+    emlAugment_nCols = 0
+    emlAugment_nCarried = 0
+
+    for .c from 1 to emlResult_MAXCOL
+        emlTidy_col$ [.c] = ""
+        emlGlance_col$ [.c] = ""
+        emlGlance_val$ [.c] = ""
+        emlAugment_col$ [.c] = ""
+    endfor
+endproc
+
+# ============================================================================
 # @emlTidyClear
 # Empties the tidy collector without touching glance or augment.
 #

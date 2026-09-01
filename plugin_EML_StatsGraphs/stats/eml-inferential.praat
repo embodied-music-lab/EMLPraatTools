@@ -4329,6 +4329,16 @@ endproc
 #                      undefined; such cells hold undefined, not 1
 #   .warning$        - non-fatal disclosure, or "" if none
 #   .error$          - "" on success, diagnostic message on failure
+#   .groupData'g'#   - ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS
+#                      _2026-09-01.md §5): group g's data vector, cached at
+#                      the single @eml_getGroupData call this procedure
+#                      makes for that group. A caller that needs a group's
+#                      raw values after this procedure returns (e.g. a
+#                      reporter printing per-group descriptives) reads
+#                      emlTukeyHSD.groupData'g'# rather than re-extracting
+#                      from the table -- but only in the SAME turn: like
+#                      every other procedure-local output in this codebase,
+#                      it survives only until @emlTukeyHSD runs again.
 #
 # Access pattern:
 #   p-value for group 2 vs group 4: emlTukeyHSD.pMatrix##[2, 4]
@@ -4408,36 +4418,146 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
         endfor
     endif
 
-    # --- Compute group means, sizes, and pooled MSE ---
+    # --- Extract every group once, then hand the pairwise math to the one
+    # shared kernel ---
+    #
+    # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
+    # 09-01.md §5). Every group's vector is fetched here exactly once and
+    # cached under this procedure's own namespace as .groupData'.s'#
+    # (Praat's interpolated-name array idiom, already used this way
+    # elsewhere in this tree -- see eml-anova-kernel.praat's .gVals'.g'#).
+    # The old code called @eml_getGroupData again inside the pairwise loop,
+    # twice per (i, j) pair, which is the defect that ruling names as the
+    # reason an 18,009-row NIST case did not return in twelve minutes.
+    #
+    # The actual pooled-MSE / SE / q / p / mean-difference / Cohen's-d
+    # arithmetic now lives in exactly one place, @eml_tukeyPairwiseFromGroups
+    # below, which takes already-extracted data and never touches the
+    # table. This procedure builds that one flat vector and calls it.
+    # @emlOneWayAnova's own Tukey branch calls the SAME procedure, directly
+    # from vectors IT already extracted for the F-test, instead of calling
+    # @emlTukeyHSD (which would re-extract every group a second time) --
+    # so a nested ANOVA + Tukey run performs exactly one extraction pass
+    # per group, not two, and both callers execute identical code, so
+    # their numbers cannot drift apart.
+    #
+    # Safe to reuse: @eml_getGroupData is a pure read of an unmutated
+    # Table, so the cached vector is bit-identical to whatever a fresh call
+    # would return. Safe across CASES: a later call to this same procedure
+    # with fewer groups only reads indices 1..nGroups of THAT call, so a
+    # stale .groupData'.s'# left over from a larger previous case is never
+    # read -- the same bounded-index convention .groupN[.s] already relies
+    # on in this procedure.
 
     if .error$ = ""
         .totalN = 0
-        .ssWithin = 0
-
         for .s from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
             ... .groupName$[.s]
             .groupN[.s] = eml_getGroupData.n
-            .groupMean[.s] = mean (eml_getGroupData.data#)
+            .groupData'.s'# = eml_getGroupData.data#
             .totalN = .totalN + .groupN[.s]
-
-            # SS within for this group (vectorized)
-            .centered# = eml_getGroupData.data# - .groupMean[.s]
-            .ssWithin = .ssWithin + sum (.centered# * .centered#)
         endfor
 
-        .dfWithin = .totalN - .nGroups
-        if .dfWithin < 1
-            .error$ = string$ (.totalN) + " observations across "
-            ... + string$ (.nGroups) + " groups leave no within-groups "
-            ... + "degrees of freedom. There must be more observations "
-            ... + "than groups."
-        else
-            .msWithin = .ssWithin / .dfWithin
+        .allData# = zero# (.totalN)
+        .groupNVec# = zero# (.nGroups)
+        .offset = 0
+        for .s from 1 to .nGroups
+            .groupNVec#[.s] = .groupN[.s]
+            for .k from 1 to .groupN[.s]
+                .allData#[.offset + .k] = .groupData'.s'#[.k]
+            endfor
+            .offset = .offset + .groupN[.s]
+        endfor
+
+        @eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupNVec#, .alpha
+        .error$ = eml_tukeyPairwiseFromGroups.error$
+        .warning$ = eml_tukeyPairwiseFromGroups.warning$
+        .nUndefined = eml_tukeyPairwiseFromGroups.nUndefined
+        .nPairs = eml_tukeyPairwiseFromGroups.nPairs
+        .msWithin = eml_tukeyPairwiseFromGroups.msWithin
+        .dfWithin = eml_tukeyPairwiseFromGroups.dfWithin
+        .qCritical = eml_tukeyPairwiseFromGroups.qCritical
+        if .error$ = ""
+            .pMatrix## = eml_tukeyPairwiseFromGroups.pMatrix##
+            .qMatrix## = eml_tukeyPairwiseFromGroups.qMatrix##
+            .meanDiff## = eml_tukeyPairwiseFromGroups.meanDiff##
+            .dMatrix## = eml_tukeyPairwiseFromGroups.dMatrix##
         endif
     endif
 
-    # --- Compute pairwise q statistics and p-values ---
+    # --- Restore selection ---
+
+    selectObject: .tableId
+endproc
+
+
+# ============================================================================
+# @eml_tukeyPairwiseFromGroups
+# ============================================================================
+# THE canonical Tukey HSD pairwise computation -- pooled MSE, pairwise SE,
+# q, p, mean difference and Cohen's d for every pair -- taking group data
+# that has ALREADY been extracted. It never touches a Table.
+#
+# Built for RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5,
+# ONE-EXTRACTION-PER-CASE: this is what lets @emlOneWayAnova run its own
+# Tukey post-hoc from the vectors it already extracted for the F-test,
+# without a second call into @emlTukeyHSD re-extracting the same groups.
+# @emlTukeyHSD (above) extracts once and calls here; @emlOneWayAnova's
+# Tukey branch (below) calls here directly from its own cache. There is
+# exactly one implementation of the pairwise math, so the two callers'
+# numbers cannot drift apart -- and this procedure being unreachable from
+# a Table at all is what makes a repeated call here free.
+#
+# Arguments:
+#   .nGroups   - number of groups (k)
+#   .allData#  - every group's values, concatenated in group order:
+#                group 1's .groupN#[1] values, then group 2's, and so on
+#   .groupN#   - group sizes, length .nGroups, same group order
+#   .alpha     - significance level for the critical q
+#
+# Output (same shape as @emlTukeyHSD's, and copied into it verbatim):
+#   .pMatrix##, .qMatrix##, .meanDiff##, .dMatrix##, .qCritical,
+#   .msWithin, .dfWithin, .nPairs, .nUndefined, .warning$, .error$
+# ============================================================================
+procedure eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupN#, .alpha
+    .error$ = ""
+    .warning$ = ""
+    .nUndefined = 0
+    .nPairs = 0
+    .msWithin = undefined
+    .dfWithin = undefined
+    .qCritical = undefined
+
+    .totalN = 0
+    .ssWithin = 0
+    .offset = 0
+    for .s from 1 to .nGroups
+        .n[.s] = .groupN#[.s]
+        .gData'.s'# = zero# (.n[.s])
+        for .k from 1 to .n[.s]
+            .gData'.s'#[.k] = .allData#[.offset + .k]
+        endfor
+        .offset = .offset + .n[.s]
+
+        .gMean[.s] = mean (.gData'.s'#)
+        .totalN = .totalN + .n[.s]
+
+        # SS within for this group (vectorized) -- same formula and
+        # summation order as @emlTukeyHSD used before this split.
+        .centered# = .gData'.s'# - .gMean[.s]
+        .ssWithin = .ssWithin + sum (.centered# * .centered#)
+    endfor
+
+    .dfWithin = .totalN - .nGroups
+    if .dfWithin < 1
+        .error$ = string$ (.totalN) + " observations across "
+        ... + string$ (.nGroups) + " groups leave no within-groups "
+        ... + "degrees of freedom. There must be more observations "
+        ... + "than groups."
+    else
+        .msWithin = .ssWithin / .dfWithin
+    endif
 
     if .error$ = ""
         .pMatrix## = zero## (.nGroups, .nGroups)
@@ -4454,9 +4574,9 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
 
         for .i from 1 to .nGroups
             for .j from .i + 1 to .nGroups
-                .diff = .groupMean[.i] - .groupMean[.j]
+                .diff = .gMean[.i] - .gMean[.j]
                 .se = sqrt (.msWithin
-                ... * (1 / .groupN[.i] + 1 / .groupN[.j]) / 2)
+                ... * (1 / .n[.i] + 1 / .n[.j]) / 2)
                 # Guard the degenerate SE explicitly. A zero or
                 # undefined SE (zero pooled within-group variance, or
                 # an undefined MSE) makes q undefined; the old code
@@ -4486,31 +4606,16 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
                 .meanDiff##[.i, .j] = .diff
                 .meanDiff##[.j, .i] = -.diff
 
-                # Cohen's d per pair (two-group pooled SD)
-                @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
-                ... .groupName$[.i]
-                if eml_getGroupData.error$ <> ""
-                    .error$ = eml_getGroupData.error$
+                # Cohen's d per pair (two-group pooled SD). Reads the
+                # reconstructed group vectors above -- no extraction here
+                # at all, this procedure never sees a table.
+                @emlCohenD: .gData'.i'#, .gData'.j'#
+                if emlCohenD.error$ = ""
+                    .dMatrix##[.i, .j] = emlCohenD.d
+                    .dMatrix##[.j, .i] = -emlCohenD.d
+                else
                     .dMatrix##[.i, .j] = undefined
                     .dMatrix##[.j, .i] = undefined
-                else
-                    .vI# = eml_getGroupData.data#
-                    @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
-                    ... .groupName$[.j]
-                    if eml_getGroupData.error$ <> ""
-                        .error$ = eml_getGroupData.error$
-                        .dMatrix##[.i, .j] = undefined
-                        .dMatrix##[.j, .i] = undefined
-                    else
-                        @emlCohenD: .vI#, eml_getGroupData.data#
-                        if emlCohenD.error$ = ""
-                            .dMatrix##[.i, .j] = emlCohenD.d
-                            .dMatrix##[.j, .i] = -emlCohenD.d
-                        else
-                            .dMatrix##[.i, .j] = undefined
-                            .dMatrix##[.j, .i] = undefined
-                        endif
-                    endif
                 endif
             endfor
         endfor
@@ -4525,10 +4630,6 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
             ... + "error); their p-values are undefined, not 1"
         endif
     endif
-
-    # --- Restore selection ---
-
-    selectObject: .tableId
 endproc
 
 
@@ -4567,6 +4668,16 @@ endproc
 #   .groupMean[g] - mean of group g (1..nGroups, alphabetical order)
 #   .groupN[g]    - size of group g
 #   .groupLabel$[g] - label of group g
+#   .groupData'g'# - ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS
+#                  _2026-09-01.md §5): group g's data vector, cached at the
+#                  single @eml_getGroupData call this procedure makes for
+#                  that group. Populated whether or not .tukey = 1. A
+#                  caller needing a group's raw values after this
+#                  procedure returns (e.g. the Cohen's d fallback in
+#                  @emlRunAnovaAnalysis) reads emlOneWayAnova.groupData'g'#
+#                  rather than re-extracting -- valid only until
+#                  @emlOneWayAnova runs again, like every other
+#                  procedure-local output in this codebase.
 #   .warning$  - non-fatal disclosure (degenerate variance), or ""
 #   .error$    - "" on success, diagnostic message on failure
 #
@@ -4574,7 +4685,9 @@ endproc
 #   .pMatrix##     - k × k symmetric matrix of Tukey pairwise p-values
 #   .qMatrix##     - k × k symmetric matrix of Tukey q statistics
 #   .meanDiff##    - k × k antisymmetric mean differences
-#   .dMatrix##     - k × k antisymmetric Cohen's d (from @emlTukeyHSD)
+#   .dMatrix##     - k × k antisymmetric Cohen's d (from
+#                    @eml_tukeyPairwiseFromGroups, called directly on this
+#                    procedure's own cache -- see the Tukey branch below)
 #   .qCritical     - critical q at alpha = 0.05
 #   .groupName$[i] - group label for row/column i (1..nGroups, alphabetical)
 #   .nPairs        - number of unique pairwise comparisons
@@ -4650,9 +4763,22 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     if .error$ = ""
         .nSingleton = 0
         .singletonList$ = ""
+
+        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
+        # 2026-09-01.md §5). This loop used to run a second time, right
+        # below, purely to re-fetch what it had already fetched here to
+        # check group sizes -- and then a THIRD time again lower down to
+        # centre the shifted deviations. All three needed nothing but this
+        # group's vector, so the vector is now cached once, as
+        # .groupData'.g'#, and every later pass in this procedure (the
+        # sum in "pass 1" and the shifted centering in "pass 2") reads it
+        # instead of calling @eml_getGroupData again. Cross-case safety is
+        # the same bounded-index argument as everywhere else in this file:
+        # a later, smaller-nGroups case never reads a stale higher index.
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
             ... emlCountGroups.groupLabel$[.g]
+            .groupData'.g'# = eml_getGroupData.data#
             if eml_getGroupData.n < 2
                 .nSingleton = .nSingleton + 1
                 if .nSingleton <= 5
@@ -4698,14 +4824,16 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
         .totalN = 0
         .sumOfRawScores = 0
 
+        # Reads the cache the loop above built -- no extraction here.
+        # (.groupMean[.g] set here is provisional and overwritten by the
+        # shift-corrected value below; kept, unchanged, for anyone reading
+        # it between the two passes.)
         for .g from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
-            ... emlCountGroups.groupLabel$[.g]
-            .gN = eml_getGroupData.n
-            .gData# = eml_getGroupData.data#
+            .gData# = .groupData'.g'#
 
             # Group sizes were validated above, so every group here has
             # at least 2 observations.
+            .gN = size (.gData#)
             .gSum = sum (.gData#)
 
             .totalN = .totalN + .gN
@@ -4749,9 +4877,7 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
         .weightedShiftedSum = 0
 
         for .g from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
-            ... .groupLabel$[.g]
-            .shifted# = eml_getGroupData.data# - .shift
+            .shifted# = .groupData'.g'# - .shift
             .shiftedMean[.g] = mean (.shifted#)
             .centered# = .shifted# - .shiftedMean[.g]
 
@@ -4823,19 +4949,39 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
         ; conf.high pair the Tukey export frame carries. Both of those are
         ; labelled 95%, which is the level this line sets. A caller wanting
         ; another level calls @emlTukeyHSD directly, which takes .alpha.
-        @emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, 0.05
-        if emlTukeyHSD.error$ <> ""
-            .error$ = "Tukey HSD: " + emlTukeyHSD.error$
-        else
-            .nPairs = emlTukeyHSD.nPairs
-            .pMatrix## = emlTukeyHSD.pMatrix##
-            .qMatrix## = emlTukeyHSD.qMatrix##
-            .meanDiff## = emlTukeyHSD.meanDiff##
-            .dMatrix## = emlTukeyHSD.dMatrix##
-            .qCritical = emlTukeyHSD.qCritical
-            for .g from 1 to emlTukeyHSD.nGroups
-                .groupName$[.g] = emlTukeyHSD.groupName$[.g]
+        ;
+        ; CALLS @eml_tukeyPairwiseFromGroups DIRECTLY, NOT @emlTukeyHSD.
+        ; @emlTukeyHSD would re-extract every group from the table a second
+        ; time -- it has no way to know the vectors above were already
+        ; pulled for the F-test. Building the flat .allData# / .groupNVec#
+        ; from THIS procedure's own .groupData'.g'# cache and calling the
+        ; shared kernel directly means a tukey=1 ANOVA case extracts each
+        ; group exactly once, not twice (RULING_CONSOLIDATED_KERNELS_2026-
+        ; 09-01.md §5). The kernel is the same code @emlTukeyHSD itself
+        ; calls, so the numbers are identical to what a standalone
+        ; @emlTukeyHSD call on the same table would produce.
+        .allData# = zero# (.totalN)
+        .groupNVec# = zero# (.nGroups)
+        .offset = 0
+        for .g from 1 to .nGroups
+            .groupNVec#[.g] = .groupN[.g]
+            for .k from 1 to .groupN[.g]
+                .allData#[.offset + .k] = .groupData'.g'#[.k]
             endfor
+            .offset = .offset + .groupN[.g]
+            .groupName$[.g] = .groupLabel$[.g]
+        endfor
+
+        @eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupNVec#, 0.05
+        if eml_tukeyPairwiseFromGroups.error$ <> ""
+            .error$ = "Tukey HSD: " + eml_tukeyPairwiseFromGroups.error$
+        else
+            .nPairs = eml_tukeyPairwiseFromGroups.nPairs
+            .pMatrix## = eml_tukeyPairwiseFromGroups.pMatrix##
+            .qMatrix## = eml_tukeyPairwiseFromGroups.qMatrix##
+            .meanDiff## = eml_tukeyPairwiseFromGroups.meanDiff##
+            .dMatrix## = eml_tukeyPairwiseFromGroups.dMatrix##
+            .qCritical = eml_tukeyPairwiseFromGroups.qCritical
         endif
     endif
 
@@ -5608,6 +5754,14 @@ endproc
 #   .nGroups       - number of groups (k)
 #   .groupName$[i] - group label for group i (1..nGroups)
 #   .groupN[i]     - sample size for group i
+#   .groupData'i'# - group i's data vector, cached at the single
+#                    @eml_getGroupData call this procedure makes for it
+#                    (RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5). A
+#                    caller needing the raw values after this procedure
+#                    returns (e.g. the rank-biserial-r fallback in
+#                    @emlRunKWAnalysis) reads this instead of
+#                    re-extracting. Valid only until @emlKruskalWallis
+#                    runs again.
 #   .meanRank[i]   - mean rank for group i
 #   .epsilonSq     - epsilon-squared effect size
 #   .tieCorrection - tie correction factor C (1.0 if no ties)
@@ -5663,13 +5817,19 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
     endif
 
     if .error$ = ""
-        # Get per-group sizes
+        # Get per-group sizes AND cache each group's vector -- ONE
+        # EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
+        # 09-01.md §5). A second loop used to sit right below this one,
+        # calling @eml_getGroupData again for every group purely to build
+        # the flat ranking vector; it now reads .groupData'g'#, the cache
+        # this loop leaves behind.
         .n = 0
         for .g from 1 to .nGroups
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
             .groupN[.g] = eml_getGroupData.n
+            .groupData'.g'# = eml_getGroupData.data#
             if .groupN[.g] = 0
                 .error$ = "Group """ + .groupName$[.g]
                 ... + """ has 0 observations. Every group needs at "
@@ -5680,15 +5840,14 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
     endif
 
     if .error$ = ""
-        # Build flat data vector in group order
+        # Build flat data vector in group order, from the cache above --
+        # no extraction here, a pure in-memory copy.
         .allData# = zero# (.n)
         .idx = 0
         for .g from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-            ... .groupName$[.g]
-            for .j from 1 to eml_getGroupData.n
+            for .j from 1 to .groupN[.g]
                 .idx = .idx + 1
-                .allData#[.idx] = eml_getGroupData.data#[.j]
+                .allData#[.idx] = .groupData'.g'#[.j]
             endfor
         endfor
     endif
@@ -5889,13 +6048,19 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
     endif
 
     if .error$ = ""
-        # Get per-group sizes
+        # Get per-group sizes AND cache each group's vector -- ONE
+        # EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
+        # 09-01.md §5). A second loop used to sit right below this one,
+        # calling @eml_getGroupData again for every group purely to build
+        # the flat ranking vector; it now reads .groupData'g'#, the cache
+        # this loop leaves behind.
         .n = 0
         for .g from 1 to .nGroups
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
             .groupN[.g] = eml_getGroupData.n
+            .groupData'.g'# = eml_getGroupData.data#
             if .groupN[.g] = 0
                 .error$ = "Group """ + .groupName$[.g]
                 ... + """ has 0 observations. Every group needs at "
@@ -5906,15 +6071,14 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
     endif
 
     if .error$ = ""
-        # Build flat data vector in group order
+        # Build flat data vector in group order, from the cache above --
+        # no extraction here, a pure in-memory copy.
         .allData# = zero# (.n)
         .idx = 0
         for .g from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-            ... .groupName$[.g]
-            for .j from 1 to eml_getGroupData.n
+            for .j from 1 to .groupN[.g]
                 .idx = .idx + 1
-                .allData#[.idx] = eml_getGroupData.data#[.j]
+                .allData#[.idx] = .groupData'.g'#[.j]
             endfor
         endfor
     endif
@@ -6030,34 +6194,22 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
         endfor
 
         # --- Pairwise rank-biserial r (independently ranked per pair) ---
+        # Reads the .groupData'g'# cache the first loop above built --
+        # no extraction here. Both groups were already extracted
+        # successfully to reach this point (@eml_getGroupData's only
+        # failure mode is a missing column, refused before that loop
+        # ever ran), so there is no error branch left to preserve.
 
         .rMatrix## = zero## (.nGroups, .nGroups)
         for .i from 1 to .nGroups - 1
             for .j from .i + 1 to .nGroups
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.i]
-                if eml_getGroupData.error$ <> ""
-                    .error$ = eml_getGroupData.error$
+                @emlRankBiserialR: .groupData'.i'#, .groupData'.j'#, 2
+                if emlRankBiserialR.error$ = ""
+                    .rMatrix##[.i, .j] = emlRankBiserialR.r
+                    .rMatrix##[.j, .i] = -emlRankBiserialR.r
+                else
                     .rMatrix##[.i, .j] = undefined
                     .rMatrix##[.j, .i] = undefined
-                else
-                    .vI# = eml_getGroupData.data#
-                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                    ... .groupName$[.j]
-                    if eml_getGroupData.error$ <> ""
-                        .error$ = eml_getGroupData.error$
-                        .rMatrix##[.i, .j] = undefined
-                        .rMatrix##[.j, .i] = undefined
-                    else
-                        @emlRankBiserialR: .vI#, eml_getGroupData.data#, 2
-                        if emlRankBiserialR.error$ = ""
-                            .rMatrix##[.i, .j] = emlRankBiserialR.r
-                            .rMatrix##[.j, .i] = -emlRankBiserialR.r
-                        else
-                            .rMatrix##[.i, .j] = undefined
-                            .rMatrix##[.j, .i] = undefined
-                        endif
-                    endif
                 endif
             endfor
         endfor
@@ -6109,6 +6261,14 @@ endproc
 #   .rawP#         - unadjusted p-values, C(k,2) length
 #   .adjustedP#    - adjusted p-values, C(k,2) length
 #   .groupName$[i] - group label for group i
+#   .groupN[i]     - complete-case size of group i. ONE EXTRACTION PER
+#                    CASE (RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5):
+#                    a caller summing N across the k groups this run used
+#                    (e.g. the store's .stN) reads this instead of
+#                    re-extracting each group to count it.
+#   .groupData'i'# - group i's data vector, cached at the single
+#                    @eml_getGroupData call this procedure makes for it.
+#                    Valid only until @emlPairwiseT runs again.
 #   .nGroups       - k
 #   .nPairs        - C(k,2)
 #   .method$       - the TEST that was run: "Welch t-test" or
@@ -6228,8 +6388,19 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
     endif
 
     if .error$ = ""
+        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
+        # 2026-09-01.md §5). The pairwise loop below used to call
+        # @eml_getGroupData twice EVERY iteration -- group i re-extracted
+        # for every j it was paired with, group j re-extracted for every
+        # pair -- which is 2*C(k,2) extractions where one pass per group
+        # (k) suffices. Both vectors and each group's complete-case n are
+        # cached here, once, and the pairwise loop below reads them.
         for .g from 1 to .nGroups
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
+            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
+            ... .groupName$[.g]
+            .groupN[.g] = eml_getGroupData.n
+            .groupData'.g'# = eml_getGroupData.data#
         endfor
 
         # --- Determine equalVariances flag ---
@@ -6253,13 +6424,9 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
             for .j from .i + 1 to .nGroups
                 .pairIdx = .pairIdx + 1
 
-                # Get group vectors
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.i]
-                .vI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.j]
-                .vJ# = eml_getGroupData.data#
+                # Group vectors, read from the cache above.
+                .vI# = .groupData'.i'#
+                .vJ# = .groupData'.j'#
 
                 # t-test
                 @emlTTest: .vI#, .vJ#, 2, .eqVar
@@ -6380,6 +6547,15 @@ endproc
 #   .rawP#         - unadjusted p-values, C(k,2) length
 #   .adjustedP#    - adjusted p-values, C(k,2) length
 #   .groupName$[i] - group label for group i
+#   .groupN[i]     - complete-case size of group i
+#   .groupData'i'# - group i's data vector, cached at the single
+#                    @eml_getGroupData call this procedure makes for it
+#                    (RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5). A
+#                    caller needing the raw values after this procedure
+#                    returns (e.g. the Hodges-Lehmann interval loop in
+#                    @emlReportPairwiseComparison) reads this instead of
+#                    re-extracting. Valid only until @emlPairwiseWilcoxon
+#                    runs again.
 #   .nGroups       - k
 #   .nPairs        - C(k,2)
 #   .method$       - adjustment method used (echoed back)
@@ -6469,11 +6645,17 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
         endfor
 
-        # Cache per-group sizes (avoids redundant extraction in matrix fill)
+        # Cache per-group sizes AND vectors -- ONE EXTRACTION PER GROUP
+        # PER CASE (RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5). The
+        # size cache already avoided a redundant extraction for U2 in the
+        # matrix-fill loop below; the pairwise loop itself still called
+        # @eml_getGroupData twice every iteration to get the vectors --
+        # now it reads .groupData'g'#, cached here instead.
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
             .groupN[.g] = eml_getGroupData.n
+            .groupData'.g'# = eml_getGroupData.data#
         endfor
 
         # --- Pairwise tests ---
@@ -6488,12 +6670,8 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
             for .j from .i + 1 to .nGroups
                 .pairIdx = .pairIdx + 1
 
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.i]
-                .vI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.j]
-                .vJ# = eml_getGroupData.data#
+                .vI# = .groupData'.i'#
+                .vJ# = .groupData'.j'#
 
                 # MWU + rank-biserial r
                 @emlRankBiserialR: .vI#, .vJ#, 2
@@ -6949,9 +7127,16 @@ procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
     if .error$ = ""
         .nSingleton = 0
         .singletonList$ = ""
+
+        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
+        # 2026-09-01.md §5). This used to be followed by a second loop,
+        # below, that re-fetched every group's vector purely to compute
+        # its median and deviations. Cached here instead, as
+        # .groupData'g'#, and read from there in pass 1.
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... emlCountGroups.groupLabel$[.g]
+            .groupData'.g'# = eml_getGroupData.data#
             if eml_getGroupData.n < 2
                 .nSingleton = .nSingleton + 1
                 if .nSingleton <= 5
@@ -6992,10 +7177,8 @@ procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
         .sumOfDeviations = 0
 
         for .g from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-            ... emlCountGroups.groupLabel$[.g]
-            .gN = eml_getGroupData.n
-            .gData# = eml_getGroupData.data#
+            .gData# = .groupData'.g'#
+            .gN = size (.gData#)
 
             ; Median of the group. Sizes were validated above, so .gN >= 2.
             .sorted# = sort# (.gData#)
@@ -7477,11 +7660,15 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
         .nSingleton = 0
         .singletonList$ = ""
 
+        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
+        # 2026-09-01.md §5): .groupData'g'# below is what the Cohen's d
+        # loop further down reads instead of re-extracting.
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
             .gN = eml_getGroupData.n
             .groupN[.g] = .gN
+            .groupData'.g'# = eml_getGroupData.data#
 
             if .gN < 2
                 .groupMean[.g] = undefined
@@ -7605,19 +7792,15 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
     endif
 
     # --- Cohen's d per pair (two-group pooled SD, as in @emlTukeyHSD) ---
-    # Separated from the loop above so that the studentized-range calls
-    # are not interleaved with the object create/remove @eml_getGroupData
-    # performs.
+    # Reads the .groupData'g'# cache the descriptives loop above built --
+    # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
+    # 09-01.md §5). This loop used to call @eml_getGroupData twice per
+    # pair; it no longer touches the table at all.
 
     if .error$ = ""
         for .i from 1 to .nGroups
             for .j from .i + 1 to .nGroups
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.i]
-                .vI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.j]
-                @emlCohenD: .vI#, eml_getGroupData.data#
+                @emlCohenD: .groupData'.i'#, .groupData'.j'#
                 if emlCohenD.error$ = ""
                     .dMatrix##[.i, .j] = emlCohenD.d
                     .dMatrix##[.j, .i] = -emlCohenD.d
