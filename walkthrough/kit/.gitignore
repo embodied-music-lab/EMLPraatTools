@@ -1,1 +1,14 @@
 # Generated output is tracked: the kit is audited by readers who do not run it.
+
+# Generated at run time, never committed: RUN_ME_FIRST.praat carries a macOS
+# include path because that is where the plugin installs for its audience.
+# Praat's `include` is a parse-time text paste, so the path cannot be a
+# variable and a Linux run needs its own copy of the file. Committing that
+# copy would create a second runner free to drift from the first, and the
+# two would disagree silently. Regenerate it instead:
+#
+#   sed 's|~/Library/Preferences/Praat Prefs/|~/.praat-dir/|' \
+#       RUN_ME_FIRST.praat > RUN_KIT_LINUX.praat
+#
+RUN_KIT_LINUX.praat
+probe_results.txt
