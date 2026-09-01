@@ -475,6 +475,8 @@ c0356	analysis	emlRunPairwiseAnalysis	v73_directional_input	x	slot		scheffe		non
 c0357	analysis	emlRunTwoWayAnalysis	v11_twoway_input	SPL_dB	voice_type	task									ok		options
 c0358	analysis	emlRunTwoWayAnalysis	v11_twoway_input	SPL_dB	task	voice_type									ok	factors swapped: same model, reversed reporting order	options
 c0359	analysis	emlRunTwoWayAnalysis	v11_twoway_input	subject	voice_type	task									refuse	data column subject holds no numbers	options
+c0674	analysis	emlRunTwoWayAnalysis	v11_twoway_unbalanced_input	SPL_dB	voice_type	task									ok	unbalanced 2x2, all four cells populated -- exercises the Type III kernel's RSS-difference/Wald divergence from Khuri on unbalanced data	options
+c0675	analysis	emlRunTwoWayAnalysis	v11_twoway_3level_input	SPL_dB	voice_type	task									ok	unbalanced 3x2 (three-level factor), all six cells populated -- the fixture that separates Type I/II/III from each other and from Khuri	options
 c0360	analysis	emlRunPairedAnalysis	demo_paired_input	jitter_pre	jitter_post		parametric								ok		options
 c0361	analysis	emlRunPairedAnalysis	demo_paired_input	jitter_pre	jitter_post		nonparametric								ok		options
 c0362	analysis	emlRunPairedAnalysis	demo_paired_input	jitter_pre	jitter_post		both								ok		options

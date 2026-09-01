@@ -897,14 +897,25 @@ process_pairwise <- function(row) {
 
 # =============================================================================
 # emlRunTwoWayAnalysis -- two-way ANOVA (factor1 * factor2, with interaction)
-# car::Anova(fit, type=2): the standard statistician's default for a
-# factorial design when testing main effects alongside an interaction term
-# -- unlike Type III it needs no special (sum-to-zero) contrast coding to be
-# meaningful, and it is the more commonly recommended default (Fox &
-# Weisberg; Field) absent a specific reason to prefer Type III. Chosen for
-# that reason, not to reproduce any particular number Praat's own two-way
-# ANOVA (which parses Praat's built-in "Report two-way anova", an
-# unspecified SS type) happens to print.
+# car::Anova(fit, type=3) under contr.sum: matches the plugin's own kernel
+# (@emlAnovaKernelTwoWay, eml-anova-kernel.praat), which computes Types I,
+# II and III directly from the raw data and defaults to reporting Type III
+# as its headline table -- see
+# mailbox/to-opus/RULING_CONSOLIDATED_KERNELS_2026-09-01.md section 2
+# ("Oracles: Type III = car::Anova(fit, type = 3) under contr.sum"). This
+# leg previously ran Type II deliberately, to avoid tying the oracle to
+# whatever unspecified SS type Praat's built-in `Report two-way anova`
+# happened to print; now that the plugin computes a real, defined Type III
+# itself (no built-in call anywhere on that side, see
+# eml-inferential.praat's @emlTwoWayAnova), matching it directly is the
+# correct oracle, not an incidental one. contr.sum is set only around the
+# fit -- Type III's marginal-effect test is contrast-coding-dependent, so
+# the fit itself, not just the car::Anova() call, has to use it; options()
+# is restored immediately after, same pattern as afex's own contrasts
+# reset around line 158 above.
+# On a BALANCED design Types I, II and III agree, so this changed nothing
+# for the pre-existing balanced-fixture cells; it matters only on the
+# unbalanced/three-level cells this leg's rewrite adds.
 # Partial and non-partial eta-squared for every term via effectsize.
 # No group_order axis here (matrix.tsv's own header, note B8: this
 # procedure never calls @emlCountGroups), so none is read.
@@ -921,11 +932,17 @@ process_twoway <- function(row) {
         refuseCell(cid, sprintf("factor '%s' or '%s' has fewer than 2 levels", row$col_b, row$col_c)); return(invisible())
     }
     dfr <- data.frame(x = x, a = a, b = b)
+    oldContrasts <- options(contrasts = c("contr.sum", "contr.poly"))
     fit <- lm(x ~ a * b, data = dfr)
-    at <- car::Anova(fit, type = 2)
-    terms <- rownames(at); terms <- terms[terms != "Residuals"]
+    at <- car::Anova(fit, type = 3)
+    options(oldContrasts)
+    # Type III's table carries an "(Intercept)" row Type I/II tables do not
+    # have; it is not one of the three reported terms and must be dropped
+    # here or it falls into the `else` branch below and gets reported as
+    # the interaction.
+    terms <- rownames(at); terms <- terms[!(terms %in% c("Residuals", "(Intercept)"))]
     dfRes <- at["Residuals", "Df"]; ssRes <- at["Residuals", "Sum Sq"]
-    lines <- c(sprintf("Two-way ANOVA (Type II SS, car::Anova) -- %s by %s * %s", row$col_a, row$col_b, row$col_c), "")
+    lines <- c(sprintf("Two-way ANOVA (Type III SS, car::Anova, contr.sum) -- %s by %s * %s", row$col_a, row$col_b, row$col_c), "")
     es <- effectsize::eta_squared(at, partial = TRUE, ci = NULL, verbose = FALSE)
     esFull <- effectsize::eta_squared(at, partial = FALSE, ci = NULL, verbose = FALSE)
     # TERMS ARE KEYED BY THE FACTOR'S OWN NAME, not by position. "factor1"
@@ -955,8 +972,17 @@ process_twoway <- function(row) {
     }
     emit(cid, "ss_within", ssRes, "car::Anova"); emit(cid, "df_within", dfRes, "car::Anova")
     emit(cid, "ms_within", ssRes / dfRes, "car::Anova")
-    emit(cid, "ss_total", sum(at[["Sum Sq"]]), "car::Anova")
-    emit(cid, "df_total", sum(at[["Df"]]), "car::Anova")
+    # NOT sum(at[["Sum Sq"]]): that sum only equals the total SS for a
+    # SEQUENTIAL (Type I) decomposition, or incidentally on a balanced
+    # design where all types agree. On an unbalanced design a Type II or
+    # III effect SS plus the residual does NOT in general add back up to
+    # the total -- the same property the plugin's own kernel documents
+    # (@emlAnovaKernelTwoWay's header, and the .balanced/.warning$ this
+    # leg's Praat side sets). Computed directly instead, the ordinary
+    # centred sum of squares about the grand mean -- the one number every
+    # SS type agrees is "the total" regardless of how it gets partitioned.
+    emit(cid, "ss_total", sum((x - mean(x))^2), "stats::mean")
+    emit(cid, "df_total", length(x) - 1, "base::length")
     emit(cid, "n", length(x), "base::length")
     writeReport(cid, lines)
 }

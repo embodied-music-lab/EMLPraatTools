@@ -2739,14 +2739,18 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
-    # NO INFO-WINDOW SAVE/RESTORE HERE. Praat's built-in
-    # `Report two-way anova` clears the Info window, but snapshotting info$ ()
-    # and replaying it with writeInfo: afterwards is not the answer: under
-    # `praat --run` the replay prints the whole preceding transcript a second
-    # time, because Info is streamed to stdout in batch and nothing can be
-    # un-printed. @emlTwoWayAnova ASSIGNS the built-in's result instead of
-    # running it bare, which never touches the Info window, so there is
-    # nothing to put back. See the note there.
+    # NO INFO-WINDOW SAVE/RESTORE HERE, AND NONE NEEDED. This orchestrator
+    # used to snapshot info$ () before calling @emlTwoWayAnova and replay it
+    # with writeInfo: afterwards, because Praat's built-in `Report two-way
+    # anova` clears the Info window when it runs. That replay was correct in
+    # the GUI and wrong in batch -- under `praat --run`, Info output is
+    # streamed to stdout as it is produced, so writeInfo: does not restore
+    # anything, it re-prints the whole preceding transcript a second time.
+    # @emlTwoWayAnova no longer calls that built-in at all (it routes
+    # through @emlAnovaKernelTwoWay, per
+    # mailbox/to-opus/RULING_CONSOLIDATED_KERNELS_2026-09-01.md Class C), so
+    # there is no Info-window side effect to save or restore in the first
+    # place, not merely one that has been captured instead.
     @emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     if emlTwoWayAnova.error$ <> ""
         .error$ = emlTwoWayAnova.error$
@@ -5745,7 +5749,16 @@ procedure emlDeclareTwoWayResult: .tableName$, .dataCol$, .factor1$, .factor2$,
     @emlGlanceNum: "deviance", emlTwoWayAnova.ssError
     @emlGlanceNum: "nobs", .nobs
     @emlGlanceNum: "n.cells", emlTwoWayAnova.nCells
-    @emlGlanceStr: "method", "Two-way ANOVA"
+    ; NAMES THE SS TYPE THAT PRODUCED THE TABLE ABOVE, per
+    ; RULING_CONSOLIDATED_KERNELS_2026-09-01.md section 2 ("the output
+    ; always names the type that produced the table"). "method" is the
+    ; column this goes in, not a new one: eml-result-writer.praat's Glance
+    ; vocabulary is a closed, checked list (validate/v17_broom_parity.R)
+    ; owned by a concurrent edit elsewhere, so this reads from the field
+    ; the kernel actually set and folds it into the existing "method"
+    ; string rather than requesting a new column.
+    @emlGlanceStr: "method", "Two-way ANOVA (" + emlTwoWayAnova.ssTypeLabel$
+    ... + " SS)"
     if emlTwoWayAnova.warning$ <> ""
         @emlGlanceStr: "warning", emlTwoWayAnova.warning$
     endif

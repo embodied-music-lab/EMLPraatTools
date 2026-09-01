@@ -4050,157 +4050,14 @@ procedure emlBenjaminiHochberg: .pValues#
     endif
 endproc
 
-# ============================================================================
-# @eml_parseAnovaLine (INTERNAL)
-# ============================================================================
-# Parses a single row from Praat's ANOVA Info window output.
-#
-# The built-in Report one-way anova / Report two-way anova commands write
-# a whitespace-aligned table to the Info window. Each row has a label
-# (e.g., "Between", "Within", "Total", factor name) followed by numeric
-# fields: SS, df, MS, F, p. Not all rows have all fields — "Within" and
-# "Error" rows have SS, df, MS only; "Total" rows have SS, df only.
-#
-# Arguments:
-#   .info$     - full Info window text (captured via info$() after Report)
-#   .rowLabel$ - exact text of the row label to find (e.g., "Between")
-#
-# Output:
-#   .ss  - sum of squares (or undefined if not found)
-#   .df  - degrees of freedom (or undefined if not found)
-#   .ms  - mean square (or undefined if row has < 3 numeric fields)
-#   .f   - F statistic (or undefined if row has < 4 numeric fields)
-#   .p   - p-value (or undefined if row has < 5 numeric fields)
-#   .error$ - "" on success, diagnostic message on failure
-#
-# Notes:
-#   - Matches .rowLabel$ EXACTLY against the first tab-delimited field
-#     of each line (after trimming the alignment padding), then
-#     tokenizes the remaining fields by whitespace. Substring matching
-#     is deliberately NOT used: it collides when one label is contained
-#     in another (e.g. factor "dose" inside factor "dose_time", or
-#     "Error" inside a factor named "ErrorRate").
-#   - number() handles scientific notation (e.g., 8.24e-195)
-# ============================================================================
-
-procedure eml_parseAnovaLine: .info$, .rowLabel$
-    .ss = undefined
-    .df = undefined
-    .ms = undefined
-    .f = undefined
-    .p = undefined
-    .error$ = ""
-
-    # Locate the row by EXACT match on its first tab-delimited field.
-    # The previous version used extractLine$, which returns the tail of
-    # the first line CONTAINING the label as a substring. That matched
-    # the wrong row whenever one label was a substring of another
-    # (factor "dose" matching the row for factor "dose_time", or the
-    # literal "Error" matching a factor named "ErrorRate" before it
-    # reached the residual row).
-    .remainder$ = ""
-    .found = 0
-    .lines$# = splitBy$# (.info$, newline$)
-
-    for .li from 1 to size (.lines$#)
-        if .found = 0
-            .line$ = .lines$#[.li]
-            .tabPos = index (.line$, tab$)
-            if .tabPos > 0
-                .label$ = left$ (.line$, .tabPos - 1)
-
-                # Trim leading spaces from the label field
-                while left$ (.label$, 1) = " "
-                    .label$ = mid$ (.label$, 2, length (.label$) - 1)
-                endwhile
-
-                # Trim trailing spaces from the label field
-                while length (.label$) > 0 and right$ (.label$, 1) = " "
-                    .label$ = left$ (.label$, length (.label$) - 1)
-                endwhile
-
-                if .label$ = .rowLabel$
-                    .found = 1
-                    .remainder$ = mid$ (.line$, .tabPos + 1,
-                    ... length (.line$) - .tabPos)
-                endif
-            endif
-        endif
-    endfor
-
-    if .found = 0
-        .error$ = "The ANOVA table has no row labelled """
-        ... + .rowLabel$ + """."
-    else
-        # Replace tabs with spaces for consistent tokenization
-        .remainder$ = replace$ (.remainder$, tab$, " ", 0)
-
-        # Collapse multiple spaces to single space
-        .prev$ = .remainder$
-        .remainder$ = replace$ (.remainder$, "  ", " ", 0)
-        while .remainder$ <> .prev$
-            .prev$ = .remainder$
-            .remainder$ = replace$ (.remainder$, "  ", " ", 0)
-        endwhile
-
-        # Trim leading spaces
-        while left$ (.remainder$, 1) = " "
-            .len = length (.remainder$)
-            if .len > 1
-                .remainder$ = mid$ (.remainder$, 2, .len - 1)
-            else
-                .remainder$ = ""
-            endif
-        endwhile
-
-        # Trim trailing spaces
-        while length (.remainder$) > 0 and right$ (.remainder$, 1) = " "
-            .remainder$ = left$ (.remainder$, length (.remainder$) - 1)
-        endwhile
-
-        if .remainder$ = ""
-            .error$ = "The ANOVA table row labelled """ + .rowLabel$
-            ... + """ has no numeric values after the label."
-        else
-            # Tokenize by single spaces
-            .nTokens = 0
-            .work$ = .remainder$
-
-            while length (.work$) > 0
-                .nTokens = .nTokens + 1
-                .spacePos = index (.work$, " ")
-                if .spacePos > 0
-                    .token$[.nTokens] = left$ (.work$, .spacePos - 1)
-                    .work$ = mid$ (.work$, .spacePos + 1,
-                    ... length (.work$) - .spacePos)
-                else
-                    .token$[.nTokens] = .work$
-                    .work$ = ""
-                endif
-            endwhile
-
-            # Map positional tokens to output fields
-            # Full row (source with F and p): SS df MS F p
-            # Partial row (residual): SS df MS
-            # Minimal row (total): SS df
-            if .nTokens >= 1
-                .ss = number (.token$[1])
-            endif
-            if .nTokens >= 2
-                .df = number (.token$[2])
-            endif
-            if .nTokens >= 3
-                .ms = number (.token$[3])
-            endif
-            if .nTokens >= 4
-                .f = number (.token$[4])
-            endif
-            if .nTokens >= 5
-                .p = number (.token$[5])
-            endif
-        endif
-    endif
-endproc
+# @eml_parseAnovaLine (the Info-window row parser this file once shared
+# between the one-way and two-way ANOVA paths) is RETIRED. @emlOneWayAnova
+# never called the built-in Report command in the first place (see its own
+# header note), and @emlTwoWayAnova's rewrite above -- routing through
+# @emlAnovaKernelTwoWay instead of `Report two-way anova` -- removed its
+# only caller. Per RULING_CONSOLIDATED_KERNELS_2026-09-01.md Class C
+# ("the parse-and-repair path goes"), the procedure itself goes with it
+# rather than being kept as dead code.
 
 
 # ============================================================================
@@ -5205,24 +5062,39 @@ endproc
 # ============================================================================
 # Performs two-way ANOVA on a Table.
 #
-# SUM-OF-SQUARES TYPE: TYPE III (partial). The main-effect and
-# interaction sums of squares come from Praat's built-in
-# Report two-way anova (hidden command), which computes Type III SS;
-# these agree with R (car::Anova type 3) to full printed precision on
-# both balanced and unbalanced designs.
+# SUM-OF-SQUARES TYPE: TYPE III (partial), computed directly by this
+# plugin's own kernel (@emlAnovaKernelTwoWay, eml-anova-kernel.praat) --
+# NOT by Praat's built-in `Report two-way anova`, which this procedure no
+# longer calls at all. That built-in computes Khuri's (1998) unweighted-
+# means SS, not Type III: measured on Praat's own manual example
+# (Peterson-Barney 1952, a proportional but unbalanced design) it reports
+# SS_Error = 1,600,534 where the correct within-cell value is 914,449, and
+# a Vowel F of 7.625 where the correct value is 13.346. The two figures
+# happen to agree on a BALANCED design (where Type I, II, III and Khuri
+# all coincide) and diverge on an unbalanced one -- see
+# mailbox/to-opus/RULING_CONSOLIDATED_KERNELS_2026-09-01.md section 1
+# (Class C) for the measurement and the ruling this rewrite answers.
 #
-# The error and total terms are NOT taken from that report. Praat's
-# Error and Total rows are incorrect on unbalanced designs (verified:
-# an unbalanced 2x2 reported SS_Error = 499.322 / SS_Total = 1838.599
-# where the true within-cell residual SS is 29.9167 and the true
-# centred total SS is 1804.545). SS_Error is recomputed here from
-# within-cell deviations, SS_Total from centred deviations about the
-# grand mean, and F/P for all three effects are re-derived from the
-# corrected MS_Error.
+# The kernel computes Types I, II and III directly from the raw data (RSS
+# differences on a sum-coded design for I/II; a Wald quadratic form on the
+# unweighted cell means, solved with `solve#`, for III) and is oracled
+# against real car::Anova at machine precision (124/124, worst relative
+# error 4.5e-12, across four fixtures including an unbalanced three-level
+# one). This procedure asks it for Type III (the default) and reports its
+# SS/df/MS/F/p, Error, Total and partial eta-squared unchanged; no parsing
+# of any Info-window text happens anywhere in this procedure.
 #
 # On an unbalanced design the Type III effect sums of squares do NOT
 # add up to SS_Total. This is a property of Type III SS, not an error;
 # .balanced is set to 0 and .warning$ says so.
+#
+# COMPLETE DESIGNS ONLY, per the kernel: every factor-level combination
+# must have at least one observation, or this procedure REFUSES with
+# .error$ rather than producing a table. Type III on an incomplete design
+# is not estimable in the ordinary sense; the kernel treats that as a
+# refusal, not a warning. (The pre-kernel version of this procedure did
+# not check for this and would have handed an incomplete design to
+# Praat's built-in with unverified results.)
 #
 # Arguments:
 #   .tableId   - ID of a Table object (must be in object list)
@@ -5237,36 +5109,54 @@ endproc
 #     .fB, .pB, .dfB, .ssB, .msB
 #   Interaction (A × B):
 #     .fAB, .pAB, .dfAB, .ssAB, .msAB
-#   Error (recomputed from within-cell deviations):
+#   Error (within-cell deviations, from the kernel):
 #     .ssError, .dfError, .msError
-#   Total (recomputed as the centred total sum of squares):
+#   Total (centred sum of squares, from the kernel):
 #     .ssTotal, .dfTotal
-#   As reported by Praat (traceability only, not used):
+#   Vestigial (no longer distinct from the corrected figures above, now
+#   that there is no separate "as reported by the built-in" value to keep
+#   apart from the corrected one -- kept only so a caller reading these
+#   five fields by name does not hit "Procedure attribute not found"):
 #     .ssErrorReported, .dfErrorReported, .msErrorReported
-#     .ssTotalReported, .dfTotalReported
+#     .ssTotalReported, .dfTotalReported (always undefined)
+#   Which SS type produced the table above (always Type III here; the
+#   kernel itself can produce any of the three, see @emlAnovaKernelTwoWay):
+#     .ssType (= 3), .ssTypeLabel$ (= "Type III")
 #   Design:
-#     .nCells   - number of non-empty factor-level combinations
+#     .nCells   - number of factor-level combinations (= .nLev1 * .nLev2;
+#                 the kernel refuses rather than reaching here with fewer)
 #     .nLev1    - number of distinct levels of factor 1
 #     .nLev2    - number of distinct levels of factor 2
 #     .minCellN - smallest cell size
 #     .maxCellN - largest cell size
 #     .balanced - 1 if every cell is present and equally sized, else 0
+#   Per-cell / per-row detail, for callers that build a cell-means table
+#   or augment residuals onto the original rows (@emlReportTwoWayAnova,
+#   @emlDeclareTwoWayResult): gathered here directly from the Table in the
+#   same shape this procedure has always exposed it in -- keyed strings
+#   and index-addressed scalars, not the kernel's own vectors, because
+#   that is the shape those two callers already read:
+#     .nObs, .nRows      - row count (both names, historical duplicate)
+#     .lev1$[1..nLev1], .lev2$[1..nLev2] - level names, first-seen order
+#     .cellLabel$[1..nCells]  - lev1$ + newline$ + lev2$, one per cell
+#     .cellN[1..nCells], .cellMean[1..nCells]
+#     .cellOf[1..nObs]   - which cell (1..nCells) each row belongs to
+#     .yValue[1..nObs]   - that row's data value
 #   Effect sizes:
 #     .partialEtaSqA  - partial eta-squared for factor 1
 #     .partialEtaSqB  - partial eta-squared for factor 2
 #     .partialEtaSqAB - partial eta-squared for interaction
 #   Status:
-#     .warning$ - non-fatal disclosure (unbalanced, empty cells,
-#                 degenerate variance), or "" if none
+#     .warning$ - non-fatal disclosure (unbalanced, degenerate variance,
+#                 zero error df), or "" if none
 #     .error$ - "" on success, diagnostic message on failure
 #
 # Notes:
-#   - The built-in Report two-way anova is a hidden command (stable since ~2006)
-#   - Info window output row order: factor1, factor2, interaction, Error, Total
-#   - Interaction row label is "factor1 x factor2" (constructed internally)
-#   - Parsing isolates the data section (after "Source" header) to avoid
-#     matching factor names in the header line
-#   - Original Table selection is restored on return
+#   - No Praat statistical Report command is called anywhere in this
+#     procedure; every number above comes from @emlAnovaKernelTwoWay.
+#   - Interaction is keyed "factor1 x factor2" in .cellLabel$ callers'
+#     own construction, matching the pre-kernel convention.
+#   - Original Table selection is restored on return.
 # ============================================================================
 
 procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
@@ -5301,6 +5191,8 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     .minCellN = undefined
     .maxCellN = undefined
     .balanced = 1
+    .ssType = 3
+    .ssTypeLabel$ = "Type III"
     .partialEtaSqA = undefined
     .partialEtaSqB = undefined
     .partialEtaSqAB = undefined
@@ -5334,166 +5226,86 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     # --- The data column must be a column of numbers ---
     #
     # STRICT, uniquely among the tests in this file. Every other path reads
-    # the data column row by row and can drop an unusable cell; the built-in
-    # below numericises the whole column in one go and silently substitutes
-    # alphabetical ranks when any cell fails, so there is no partial answer
-    # to give.
+    # the data column row by row and can drop an unusable cell; the kernel
+    # this procedure now calls (@emlAnovaKernelTwoWay, via @eml_ak2_gather)
+    # reads the column the same row-wise way, but does not itself AUDIT its
+    # type -- a non-numeric cell there returns Praat's `undefined` and
+    # poisons every downstream sum silently, with .error$ never set. This
+    # guard is what stands between a mistyped column and that silent
+    # `undefined` propagation; it must run before the kernel is called.
 
     if .error$ = ""
         @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 1
         .error$ = emlRequireNumericColumn.error$
     endif
 
-    # --- Run Report two-way anova ---
+    # --- The two-way ANOVA kernel ---
     #
-    # ASSIGNED, NOT RUN BARE, AND THE DIFFERENCE IS NOT COSMETIC (12 Aug 2026).
+    # No Praat statistical Report command anywhere in this procedure. The
+    # kernel (@emlAnovaKernelTwoWay, eml-anova-kernel.praat) computes Types
+    # I, II and III directly from the raw data; ssTypeRequested = 3 asks
+    # for Type III as the headline table, the plugin's default and the
+    # type this procedure has always documented itself as reporting -- see
+    # the module header there for the oracle results this rests on.
     #
-    # `Report two-way anova: ...` on its own line CLEARS the Info window and
-    # writes the report into it, so the only way to read the report was
-    # info$ () -- and the caller then had to put the user's Info window back,
-    # which @emlRunTwoWayAnalysis did by snapshotting info$ () beforehand and
-    # replaying it with writeInfo:.
+    # The kernel REFUSES (its own .error$) on an incomplete design (any
+    # factor-level combination with zero observations), on fewer than 4
+    # rows, or on fewer than 2 levels of either factor -- conditions the
+    # pre-kernel version of this procedure either did not check at all or
+    # handed silently to the built-in. That refusal is propagated as this
+    # procedure's own .error$ and nothing below it runs.
+
+    if .error$ = ""
+        @emlAnovaKernelTwoWay: .tableId, .dataCol$, .factor1$, .factor2$, 3
+        .error$ = emlAnovaKernelTwoWay.error$
+    endif
+
+    if .error$ = ""
+        .fA = emlAnovaKernelTwoWay.fA
+        .pA = emlAnovaKernelTwoWay.pA
+        .dfA = emlAnovaKernelTwoWay.dfA
+        .ssA = emlAnovaKernelTwoWay.ssA
+        .msA = emlAnovaKernelTwoWay.msA
+        .fB = emlAnovaKernelTwoWay.fB
+        .pB = emlAnovaKernelTwoWay.pB
+        .dfB = emlAnovaKernelTwoWay.dfB
+        .ssB = emlAnovaKernelTwoWay.ssB
+        .msB = emlAnovaKernelTwoWay.msB
+        .fAB = emlAnovaKernelTwoWay.fAB
+        .pAB = emlAnovaKernelTwoWay.pAB
+        .dfAB = emlAnovaKernelTwoWay.dfAB
+        .ssAB = emlAnovaKernelTwoWay.ssAB
+        .msAB = emlAnovaKernelTwoWay.msAB
+        .ssError = emlAnovaKernelTwoWay.ssError
+        .dfError = emlAnovaKernelTwoWay.dfError
+        .msError = emlAnovaKernelTwoWay.msError
+        .ssTotal = emlAnovaKernelTwoWay.ssTotal
+        .dfTotal = emlAnovaKernelTwoWay.dfTotal
+        .ssType = emlAnovaKernelTwoWay.ssType
+        .ssTypeLabel$ = emlAnovaKernelTwoWay.ssTypeLabel$
+        .minCellN = emlAnovaKernelTwoWay.minCellN
+        .maxCellN = emlAnovaKernelTwoWay.maxCellN
+        .balanced = emlAnovaKernelTwoWay.balanced
+        .partialEtaSqA = emlAnovaKernelTwoWay.partialEtaSqA
+        .partialEtaSqB = emlAnovaKernelTwoWay.partialEtaSqB
+        .partialEtaSqAB = emlAnovaKernelTwoWay.partialEtaSqAB
+        .warning$ = emlAnovaKernelTwoWay.warning$
+    endif
+
+    # --- Per-cell / per-row detail, in the shape this procedure has
+    #     always exposed it in ---
     #
-    # That replay is correct in the GUI and WRONG IN BATCH. Under `praat
-    # --run`, Info output is streamed to stdout as it is produced; nothing can
-    # be un-printed, so writeInfo: does not restore anything -- it emits the
-    # entire preceding transcript a SECOND time. Measured on 6.6.30: a
-    # 27-operation driver whose ninth operation was a two-way ANOVA printed 35
-    # operation lines, the first eight twice. Anything reading a batch run's
-    # stdout -- a harness, a log parser, a user piping to a file -- saw
-    # duplicated history and no error.
-    #
-    # Assigning the command's result captures the report into a string and
-    # leaves the Info window untouched, so there is nothing to restore and the
-    # save/restore pair is gone from the orchestrator entirely.
-
-    if .error$ = ""
-        selectObject: .tableId
-        .anovaInfo$ = Report two-way anova: .dataCol$, .factor1$, .factor2$,
-        ... "no"
-    endif
-
-    # --- Isolate data section (after "Source" header line) ---
-    # Factor names appear both in the header sentence and in the data
-    # rows. Trimming to the data section prevents false matches.
-
-    if .error$ = ""
-        .sourcePos = index (.anovaInfo$, "Source")
-        if .sourcePos = 0
-            .error$ = "Praat's two-way ANOVA report could not be read: "
-            ... + "no Source header was found in its output."
-        endif
-    endif
-
-    if .error$ = ""
-        # Get substring from "Source" onward
-        .fromSource$ = mid$ (.anovaInfo$, .sourcePos,
-        ... length (.anovaInfo$) - .sourcePos + 1)
-
-        # Find the first newline to skip the "Source SS Df MS F P" header
-        .nlPos = index (.fromSource$, newline$)
-        if .nlPos = 0
-            .error$ = "Praat's two-way ANOVA report could not be read: "
-            ... + "nothing follows the Source header line."
-        else
-            .dataSection$ = mid$ (.fromSource$, .nlPos + 1,
-            ... length (.fromSource$) - .nlPos)
-        endif
-    endif
-
-    # --- Parse factor 1 row: SS, df, MS, F, p ---
-
-    if .error$ = ""
-        @eml_parseAnovaLine: .dataSection$, .factor1$
-        if eml_parseAnovaLine.error$ <> ""
-            .error$ = "Could not read the row for the first factor. "
-            ... + eml_parseAnovaLine.error$
-        else
-            .ssA = eml_parseAnovaLine.ss
-            .dfA = eml_parseAnovaLine.df
-            .msA = eml_parseAnovaLine.ms
-            .fA = eml_parseAnovaLine.f
-            .pA = eml_parseAnovaLine.p
-        endif
-    endif
-
-    # --- Parse factor 2 row: SS, df, MS, F, p ---
-
-    if .error$ = ""
-        @eml_parseAnovaLine: .dataSection$, .factor2$
-        if eml_parseAnovaLine.error$ <> ""
-            .error$ = "Could not read the row for the second factor. "
-            ... + eml_parseAnovaLine.error$
-        else
-            .ssB = eml_parseAnovaLine.ss
-            .dfB = eml_parseAnovaLine.df
-            .msB = eml_parseAnovaLine.ms
-            .fB = eml_parseAnovaLine.f
-            .pB = eml_parseAnovaLine.p
-        endif
-    endif
-
-    # --- Parse interaction row: SS, df, MS, F, p ---
-
-    if .error$ = ""
-        .interactionLabel$ = .factor1$ + " x " + .factor2$
-        @eml_parseAnovaLine: .dataSection$, .interactionLabel$
-        if eml_parseAnovaLine.error$ <> ""
-            .error$ = "Could not read the interaction row. "
-            ... + eml_parseAnovaLine.error$
-        else
-            .ssAB = eml_parseAnovaLine.ss
-            .dfAB = eml_parseAnovaLine.df
-            .msAB = eml_parseAnovaLine.ms
-            .fAB = eml_parseAnovaLine.f
-            .pAB = eml_parseAnovaLine.p
-        endif
-    endif
-
-    # --- Parse Error row: SS, df, MS (reported values, retained only
-    #     for traceability — they are NOT used, see below) ---
-
-    if .error$ = ""
-        @eml_parseAnovaLine: .dataSection$, "Error"
-        if eml_parseAnovaLine.error$ <> ""
-            .error$ = "Could not read the Error row. "
-            ... + eml_parseAnovaLine.error$
-        else
-            .ssErrorReported = eml_parseAnovaLine.ss
-            .dfErrorReported = eml_parseAnovaLine.df
-            .msErrorReported = eml_parseAnovaLine.ms
-        endif
-    endif
-
-    # --- Parse Total row: SS, df (reported values, traceability only) ---
-
-    if .error$ = ""
-        @eml_parseAnovaLine: .dataSection$, "Total"
-        if eml_parseAnovaLine.error$ <> ""
-            .error$ = "Could not read the Total row. "
-            ... + eml_parseAnovaLine.error$
-        else
-            .ssTotalReported = eml_parseAnovaLine.ss
-            .dfTotalReported = eml_parseAnovaLine.df
-        endif
-    endif
-
-    # --- Recompute the error and total terms from the raw data ---
-    #
-    # Praat's Report two-way anova reports Type III sums of squares for
-    # the two main effects and the interaction, and those agree with R
-    # (car::Anova type 3) to full printed precision. Its Error and Total
-    # rows do NOT: on an unbalanced 2x2 it reported SS_Error = 499.322
-    # (df 7) where the true within-cell residual sum of squares is
-    # 29.9167, and SS_Total = 1838.599 where the true centred total is
-    # 1804.545. Because F and P in that report are formed from the bad
-    # MS_Error, they are wrong too.
-    #
-    # SS_Error is therefore recomputed here as the sum over cells of the
-    # within-cell squared deviations, SS_Total as the centred total sum
-    # of squares, and F/P for each effect are re-derived from the
-    # corrected MS_Error. The Type III effect sums of squares parsed
-    # from Praat are used unchanged.
+    # @emlAnovaKernelTwoWay computes cell means and counts internally (as
+    # `#` vectors, inside its own private @eml_ak2_gather) but does not
+    # publish them -- callers of THIS procedure, though, have always read
+    # them as index-addressed scalars keyed by a lev1$+newline$+lev2$
+    # string (@emlReportTwoWayAnova's cell-means and marginal-means
+    # tables; @emlDeclareTwoWayResult's residual augmentation). Rather
+    # than reach into the kernel's own private state -- a second file's
+    # internals, in a shape those two callers do not use anyway -- this
+    # gathers the same detail directly, exactly as this procedure always
+    # has. The kernel has already refused on any design this scan would
+    # find incomplete, so .nCells here is always .nLev1 * .nLev2.
 
     if .error$ = ""
         selectObject: .tableId
@@ -5501,7 +5313,6 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
         .nCells = 0
         .nLev1 = 0
         .nLev2 = 0
-        .sumAll = 0
 
         for .r from 1 to .nObs
             .l1$ = Get value: .r, .factor1$
@@ -5527,9 +5338,10 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
             .cellSum[.cellIdx] = .cellSum[.cellIdx] + .yv
             .cellOf[.r] = .cellIdx
             .yValue[.r] = .yv
-            .sumAll = .sumAll + .yv
 
-            # Track distinct levels of each factor for the balance check
+            # Track distinct levels of each factor, first-seen order --
+            # the same order @eml_ak2_gather discovers them in, since both
+            # scan the same rows the same way.
             .seen1 = 0
             for .c from 1 to .nLev1
                 if .lev1$[.c] = .l1$
@@ -5553,107 +5365,10 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
             endif
         endfor
 
-        .grandMean = .sumAll / .nObs
         for .c from 1 to .nCells
             .cellMean[.c] = .cellSum[.c] / .cellN[.c]
         endfor
-
-        # Two-pass (centred) accumulation — numerically stable
-        .ssError = 0
-        .ssTotal = 0
-        for .r from 1 to .nObs
-            .ci = .cellOf[.r]
-            .dev = .yValue[.r] - .cellMean[.ci]
-            .ssError = .ssError + .dev * .dev
-            .devTotal = .yValue[.r] - .grandMean
-            .ssTotal = .ssTotal + .devTotal * .devTotal
-        endfor
-
-        .dfError = .nObs - .nCells
-        .dfTotal = .nObs - 1
-
-        # --- Negative sum-of-squares guard ---
-        if .ssError < 0
-            .warning$ = "The computed error sum of squares was negative "
-            ... + "(" + fixed$ (.ssError, 10) + "); it was clamped to 0."
-            .ssError = 0
-        endif
-        if .ssTotal < 0
-            .warning$ = "The computed total sum of squares was negative "
-            ... + "(" + fixed$ (.ssTotal, 10) + "); it was clamped to 0."
-            .ssTotal = 0
-        endif
-        if .ssA < 0 or .ssB < 0 or .ssAB < 0
-            .warning$ = "At least one Type III effect sum of squares is "
-            ... + "negative; the model is degenerate."
-        endif
-
-        # --- Design balance check ---
-        .balanced = 1
-        .minCellN = .cellN[1]
-        .maxCellN = .cellN[1]
-        for .c from 2 to .nCells
-            if .cellN[.c] < .minCellN
-                .minCellN = .cellN[.c]
-            endif
-            if .cellN[.c] > .maxCellN
-                .maxCellN = .cellN[.c]
-            endif
-        endfor
-        if .nCells <> .nLev1 * .nLev2
-            .balanced = 0
-            .warning$ = "The design has empty cells ("
-            ... + string$ (.nCells) + " of " + string$ (.nLev1 * .nLev2)
-            ... + " factor combinations present); Type III sums of "
-            ... + "squares are not estimable for this design."
-        elsif .minCellN <> .maxCellN
-            .balanced = 0
-            .warning$ = "The design is unbalanced (cell sizes "
-            ... + string$ (.minCellN) + " to " + string$ (.maxCellN)
-            ... + "); Type III sums of squares do not add up to the "
-            ... + "total sum of squares."
-        endif
-
-        if .dfError > 0
-            .msError = .ssError / .dfError
-        else
-            .msError = undefined
-            .warning$ = "The error degrees of freedom is "
-            ... + string$ (.dfError) + ", so the error mean square, F "
-            ... + "and p are undefined."
-        endif
-
-        # --- Re-derive F and P from the corrected MS_Error ---
-        .fA = undefined
-        .pA = undefined
-        .fB = undefined
-        .pB = undefined
-        .fAB = undefined
-        .pAB = undefined
-        if .msError <> undefined
-            if .msError > 0
-                .msA = .ssA / .dfA
-                .msB = .ssB / .dfB
-                .msAB = .ssAB / .dfAB
-                .fA = .msA / .msError
-                .fB = .msB / .msError
-                .fAB = .msAB / .msError
-                .pA = fisherQ (.fA, .dfA, .dfError)
-                .pB = fisherQ (.fB, .dfB, .dfError)
-                .pAB = fisherQ (.fAB, .dfAB, .dfError)
-            else
-                .warning$ = "The error mean square is zero (no "
-                ... + "within-cell variance), so F and p are undefined."
-            endif
-        endif
-    endif
-
-    # --- Compute partial eta-squared effect sizes ---
-
-    if .error$ = ""
-        .partialEtaSqA = .ssA / (.ssA + .ssError)
-        .partialEtaSqB = .ssB / (.ssB + .ssError)
-        .partialEtaSqAB = .ssAB / (.ssAB + .ssError)
+        .nRows = .nObs
     endif
 
     # --- Restore selection ---

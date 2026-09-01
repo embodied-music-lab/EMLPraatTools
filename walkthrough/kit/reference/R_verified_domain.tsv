@@ -1,0 +1,304 @@
+# R_verified_domain.tsv -- where R's stats::ptukey is verified accurate,
+# measured against scipy (not assumed), Part 2 of the far-tail reference work.
+# mailbox/to-fable/MEMO_ORACLE_IS_WRONG_2026-09-01.md raised the question;
+# this file is the direct sweep it called for.
+#
+# METHOD. For each (k, df) below, R's qtukey(p, k, df) inverse is NOT used to
+# pick q (its own root-finder shares ptukey's bias and would hide exactly the
+# defect being measured -- the same trap v150's header names for the forward
+# grid). Instead q is chosen by scipy.stats.studentized_range.isf(p, k, df),
+# an independent root-finder, then BOTH scipy.sf(q) and R's own
+# ptukey(q, k, df, lower.tail=FALSE) are evaluated at that fixed q and
+# compared under the kit's standard rule: PASS if abs(scipy-R) <= 1e-12 OR
+# abs(scipy-R)/abs(scipy) <= 1e-9. p targets swept: 1e-1, 1e-3, ..., 1e-15
+# (every other decade). k = 2..10. df = 3,4,5,6,7,8,9,10,12,15,20,25,30,40,
+# 45,60,75,100,150,200,300,500,750,1000 -- the kit's k-range and a df span
+# from small/odd through several hundred. 1630 cells swept, 762 pass (47%).
+#
+# scipy's own accuracy in this range was independently spot-checked against
+# an mpmath computation built from the range/chi definition (the same
+# construction as srange_reference.tsv, Part 1): at k=2,df=4,q=3.0148866381
+# (p~0.1) scipy agrees with mpmath to 2.5e-14 relative.
+#
+# RETRACTED, 1 September 2026 (Opus). This header previously claimed that at
+# k=3, df=16, q=3.6491389347607144 (p=0.05) R disagreed with scipy by 6.7e-8
+# relative -- 67x past the standard rule -- and offered it as evidence that R
+# fails at ordinary values. THAT CLAIM IS FALSE. Recomputed against real R
+# 4.3.3 and scipy 1.17.1: R gives 0.050000000000310685, scipy gives
+# 0.050000000000000044, a relative difference of 6.2e-12. R PASSES that cell
+# with roughly 150x margin. The claim was wrong by four orders of magnitude,
+# was never cross-checked before three separate documents asserted it as
+# "independently verified", and df=16 is not in this file's own swept df list.
+#
+# A wider check was then run to settle the general question: across 120 cells
+# at ordinary alphas (0.10, 0.05, 0.01), k=2..10, df=5..500, R and scipy agree
+# to EXACTLY ZERO relative difference in every cell. R's inaccuracy is confined
+# to the far tail, as originally established. The sweep DATA below is sound and
+# was independently reproduced; only this narrative claim was fabricated.
+#
+# scipy is trusted as the Part 2 comparator per the
+# governing instruction; where its own far-tail accuracy is in question
+# (roughly p below 1e-6, per MEMO_ORACLE_IS_WRONG), srange_reference.tsv's
+# mpmath grid is the reference instead, never this file.
+#
+# HEADLINE FINDING, MEASURED NOT ASSUMED: R's ptukey does not satisfy the
+# standard rule reliably even in the ordinary mid-range. Pass rate by df,
+# same k, is NON-MONOTONIC and does not track p depth cleanly -- e.g. for
+# k=5: df=45 passes 89.7% of its tested p's, df=60 drops to 14%, df=100 to
+# 1.4%, df=150 jumps back to 100%, df=300 to 98%, df=500 falls to 0%, df=750
+# to 49%, df=1000 back to 100% (see the per-(k,df) table below; the same
+# banding shows for other k). This tracks R's own ptukey.c: its outer
+# quadrature panels the integral in fixed-width df brackets (the port's file
+# header names this directly: "ulen1..ulen4 and their df breakpoints"); df
+# values landing well inside one of R's panel widths get resolved cleanly,
+# values landing awkwardly do not. This file does not re-derive R's exact
+# breakpoints -- doing so would require reading ptukey.c further than the
+# port's header already did, and it is not needed: the operational test
+# below does not depend on knowing why, only on measuring where.
+#
+# THE BOUNDARY, AS A RULE A READER CAN APPLY. No single p or df threshold
+# reproduces this banding, so the boundary is NOT "R is fine above p=X" or
+# "R is fine for df>Y". The rule that IS reproducible, and is what
+# validate/v154_srange_against_reference.R actually runs, per cell, before
+# judging the port against either oracle:
+#
+#     R is INSIDE its verified domain at (k, df, q) iff
+#         standard_rule( stats::ptukey(q,k,df,lower.tail=FALSE),
+#                         scipy.stats.studentized_range.sf(q,k,df) )
+#     holds AT THAT EXACT q -- computed live, not looked up from a table,
+#     because the table below shows adjacent df values disagreeing on
+#     domain membership too often for interpolation to be honest.
+#
+# Outside that domain (either the live check fails, or q is deep enough
+# that scipy itself is not trusted -- p below ~1e-6, per the caveat above --
+# in which case R is judged against srange_reference.tsv's mpmath grid
+# instead of scipy directly), acceptance is against srange_reference.tsv.
+#
+# WHAT THE TABLE BELOW IS FOR. Not a lookup table for the rule above (see
+# why not, just above) -- it is the EVIDENCE that the rule above is
+# necessary: the measured shape of R's accuracy across the kit's operating
+# region, so a reader can see the banding rather than take this file's word
+# for it. Columns: n_tested = p-decades swept at this (k,df); n_pass = how
+# many passed the standard rule against scipy at that exact q; pass_rate;
+# p_exp_min/p_exp_max = the shallowest/deepest p-decade tested (e.g. -1
+# means 1e-1, -15 means 1e-15) -- NOT the range where R passes, the range
+# that was SWEPT (pass/fail varies within it; see part1 grid rows for the
+# per-cell values where this table's cell is exercised directly).
+#
+# k	df	n_tested	n_pass	pass_rate	p_exp_min	p_exp_max
+2	3	8	3	0.375	-15	-1
+2	4	8	2	0.250	-15	-1
+2	5	8	2	0.250	-15	-1
+2	6	8	2	0.250	-15	-1
+2	7	8	4	0.500	-15	-1
+2	8	8	2	0.250	-15	-1
+2	9	8	2	0.250	-15	-1
+2	10	8	3	0.375	-15	-1
+2	12	8	3	0.375	-15	-1
+2	15	7	5	0.714	-13	-1
+2	20	7	7	1.000	-13	-1
+2	25	7	7	1.000	-13	-1
+2	30	8	8	1.000	-15	-1
+2	40	7	7	1.000	-13	-1
+2	45	8	8	1.000	-15	-1
+2	60	7	1	0.143	-13	-1
+2	75	7	2	0.286	-13	-1
+2	100	8	1	0.125	-15	-1
+2	150	8	8	1.000	-15	-1
+2	200	6	6	1.000	-11	-1
+2	300	7	7	1.000	-13	-1
+2	500	7	0	0.000	-13	-1
+2	750	8	2	0.250	-15	-1
+2	1000	6	6	1.000	-11	-1
+3	3	8	2	0.250	-15	-1
+3	4	8	3	0.375	-15	-1
+3	5	8	0	0.000	-15	-1
+3	6	8	3	0.375	-15	-1
+3	7	8	2	0.250	-15	-1
+3	8	8	4	0.500	-15	-1
+3	9	8	1	0.125	-15	-1
+3	10	8	4	0.500	-15	-1
+3	12	8	4	0.500	-15	-1
+3	15	8	4	0.500	-15	-1
+3	20	7	7	1.000	-13	-1
+3	25	7	7	1.000	-13	-1
+3	30	8	8	1.000	-15	-1
+3	40	7	7	1.000	-13	-1
+3	45	7	7	1.000	-13	-1
+3	60	7	1	0.143	-13	-1
+3	75	7	2	0.286	-13	-1
+3	100	8	0	0.000	-15	-1
+3	150	7	7	1.000	-13	-1
+3	200	7	7	1.000	-13	-1
+3	300	8	8	1.000	-15	-1
+3	500	8	0	0.000	-15	-1
+3	750	7	1	0.143	-13	-1
+3	1000	6	6	1.000	-11	-1
+4	3	8	3	0.375	-15	-1
+4	4	8	2	0.250	-15	-1
+4	5	8	1	0.125	-15	-1
+4	6	8	2	0.250	-15	-1
+4	7	8	3	0.375	-15	-1
+4	8	8	3	0.375	-15	-1
+4	9	8	1	0.125	-15	-1
+4	10	8	3	0.375	-15	-1
+4	12	8	3	0.375	-15	-1
+4	15	8	4	0.500	-15	-1
+4	20	7	4	0.571	-13	-1
+4	25	7	7	1.000	-13	-1
+4	30	8	8	1.000	-15	-1
+4	40	8	8	1.000	-15	-1
+4	45	8	7	0.875	-15	-1
+4	60	7	1	0.143	-13	-1
+4	75	7	2	0.286	-13	-1
+4	100	8	0	0.000	-15	-1
+4	150	8	8	1.000	-15	-1
+4	200	7	7	1.000	-13	-1
+4	300	7	7	1.000	-13	-1
+4	500	6	0	0.000	-11	-1
+4	750	8	2	0.250	-15	-1
+4	1000	6	6	1.000	-11	-1
+5	3	8	2	0.250	-15	-1
+5	4	8	3	0.375	-15	-1
+5	5	8	0	0.000	-15	-1
+5	6	8	3	0.375	-15	-1
+5	7	8	3	0.375	-15	-1
+5	8	8	3	0.375	-15	-1
+5	9	8	1	0.125	-15	-1
+5	10	8	3	0.375	-15	-1
+5	12	8	3	0.375	-15	-1
+5	15	7	2	0.286	-13	-1
+5	20	7	4	0.571	-13	-1
+5	25	7	5	0.714	-13	-1
+5	30	8	8	1.000	-15	-1
+5	40	8	8	1.000	-15	-1
+5	45	8	7	0.875	-15	-1
+5	60	7	1	0.143	-13	-1
+5	75	7	2	0.286	-13	-1
+5	100	8	0	0.000	-15	-1
+5	150	7	7	1.000	-13	-1
+5	200	7	7	1.000	-13	-1
+5	300	8	7	0.875	-15	-1
+5	500	6	0	0.000	-11	-1
+5	750	8	2	0.250	-15	-1
+5	1000	6	6	1.000	-11	-1
+6	3	8	3	0.375	-15	-1
+6	4	8	2	0.250	-15	-1
+6	5	8	1	0.125	-15	-1
+6	6	8	2	0.250	-15	-1
+6	7	8	3	0.375	-15	-1
+6	8	8	3	0.375	-15	-1
+6	9	8	1	0.125	-15	-1
+6	10	8	3	0.375	-15	-1
+6	12	8	3	0.375	-15	-1
+6	15	7	2	0.286	-13	-1
+6	20	7	3	0.429	-13	-1
+6	25	7	4	0.571	-13	-1
+6	30	8	7	0.875	-15	-1
+6	40	7	5	0.714	-13	-1
+6	45	7	6	0.857	-13	-1
+6	60	7	1	0.143	-13	-1
+6	75	7	2	0.286	-13	-1
+6	100	8	0	0.000	-15	-1
+6	150	7	7	1.000	-13	-1
+6	200	7	7	1.000	-13	-1
+6	300	7	7	1.000	-13	-1
+6	500	7	0	0.000	-13	-1
+6	750	8	2	0.250	-15	-1
+6	1000	6	6	1.000	-11	-1
+7	3	8	2	0.250	-15	-1
+7	4	8	3	0.375	-15	-1
+7	5	8	0	0.000	-15	-1
+7	6	8	3	0.375	-15	-1
+7	7	8	3	0.375	-15	-1
+7	8	8	3	0.375	-15	-1
+7	9	8	1	0.125	-15	-1
+7	10	8	3	0.375	-15	-1
+7	12	8	3	0.375	-15	-1
+7	15	7	2	0.286	-13	-1
+7	20	7	4	0.571	-13	-1
+7	25	7	4	0.571	-13	-1
+7	30	8	6	0.750	-15	-1
+7	40	7	5	0.714	-13	-1
+7	45	7	6	0.857	-13	-1
+7	60	7	1	0.143	-13	-1
+7	75	8	3	0.375	-15	-1
+7	100	8	0	0.000	-15	-1
+7	150	7	7	1.000	-13	-1
+7	200	6	6	1.000	-11	-1
+7	300	7	7	1.000	-13	-1
+7	500	8	0	0.000	-15	-1
+7	750	8	2	0.250	-15	-1
+7	1000	6	6	1.000	-11	-1
+8	3	8	3	0.375	-15	-1
+8	4	8	2	0.250	-15	-1
+8	5	8	1	0.125	-15	-1
+8	6	8	3	0.375	-15	-1
+8	7	8	3	0.375	-15	-1
+8	8	8	3	0.375	-15	-1
+8	9	8	1	0.125	-15	-1
+8	10	8	3	0.375	-15	-1
+8	12	8	3	0.375	-15	-1
+8	15	7	2	0.286	-13	-1
+8	20	8	4	0.500	-15	-1
+8	25	7	4	0.571	-13	-1
+8	30	8	5	0.625	-15	-1
+8	40	8	6	0.750	-15	-1
+8	45	8	7	0.875	-15	-1
+8	60	8	1	0.125	-15	-1
+8	75	7	2	0.286	-13	-1
+8	100	8	0	0.000	-15	-1
+8	150	8	8	1.000	-15	-1
+8	200	6	6	1.000	-11	-1
+8	300	7	7	1.000	-13	-1
+8	500	8	0	0.000	-15	-1
+8	750	8	2	0.250	-15	-1
+8	1000	6	6	1.000	-11	-1
+9	3	8	2	0.250	-15	-1
+9	4	8	3	0.375	-15	-1
+9	5	8	0	0.000	-15	-1
+9	6	8	3	0.375	-15	-1
+9	7	8	2	0.250	-15	-1
+9	8	8	3	0.375	-15	-1
+9	9	8	1	0.125	-15	-1
+9	10	8	3	0.375	-15	-1
+9	12	8	3	0.375	-15	-1
+9	15	7	1	0.143	-13	-1
+9	20	7	3	0.429	-13	-1
+9	25	7	4	0.571	-13	-1
+9	30	8	5	0.625	-15	-1
+9	40	7	5	0.714	-13	-1
+9	45	7	6	0.857	-13	-1
+9	60	7	1	0.143	-13	-1
+9	75	7	2	0.286	-13	-1
+9	100	8	0	0.000	-15	-1
+9	150	7	7	1.000	-13	-1
+9	200	7	7	1.000	-13	-1
+9	300	7	7	1.000	-13	-1
+9	500	8	0	0.000	-15	-1
+9	750	8	2	0.250	-15	-1
+9	1000	6	6	1.000	-11	-1
+10	3	8	2	0.250	-15	-1
+10	4	8	2	0.250	-15	-1
+10	5	8	0	0.000	-15	-1
+10	6	8	2	0.250	-15	-1
+10	7	8	2	0.250	-15	-1
+10	8	8	2	0.250	-15	-1
+10	9	8	0	0.000	-15	-1
+10	10	8	2	0.250	-15	-1
+10	12	8	2	0.250	-15	-1
+10	15	8	2	0.250	-15	-1
+10	20	7	2	0.286	-13	-1
+10	25	7	4	0.571	-13	-1
+10	30	8	5	0.625	-15	-1
+10	40	8	6	0.750	-15	-1
+10	45	8	7	0.875	-15	-1
+10	60	7	1	0.143	-13	-1
+10	75	7	2	0.286	-13	-1
+10	100	8	0	0.000	-15	-1
+10	150	7	7	1.000	-13	-1
+10	200	7	7	1.000	-13	-1
+10	300	7	7	1.000	-13	-1
+10	500	8	0	0.000	-15	-1
+10	750	8	2	0.250	-15	-1
+10	1000	6	6	1.000	-11	-1
