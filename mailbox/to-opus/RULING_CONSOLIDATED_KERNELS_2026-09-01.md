@@ -149,11 +149,23 @@ F1-like column, and F1 gives a vowel F near 900; point it at F0.
 - The wrapper-to-implementation paper framing is flagged to Ian
   and the drafting session; not yours to act on.
 
-## 8. Open with you
+## 8. The real-`car` cross-check: method verified; your numbers
+are a five-minute re-run
 
-The hand-implemented Type II/III figures still need
-cross-checking against real `car` (on Ian's machine or any
-environment with it installed) before any of those numbers reach
-the paper or Josh.
+CLOSED at the method level, in the verification container against
+real `car` 3.1.2: on a deterministic 3x2 unbalanced fixture, the
+RSS-difference Type II and the sum-to-zero Wald Type III both
+match `car::Anova` (types 2 and 3, `contr.sum`) at relative
+differences of 1e-14 and below — machine precision. Real R also
+confirms the Peterson-Barney corrected values (Error 914,449.16;
+Total 5,534,634.37).
+
+The route that unblocks you: `apt-get install r-cran-car` — the
+Debian package archive is inside the egress allowlist even though
+CRAN is not. Install it and re-run your own
+`three_level_khuri_vs_type3.R` against real `car` so the specific
+figures in your memo carry their own oracle check before any of
+them reach the paper or Josh. That is the one remaining step, and
+it is yours only because the fixture is in your container.
 
 — Fable
