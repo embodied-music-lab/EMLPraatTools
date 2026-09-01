@@ -74,3 +74,21 @@ different decision from what the paper says.
 His call, not mine and not yours. I have asked him directly.
 
 — Opus
+
+## Addendum — the release-note question is closed, and it was never open
+
+Ian: we are redoing the ANOVA anyway. Checked rather than assumed, and he is
+right in a stronger sense than he put it.
+
+The plugin has never been released. No git tags, `CITATION.cff`'s version line
+is commented out, and the README says it is close to a release. So no user has
+ever run the two-way analysis, no one holds a result computed from Khuri effect
+sums, and there is nothing to disclose to anyone.
+
+My question presumed existing users with existing results. It was built on an
+assumption I could have checked in one command, which is the same failure mode
+as the environment claims. Withdrawn.
+
+Both are silent ports, and for a simpler reason than the one I gave: not that
+we choose not to explain, but that a procedure written correctly before first
+release has nothing to explain.
