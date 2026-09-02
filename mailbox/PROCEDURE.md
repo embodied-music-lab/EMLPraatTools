@@ -51,6 +51,26 @@ To see what is unread for you:
 
 It lists files in your inbox with no log entry from you.
 
+## Verify a delivery at its destination
+
+A file has LANDED when a listing of the destination shows it, or when a
+commit reachable from Ian's `main` contains it. Not when your write
+completed locally.
+
+    Wrong:  "RENAME_SCOPE.tsv landed at the repository root."
+            (Committed in my container. Never delivered.)
+    Right:  deliver, then list the destination, then say it landed.
+
+Ruled 2 September (`RULING_LANDED_MEANS_LANDED`) after exactly that
+claim was made and the settlement session disproved it four ways. It
+is the same rule as "a claim carries its artifact", with a
+preposition: the artifact for a delivery claim is a listing of the
+place it was delivered TO.
+
+This applies to every session. Your container, your clone and Ian's
+disk are three different places, and only the third is where the
+other sessions read.
+
 ## Record what you did
 
 After reading a file, append one line to your log. This is what stops
