@@ -1903,6 +1903,97 @@ scripts <- c(
                                  # discards the caller's override, proving
                                  # the acceptance check goes red if the gate
                                  # is ever made inert.
+    ,
+    "v150_studentized_range.R"   # @emlStudentizedRangeQ / @emlInvStudentizedRangeQ
+                                 # (the standalone kernel, not yet wired into
+                                 # @emlTukeyHSD) against R's ptukey/qtukey at
+                                 # the standard rule, mid tail. Drives Praat
+                                 # live; SKIPs (does not fail) with no Praat
+                                 # >= 6.6.30 on PATH.
+    ,
+    "v151_twoway_types.R"        # @emlAnovaKernelTwoWay Types I/II/III against
+                                 # real car::Anova (contr.sum/contr.poly) on
+                                 # balanced and unbalanced fixtures, plus the
+                                 # headline-selection switch. Kernel check --
+                                 # not called from any menu yet. Drives Praat
+                                 # live; SKIPs below the plugin's Praat floor.
+    ,
+    "v152_extraction_count.R"    # ONE-EXTRACTION-PER-CASE (RULING_CONSOLIDATED_
+                                 # KERNELS_2026-09-01.md Section 5): instruments
+                                 # @eml_getGroupData with a call counter on a
+                                 # TEMPORARY copy installed over the live
+                                 # ~/.praat-dir plugin, gated on
+                                 # @emlOneWayAnova called directly; backs up
+                                 # and restores the three installed files
+                                 # unconditionally. Drives Praat live; SKIPs
+                                 # below the plugin's Praat floor.
+    ,
+    "v153_result_state.R"        # LMM result-store clear-on-entry, end to end:
+                                 # @emlResultClearAll clears genuine stale
+                                 # ANOVA state ahead of an LMM run, and the
+                                 # export-under-wrong-glance symptom does not
+                                 # reproduce on this tree (a separate,
+                                 # earlier fix already closed it). Drives the
+                                 # installed plugin live via praat6630;
+                                 # precondition gates fail loudly rather than
+                                 # skipping quietly if the install is missing.
+    ,
+    "v154_srange_against_reference.R" # re-judges v150's kernel against
+                                 # walkthrough/kit/reference/srange_reference.tsv
+                                 # (an independent mpmath grid) wherever R's
+                                 # ptukey/qtukey is not verified accurate for
+                                 # that exact point, live domain re-checked
+                                 # per row via scipy. THE REFERENCE GRID IS
+                                 # OWNED BY ANOTHER AGENT AND IS BEING
+                                 # REGENERATED AS THIS RUNS -- some cells are
+                                 # EXPECTED to fail against today's grid; that
+                                 # is a real, recorded FAIL (exit 1), not a
+                                 # crash (exit 2), and is not evidence the
+                                 # kernel regressed. Drives Praat live and
+                                 # python3/scipy; SKIPs (not fails) with no
+                                 # Praat >= 6.6.30, no reference file, or no
+                                 # scipy.
+    ,
+    "v155_public_registry.R"     # the public-surface registry
+                                 # (REGISTRY.tsv) against the tree: rows
+                                 # resolve, the recorder's emitted-call
+                                 # population is contained, the
+                                 # not-yet-built generation check is stated
+                                 # honestly rather than passing vacuously,
+                                 # and every emlRun*/dispatch/menu entry
+                                 # point not on RUN_EXCLUSIONS has a row.
+                                 # Source only; reads no harness.
+    ,
+    "v156_marginal_means.R"      # @emlAnovaKernelTwoWayEMM/PostHoc/
+                                 # SimpleEffects against real emmeans
+                                 # (weights="equal") across four fixtures --
+                                 # EMMs, Bonferroni/Holm/BH/Tukey/Scheffe
+                                 # post hoc, and simple effects. AS MEASURED:
+                                 # 2352 checks, 2345 passed, 7 known FAILs, all
+                                 # on two well-characterised numerical-precision
+                                 # edges the file's own header names (Praat's
+                                 # general-algorithm Tukey q at k=2 vs emmeans'
+                                 # exact closed form; squared-t compounding on
+                                 # a near-null Scheffe F) rather than an
+                                 # arithmetic defect -- a real, recorded FAIL,
+                                 # not a crash. Drives Praat live; requires the
+                                 # emmeans package (apt r-cran-emmeans; CRAN is
+                                 # blocked here), skipping with an attestation
+                                 # if it is unavailable.
+    ,
+    "v157_environment_capture.R" # the walkthrough kit's environment capture:
+                                 # both runners' audit/{praat,r}_environment.tsv
+                                 # exist and are well-formed on a SCRATCH copy
+                                 # of the kit; the Praat-version assertion
+                                 # actually fails on a mismatch, demonstrated
+                                 # by an IN-PLACE mutation of the tracked
+                                 # RUN_ME_FIRST.praat that is restored before
+                                 # this file returns, with its own sha256
+                                 # before/after check that the restore is
+                                 # byte-exact; and the plugin's own
+                                 # emlMinPraatVersion agrees with the pin.
+                                 # Requires praat6630 on PATH; the live legs
+                                 # are skipped (not failed) without it.
 )
 
 # ---------------------------------------------------------------------------
