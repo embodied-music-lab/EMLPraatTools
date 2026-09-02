@@ -47,7 +47,7 @@
 #   @emlDrawAnnotationBlock      — render the multi-line corner text box
 #   @emlMeasureMatrixLayout      — measure matrix panel geometry (rotate, truncate, stack)
 #   @emlDrawMatrixPanel          — render the comparison matrix panel
-#   @emlBridgeGroupComparison    — run group test, populate brackets
+#   @emlRunAnnotationComparison    — run group test, populate brackets
 #   @emlBridgeCorrelation        — run correlation, populate regression (UNUSED)
 #   @emlReportBridgeStats        — thin dispatcher: graphs tool → shared reporter
 #   @emlReportTwoGroupComparison — shared reporter: two-group comparison
@@ -518,7 +518,7 @@ endproc
 # halves rather than trusting a character count — and why it leaves .widthMM
 # and .availMM behind for a harness to read.
 #
-# THE HALVES ARE NOT JOINED BY THIS PROCEDURE BY ACCIDENT. @emlBridgeGroupComparison
+# THE HALVES ARE NOT JOINED BY THIS PROCEDURE BY ACCIDENT. @emlRunAnnotationComparison
 # stores the test and the adjustment clause separately. Joining them here
 # means the wrap point is a seam that already exists in the data, so the
 # two-line form never splits a word or a clause, and it means the two arms'
@@ -1812,7 +1812,7 @@ endproc
 # anywhere, so:
 #   * any consumer that needs the raw label (e.g. a data lookup keyed on the
 #     group name) must read it BEFORE this procedure runs, or re-read it from
-#     the bridge (@emlBridgeGroupComparison.gLabel$[]);
+#     the bridge (@emlRunAnnotationComparison.gLabel$[]);
 #   * the procedure is not idempotent — calling it twice at a narrower width
 #     truncates an already-truncated (and already-sanitized) string;
 #   * @emlClearAnnotations therefore clears annotMatrixLabel$[] over the
@@ -2709,7 +2709,7 @@ endproc
 # procedure records the canon and a text check enforces that the copies agree.
 #
 # WHAT THE BRIDGE RUNS, and it is not a choice made here -- it is read off the
-# arms of @emlBridgeGroupComparison:
+# arms of @emlRunAnnotationComparison:
 #
 #   two groups, parametric      @emlTTest with equal variances OFF -> Welch
 #   two groups, nonparametric   @emlRankBiserialR, which runs Mann-Whitney
@@ -3102,7 +3102,7 @@ endproc
 # @emlBridgeEffectPolicy: .nGroups, .testType$
 # ----------------------------------------------------------------------------
 # WHICH EFFECT SIZE THIS COMPARISON HAS, WHAT IT IS CALLED, AND WHAT SIGN THE
-# STORED NUMBER CARRIES. Four arms of @emlBridgeGroupComparison answered these
+# STORED NUMBER CARRIES. Four arms of @emlRunAnnotationComparison answered these
 # three questions in four places; they are answered here once, so the arm that
 # COMPUTES the result and the path that CONSUMES a stored one cannot drift.
 #
@@ -3162,7 +3162,7 @@ endproc
 # ----------------------------------------------------------------------------
 # THE ONE PLACE A GROUP COMPARISON BECOMES AN ANNOTATION.
 #
-# WHY IT EXISTS. Before the result store, each of @emlBridgeGroupComparison's
+# WHY IT EXISTS. Before the result store, each of @emlRunAnnotationComparison's
 # four arms computed its statistics and then rendered them, inline, in its own
 # copy of the same two loops — four copies of the bracket loop and four of the
 # matrix loop, differing in which procedure supplied the numbers. The store
@@ -3181,7 +3181,7 @@ endproc
 # list for this door, which is exactly why a stored result may be redrawn
 # under any of them without re-running anything.
 #
-# THE GROUP LABELS ARE READ FROM emlBridgeGroupComparison.gLabel$[]. Praat
+# THE GROUP LABELS ARE READ FROM emlRunAnnotationComparison.gLabel$[]. Praat
 # cannot pass an array to a procedure, so the labels cannot be an argument;
 # and inventing a second global array to carry them would be a second place
 # the display order lives. The bridge captures those labels at entry
@@ -3222,7 +3222,7 @@ procedure emlBridgeRenderAnnotations: .nGroups, .useMatrix, .style$, .showNS, .s
             annotMatrixEffectLabel$ = ""
         endif
         for .i from 1 to .nGroups
-            annotMatrixLabel$[.i] = emlBridgeGroupComparison.gLabel$[.i]
+            annotMatrixLabel$[.i] = emlRunAnnotationComparison.gLabel$[.i]
         endfor
 
         for .i from 1 to .nGroups - 1
@@ -3353,7 +3353,7 @@ endproc
 
 
 # ----------------------------------------------------------------------------
-# @emlBridgeGroupComparison
+# @emlRunAnnotationComparison
 # For bar chart, violin, box plot, and grouped violin: detect number of
 # groups, run the appropriate statistical test, populate bracket or matrix
 # annotations.
@@ -3404,7 +3404,7 @@ endproc
 #                    and before it read one value by group.
 #     .hasPairwise   1 once a pairwise result exists to draw and to publish.
 # ----------------------------------------------------------------------------
-procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .style$, .showNS, .showEffect, .testType$, .layoutMode
+procedure emlRunAnnotationComparison: .tableId, .dataCol$, .factorCol$, .alpha, .style$, .showNS, .showEffect, .testType$, .layoutMode
     # .layoutMode: 1 = auto, 2 = force brackets, 3 = force matrix
     .omnibus$ = ""
     .error$ = ""
@@ -4478,7 +4478,7 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
             ; "" on every path that prints no report, which is what the
             ; changed-setting path is and what "" means at the write site.
             emlPublishInReport$ = .canonReport$
-            @emlPublishAnalysisResult: "emlBridgeGroupComparison", "graph",
+            @emlPublishAnalysisResult: "emlRunAnnotationComparison", "graph",
             ... "group", .error$, .key$, .keyError$, .tableId, .tableName$,
             ... .dataCol$, .factorCol$, emlBridgeStoreIdentity.test$,
             ... emlBridgeStoreIdentity.correction$, .alpha, .sort$,
@@ -4526,7 +4526,7 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
             ... + ", " + string$ (.nGroups) + " groups",
             ... "Reached through the figure's annotation rather than the "
             ... + "stats menu; the test and the correction are the same.",
-            ... "@emlBridgeGroupComparison: data, """ + .dataCol$ + """, """
+            ... "@emlRunAnnotationComparison: data, """ + .dataCol$ + """, """
             ... + .factorCol$ + """, " + string$ (.alpha) + ", """ + .style$
             ... + """, " + string$ (.showNS) + ", " + string$ (.showEffect)
             ... + ", """ + .testType$ + """, " + string$ (.layoutMode),
@@ -4710,7 +4710,7 @@ endproc
 #                 which @emlReportLine appends as the explanation column.
 #                 69 calls in 42 statements. ALL ROUTED THROUGH @eml_fixed.
 #
-#   recorded   -> @emlBridgeGroupComparison's .recResult$, which is neither.
+#   recorded   -> @emlRunAnnotationComparison's .recResult$, which is neither.
 #                 It is the workflow record's note beside a recorded call, and
 #                 it is built from .omnibus$ ON PURPOSE so that the record
 #                 carries the string the reader saw on the plot, character for
@@ -4749,7 +4749,7 @@ endproc
 #
 # docs/RULING_RESULT_STORE.md section (c), and the sentence the whole store
 # was built around: "Never a second full report -- the duplicate report IS the
-# driven defect." @emlBridgeGroupComparison has already decided, because it is
+# driven defect." @emlRunAnnotationComparison has already decided, because it is
 # the only thing that knows whether it computed anything, and it leaves the
 # decision in .printReport. This procedure obeys it. It adds no rule of its
 # own: a second rule is how the bridge and the form come to disagree about
@@ -4809,8 +4809,8 @@ endproc
 # ============================================================================
 procedure emlGraphsReportBridgeIfNew: .tableId, .dataCol$, .groupCol$
     .print = 1
-    if variableExists ("emlBridgeGroupComparison.printReport")
-        .print = emlBridgeGroupComparison.printReport
+    if variableExists ("emlRunAnnotationComparison.printReport")
+        .print = emlRunAnnotationComparison.printReport
     endif
 
     ; ITEM 1.2 — THE LINE THE BRIDGE LEFT FOR THIS PROCEDURE TO PRINT, if it
@@ -4821,9 +4821,9 @@ procedure emlGraphsReportBridgeIfNew: .tableId, .dataCol$, .groupCol$
     ; name the first has just established exists.
     .notePending = 0
     .note$ = ""
-    if variableExists ("emlBridgeGroupComparison.notePending")
-        .notePending = emlBridgeGroupComparison.notePending
-        .note$ = emlBridgeGroupComparison.note$
+    if variableExists ("emlRunAnnotationComparison.notePending")
+        .notePending = emlRunAnnotationComparison.notePending
+        .note$ = emlRunAnnotationComparison.note$
     endif
 
     if .print = 1
@@ -4838,15 +4838,15 @@ endproc
 # ============================================================================
 # @emlReportBridgeStats — thin dispatcher for graphs tool
 # ============================================================================
-# Called by eml-graphs.praat after @emlBridgeGroupComparison has run.
+# Called by eml-graphs.praat after @emlRunAnnotationComparison has run.
 # Routes to the correct shared reporter based on bridge globals.
 # Same 3-argument signature as the original monolithic reporter.
 # ============================================================================
 procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
-    .nGroups = emlBridgeGroupComparison.nGroups
-    .testType$ = emlBridgeGroupComparison.testType$
+    .nGroups = emlRunAnnotationComparison.nGroups
+    .testType$ = emlRunAnnotationComparison.testType$
 
     ; ------------------------------------------------------------------
     ; ITEM 3.5 -- WHAT THE BRIDGE DID, ASKED OF THE BRIDGE.
@@ -4858,7 +4858,7 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
     ; window comes to describe a post-hoc no figure ran, and how
     ; @emlDeclareTukeyResult comes to read a matrix nobody built.
     ;
-    ; SO IT ASKS. .doTukey here is @emlBridgeGroupComparison's own resolved
+    ; SO IT ASKS. .doTukey here is @emlRunAnnotationComparison's own resolved
     ; flag, read straight off the run that has just finished -- exactly the
     ; shape the Kruskal-Wallis arm below uses for .doDunn, which asks
     ; @emlDunnTest whether it succeeded rather than assuming it did. Guarded
@@ -4867,8 +4867,8 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
     ; NESTED, never `and`: Praat evaluates both operands.
     ; ------------------------------------------------------------------
     .doTukey = 1
-    if variableExists ("emlBridgeGroupComparison.doTukey")
-        .doTukey = emlBridgeGroupComparison.doTukey
+    if variableExists ("emlRunAnnotationComparison.doTukey")
+        .doTukey = emlRunAnnotationComparison.doTukey
     endif
 
     @emlCSVInit
@@ -4878,8 +4878,8 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         # Read the labels the bridge captured, not emlCountGroups' outputs:
         # @emlCountGroups is re-invoked by the tests the bridge runs, so its
         # outputs do not belong to this comparison by the time we get here.
-        .g1$ = emlBridgeGroupComparison.gLabel$[1]
-        .g2$ = emlBridgeGroupComparison.gLabel$[2]
+        .g1$ = emlRunAnnotationComparison.gLabel$[1]
+        .g2$ = emlRunAnnotationComparison.gLabel$[2]
 
         selectObject: .tableId
         @emlExtractGroupVectors: .tableId, .dataCol$, .groupCol$, .g1$, .g2$
@@ -4965,7 +4965,7 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         # WHAT THE SPLIT COST HERE, measured rather than assumed: nothing yet,
         # on three independent counts, and none of the three is a property of
         # this procedure. (1) The four call sites in eml-graphs-form.praat all
-        # skip this procedure when emlBridgeGroupComparison.error$ is non-empty,
+        # skip this procedure when emlRunAnnotationComparison.error$ is non-empty,
         # and the bridge copies emlOneWayAnova.error$ into that field, so the
         # guard cannot currently be false on the menu path. (2) Reached anyway
         # -- by a script calling the bridge and this reporter without that check
@@ -4998,7 +4998,7 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
     else
         # k-group nonparametric: Kruskal-Wallis
         # THE OMNIBUS DOES NOT DECIDE THIS. Whether the user asked for a
-        # post-hoc decides it: @emlBridgeGroupComparison runs Dunn's on
+        # post-hoc decides it: @emlRunAnnotationComparison runs Dunn's on
         # every nonparametric k-group draw regardless of the omnibus
         # outcome, so a quiet Kruskal-Wallis never silently withholds a
         # post-hoc the user's figure asked for. There is a post-hoc to
@@ -5025,7 +5025,7 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         @emlReportKWComparison: .tableName$, .dataCol$, .groupCol$,
         ... .tableId, .nGroups, .doDunn
 
-        # The declaration @emlRunKWAnalysis makes. NESTED ifs, not `and`, for
+        # The declaration @emlRunKruskalWallisAnalysis makes. NESTED ifs, not `and`, for
         # the reason given above.
         if emlKruskalWallis.error$ = ""
             @emlResultClearExtras

@@ -568,7 +568,7 @@ import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
 head = "                                if variableExists (\"emlRecordLoaded\")\n"
-mark = "                                        tsMeltCode$ = \"@emlGraphsMeltSeries: data, \"\"\"\n"
+mark = "                                        tsMeltCode$ = \"@emlReshapeSeriesLong: data, \"\"\"\n"
 assert s.count(mark) == 1, "melt_step_dropped mark: %d" % s.count(mark)
 start = s.rindex(head, 0, s.index(mark))
 tailmark = ("                                    endif\n"
@@ -614,7 +614,7 @@ fi
 # ---------------------------------------------------------------------------
 # 10. THE MELT'S COLUMNS ARE NOT LIFTED -- the block stops being the whole form
 # ---------------------------------------------------------------------------
-# @emlRecordColumnSpec loses its entry for @emlGraphsMeltSeries, so the melt
+# @emlRecordColumnSpec loses its entry for @emlReshapeSeriesLong, so the melt
 # step keeps its two literals inline. THE FILE STILL RUNS AND THE REPLAY IS
 # STILL BYTE-IDENTICAL -- which is the point of this break, and why it is
 # worth having beside the other two. The defect is not in what is drawn; it is
@@ -631,10 +631,10 @@ if want series_cols_not_lifted; then
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-anchor = ("    elsif .proc$ = \"emlGraphsMeltSeries\"\n"
+anchor = ("    elsif .proc$ = \"emlReshapeSeriesLong\"\n"
           "        .spec$ = \"2=timeCol 3=seriesCols\"\n")
 assert s.count(anchor) == 1, "series_cols_not_lifted anchor: %d" % s.count(anchor)
-new = ("    elsif .proc$ = \"emlGraphsMeltSeries\"\n"
+new = ("    elsif .proc$ = \"emlReshapeSeriesLong\"\n"
        "        .spec$ = \"\"\n")
 open(p, "w", encoding="utf-8").write(s.replace(anchor, new, 1))
 PY
@@ -651,7 +651,7 @@ fi
 # the user's own long table and told to read a column called "f0" that is not
 # in it.
 #
-# WHY THE CONDITION AND NOT THE CALL. Deleting @emlGraphsPivotSeries would be a
+# WHY THE CONDITION AND NOT THE CALL. Deleting @emlReshapeSeriesWide would be a
 # parse error the moment the branch ran; falsifying the guard leaves every line
 # of the pivot, its recording and its cleanup in the file, so a check that
 # greps the source for the call reads it and calls the pivot present. Only a

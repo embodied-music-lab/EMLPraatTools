@@ -127,7 +127,7 @@ record_case () {    # record_case <case> <plugindir> <destdir>
     {
         includes "$plug"
         echo 'Text writing preferences: "UTF-8"'
-        echo '@emlInitDrawingDefaults'
+        echo '@emlInitializeDrawingDefaults'
         echo '@emlClearAnnotations'
         echo '@emlRecordInit'
         echo "emlRecordPluginRoot\$ = \"$plug\""

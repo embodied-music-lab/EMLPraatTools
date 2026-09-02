@@ -93,7 +93,7 @@ for (cs in CASES)
 #
 # `single` sets emlEraseFirst = 1 and the origin to 0, 0 -- what the dialog's
 # defaults produce. `default_untouched` draws the same figure and assigns none
-# of the three, so it renders through @emlInitDrawingDefaults exactly as every
+# of the three, so it renders through @emlInitializeDrawingDefaults exactly as every
 # caller that predates this feature does. The two PNGs are compared BYTE FOR
 # BYTE.
 #
@@ -304,7 +304,7 @@ if (!is.null(begin)) {
                any(grepl("^emlPagePanelN = emlPagePanelN \\+ 1$", begin)))
 }
 check_true(V, "the defaults are erase-on at the origin",
-           any(grepl("^emlEraseFirst = 1$", proc_body(gp, "emlInitDrawingDefaults"))))
+           any(grepl("^emlEraseFirst = 1$", proc_body(gp, "emlInitializeDrawingDefaults"))))
 
 # THE INVENTORY OF EVERY `Erase all` IN THE GRAPHS LAYER, attributed to its
 # enclosing procedure, in the style v32 uses for @emlExpandDrawnExtent. An

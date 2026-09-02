@@ -3887,9 +3887,9 @@ endproc
 #
 #   @emlRunTwoGroupAnalysis   PUBLISHES  the two-group menu door
 #   @emlRunAnovaAnalysis      PUBLISHES  the one-way ANOVA menu door
-#   @emlRunKWAnalysis         PUBLISHES  the Kruskal-Wallis menu door
+#   @emlRunKruskalWallisAnalysis         PUBLISHES  the Kruskal-Wallis menu door
 #   @emlRunPairwiseAnalysis   PUBLISHES  the pairwise menu door
-#   @emlBridgeGroupComparison PUBLISHES  the GRAPH door — the driven defect
+#   @emlRunAnnotationComparison PUBLISHES  the GRAPH door — the driven defect
 #
 #   @emlReportAnovaComparison EXEMPT — it is the report half of a run, not a
 #   @emlReportKWComparison    run. Both are called BY the orchestrator above

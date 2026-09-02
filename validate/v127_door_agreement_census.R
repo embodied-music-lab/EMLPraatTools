@@ -86,7 +86,7 @@
 #         (Simpson)                ruled the fix IN for 1.0 (the regression
 #                                  dialog gains the correlate dialog's
 #                                  per-group pattern) and punch-list 4.5 has
-#                                  now landed it: @emlRunGroupedRegression
+#                                  now landed it: @emlRunGroupedRegressionAnalysis
 #                                  (stats/eml-analysis.praat) is the ONE
 #                                  shared call both the menu door
 #                                  (scripts/eml-regress.praat) and both of
@@ -356,7 +356,7 @@ site2_wired <- length(leg1_hardcoded_line) > 0 &&
               bridge_src[leg1_hardcoded_line[1] + 0:2]))
 
 check_true(V,
-           sprintf("ITEM 3.5 site 1 of 2 (@emlOneWayAnova in @emlBridgeGroupComparison) is no longer a literal: %s",
+           sprintf("ITEM 3.5 site 1 of 2 (@emlOneWayAnova in @emlRunAnnotationComparison) is no longer a literal: %s",
                    if (site1_literal) "STILL THE LITERAL 1 -- this is the red demonstration"
                    else if (site1_wired) "takes .doTukey" else "neither form found -- re-check the call"),
            !site1_literal && site1_wired)
@@ -371,9 +371,9 @@ check_true(V,
 # names and forbids. So the source of the value is asserted too.
 bridge_reads_global <- any(grepl('^\\s*if variableExists \\("annotPostHoc"\\)\\s*$', bridge_src)) &&
     any(grepl("^\\s*if annotPostHoc = 0\\s*$", bridge_src))
-reporter_reads_bridge <- any(grepl('^\\s*if variableExists \\("emlBridgeGroupComparison\\.doTukey"\\)\\s*$',
+reporter_reads_bridge <- any(grepl('^\\s*if variableExists \\("emlRunAnnotationComparison\\.doTukey"\\)\\s*$',
                                    bridge_src)) &&
-    any(grepl("^\\s*\\.doTukey = emlBridgeGroupComparison\\.doTukey\\s*$", bridge_src))
+    any(grepl("^\\s*\\.doTukey = emlRunAnnotationComparison\\.doTukey\\s*$", bridge_src))
 check_true(V,
            "ITEM 3.5 the bridge takes its post-hoc answer from the annotPostHoc global, not from a second literal",
            bridge_reads_global)
@@ -413,7 +413,7 @@ check_true(V,
            n_commit == 6L && n_persist == 12L && n_seed == 6L)
 
 # DRIVEN, NOT ONLY READ. harness/doorcensus/probe.praat runs
-# @emlBridgeGroupComparison twice on this leg's own fixture, once with the
+# @emlRunAnnotationComparison twice on this leg's own fixture, once with the
 # dialog's answer set to "yes". Item 3.5 withholds nothing from a user who
 # asked for a post-hoc, and this is the check that says so.
 check_true(V,
@@ -471,7 +471,7 @@ check_true(V,
                    num("leg3", "tukey_p_CA"), num("leg3", "tukey_p_CB")),
            is.finite(num("leg3", "tukey_p_CA")) && num("leg3", "tukey_p_CA") < 0.001)
 
-# ITEM 3.5, DRIVEN. The probe runs @emlBridgeGroupComparison on this same
+# ITEM 3.5, DRIVEN. The probe runs @emlRunAnnotationComparison on this same
 # table with the launching dialog's post-hoc answer set to "no" -- which is
 # what picking the Comparison menu's "ANOVA only, no pairwise tests" row does,
 # because that row is the only thing that writes annotPostHoc. Measured on the
@@ -606,7 +606,7 @@ check_true(V,
            is.finite(leg5_pooled) && abs(leg5_pooled) < 0.05 &&
                leg5_a > 1.5 && leg5_b < -1.5)
 # STRUCTURAL EVIDENCE -- REVISED. Punch-list 4.5 landed: the port is a
-# SEPARATE shared call (@emlRunGroupedRegression, stats/eml-analysis.praat),
+# SEPARATE shared call (@emlRunGroupedRegressionAnalysis, stats/eml-analysis.praat),
 # not a fourth argument threaded into @emlRunRegressionAnalysis itself, so
 # the overall-fit call keeps its original three-argument shape (correctly --
 # the overall fit is still one fit for the whole table) and the group
@@ -615,13 +615,13 @@ check_true(V,
 regress_src <- readLines(file.path(PLUGIN_DIR, "scripts", "eml-regress.praat"), warn = FALSE)
 wizard_src <- readLines(file.path(PLUGIN_DIR, "scripts", "eml-wizard.praat"), warn = FALSE)
 leg5_call_line <- grep("@emlRunRegressionAnalysis:\\s*tableId,\\s*respCol\\$,\\s*predCol\\$\\s*$", regress_src)
-leg5_port_line <- grep("@emlRunGroupedRegression:", regress_src, fixed = TRUE)
-leg5_port_wizard_calls <- sum(grepl("@emlRunGroupedRegression:", wizard_src, fixed = TRUE))
+leg5_port_line <- grep("@emlRunGroupedRegressionAnalysis:", regress_src, fixed = TRUE)
+leg5_port_wizard_calls <- sum(grepl("@emlRunGroupedRegressionAnalysis:", wizard_src, fixed = TRUE))
 check_true(V,
            sprintf("leg5 VERDICT: AGREE -- the per-group port landed (punch-list 4.5): the regression dialog's overall-fit call (%s) is unchanged, and its own %s (eml-regress.praat:%s) now fits and reports each group beside the overall one, matching the scatter draw door's own per-group fit above; the wizard's two regression pages call the same shared procedure (%d call site(s), full detail in validate/v136_regression_grouping.R)",
                    if (length(leg5_call_line)) sprintf("confirmed, eml-regress.praat:%d", leg5_call_line[1])
                    else "NOT CONFIRMED -- re-check the line reference",
-                   "@emlRunGroupedRegression call",
+                   "@emlRunGroupedRegressionAnalysis call",
                    if (length(leg5_port_line)) as.character(leg5_port_line[1]) else "MISSING",
                    leg5_port_wizard_calls),
            length(leg5_call_line) > 0 && length(leg5_port_line) > 0 &&

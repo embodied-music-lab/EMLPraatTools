@@ -9,7 +9,7 @@
 # script: eight legs in one process report one failure and hide seven.
 #
 # AUTHOR RULING C, 16 August 2026, added mw_two and changed what welch_two is
-# for. Both two-group arms of @emlBridgeGroupComparison now name their test --
+# for. Both two-group arms of @emlRunAnnotationComparison now name their test --
 # in the caption band AND in the corner box -- so welch_two is no longer the
 # leg that proves a caption correctly declines, and mw_two is its
 # nonparametric twin so that neither two-group arm can be repaired alone.

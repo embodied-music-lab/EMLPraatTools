@@ -11,7 +11,7 @@
 # same data, every display setting toggled between draws -- asserting zero
 # reprints."
 #
-# THE SETTINGS UNDER TEST are the four @emlBridgeGroupComparison itself takes
+# THE SETTINGS UNDER TEST are the four @emlRunAnnotationComparison itself takes
 # as arguments and validate/v112's own census (section 2, DISPLAY_ONLY)
 # classifies as display-only for that door: .style$ (p-value / stars / both),
 # .showNS, .showEffect, .layoutMode (brackets / matrix). The census is the
@@ -42,7 +42,7 @@
 # every assertion below is written so a missing measurement fails rather than
 # reading as "no evidence either way".
 #
-# @emlBridgeGroupComparison's call site to @emlPublishAnalysisResult now
+# @emlRunAnnotationComparison's call site to @emlPublishAnalysisResult now
 # passes the full argument list in the same order as the shipped signature
 # (stats/eml-extract.praat) -- thirty-seven on both sides of the call -- the
 # same call site validate/v140's header describes for the reprint pins,
@@ -95,14 +95,14 @@ REQUIRED_LEGS <- c("style_pvalue", "style_stars",
                    "layout_brackets", "layout_matrix")
 
 WHICH_SETTING <- c(
-    style_pvalue = "emlBridgeGroupComparison.style$",
-    style_stars = "emlBridgeGroupComparison.style$",
-    shownsigns_0 = "emlBridgeGroupComparison.showNS",
-    shownsigns_1 = "emlBridgeGroupComparison.showNS",
-    showeffect_0 = "emlBridgeGroupComparison.showEffect",
-    showeffect_1 = "emlBridgeGroupComparison.showEffect",
-    layout_brackets = "emlBridgeGroupComparison.layoutMode",
-    layout_matrix = "emlBridgeGroupComparison.layoutMode")
+    style_pvalue = "emlRunAnnotationComparison.style$",
+    style_stars = "emlRunAnnotationComparison.style$",
+    shownsigns_0 = "emlRunAnnotationComparison.showNS",
+    shownsigns_1 = "emlRunAnnotationComparison.showNS",
+    showeffect_0 = "emlRunAnnotationComparison.showEffect",
+    showeffect_1 = "emlRunAnnotationComparison.showEffect",
+    layout_brackets = "emlRunAnnotationComparison.layoutMode",
+    layout_matrix = "emlRunAnnotationComparison.layoutMode")
 
 # ---------------------------------------------------------------------------
 # 0. THE DRIVE COMPLETED -- THE RESOLVER GATE

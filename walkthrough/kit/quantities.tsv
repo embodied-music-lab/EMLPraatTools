@@ -48,11 +48,11 @@
 # FINDING: 12 OF THE 13 ANALYSIS-LANE ORCHESTRATORS HAVE NO Outputs HEADER.
 # ---------------------------------------------------------------------------
 # stats/eml-analysis.praat is 4800 lines and contains exactly ONE `Outputs:`
-# block (line 3193, @emlRunGroupedRegression) -- and that one lists only
+# block (line 3193, @emlRunGroupedRegressionAnalysis) -- and that one lists only
 # .pgTotal / .pgRun / .pgSkipped, the group counts, not one statistic. These
 # twelve have none at all:
 #
-#   @emlRunTwoGroupAnalysis   @emlRunAnovaAnalysis     @emlRunKWAnalysis
+#   @emlRunTwoGroupAnalysis   @emlRunAnovaAnalysis     @emlRunKruskalWallisAnalysis
 #   @emlRunPairwiseAnalysis   @emlRunPairedAnalysis    @emlRunCorrelationAnalysis
 #   @emlRunRegressionAnalysis @emlRunTwoWayAnalysis    @emlRunRepeatedMeasuresAnalysis
 #   @emlRunFriedmanAnalysis   @emlRunNormalityAnalysis @emlRunDescriptiveAnalysis
@@ -219,16 +219,16 @@ emlRunAnovaAnalysis	posthoc_<PAIR>_diff	pair	posthoc=1	both	stats/eml-inferentia
 emlRunAnovaAnalysis	posthoc_<PAIR>_ci_low	pair	posthoc=1	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .qCritical .msWithin .groupN[] (tukey=1); printed graphs/eml-annotation-procedures.praat:5569	THE ROW D-NOCI DENIED. The plugin computes the family-wise half-width qCritical*sqrt(msWithin/2*(1/ni+1/nj)) from its own declared returns and PRINTS the interval in the Tukey HSD Mean Differences block. Compared against stats::TukeyHSD lwr.
 emlRunAnovaAnalysis	posthoc_<PAIR>_ci_high	pair	posthoc=1	both	stats/eml-inferential.praat:2626 @emlOneWayAnova .qCritical .msWithin .groupN[] (tukey=1); printed graphs/eml-annotation-procedures.praat:5569	As ci_low. Compared against stats::TukeyHSD upr.
 emlRunAnovaAnalysis	posthoc_<PAIR>_q	pair	posthoc=1	praat	stats/eml-inferential.praat:2364 @emlTukeyHSD .qMatrix##	Praat side alone. The studentised range q is intrinsic to the plugin's method; stats::TukeyHSD does not expose it. See D-TUKEYQ.
-emlRunKWAnalysis	h	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .h	
-emlRunKWAnalysis	df	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .df	
-emlRunKWAnalysis	p	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .p	
-emlRunKWAnalysis	n	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .n	
-emlRunKWAnalysis	epsilon_squared	cell	always	both	stats/eml-inferential.praat:3593 @emlEpsilonSquared .result	
-emlRunKWAnalysis	eta_squared	cell	always	r	run_analyses.R rstatix::kruskal_effsize	R side alone. eta-squared[H]; the plugin reports epsilon-squared only. RULED 26 Aug 2026 (Fable, docs/RULING_KIT_DELTAS_2026-08-26.md): a DOCUMENTED ABSENCE under the quantity contract -- a decided non-quantity with the decision cited here, never an exemption. See D-KW-ETA and docs/OPEN_ITEMS.md.
-emlRunKWAnalysis	posthoc_<PAIR>_padj	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .pMatrix##	Post-hoc axis.
-emlRunKWAnalysis	posthoc_<PAIR>_p	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .rawP#	Post-hoc axis.
-emlRunKWAnalysis	posthoc_<PAIR>_z	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .zMatrix##	Post-hoc axis.
-emlRunKWAnalysis	posthoc_<PAIR>_rank_biserial	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .rMatrix##	Post-hoc axis.
+emlRunKruskalWallisAnalysis	h	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .h	
+emlRunKruskalWallisAnalysis	df	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .df	
+emlRunKruskalWallisAnalysis	p	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .p	
+emlRunKruskalWallisAnalysis	n	cell	always	both	stats/eml-inferential.praat:3656 @emlKruskalWallis .n	
+emlRunKruskalWallisAnalysis	epsilon_squared	cell	always	both	stats/eml-inferential.praat:3593 @emlEpsilonSquared .result	
+emlRunKruskalWallisAnalysis	eta_squared	cell	always	r	run_analyses.R rstatix::kruskal_effsize	R side alone. eta-squared[H]; the plugin reports epsilon-squared only. RULED 26 Aug 2026 (Fable, docs/RULING_KIT_DELTAS_2026-08-26.md): a DOCUMENTED ABSENCE under the quantity contract -- a decided non-quantity with the decision cited here, never an exemption. See D-KW-ETA and docs/OPEN_ITEMS.md.
+emlRunKruskalWallisAnalysis	posthoc_<PAIR>_padj	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .pMatrix##	Post-hoc axis.
+emlRunKruskalWallisAnalysis	posthoc_<PAIR>_p	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .rawP#	Post-hoc axis.
+emlRunKruskalWallisAnalysis	posthoc_<PAIR>_z	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .zMatrix##	Post-hoc axis.
+emlRunKruskalWallisAnalysis	posthoc_<PAIR>_rank_biserial	pair	posthoc=1	both	stats/eml-inferential.praat:3865 @emlDunnTest .rMatrix##	Post-hoc axis.
 emlRunPairwiseAnalysis	k	cell	always	both	stats/eml-extract.praat:4370 write site .nGroups	
 emlRunPairwiseAnalysis	n	cell	always	both	stats/eml-extract.praat:4370 write site .n	THE PLUGIN CANNOT MEET THIS AND SAYS SO. @emlRunPairwiseAnalysis initialises .stN to undefined and never assigns it, so the Praat runner reports n_undefined -- which the contract accepts as REPORTED, because a runner that says a quantity is undefined has reported it. The defect is named in D-PAIRWISE-N and is not excused by dropping the quantity from the contract.
 emlRunPairwiseAnalysis	posthoc_<PAIR>_padj	pair	always	both	stats/eml-inferential.praat:4146 @emlPairwiseT .pMatrix## / 4412 @emlPairwiseWilcoxon .pMatrix## / 4630 @emlScheffe .pMatrix##	Every arm of this procedure returns an adjusted-p matrix.
@@ -295,28 +295,28 @@ emlRunRegressionAnalysis	intercept_t	cell	always	both	stats/eml-inferential.praa
 emlRunRegressionAnalysis	slope_p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pSlope	
 emlRunRegressionAnalysis	intercept_p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pIntercept	
 emlRunRegressionAnalysis	n	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .n	
-emlRunGroupedRegression	pg_total	cell	always	both	stats/eml-analysis.praat:3193 @emlRunGroupedRegression Outputs .pgTotal	THE ONLY Outputs HEADER IN THE ANALYSIS LANE, and it declares these three group counts and nothing else.
-emlRunGroupedRegression	pg_run	cell	always	both	stats/eml-analysis.praat:3193 @emlRunGroupedRegression Outputs .pgRun	
-emlRunGroupedRegression	pg_skipped	cell	always	both	stats/eml-analysis.praat:3193 @emlRunGroupedRegression Outputs .pgSkipped	
-emlRunGroupedRegression	n	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .n	
-emlRunGroupedRegression	overall_slope	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .slope	Whole-table fit.
-emlRunGroupedRegression	overall_intercept	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .intercept	
-emlRunGroupedRegression	overall_r_squared	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .rSquared	
-emlRunGroupedRegression	overall_residual_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seResidual	
-emlRunGroupedRegression	overall_slope_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seSlope	
-emlRunGroupedRegression	overall_intercept_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seIntercept	
-emlRunGroupedRegression	overall_slope_t	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tSlope	
-emlRunGroupedRegression	overall_intercept_t	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tIntercept	
-emlRunGroupedRegression	overall_slope_p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pSlope	
-emlRunGroupedRegression	overall_intercept_p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pIntercept	
-emlRunGroupedRegression	overall_adj_r_squared	cell	always	r	run_analyses.R stats::lm	R side alone. @emlRunGroupedRegression exposes no adjusted R-squared, though the ungrouped door does. See D-MINOR.
-emlRunGroupedRegression	grp_<LEVEL>_n	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .n per group	One per-group fit for every group the two-pass loop ran.
-emlRunGroupedRegression	grp_<LEVEL>_slope	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .slope per group	
-emlRunGroupedRegression	grp_<LEVEL>_intercept	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .intercept per group	
-emlRunGroupedRegression	grp_<LEVEL>_r_squared	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .rSquared per group	
-emlRunGroupedRegression	grp_<LEVEL>_slope_se	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seSlope per group	
-emlRunGroupedRegression	grp_<LEVEL>_slope_t	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tSlope per group	
-emlRunGroupedRegression	grp_<LEVEL>_p	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pSlope per group	
+emlRunGroupedRegressionAnalysis	pg_total	cell	always	both	stats/eml-analysis.praat:3193 @emlRunGroupedRegressionAnalysis Outputs .pgTotal	THE ONLY Outputs HEADER IN THE ANALYSIS LANE, and it declares these three group counts and nothing else.
+emlRunGroupedRegressionAnalysis	pg_run	cell	always	both	stats/eml-analysis.praat:3193 @emlRunGroupedRegressionAnalysis Outputs .pgRun	
+emlRunGroupedRegressionAnalysis	pg_skipped	cell	always	both	stats/eml-analysis.praat:3193 @emlRunGroupedRegressionAnalysis Outputs .pgSkipped	
+emlRunGroupedRegressionAnalysis	n	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .n	
+emlRunGroupedRegressionAnalysis	overall_slope	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .slope	Whole-table fit.
+emlRunGroupedRegressionAnalysis	overall_intercept	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .intercept	
+emlRunGroupedRegressionAnalysis	overall_r_squared	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .rSquared	
+emlRunGroupedRegressionAnalysis	overall_residual_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seResidual	
+emlRunGroupedRegressionAnalysis	overall_slope_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seSlope	
+emlRunGroupedRegressionAnalysis	overall_intercept_se	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seIntercept	
+emlRunGroupedRegressionAnalysis	overall_slope_t	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tSlope	
+emlRunGroupedRegressionAnalysis	overall_intercept_t	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tIntercept	
+emlRunGroupedRegressionAnalysis	overall_slope_p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pSlope	
+emlRunGroupedRegressionAnalysis	overall_intercept_p	cell	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pIntercept	
+emlRunGroupedRegressionAnalysis	overall_adj_r_squared	cell	always	r	run_analyses.R stats::lm	R side alone. @emlRunGroupedRegressionAnalysis exposes no adjusted R-squared, though the ungrouped door does. See D-MINOR.
+emlRunGroupedRegressionAnalysis	grp_<LEVEL>_n	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .n per group	One per-group fit for every group the two-pass loop ran.
+emlRunGroupedRegressionAnalysis	grp_<LEVEL>_slope	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .slope per group	
+emlRunGroupedRegressionAnalysis	grp_<LEVEL>_intercept	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .intercept per group	
+emlRunGroupedRegressionAnalysis	grp_<LEVEL>_r_squared	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .rSquared per group	
+emlRunGroupedRegressionAnalysis	grp_<LEVEL>_slope_se	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seSlope per group	
+emlRunGroupedRegressionAnalysis	grp_<LEVEL>_slope_t	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tSlope per group	
+emlRunGroupedRegressionAnalysis	grp_<LEVEL>_p	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pSlope per group	
 emlRunTwoWayAnalysis	n	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	Parsed from Praat's own built-in Report two-way anova; see D-TWOWAY-PRECISION for the precision ceiling that parse imposes.
 emlRunTwoWayAnalysis	factor1_name	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
 emlRunTwoWayAnalysis	factor2_name	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	

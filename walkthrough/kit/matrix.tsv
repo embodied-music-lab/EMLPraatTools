@@ -91,7 +91,7 @@
 #      parses Praat's own built-in report).
 #   B9 Grouped CORRELATION is absent. It has no analysis-layer procedure: it
 #      is assembled inline in scripts/eml-correlate.praat. Grouped REGRESSION
-#      is present because @emlRunGroupedRegression exists.
+#      is present because @emlRunGroupedRegressionAnalysis exists.
 #   B10 Wilson is crossed at the three levels the committed fixture itself
 #      names (0.90, 0.95, 0.99) rather than at each row's single stored conf.
 #
@@ -192,86 +192,86 @@ c0071	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			0			discovery	
 c0072	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			0			alphabetical				ok		options
 c0073	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			1			discovery				ok		options
 c0074	analysis	emlRunAnovaAnalysis	v73_directional_input	x	slot			1			alphabetical				ok		options
-c0076	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
-c0077	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
-c0078	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	holm		discovery				ok		options
-c0079	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bh		discovery				ok		options
-c0080	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
-c0081	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
-c0082	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
-c0083	analysis	emlRunKWAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
-c0084	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
-c0085	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok		options
-c0086	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok		options
-c0087	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok		options
-c0088	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
-c0089	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok		options
-c0090	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok		options
-c0091	analysis	emlRunKWAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok		options
-c0092	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
-c0093	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
-c0094	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	holm		discovery				ok		options
-c0095	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bh		discovery				ok		options
-c0096	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
-c0097	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
-c0098	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
-c0099	analysis	emlRunKWAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
-c0100	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
-c0101	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok		options
-c0102	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok		options
-c0103	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok		options
-c0104	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
-c0105	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok		options
-c0106	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok		options
-c0107	analysis	emlRunKWAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok		options
-c0108	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
-c0109	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
-c0110	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	holm		discovery				ok		options
-c0111	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bh		discovery				ok		options
-c0112	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
-c0113	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
-c0114	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
-c0115	analysis	emlRunKWAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
-c0116	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
-c0117	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok		options
-c0118	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok		options
-c0119	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok		options
-c0120	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
-c0121	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok		options
-c0122	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok		options
-c0123	analysis	emlRunKWAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok		options
-c0124	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			0	holm		discovery				ok	adjustment unread with Dunn off	options
-c0125	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bonferroni		discovery				ok		options
-c0126	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	holm		discovery				ok		options
-c0127	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bh		discovery				ok		options
-c0128	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
-c0129	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bonferroni		alphabetical				ok		options
-c0130	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	holm		alphabetical				ok		options
-c0131	analysis	emlRunKWAnalysis	v08_twogroup_input	jitter_pct	group			1	bh		alphabetical				ok		options
-c0132	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
-c0133	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
-c0134	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	holm		discovery				ok		options
-c0135	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bh		discovery				ok		options
-c0136	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
-c0137	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
-c0138	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
-c0139	analysis	emlRunKWAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
-c0140	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			0	holm		discovery				ok	adjustment unread with Dunn off	options
-c0141	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bonferroni		discovery				ok		options
-c0142	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	holm		discovery				ok		options
-c0143	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bh		discovery				ok		options
-c0144	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
-c0145	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bonferroni		alphabetical				ok		options
-c0146	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	holm		alphabetical				ok		options
-c0147	analysis	emlRunKWAnalysis	v73_directional_input	x	fam			1	bh		alphabetical				ok		options
-c0148	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			0	holm		discovery				ok	adjustment unread with Dunn off	options
-c0149	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bonferroni		discovery				ok		options
-c0150	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	holm		discovery				ok		options
-c0151	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bh		discovery				ok		options
-c0152	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
-c0153	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bonferroni		alphabetical				ok		options
-c0154	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	holm		alphabetical				ok		options
-c0155	analysis	emlRunKWAnalysis	v73_directional_input	x	slot			1	bh		alphabetical				ok		options
+c0076	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0077	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
+c0078	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	SPL_dB	voice_type			1	holm		discovery				ok		options
+c0079	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bh		discovery				ok		options
+c0080	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0081	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
+c0082	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
+c0083	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
+c0084	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0085	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok		options
+c0086	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok		options
+c0087	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok		options
+c0088	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0089	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok		options
+c0090	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok		options
+c0091	analysis	emlRunKruskalWallisAnalysis	demo_3groups_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok		options
+c0092	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0093	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
+c0094	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	holm		discovery				ok		options
+c0095	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bh		discovery				ok		options
+c0096	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0097	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
+c0098	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
+c0099	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
+c0100	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0101	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok		options
+c0102	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok		options
+c0103	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok		options
+c0104	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0105	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok		options
+c0106	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok		options
+c0107	analysis	emlRunKruskalWallisAnalysis	demo_3groups_b_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok		options
+c0108	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0109	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
+c0110	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	holm		discovery				ok		options
+c0111	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bh		discovery				ok		options
+c0112	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0113	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
+c0114	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
+c0115	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
+c0116	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0117	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bonferroni		discovery				ok		options
+c0118	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	holm		discovery				ok		options
+c0119	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bh		discovery				ok		options
+c0120	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0121	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bonferroni		alphabetical				ok		options
+c0122	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	holm		alphabetical				ok		options
+c0123	analysis	emlRunKruskalWallisAnalysis	v09_anova_tukey_input	vibrato_rate_Hz	voice_type			1	bh		alphabetical				ok		options
+c0124	analysis	emlRunKruskalWallisAnalysis	v08_twogroup_input	jitter_pct	group			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0125	analysis	emlRunKruskalWallisAnalysis	v08_twogroup_input	jitter_pct	group			1	bonferroni		discovery				ok		options
+c0126	analysis	emlRunKruskalWallisAnalysis	v08_twogroup_input	jitter_pct	group			1	holm		discovery				ok		options
+c0127	analysis	emlRunKruskalWallisAnalysis	v08_twogroup_input	jitter_pct	group			1	bh		discovery				ok		options
+c0128	analysis	emlRunKruskalWallisAnalysis	v08_twogroup_input	jitter_pct	group			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0129	analysis	emlRunKruskalWallisAnalysis	v08_twogroup_input	jitter_pct	group			1	bonferroni		alphabetical				ok		options
+c0130	analysis	emlRunKruskalWallisAnalysis	v08_twogroup_input	jitter_pct	group			1	holm		alphabetical				ok		options
+c0131	analysis	emlRunKruskalWallisAnalysis	v08_twogroup_input	jitter_pct	group			1	bh		alphabetical				ok		options
+c0132	analysis	emlRunKruskalWallisAnalysis	v11_twoway_input	SPL_dB	voice_type			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0133	analysis	emlRunKruskalWallisAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bonferroni		discovery				ok		options
+c0134	analysis	emlRunKruskalWallisAnalysis	v11_twoway_input	SPL_dB	voice_type			1	holm		discovery				ok		options
+c0135	analysis	emlRunKruskalWallisAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bh		discovery				ok		options
+c0136	analysis	emlRunKruskalWallisAnalysis	v11_twoway_input	SPL_dB	voice_type			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0137	analysis	emlRunKruskalWallisAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bonferroni		alphabetical				ok		options
+c0138	analysis	emlRunKruskalWallisAnalysis	v11_twoway_input	SPL_dB	voice_type			1	holm		alphabetical				ok		options
+c0139	analysis	emlRunKruskalWallisAnalysis	v11_twoway_input	SPL_dB	voice_type			1	bh		alphabetical				ok		options
+c0140	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	fam			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0141	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	fam			1	bonferroni		discovery				ok		options
+c0142	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	fam			1	holm		discovery				ok		options
+c0143	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	fam			1	bh		discovery				ok		options
+c0144	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	fam			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0145	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	fam			1	bonferroni		alphabetical				ok		options
+c0146	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	fam			1	holm		alphabetical				ok		options
+c0147	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	fam			1	bh		alphabetical				ok		options
+c0148	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	slot			0	holm		discovery				ok	adjustment unread with Dunn off	options
+c0149	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	slot			1	bonferroni		discovery				ok		options
+c0150	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	slot			1	holm		discovery				ok		options
+c0151	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	slot			1	bh		discovery				ok		options
+c0152	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	slot			0	holm		alphabetical				ok	adjustment unread with Dunn off	options
+c0153	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	slot			1	bonferroni		alphabetical				ok		options
+c0154	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	slot			1	holm		alphabetical				ok		options
+c0155	analysis	emlRunKruskalWallisAnalysis	v73_directional_input	x	slot			1	bh		alphabetical				ok		options
 c0157	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bonferroni		discovery				ok		options
 c0158	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		holm		discovery				ok		options
 c0159	analysis	emlRunPairwiseAnalysis	demo_3groups_input	SPL_dB	voice_type		welch		bh		discovery				ok		options
@@ -629,12 +629,12 @@ c0510	analysis	emlRunRegressionAnalysis	v12_correlation_input	speaking_F0_Hz	sin
 c0511	analysis	emlRunRegressionAnalysis	v15_normality_input	jitter_pct	shimmer_pct										ok		options
 c0512	analysis	emlRunRegressionAnalysis	demo_rm3_input	SPL_loud	SPL_soft										ok		options
 c0513	analysis	emlRunRegressionAnalysis	rp_r2_rmanova_input	medium	soft										refuse	need at least 3 rows for regression	options
-c0514	analysis	emlRunGroupedRegression	v09_anova_tukey_input	SPL_dB	vibrato_rate_Hz	voice_type					discovery			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
-c0515	analysis	emlRunGroupedRegression	v09_anova_tukey_input	SPL_dB	vibrato_rate_Hz	voice_type					alphabetical			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
-c0516	analysis	emlRunGroupedRegression	demo_3groups_input	SPL_dB	vibrato_rate_Hz	voice_type					discovery			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
-c0517	analysis	emlRunGroupedRegression	demo_3groups_input	SPL_dB	vibrato_rate_Hz	voice_type					alphabetical			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
-c0518	analysis	emlRunGroupedRegression	v73_directional_input	idx	x	fam					discovery			emlRunRegressionAnalysis:x,idx	ok	reads emlLinearRegression.* from the overall fit; call it first	options
-c0519	analysis	emlRunGroupedRegression	v73_directional_input	idx	x	fam					alphabetical			emlRunRegressionAnalysis:x,idx	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0514	analysis	emlRunGroupedRegressionAnalysis	v09_anova_tukey_input	SPL_dB	vibrato_rate_Hz	voice_type					discovery			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0515	analysis	emlRunGroupedRegressionAnalysis	v09_anova_tukey_input	SPL_dB	vibrato_rate_Hz	voice_type					alphabetical			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0516	analysis	emlRunGroupedRegressionAnalysis	demo_3groups_input	SPL_dB	vibrato_rate_Hz	voice_type					discovery			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0517	analysis	emlRunGroupedRegressionAnalysis	demo_3groups_input	SPL_dB	vibrato_rate_Hz	voice_type					alphabetical			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0518	analysis	emlRunGroupedRegressionAnalysis	v73_directional_input	idx	x	fam					discovery			emlRunRegressionAnalysis:x,idx	ok	reads emlLinearRegression.* from the overall fit; call it first	options
+c0519	analysis	emlRunGroupedRegressionAnalysis	v73_directional_input	idx	x	fam					alphabetical			emlRunRegressionAnalysis:x,idx	ok	reads emlLinearRegression.* from the overall fit; call it first	options
 c0520	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				0	holm						ok	adjustment unread with post hoc off	options
 c0521	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bonferroni						ok		options
 c0522	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok		options
@@ -745,37 +745,37 @@ c0628	survey	emlWilsonInterval	lane_survey_wilson_cases	x_n_conf90								0.90		
 c0629	survey	emlWilsonInterval	lane_survey_wilson_cases	x_n_conf90								0.95			ok	endpoint: the interval must still have positive width	options
 c0630	survey	emlWilsonInterval	lane_survey_wilson_cases	x_n_conf90								0.99			ok	endpoint: the interval must still have positive width	options
 c0631	analysis	emlRunAnovaAnalysis	sweep_c01_input	value	grp			1			discovery				ok	sweep study: k=2 n=16 (8-8) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c01, ANOVA+Tukey oracled against base R	sweep
-c0632	analysis	emlRunKWAnalysis	sweep_c01_input	value	grp			0			discovery				ok	sweep study: k=2 n=16 (8-8) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c01, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0632	analysis	emlRunKruskalWallisAnalysis	sweep_c01_input	value	grp			0			discovery				ok	sweep study: k=2 n=16 (8-8) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c01, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0633	analysis	emlRunAnovaAnalysis	sweep_c02_input	value	grp			1			discovery				ok	sweep study: k=2 n=6 (3-3) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c02, ANOVA+Tukey oracled against base R	sweep
-c0634	analysis	emlRunKWAnalysis	sweep_c02_input	value	grp			0			discovery				ok	sweep study: k=2 n=6 (3-3) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c02, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0634	analysis	emlRunKruskalWallisAnalysis	sweep_c02_input	value	grp			0			discovery				ok	sweep study: k=2 n=6 (3-3) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c02, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0635	analysis	emlRunAnovaAnalysis	sweep_c03_input	value	grp			1			discovery				ok	sweep study: k=2 n=35 (30-5) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c03, ANOVA+Tukey oracled against base R	sweep
-c0636	analysis	emlRunKWAnalysis	sweep_c03_input	value	grp			0			discovery				ok	sweep study: k=2 n=35 (30-5) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c03, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0636	analysis	emlRunKruskalWallisAnalysis	sweep_c03_input	value	grp			0			discovery				ok	sweep study: k=2 n=35 (30-5) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c03, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0637	analysis	emlRunAnovaAnalysis	sweep_c04_input	value	grp			1			discovery				ok	sweep study: k=2 n=24 (12-12) balance=equal ties=none var_ratio=10.0:1 -- validate/v18_sweep_parity.R case c04, ANOVA+Tukey oracled against base R	sweep
-c0638	analysis	emlRunKWAnalysis	sweep_c04_input	value	grp			0			discovery				ok	sweep study: k=2 n=24 (12-12) balance=equal ties=none var_ratio=10.0:1 -- validate/v18_sweep_parity.R case c04, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0638	analysis	emlRunKruskalWallisAnalysis	sweep_c04_input	value	grp			0			discovery				ok	sweep study: k=2 n=24 (12-12) balance=equal ties=none var_ratio=10.0:1 -- validate/v18_sweep_parity.R case c04, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0639	analysis	emlRunAnovaAnalysis	sweep_c05_input	value	grp			1			discovery				ok	sweep study: k=2 n=24 (12-12) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c05, ANOVA+Tukey oracled against base R	sweep
-c0640	analysis	emlRunKWAnalysis	sweep_c05_input	value	grp			0			discovery				ok	sweep study: k=2 n=24 (12-12) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c05, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0640	analysis	emlRunKruskalWallisAnalysis	sweep_c05_input	value	grp			0			discovery				ok	sweep study: k=2 n=24 (12-12) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c05, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0641	analysis	emlRunAnovaAnalysis	sweep_c06_input	value	grp			1			discovery				ok	sweep study: k=3 n=24 (8-8-8) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c06, ANOVA+Tukey oracled against base R	sweep
-c0642	analysis	emlRunKWAnalysis	sweep_c06_input	value	grp			0			discovery				ok	sweep study: k=3 n=24 (8-8-8) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c06, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0642	analysis	emlRunKruskalWallisAnalysis	sweep_c06_input	value	grp			0			discovery				ok	sweep study: k=3 n=24 (8-8-8) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c06, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0643	analysis	emlRunAnovaAnalysis	sweep_c07_input	value	grp			1			discovery				ok	sweep study: k=3 n=9 (3-3-3) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c07, ANOVA+Tukey oracled against base R	sweep
-c0644	analysis	emlRunKWAnalysis	sweep_c07_input	value	grp			0			discovery				ok	sweep study: k=3 n=9 (3-3-3) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c07, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0644	analysis	emlRunKruskalWallisAnalysis	sweep_c07_input	value	grp			0			discovery				ok	sweep study: k=3 n=9 (3-3-3) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c07, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0645	analysis	emlRunAnovaAnalysis	sweep_c08_input	value	grp			1			discovery				ok	sweep study: k=3 n=47 (30-12-5) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c08, ANOVA+Tukey oracled against base R	sweep
-c0646	analysis	emlRunKWAnalysis	sweep_c08_input	value	grp			0			discovery				ok	sweep study: k=3 n=47 (30-12-5) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c08, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0646	analysis	emlRunKruskalWallisAnalysis	sweep_c08_input	value	grp			0			discovery				ok	sweep study: k=3 n=47 (30-12-5) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c08, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0647	analysis	emlRunAnovaAnalysis	sweep_c09_input	value	grp			1			discovery				ok	sweep study: k=3 n=43 (14-9-20) balance=mild ties=moderate var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c09, ANOVA+Tukey oracled against base R	sweep
-c0648	analysis	emlRunKWAnalysis	sweep_c09_input	value	grp			0			discovery				ok	sweep study: k=3 n=43 (14-9-20) balance=mild ties=moderate var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c09, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0648	analysis	emlRunKruskalWallisAnalysis	sweep_c09_input	value	grp			0			discovery				ok	sweep study: k=3 n=43 (14-9-20) balance=mild ties=moderate var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c09, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0649	analysis	emlRunAnovaAnalysis	sweep_c10_input	value	grp			1			discovery				ok	sweep study: k=3 n=42 (14-14-14) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c10, ANOVA+Tukey oracled against base R	sweep
-c0650	analysis	emlRunKWAnalysis	sweep_c10_input	value	grp			0			discovery				ok	sweep study: k=3 n=42 (14-14-14) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c10, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0650	analysis	emlRunKruskalWallisAnalysis	sweep_c10_input	value	grp			0			discovery				ok	sweep study: k=3 n=42 (14-14-14) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c10, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0651	analysis	emlRunAnovaAnalysis	sweep_c11_input	value	grp			1			discovery				ok	sweep study: k=3 n=60 (20-20-20) balance=equal ties=none var_ratio=10.0:1 -- validate/v18_sweep_parity.R case c11, ANOVA+Tukey oracled against base R	sweep
-c0652	analysis	emlRunKWAnalysis	sweep_c11_input	value	grp			0			discovery				ok	sweep study: k=3 n=60 (20-20-20) balance=equal ties=none var_ratio=10.0:1 -- validate/v18_sweep_parity.R case c11, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0652	analysis	emlRunKruskalWallisAnalysis	sweep_c11_input	value	grp			0			discovery				ok	sweep study: k=3 n=60 (20-20-20) balance=equal ties=none var_ratio=10.0:1 -- validate/v18_sweep_parity.R case c11, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0653	analysis	emlRunAnovaAnalysis	sweep_c12_input	value	grp			1			discovery				ok	sweep study: k=3 n=30 (10-10-10) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c12, ANOVA+Tukey oracled against base R	sweep
-c0654	analysis	emlRunKWAnalysis	sweep_c12_input	value	grp			0			discovery				ok	sweep study: k=3 n=30 (10-10-10) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c12, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0654	analysis	emlRunKruskalWallisAnalysis	sweep_c12_input	value	grp			0			discovery				ok	sweep study: k=3 n=30 (10-10-10) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c12, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0655	analysis	emlRunAnovaAnalysis	sweep_c13_input	value	grp			1			discovery				ok	sweep study: k=5 n=30 (6-6-6-6-6) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c13, ANOVA+Tukey oracled against base R	sweep
-c0656	analysis	emlRunKWAnalysis	sweep_c13_input	value	grp			0			discovery				ok	sweep study: k=5 n=30 (6-6-6-6-6) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c13, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0656	analysis	emlRunKruskalWallisAnalysis	sweep_c13_input	value	grp			0			discovery				ok	sweep study: k=5 n=30 (6-6-6-6-6) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c13, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0657	analysis	emlRunAnovaAnalysis	sweep_c14_input	value	grp			1			discovery				ok	sweep study: k=5 n=65 (18-4-11-7-25) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c14, ANOVA+Tukey oracled against base R	sweep
-c0658	analysis	emlRunKWAnalysis	sweep_c14_input	value	grp			0			discovery				ok	sweep study: k=5 n=65 (18-4-11-7-25) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c14, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0658	analysis	emlRunKruskalWallisAnalysis	sweep_c14_input	value	grp			0			discovery				ok	sweep study: k=5 n=65 (18-4-11-7-25) balance=6to1 ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c14, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0659	analysis	emlRunAnovaAnalysis	sweep_c15_input	value	grp			1			discovery				ok	sweep study: k=5 n=60 (12-12-12-12-12) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c15, ANOVA+Tukey oracled against base R	sweep
-c0660	analysis	emlRunKWAnalysis	sweep_c15_input	value	grp			0			discovery				ok	sweep study: k=5 n=60 (12-12-12-12-12) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c15, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0660	analysis	emlRunKruskalWallisAnalysis	sweep_c15_input	value	grp			0			discovery				ok	sweep study: k=5 n=60 (12-12-12-12-12) balance=equal ties=heavy var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c15, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0661	analysis	emlRunAnovaAnalysis	sweep_c16_input	value	grp			1			discovery				ok	sweep study: k=3 n=600 (200-200-200) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c16, ANOVA+Tukey oracled against base R	sweep
-c0662	analysis	emlRunKWAnalysis	sweep_c16_input	value	grp			0			discovery				ok	sweep study: k=3 n=600 (200-200-200) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c16, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
+c0662	analysis	emlRunKruskalWallisAnalysis	sweep_c16_input	value	grp			0			discovery				ok	sweep study: k=3 n=600 (200-200-200) balance=equal ties=none var_ratio=1.0:1 -- validate/v18_sweep_parity.R case c16, Kruskal-Wallis oracled against base R (no post hoc needed)	sweep
 c0663	analysis	emlRunAnovaAnalysis	nist_AtmWtAg_input	value	grp			0			discovery				ok	nist study: NIST StRD certified dataset AtmWtAg -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
 c0664	analysis	emlRunAnovaAnalysis	nist_SiRstv_input	value	grp			0			discovery				ok	nist study: NIST StRD certified dataset SiRstv -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
 c0665	analysis	emlRunAnovaAnalysis	nist_SmLs01_input	value	grp			0			discovery				ok	nist study: NIST StRD certified dataset SmLs01 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist

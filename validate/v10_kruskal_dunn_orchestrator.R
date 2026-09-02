@@ -3,7 +3,7 @@
 #
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
-# Covers @emlRunKWAnalysis: the omnibus H, epsilon-squared, the mean-rank
+# Covers @emlRunKruskalWallisAnalysis: the omnibus H, epsilon-squared, the mean-rank
 # table, and three matrices — Dunn adjusted p, Dunn z, and pairwise
 # rank-biserial r.
 #
@@ -30,7 +30,7 @@
 #
 # RE-DRIVEN HEADLESSLY 7 August 2026 for D110, by
 # harness/broom_cases/d110_orchestrator_redrive.praat under `praat --run`:
-# @emlRunKWAnalysis on the same committed input with the same arguments
+# @emlRunKruskalWallisAnalysis on the same committed input with the same arguments
 # (Dunn ON, Holm adjustment). That is the shipping orchestrator the menu
 # calls, on the committed CSV, but it is NOT a session someone clicked
 # through. The capture this script reads is therefore the same KIND of

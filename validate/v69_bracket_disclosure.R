@@ -66,7 +66,7 @@
 #     Its §1d greps annotMatrixPosthoc$ out of the source and its §4 reads
 #     posthoc_label and posthoc_subtitle off a driven figure. Every one of
 #     those checks is scoped to the MATRIX PANEL: harness/drawlayer's
-#     posthoc_tukey and posthoc_dunn legs call @emlBridgeGroupComparison with
+#     posthoc_tukey and posthoc_dunn legs call @emlRunAnnotationComparison with
 #     layoutMode 3, which forces the matrix and leaves annotBracketN at zero,
 #     and the subtitle it measures is drawn by @emlDrawMatrixPanel. A bracket
 #     figure never enters its universe. It was green over this defect from the
@@ -396,7 +396,7 @@ if (have_src) {
     # Counted INSIDE THE BRIDGE, not across the file: @emlClearAnnotations
     # writes the empty assignments the reset needs, and a file-wide count
     # would read them as arms.
-    body_bridge <- proc_body_of(code, "emlBridgeGroupComparison")
+    body_bridge <- proc_body_of(code, "emlRunAnnotationComparison")
     # ADJACENT STRING LITERALS ARE ONE STRING, and the source splits these
     # sentences across a continuation to stay inside the line budget, so the
     # joined line reads  ... "one comparison; no adjustment " + "applied".
@@ -753,7 +753,7 @@ if (have_tsv) {
 # 8. WHAT THIS CHANGE FOUND AND DID NOT CLOSE -- CLOSED, 16 AUGUST 2026
 # ===========================================================================
 # THE FINDING. A two-group bracket figure named no test anywhere on it. Both
-# two-group arms of @emlBridgeGroupComparison composed .omnibus$ -- "Welch t:
+# two-group arms of @emlRunAnnotationComparison composed .omnibus$ -- "Welch t:
 # t(22.0) = -14.90, p < .001, d = -6.08" -- and handed it back for the Info
 # window, and NEITHER set annotTextN. Only the k >= 3 arms did. So the form's
 # post-dispatch stage had no omnibus line to route into the corner box, and

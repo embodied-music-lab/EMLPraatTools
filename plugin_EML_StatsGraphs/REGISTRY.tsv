@@ -1,12 +1,19 @@
 # ==========================================================================
 # REGISTRY — EML Stats & Graphs public procedure surface
-# Compiled: 2026-09-01  |  43 rows
+# Compiled: 2026-09-01  |  42 rows (2026-09-02: emlRunLMMAnalysis's row
+# removed for 1.0 -- see the correction below)
 # Ruling: mailbox/to-opus/RULING_PUBLIC_SURFACE_2026-09-01.md
 # Correction (2026-09-01, Fable): emlRunReliabilityAnalysis's row removed --
 # "Table S2 documents working public surface; an unconditional-error stub is
 # not surface." It matches the emlRun* name pattern, so removing it moved it
 # onto validate/v155_public_registry.R's erosion-check exclusion list rather
 # than off the boundary silently -- see that file's RUN_EXCLUSIONS.
+# Correction (2026-09-02, Ian, RULING_REGISTRY_VERDICTS_2026-09-01.md section
+# 1): emlRunLMMAnalysis's row removed for the same mechanism -- implemented
+# and validated, but its menu entry and the wizard's mixed-model page are
+# both withdrawn, so it is public by the emlRun* name pattern alone. Public
+# again post-1.0 when a door reaches it. Moved onto the same
+# RUN_EXCLUSIONS list, its own entry.
 #
 # A procedure is public if and only if it has a row in this file. Membership
 # is by INTENT, not reachability — Praat's `include` makes all procedures
@@ -31,11 +38,19 @@
 #                A row can carry more than one source; this is the audit
 #                trail for why the boundary sits where it does, not a
 #                ranking. See the compiling agent's report for the full
-#                trace, including one row admitted by source 1 alone whose
-#                wiring toward source 2/3 exists on the page but cannot fire
-#                (emlRunLMMAnalysis's menu entry and wizard page are
-#                withdrawn) — kept in by the ruling's name-pattern test for
-#                source 1, which is explicitly NOT a reachability test.
+#                trace, including one row originally admitted by source 1
+#                alone whose wiring toward source 2/3 exists on the page but
+#                cannot fire (emlRunLMMAnalysis's menu entry and wizard page
+#                are withdrawn). The 2026-09-01 compilation kept it in on
+#                the ruling's name-pattern test for source 1, which is
+#                explicitly NOT a reachability test; Ian's 2026-09-02 ruling
+#                (RULING_REGISTRY_VERDICTS_2026-09-01.md section 1) took it
+#                back out for 1.0 regardless, the same correction applied to
+#                emlRunReliabilityAnalysis below, and for the same reason:
+#                public by name pattern with no door reaching it is not
+#                Table S2's documented working surface. Both are named on
+#                the erosion check's exclusion list so removing them here
+#                does not read as erosion of the emlRun* boundary.
 #                emlRunReliabilityAnalysis, the other source-1-alone case, is
 #                NOT kept in: it is an unimplemented stub (v1.2 item 7) with
 #                no real call site anywhere, so it never reaches Table S2 as
@@ -64,18 +79,17 @@
 name	file	signature	description	sources
 emlRunTwoGroupAnalysis	stats/eml-analysis.praat	procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .equalVar	Two-group comparison — Student/Welch t-test or Mann-Whitney U, with Cohen's d or rank-biserial r.	1,3
 emlRunAnovaAnalysis	stats/eml-analysis.praat	procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey	One-way ANOVA with an optional Tukey HSD post-hoc; recorded through the bespoke @emlRecordAnova.	1,3
-emlRunKWAnalysis	stats/eml-analysis.praat	procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$	Kruskal-Wallis H test with an optional Dunn's post-hoc and a chosen p-adjustment method.	1,3
+emlRunKruskalWallisAnalysis	stats/eml-analysis.praat	procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$	Kruskal-Wallis H test with an optional Dunn's post-hoc and a chosen p-adjustment method.	1,3
 emlRunPairwiseAnalysis	stats/eml-analysis.praat	procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjMethod$	All-pairs comparisons across 3+ groups by t-test or Mann-Whitney, with a p-adjustment method.	1,3
 emlRunTwoWayAnalysis	stats/eml-analysis.praat	procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$	Two-way ANOVA (Type III sums of squares) for one numeric column crossed by two factors.	1,3
 emlRunPairedAnalysis	stats/eml-analysis.praat	procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$	Paired comparison of two columns — paired t-test or Wilcoxon signed-rank.	1,3
 emlRunCorrelationAnalysis	stats/eml-analysis.praat	procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$	Correlation between two numeric columns — Pearson r or Spearman rho — with its significance test.	1,3
 emlRunDescriptiveAnalysis	stats/eml-analysis.praat	procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$	Descriptive statistics (mean, SD, quartiles and more) for one numeric column.	1,3
 emlRunRegressionAnalysis	stats/eml-analysis.praat	procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$	OLS simple linear regression of one dependent column on one predictor.	1,3
-emlRunGroupedRegression	stats/eml-analysis.praat	procedure emlRunGroupedRegression: .tableId, .predCol$, .respCol$, .groupCol$	Per-group OLS regression fits reported beside the overall fit, one line per group. No recorder hook exists for this call — see report.	1
+emlRunGroupedRegressionAnalysis	stats/eml-analysis.praat	procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .groupCol$	Per-group OLS regression fits reported beside the overall fit, one line per group. No recorder hook exists for this call — see report.	1
 emlRunNormalityAnalysis	stats/eml-analysis.praat	procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$	Normality test for one numeric column — Shapiro-Wilk and/or skewness/kurtosis — with a plain-language recommendation.	1,3
 emlRunRepeatedMeasuresAnalysis	stats/eml-analysis.praat	procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$	Parametric repeated-measures ANOVA (wide format) with Greenhouse-Geisser correction and an optional post-hoc. .subjectCol$ is reserved and currently unread.	1,3
 emlRunFriedmanAnalysis	stats/eml-analysis.praat	procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$	Friedman test — nonparametric repeated measures, wide format — with an optional post-hoc.	1,3
-emlRunLMMAnalysis	stats/eml-lmm.praat	procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .doR2, .doCI	Linear mixed-effects model fit (lme4-style formula), REML/ML, pseudo-R² and Wald confidence intervals. Its menu entry and the wizard's mixed-model page are both currently withdrawn (untested, no oracle of any kind) — public by the emlRun* name pattern, not by any door today. See report.	1
 emlDrawF0Contour	graphs/eml-draw-procedures.praat	procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .tMin, .tMax, .fMin, .fMax, .yUnit	F0 contour figure (EML Graphs type 1) for a Pitch object.	2,3
 emlDrawWaveform	graphs/eml-draw-procedures.praat	procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .tMin, .tMax, .aMin, .aMax	Waveform figure (EML Graphs type 2) for a Sound object.	2,3
 emlDrawSpectrum	graphs/eml-draw-procedures.praat	procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .fMin, .fMax, .pMin, .pMax	Spectrum figure (EML Graphs type 3) for a Spectrum object.	2,3
@@ -91,12 +105,12 @@ emlDrawGroupedViolin	graphs/eml-draw-procedures.praat	procedure emlDrawGroupedVi
 emlDrawGroupedBoxPlot	graphs/eml-draw-procedures.praat	procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .catCol$, .subCol$, .valueCol$, .vMin, .vMax	Box plot of a value by two nested categorical columns (EML Graphs type 12).	2,3
 emlDrawSpaghettiPlot	graphs/eml-draw-procedures.praat	procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .condCol$, .valueCol$, .idCol$, .groupCol$, .showMean, .vMin, .vMax	Spaghetti plot of one subject-per-line series across repeated conditions (EML Graphs type 13).	2,3
 emlDrawQQPlot	graphs/eml-draw-qq.praat	procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode	Normal Q-Q plot for one numeric vector; an adapter computing Blom quantiles onto the shared scatter machinery. Drawn directly from the normality-check door and the wizard, not through the EML Graphs type dispatch — and, unlike the thirteen graph types, never recorded (no recorder hook of any kind wraps its call sites).	2
-emlBridgeGroupComparison	graphs/eml-annotation-procedures.praat	procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .style$, .showNS, .showEffect, .testType$, .layoutMode	Runs the group-comparison test (t-test/Mann-Whitney/ANOVA/Kruskal-Wallis, with Tukey/Dunn) behind a figure's statistical-annotation brackets — the second path to the same statistics as the stats menu, reached from a figure's "annotate" toggle instead of a menu command. Found only by tracing the recorder; matches no emlRun* or emlDraw* naming convention.	3
-emlGraphsMeltSeries	graphs/eml-graph-procedures.praat	procedure emlGraphsMeltSeries: .objectId, .timeCol$, .cols$	Reshapes several wide measurement columns into the long (time, series, value) table the time-series drawing layer is drawn from.	3
-emlGraphsPivotSeries	graphs/eml-graph-procedures.praat	procedure emlGraphsPivotSeries: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$	The mirror of emlGraphsMeltSeries — pivots a stacked (time, name, value) table into wide series columns for a two-axis time-series figure.	3
+emlRunAnnotationComparison	graphs/eml-annotation-procedures.praat	procedure emlRunAnnotationComparison: .tableId, .dataCol$, .factorCol$, .alpha, .style$, .showNS, .showEffect, .testType$, .layoutMode	Runs the group-comparison test (t-test/Mann-Whitney/ANOVA/Kruskal-Wallis, with Tukey/Dunn) behind a figure's statistical-annotation brackets — the second path to the same statistics as the stats menu, reached from a figure's "annotate" toggle instead of a menu command. Found only by tracing the recorder; matches no emlRun* or emlDraw* naming convention.	3
+emlReshapeSeriesLong	graphs/eml-graph-procedures.praat	procedure emlReshapeSeriesLong: .objectId, .timeCol$, .cols$	Reshapes several wide measurement columns into the long (time, series, value) table the time-series drawing layer is drawn from.	3
+emlReshapeSeriesWide	graphs/eml-graph-procedures.praat	procedure emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$	The mirror of emlReshapeSeriesLong — pivots a stacked (time, name, value) table into wide series columns for a two-axis time-series figure.	3
 emlCleanConvertedTable	graphs/eml-graph-procedures.praat	procedure emlCleanConvertedTable: .tableId	Replaces the "?" placeholders Praat's `To Table: "row"` writes for empty row/column labels, after a TableOfReal/Matrix -> Table auto-conversion done for drawing.	3
 emlBeginPanel	graphs/eml-graph-procedures.praat	procedure emlBeginPanel: .originX, .originY, .erase	Opens a drawing panel at a page origin, erasing first if asked. The one implementation both the interactive graphs dialog and a recorded/replayed script call, so a replayed page is built by the same code that built the original.	3
-emlInitDrawingDefaults	graphs/eml-graph-procedures.praat	procedure emlInitDrawingDefaults	Initializes every rendering global to its default; the precondition every emlDraw* orchestrator assumes. Emitted unconditionally at the top of every recorder-generated script.	3
+emlInitializeDrawingDefaults	graphs/eml-graph-procedures.praat	procedure emlInitializeDrawingDefaults	Initializes every rendering global to its default; the precondition every emlDraw* orchestrator assumes. Emitted unconditionally at the top of every recorder-generated script.	3
 emlClearAnnotations	graphs/eml-annotation-procedures.praat	procedure emlClearAnnotations	Clears the figure-annotation state (brackets, text, matrix counters) before a draw. Emitted at the top of every recorder-generated script and again after each annotated figure's tail.	3
 emlDrawAnnotations	graphs/eml-annotation-procedures.praat	procedure emlDrawAnnotations: .xMin, .xMax, .yDataMax, .yRange, .bracketColor$, .fontSize, .axYMin, .axYMax	Draws the comparison brackets a figure's statistical annotation adds. Emitted by the recorder as part of the tail of a recorded bar/violin/box/grouped-violin/grouped-box draw step that had annotation brackets on.	3
 emlDrawAnnotationBlock	graphs/eml-annotation-procedures.praat	procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSize	Draws the omnibus-test text block in a figure corner. Emitted alongside emlDrawAnnotations in the same recorded tail.	3

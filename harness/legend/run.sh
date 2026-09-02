@@ -146,7 +146,7 @@
 #   rp_notch_*   THE MATRIX IS THERE AND totalCanvasHeight IS NOT. The graphs
 #                form computes that global before it dispatches the draw, so
 #                inside the form it is always present — but it is a FORM
-#                local, and @emlInitDrawingDefaults, the documented entry
+#                local, and @emlInitializeDrawingDefaults, the documented entry
 #                point for "standalone scripts or PraatGen companion files",
 #                sets emlLegendPlacement and does not set it. Placements 3,
 #                2 and 4 are all driven that way, because only 3 and 4 read
@@ -288,8 +288,8 @@ if [ -n "${EML_PLUGIN_ROOT:-}" ]; then
                  graphs/eml-draw-procedures.praat; do
             echo "include $EML_PLUGIN_ROOT/$f"
         done
-        # Everything from @emlInitDrawingDefaults on is path-free.
-        sed -n '/^@emlInitDrawingDefaults/,$p' "$SRC/_prelude.praat"
+        # Everything from @emlInitializeDrawingDefaults on is path-free.
+        sed -n '/^@emlInitializeDrawingDefaults/,$p' "$SRC/_prelude.praat"
     } > "$CASEDIR/_prelude.praat"
     # series_case.praat reaches for the form on its own; retarget that too.
     sed -i "s|^include \.\./\.\./plugin/graphs/eml-graphs-form\.praat\$|include $EML_PLUGIN_ROOT/graphs/eml-graphs-form.praat|" \

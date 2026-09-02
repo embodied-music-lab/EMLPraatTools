@@ -7,7 +7,7 @@
 #
 # WHY THIS EXISTS, BESIDE harness/regressiongroup.
 #
-# harness/regressiongroup/probe.praat calls @emlRunGroupedRegression directly:
+# harness/regressiongroup/probe.praat calls @emlRunGroupedRegressionAnalysis directly:
 # it proves the PORT is right. harness/doorcensus/probe.praat calls the
 # kernels with the arguments each door is BELIEVED to pass: it proves nothing
 # about the doors themselves, and its leg5 branch still carries the pre-port

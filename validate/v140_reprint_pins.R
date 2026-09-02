@@ -38,14 +38,14 @@
 # same-report figure prints the 24 August line and a SECOND COMPLETE 62-LINE
 # REPORT that diffs byte-identical against the first, timestamp line aside.
 #
-# THE PROBE NOW CALLS THE REPRINT GATE. @emlBridgeGroupComparison does not
+# THE PROBE NOW CALLS THE REPRINT GATE. @emlRunAnnotationComparison does not
 # print the report -- the graphs form does, through
 # @emlGraphsReportBridgeIfNew -- so before that call was added to the probe,
 # every "no second report" pin below could not have failed on any tree.
 #
 # THE SCENARIO IS REPRODUCED VERBATIM, per docs/MEMO_TO_FABLE_unification.md:
 # a three-group table, a Kruskal-Wallis run from the stats menu, then the
-# SAME comparison drawn as a figure through @emlBridgeGroupComparison -- the
+# SAME comparison drawn as a figure through @emlRunAnnotationComparison -- the
 # procedure whose own header names itself as the second door onto the same
 # test. harness/reprintpins/probe.praat builds that table and drives both
 # doors in one process; harness/reprintpins/run.sh captures the WHOLE
@@ -53,7 +53,7 @@
 # Info window back as text (the same limitation
 # eml-annotation-procedures.praat's own header names under THE 24 AUGUST RULE
 # IS ONLY HALF BUILT HERE). This file counts report markers in that captured
-# transcript and reads emlBridgeGroupComparison's own verdict/note/printReport
+# transcript and reads emlRunAnnotationComparison's own verdict/note/printReport
 # outputs from the probe's TSV.
 #
 # A SCRIPT ABORT IS A FAIL, NOT A SKIP AND NOT AN UNKNOWN. Same discipline as
@@ -65,7 +65,7 @@
 # @emlPublishAnalysisResult's shipped signature (stats/eml-extract.praat) is
 # `.producer$, .door$, .kind$, .error$, .key$, .tableId, .tableName$, ...` --
 # thirty-odd positional arguments, stating the whole result on every call, by
-# ruled contract. @emlBridgeGroupComparison's call site now passes the full
+# ruled contract. @emlRunAnnotationComparison's call site now passes the full
 # argument list in the same order, thirty-seven on both sides of the call --
 # matching the shipped signature position for position, so "group
 # comparison" lands in `.producer$`, not in a slot meant for something else.

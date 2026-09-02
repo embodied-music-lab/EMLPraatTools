@@ -16,7 +16,7 @@
 # the correlate dialog's whole existing pattern, ported rather than
 # reinvented.
 #
-# WHAT SHIPPED: @emlRunGroupedRegression (stats/eml-analysis.praat), ONE
+# WHAT SHIPPED: @emlRunGroupedRegressionAnalysis (stats/eml-analysis.praat), ONE
 # procedure called from BOTH doors -- the menu's eml-regress.praat and
 # BOTH of the wizard's regression pages (B_REG_COLUMNS under "Relationship >
 # Regression" and D_PREDICT_COLUMNS under "Predict an outcome") -- rather
@@ -25,7 +25,7 @@
 # WHAT THIS FILE READS:
 #   - harness/regressiongroup/out/REGGROUP.tsv, written by
 #     harness/regressiongroup/probe.praat, which calls
-#     @emlRunGroupedRegression DIRECTLY on Sol's Simpson fixture (the same
+#     @emlRunGroupedRegressionAnalysis DIRECTLY on Sol's Simpson fixture (the same
 #     values as harness/doorcensus/fixtures/leg5_grouped_regression.csv,
 #     plus one below-floor group C local to this probe) -- oracled below
 #     against base R's own lm() per group, section 1.
@@ -166,11 +166,11 @@ regress_src <- readLines(file.path(PLUGIN_DIR, "scripts", "eml-regress.praat"), 
 wizard_src <- readLines(file.path(PLUGIN_DIR, "scripts", "eml-wizard.praat"), warn = FALSE)
 analysis_src <- readLines(file.path(PLUGIN_DIR, "stats", "eml-analysis.praat"), warn = FALSE)
 
-check_true(V, "stats/eml-analysis.praat defines @emlRunGroupedRegression exactly once",
-           sum(grepl("^procedure emlRunGroupedRegression", analysis_src)) == 1)
+check_true(V, "stats/eml-analysis.praat defines @emlRunGroupedRegressionAnalysis exactly once",
+           sum(grepl("^procedure emlRunGroupedRegressionAnalysis", analysis_src)) == 1)
 
-menu_calls <- sum(grepl("@emlRunGroupedRegression:", regress_src, fixed = TRUE))
-wizard_calls <- sum(grepl("@emlRunGroupedRegression:", wizard_src, fixed = TRUE))
+menu_calls <- sum(grepl("@emlRunGroupedRegressionAnalysis:", regress_src, fixed = TRUE))
+wizard_calls <- sum(grepl("@emlRunGroupedRegressionAnalysis:", wizard_src, fixed = TRUE))
 check_true(V,
            sprintf("the menu door (eml-regress.praat) calls the shared port (%d call site(s))", menu_calls),
            menu_calls == 1)
@@ -180,7 +180,7 @@ check_true(V,
 
 # The old defect's own signature -- the three-argument call with no group --
 # must be gone from the menu door now that the group column is threaded
-# through @emlRunGroupedRegression instead.
+# through @emlRunGroupedRegressionAnalysis instead.
 old_defect_line <- grep("@emlRunRegressionAnalysis:\\s*tableId,\\s*respCol\\$,\\s*predCol\\$\\s*$", regress_src)
 check_true(V,
            "the menu door's overall-fit call is unchanged (still the plain 3-argument form; grouping now rides the separate port call, not this one)",

@@ -5,7 +5,7 @@
 # Ian Howell -- Embodied Music Lab -- GPL-3.0-or-later
 #
 # Runs harness/regressiongroup/probe.praat and leaves REGGROUP.tsv beside it.
-# The probe needs no display -- it calls @emlRunGroupedRegression directly
+# The probe needs no display -- it calls @emlRunGroupedRegressionAnalysis directly
 # (stats/eml-analysis.praat), the same call both eml-regress.praat and
 # eml-wizard.praat now make, on a fixed fixture; it draws nothing and opens
 # no dialog. See probe.praat's own header for what the fixture is and why.

@@ -93,7 +93,7 @@ rc$after  <- as.integer(rc$after)
 # ever been driven -- and the recorder was wrong on every one of them.
 #
 # `bridge` IS THE OTHER DIRECTION OF A BIDIRECTIONAL DESIGN. Stats can lead
-# to a graph and a graph can lead to stats -- @emlBridgeGroupComparison runs
+# to a graph and a graph can lead to stats -- @emlRunAnnotationComparison runs
 # the t-test, Mann-Whitney, ANOVA, Kruskal-Wallis, Tukey and Dunn that a
 # figure's brackets are drawn from, reached from four sites in the graphs
 # form. Capture hooks were added to all thirteen stats orchestrators on
@@ -331,7 +331,7 @@ check_true("v39", "each convert step selects its source through the manifest",
 check_true("v39", "the stats-menu path records its analyses",
            any(grepl("^@emlRun[A-Za-z]+: data,", em)))
 check_true("v39", "the graph-to-stats path records its analyses too",
-           any(grepl("^@emlBridgeGroupComparison: data,", em)))
+           any(grepl("^@emlRunAnnotationComparison: data,", em)))
 
 # ---------------------------------------------------------------------------
 # A STEP THAT PRODUCED NUMBERS CARRIES THEM

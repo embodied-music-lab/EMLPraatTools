@@ -31,7 +31,7 @@
 # and that no spent flag exists to make them anything else.
 #
 # HOW IT IS MEASURED. harness/bridgeconsume/run.sh stands a publication up BY
-# HAND in the store's published names and drives @emlBridgeGroupComparison
+# HAND in the store's published names and drives @emlRunAnnotationComparison
 # against it, writing CONSUME.tsv. That is deliberate rather than a stopgap:
 # the read side's contract is "given these globals, do this", and a probe that
 # could only run once the write site existed would be testing the pair and not
@@ -578,7 +578,7 @@ if (have_annot) {
     check_true(V, "@emlGraphsReportBridgeIfNew exists", length(g) > 0)
     check_true(V, "it reads the bridge's decision through variableExists",
                length(g) > 0 &&
-               any(grepl('variableExists ("emlBridgeGroupComparison.printReport")',
+               any(grepl('variableExists ("emlRunAnnotationComparison.printReport")',
                          g, fixed = TRUE)))
     check_true(V, "and prints when it cannot tell -- silence has to be earned",
                length(g) > 0 && any(grepl("^\\.print = 1$", g)))
@@ -594,7 +594,7 @@ if (have_annot) {
 # is loaded, so a tree carrying the read side and not yet the writer draws
 # correctly and simply never caches.
 if (have_annot) {
-    body_bridge <- proc_body(annot, "emlBridgeGroupComparison")
+    body_bridge <- proc_body(annot, "emlRunAnnotationComparison")
     check_true(V, "the bridge publishes its re-runs through the store's one writer",
                any(grepl("^@emlPublishAnalysisResult:", body_bridge)))
     check_true(V, "guarded on the schema global the writer declares at load",

@@ -100,7 +100,7 @@
 #
 # under the sentence "edit a name to run the same workflow on other data".
 # Every column stayed a literal at its call site --
-# `@emlBridgeGroupComparison: data, "val", "grp", ...` -- so a user handed a
+# `@emlRunAnnotationComparison: data, "val", "grp", ...` -- so a user handed a
 # same-shape table with different headers had to hunt literals through the
 # steps, which is the hunt the block exists to abolish. The block was telling
 # the truth about objects and making a promise about workflows it could not
@@ -774,7 +774,7 @@ if (check_true("v58", "the recording call sites are present",
     # the dot read the melt's template -- which interpolates timeColName$ and
     # tsSeriesCols$ -- as a call that names no column, so its map entry looked
     # dead while being exactly right. Measured when the pattern was widened:
-    # it admits emlGraphsMeltSeries and nothing else.
+    # it admits emlReshapeSeriesLong and nothing else.
     withcol <- tmpl[grepl(paste0("[.]?([A-Za-z]*Col[0-9]*|[A-Za-z]*Cols",
                                  "|[A-Za-z]*ColName|col[0-9XY]+)[$]"),
                           tmpl)]

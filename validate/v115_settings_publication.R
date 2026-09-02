@@ -12,13 +12,13 @@
 # reads decide what the answer IS rather than how it looks:
 #
 #   annotCorrectionMethod$    the multiple-comparison correction.
-#                             @emlBridgeGroupComparison takes no parameter for
+#                             @emlRunAnnotationComparison takes no parameter for
 #                             it and resolves it from the global, falling back
 #                             to holm.
 #   annotAlpha                the level every confidence interval in the
 #                             reporters is built at, through
 #                             @emlCIAlphaInForce. An emitted script opens with
-#                             @emlInitDrawingDefaults, which seeds 0.05.
+#                             @emlInitializeDrawingDefaults, which seeds 0.05.
 #   emlGroupSortAlphabetical  the order @emlCountGroups puts the levels in. It
 #                             decides which level is group 1, so it flips the
 #                             sign of every reported difference and swaps
@@ -96,7 +96,7 @@
 #   v107's census asks whether each menu command reaches a record step. All
 #   the commands here do; the step they reach is the one missing the setting.
 #   validate/tools/recorder_census.py measures seeded against emitted and sees
-#   ONE of the three: its frame is @emlInitDrawingDefaults' seeded block,
+#   ONE of the three: its frame is @emlInitializeDrawingDefaults' seeded block,
 #   which holds annotAlpha and neither of the other two.
 #
 #     Rscript validate/v115_settings_publication.R
@@ -295,7 +295,7 @@ check_true(ID,
 # ===========================================================================
 check_true(ID,
     "the bridge resolves the correction from the global, taking no parameter for it",
-    !any(grepl("^procedure emlBridgeGroupComparison:.*annotCorrectionMethod", code_ann)) &&
+    !any(grepl("^procedure emlRunAnnotationComparison:.*annotCorrectionMethod", code_ann)) &&
     any(grepl("variableExists \\(\"annotCorrectionMethod\\$\"\\)", code_ann)))
 check_true(ID,
     "every confidence interval in the reporters is built at @emlCIAlphaInForce's answer",
@@ -324,7 +324,7 @@ check_true(ID,
 # region, from the dialog's own field. A statement after the bridge would
 # order the levels by the previous press's menu and draw them by this one's.
 i_sort <- grep("^\\s*emlGroupSortAlphabetical = config_groupSort - 1\\s*$", raw_form)
-i_bridge <- grep("^\\s*@emlBridgeGroupComparison:", raw_form)
+i_bridge <- grep("^\\s*@emlRunAnnotationComparison:", raw_form)
 check_true(ID,
     sprintf("the group order is published from the dialog before the bridge reads it (line %s before %s)",
             paste(i_sort, collapse = "/") %or% "<none>",
@@ -530,7 +530,7 @@ for (leg in LEGS) {
     txt <- readLines(f, warn = FALSE)
     i_set <- grep(paste0("^(", paste(vapply(SETTINGS, lit, ""), collapse = "|"),
                          ") = "), txt)
-    i_call <- grep("^@(emlBridgeGroupComparison|emlRunTwoGroupAnalysis):", txt)
+    i_call <- grep("^@(emlRunAnnotationComparison|emlRunTwoGroupAnalysis):", txt)
     check_true(ID,
         sprintf("%s: all three settings stand ahead of the call that reads them (%d of 3 before line %s)",
                 leg, sum(i_set < (if (length(i_call)) i_call[1] else 0L)),
@@ -545,7 +545,7 @@ for (leg in LEGS) {
 # ===========================================================================
 attest(ID,
     "the census's frame holds one of the three, and moves by one",
-    "validate/tools/recorder_census.py counts globals seeded in @emlInitDrawingDefaults: 14 of 41 assigned in a committed recording before this work, 15 after, with the not-emitted user choices going 18 to 17. The one it can see is annotAlpha. annotCorrectionMethod$ belongs to the graphs form and emlGroupSortAlphabetical to stats/eml-extract.praat, so neither is in that frame however faithfully a recording carries it -- section 4 is where those two are measured.")
+    "validate/tools/recorder_census.py counts globals seeded in @emlInitializeDrawingDefaults: 14 of 41 assigned in a committed recording before this work, 15 after, with the not-emitted user choices going 18 to 17. The one it can see is annotAlpha. annotCorrectionMethod$ belongs to the graphs form and emlGroupSortAlphabetical to stats/eml-extract.praat, so neither is in that frame however faithfully a recording carries it -- section 4 is where those two are measured.")
 attest(ID,
     "twelve display-only settings still reach no recorded script",
     "v112's census classifies them and names them: the font, the gridline mode, the legend placement, the tick, axis-name and axis-value flags, the inner box, the subtitle, the annotation style, the scatter's dot size and its formula toggle. None of them changes a number, which is why they are a separate unit of work and not this one. Their absence is measured, not assumed.")

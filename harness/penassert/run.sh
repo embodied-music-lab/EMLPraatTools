@@ -193,7 +193,7 @@ Create Sound from formula: "tone", 1, 0, 1, 44100,
 ...  + 0.15*sin(2*pi*1310*x) + 0.08*sin(2*pi*2570*x)"
 ltas = To Ltas: 100
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 # THE HOSTILE SESSION. Two settings, nothing else.
 if right$ (leg$, 8) = "_hostile"

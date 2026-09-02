@@ -280,7 +280,7 @@ one exporter call.
 #   .doTukey   - 1 = run Tukey HSD post-hoc, 0 = omnibus only
 # Prints the full disclosed report to the Info window and declares its
 # results to the export buffer. Siblings, same pattern:
-#   @emlRunTwoGroupAnalysis, @emlRunKWAnalysis, @emlRunPairedAnalysis,
+#   @emlRunTwoGroupAnalysis, @emlRunKruskalWallisAnalysis, @emlRunPairedAnalysis,
 #   @emlRunCorrelationAnalysis, @emlRunRegressionAnalysis,
 #   @emlRunNormalityAnalysis, @emlRunRepeatedMeasuresAnalysis, ...
 #   (full list, and which of them declare: docs/API_EXPORT.md §2)

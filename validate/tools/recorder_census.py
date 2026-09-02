@@ -14,7 +14,7 @@ of the tree instead of of a document.
 WHAT IS COUNTED, exactly, because the boundary is the whole argument:
 
   SEEDED   one bare global assigned at four-space indent inside
-           @emlInitDrawingDefaults. That block's job is to seed every global
+           @emlInitializeDrawingDefaults. That block's job is to seed every global
            the draw layer reads, and it is kept honest by the draw layer
            crashing when one is missing -- which is what makes it a
            defensible frame. It is NOT the form's frame: `emlShowAxisNames`
@@ -40,7 +40,7 @@ that reason -- leaving one out does not make the number conservative, it makes
 it wrong about the recorder.
 
 AND THE FRAME IS THE SEEDED BLOCK, WHICH IS NARROWER THAN "SETTINGS THAT
-MATTER". @emlInitDrawingDefaults seeds what the DRAW layer reads, so two of
+MATTER". @emlInitializeDrawingDefaults seeds what the DRAW layer reads, so two of
 the three settings that decide a computed answer are outside it:
 annotCorrectionMethod$ belongs to the graphs form and emlGroupSortAlphabetical
 to stats/eml-extract.praat, and neither is counted here however faithfully a
@@ -75,9 +75,9 @@ BOOKKEEPING = {
 
 def seeded():
     src = open(DEFAULTS, encoding="utf-8", errors="replace").read()
-    m = re.search(r"procedure emlInitDrawingDefaults(.*?)\nendproc", src, re.S)
+    m = re.search(r"procedure emlInitializeDrawingDefaults(.*?)\nendproc", src, re.S)
     if not m:
-        sys.exit("recorder_census: @emlInitDrawingDefaults not found in "
+        sys.exit("recorder_census: @emlInitializeDrawingDefaults not found in "
                  + DEFAULTS + " -- it was renamed or reflowed; fix this "
                  "script rather than trusting a zero.")
     return sorted(set(re.findall(r"^\s{4}([A-Za-z][A-Za-z0-9_]*\$?)\s*=",
@@ -110,7 +110,7 @@ def main():
     choices = [n for n in miss if n not in BOOKKEEPING]
 
     print("recorder census -- read from %d emitted script(s)" % len(texts))
-    print("  seeded in @emlInitDrawingDefaults : %d" % len(names))
+    print("  seeded in @emlInitializeDrawingDefaults : %d" % len(names))
     print("  assigned in an emitted script     : %d" % len(hit))
     print("  not emitted                       : %d" % len(miss))
     print("  of those, real user choices       : %d" % len(choices))

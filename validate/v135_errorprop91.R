@@ -41,7 +41,7 @@
 #           while Wilcoxon signed-rank still computes). Same evidence file
 #           as sites 1 and 2.
 #
-# The KW/rank-biserial matrix in @emlRunKWAnalysis and its
+# The KW/rank-biserial matrix in @emlRunKruskalWallisAnalysis and its
 # graphs/eml-annotation-procedures.praat twin get the IDENTICAL mechanical
 # fix (section 5 below) but are not driven: @emlKruskalWallis itself refuses
 # outright when any group has 0 observations ("Group ""X"" has 0

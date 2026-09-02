@@ -20,7 +20,7 @@
 # every EML stats tool in this plugin emits. When the table is long the series
 # are the LEVELS of the name column: two reach the right-hand axis page, three
 # or more meet the refusal three columns meet. Underneath,
-# @emlGraphsPivotSeries spreads the levels into a column each before the draw
+# @emlReshapeSeriesWide spreads the levels into a column each before the draw
 # call -- the mirror image of the melt, and equally invisible. Section 16.
 #
 # WHAT SHIPPED. The storage question is gone and the meaning question is in
@@ -1534,11 +1534,11 @@ check_true(V, "and it comes back on the next visit as the user left it",
 # call no replay could resolve. @emlCleanConvertedTable moved for exactly this
 # reason and says so in its own header. Section 15 measures the consequence.
 check_true(V, "the melt is one procedure and the user is never asked about it",
-           sum(grepl("^procedure emlGraphsMeltSeries:", graph_src)) == 1L)
+           sum(grepl("^procedure emlReshapeSeriesLong:", graph_src)) == 1L)
 check_true(V, "and it is NOT in the form, which no emitted script includes",
-           !any(grepl("^procedure emlGraphsMeltSeries:", form_src)))
+           !any(grepl("^procedure emlReshapeSeriesLong:", form_src)))
 check_true(V, "it takes the ticked columns as a LIST, not out of a dialog global",
-           any(grepl("^procedure emlGraphsMeltSeries: .objectId, .timeCol\\$, .cols\\$",
+           any(grepl("^procedure emlReshapeSeriesLong: .objectId, .timeCol\\$, .cols\\$",
                      graph_src)))
 check_true(V, "and the form hands it the list it built from the ticks",
            any(grepl("^\\s*\\.\\.\\. tsSeriesCols\\$\\s*$", form_src)))
@@ -1591,7 +1591,7 @@ check_true(V, "@emlWrapText is the plugin's own, shared with @emlErrorDialog",
 # had a step kind for it since it was written. The form now calls
 # @emlRecordConvert at the melt, so the manifest names the user's Table, the
 # emitted file carries the melt as step 1, and the draw step is marked derived
-# and selects nothing. @emlGraphsMeltSeries moved from eml-graphs-form.praat
+# and selects nothing. @emlReshapeSeriesLong moved from eml-graphs-form.praat
 # into eml-graph-procedures.praat for the reason @emlCleanConvertedTable is
 # already there -- the emitted script includes the graph, annotation and draw
 # files and NOT the form -- and it takes the ticked columns as a
@@ -1747,20 +1747,20 @@ check_true(V, "[rec_meas2] and no groupCol$: the left series is one ungrouped li
 # NOTHING BELOW THE BLOCK NAMES A COLUMN. That is the block's promise, and the
 # melt is the newest thing it has to keep: both of the melt's literals were
 # lifted, so the call reads in variables.
-MELT <- "@emlGraphsMeltSeries: data, timeCol$, seriesCols$"
+MELT <- "@emlReshapeSeriesLong: data, timeCol$, seriesCols$"
 check_true(V, "[rec_subjects4] the melt is emitted as a call, in the block's variables",
            MELT %in% calls("rec_subjects4"))
 check_true(V, "[rec_subjects4] and it runs BEFORE the figure that reads it",
            which(calls("rec_subjects4") == MELT)[1] <
            grep("^@emlDrawTimeSeries:", calls("rec_subjects4"))[1])
 check_true(V, "[rec_subjects4] the melt's result is what the draw is handed",
-           any(grepl("^data = emlGraphsMeltSeries\\.tableId$",
+           any(grepl("^data = emlReshapeSeriesLong\\.tableId$",
                      emitted_src("rec_subjects4"))))
 check_true(V, "[rec_subjects4] the draw call reads the three column variables",
            any(grepl("^@emlDrawTimeSeries: data, .*timeCol\\$, valueCol\\$, groupCol\\$",
                      calls("rec_subjects4"))))
 check_true(V, "[rec_meas2] its file carries no melt call at all",
-           !any(grepl("^@emlGraphsMeltSeries", calls("rec_meas2"))))
+           !any(grepl("^@emlReshapeSeriesLong", calls("rec_meas2"))))
 check_true(V, "[rec_meas2] and its draw passes NO grouping column",
            any(grepl('^@emlDrawTimeSeries: data, .*timeCol\\$, valueCol\\$, ""',
                      calls("rec_meas2"))))
@@ -1879,10 +1879,10 @@ check_true(V, "guarded like every other recorder call site: loaded, then active"
                    logical(1)))
            })
 check_true(V, "and the code it hands over assigns to `data`, which is the contract",
-           any(grepl('"data = emlGraphsMeltSeries.tableId"', form_src,
+           any(grepl('"data = emlReshapeSeriesLong.tableId"', form_src,
                      fixed = TRUE)))
 check_true(V, "the recorder lifts the melt's two literals into the block",
-           any(grepl('elsif .proc\\$ = "emlGraphsMeltSeries"', rec_src)) &&
+           any(grepl('elsif .proc\\$ = "emlReshapeSeriesLong"', rec_src)) &&
            any(grepl('\\.spec\\$ = "2=timeCol 3=seriesCols"', rec_src)))
 check_true(V, "and seriesCols$ has a gloss of its own, so the block reads as prose",
            any(grepl('elsif .base\\$ = "seriesCols"', rec_src)))
@@ -1943,7 +1943,7 @@ check_true(V, "and the CI figure is a draw step of its own in the draw layer",
 # measured -- the series are the LEVELS of the name column. Two levels reach
 # the same right-hand axis page, which asks which LEVEL goes on the right;
 # three or more meet the same refusal three columns meet, worded for a page
-# with nothing to untick. Underneath, @emlGraphsPivotSeries spreads the levels
+# with nothing to untick. Underneath, @emlReshapeSeriesWide spreads the levels
 # into a column each before the draw call, which is the mirror image of the
 # melt and equally invisible to the user.
 #
@@ -2189,14 +2189,14 @@ check_true(V, "[rec_long_meas2] the second is the draw",
 check_true(V, "[rec_long_meas2] the manifest names the table the USER selected",
            identical(blockv("rec_long_meas2", "data1$"), '"Table lt_longmeas2"'))
 # ALL FOUR LITERALS REACH THE BLOCK, each under a name that says what it is.
-PIV <- "@emlGraphsPivotSeries: data, timeCol$, longValueCol$, seriesNameCol$, seriesLevels$"
+PIV <- "@emlReshapeSeriesWide: data, timeCol$, longValueCol$, seriesNameCol$, seriesLevels$"
 check_true(V, "[rec_long_meas2] the pivot is emitted as a call, in the block's variables",
            PIV %in% calls("rec_long_meas2"))
 check_true(V, "[rec_long_meas2] and it runs BEFORE the figure that reads it",
            which(calls("rec_long_meas2") == PIV)[1] <
            grep("^@emlDrawTimeSeries:", calls("rec_long_meas2"))[1])
 check_true(V, "[rec_long_meas2] the pivot's result is what the draw is handed",
-           any(grepl("^data = emlGraphsPivotSeries\\.tableId$",
+           any(grepl("^data = emlReshapeSeriesWide\\.tableId$",
                      emitted_src("rec_long_meas2"))))
 check_true(V, "[rec_long_meas2] the block carries the time column",
            identical(blockv("rec_long_meas2", "timeCol$"), '"time"'))
@@ -2218,11 +2218,11 @@ check_true(V, "[rec_long_meas2] the right-hand level reaches the block as second
 # NOTHING WAS MELTED HERE. The two transforms are mirror images and a file
 # carrying both would be reshaping a table twice.
 check_true(V, "[rec_long_meas2] and no melt call is in the file",
-           !any(grepl("^@emlGraphsMeltSeries", calls("rec_long_meas2"))))
+           !any(grepl("^@emlReshapeSeriesLong", calls("rec_long_meas2"))))
 check_true(V, "[rec_meas2] nor does the wide two-scale leg pivot anything",
-           !any(grepl("^@emlGraphsPivotSeries", calls("rec_meas2"))))
+           !any(grepl("^@emlReshapeSeriesWide", calls("rec_meas2"))))
 check_true(V, "[rec_subjects4] nor does the melted leg",
-           !any(grepl("^@emlGraphsPivotSeries", calls("rec_subjects4"))))
+           !any(grepl("^@emlReshapeSeriesWide", calls("rec_subjects4"))))
 # THE RECORDED TITLE IS THE USER'S TABLE. The emitted draw call carries the
 # title as a literal, so the pivot-source repair is readable in the file as
 # well as on the figure.
@@ -2238,20 +2238,20 @@ check_true(V, "[rec_long_meas2] the recorded title names the user's table",
 # same rule the melt was moved for: a procedure a RECORDED step emits a call
 # to must be in a file the emitted script includes, and the emitted script
 # includes the graph, annotation and draw procedures and NOT the form.
-check_true(V, "@emlGraphsPivotSeries is defined once, in the graph library",
-           sum(grepl("^procedure emlGraphsPivotSeries:", graph_src)) == 1L)
+check_true(V, "@emlReshapeSeriesWide is defined once, in the graph library",
+           sum(grepl("^procedure emlReshapeSeriesWide:", graph_src)) == 1L)
 check_true(V, "and not in the form, which no emitted script includes",
-           !any(grepl("^procedure emlGraphsPivotSeries:", form_src)))
+           !any(grepl("^procedure emlReshapeSeriesWide:", form_src)))
 check_true(V, "with the signature the form and the emitted call both use",
-           any(grepl(paste0("^procedure emlGraphsPivotSeries: \\.objectId, ",
+           any(grepl(paste0("^procedure emlReshapeSeriesWide: \\.objectId, ",
                             "\\.timeCol\\$, \\.valueCol\\$, \\.nameCol\\$, ",
                             "\\.levels\\$"), graph_src)))
 # THE FORM CALLS IT, AND ASSIGNS ITS RESULT INTO objectId BEFORE THE DISPATCH.
 # A pivot built and not adopted would draw the long table with a level name
 # for a column and produce an empty frame.
 check_true(V, "the form calls the pivot and adopts its table",
-           any(grepl("^\\s*@emlGraphsPivotSeries: objectId,", form_src)) &&
-           any(grepl("^\\s*tsPivotTableId = emlGraphsPivotSeries\\.tableId$",
+           any(grepl("^\\s*@emlReshapeSeriesWide: objectId,", form_src)) &&
+           any(grepl("^\\s*tsPivotTableId = emlReshapeSeriesWide\\.tableId$",
                      form_src)) &&
            any(grepl("^\\s*objectId = tsPivotTableId$", form_src)))
 # AND REMOVES IT AFTERWARDS, restoring the user's own object. An intermediate
@@ -2275,7 +2275,7 @@ check_true(V, "and the column refusal keeps its own",
            any(grepl("untick columns until two are left", form_src)))
 # THE RECORDER'S MAP KNOWS THE PIVOT, with four roles and no collision.
 check_true(V, "the recorder's column map carries the pivot's four literals",
-           any(grepl('elsif \\.proc\\$ = "emlGraphsPivotSeries"', rec_src)) &&
+           any(grepl('elsif \\.proc\\$ = "emlReshapeSeriesWide"', rec_src)) &&
            any(grepl(paste0('\\.spec\\$ = "2=timeCol 3=longValueCol ',
                             '4=seriesNameCol 5=seriesLevels"'), rec_src)))
 check_true(V, "and each of its three new roles has a gloss, so the block reads as prose",
@@ -2287,7 +2287,7 @@ check_true(V, "and each of its three new roles has a gloss, so the block reads a
 # as a table transform: @emlDrawTimeSeries takes a left column and a right
 # column by name and knows nothing about how they got there.
 check_true(V, "and @emlDrawTimeSeries was not taught what a level is",
-           !any(grepl("emlGraphsPivotSeries|tsLevelMode", draw_src)))
+           !any(grepl("emlReshapeSeriesWide|tsLevelMode", draw_src)))
 
 # ============================================================================
 # EVERYTHING THE DRIVER RENDERED IS LOOKED AT

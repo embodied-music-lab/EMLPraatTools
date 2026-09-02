@@ -17,7 +17,7 @@
 #
 # WHAT IT SHOWS. Every emitted script comes out with none of the three
 # settings in it, and every replay answers with the seed
-# @emlInitDrawingDefaults writes rather than with the session's choice:
+# @emlInitializeDrawingDefaults writes rather than with the session's choice:
 #
 #   the correction     bonferroni recorded, holm replayed
 #   the alpha          .01 recorded, 95% intervals replayed

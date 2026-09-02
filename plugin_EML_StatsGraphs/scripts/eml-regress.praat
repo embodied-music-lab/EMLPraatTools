@@ -200,11 +200,11 @@ repeat
             # ── Per-group regression (punch list 4.5) ─────────────────
             # Rides the port in stats/eml-analysis.praat: @emlLinearRegression
             # ran once above, for the WHOLE table, and its globals still hold
-            # that overall fit -- nothing has run since. @emlRunGroupedRegression
+            # that overall fit -- nothing has run since. @emlRunGroupedRegressionAnalysis
             # reads them before doing anything else.
             if hasGroupCol
                 selectObject: tableId
-                @emlRunGroupedRegression: tableId, predCol$,
+                @emlRunGroupedRegressionAnalysis: tableId, predCol$,
                 ... respCol$, groupCol$
             endif
 
