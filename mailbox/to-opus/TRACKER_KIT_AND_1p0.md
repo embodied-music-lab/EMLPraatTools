@@ -63,12 +63,17 @@ reported, not assumed).
    - registry wiring: docs, barrel, Table S2 GENERATED from the
      registry (currently honest attestations say not wired)
      [RULING_PUBLIC_SURFACE mechanism 3]
-   - string-vector RM as canonical — NOT STARTED (REPORT_RM_STRINGVECTOR:
-     pipe form is the only form; v03/v04 30/30 each). WRAPPER CLAUSE
-     SUPERSEDED by Ian 2 Sep ("no backward compatibility — the plugin
-     has not shipped"): the pipe form CEASES TO EXIST, same terms as
-     the retired names. Signature edited ONCE, in the judgment half,
-     together with the .subjectCol$ outcome. [MEMO_RM_SIGNATURE_CONFLICT]
+   - RM signature — SETTLED BY IAN 2 Sep, one edit in the judgment
+     half [RULING_RM_FORMATS]: RM + Friedman accept WIDE AND LONG
+     (Ian: match how users format tables); .subjectCol$ is WIRED as
+     the long path's subject column (remove-vs-wire CLOSED); string
+     vector for conditionCols; pipe form ceases to exist (Ian: no
+     backward compatibility). Both shapes converge to the one kernel
+     via the reshape canon, per the series-door melt/pivot precedent;
+     recorder replays the real conversion; long path gains
+     completeness/duplicate refusals; equivalence probe + red demo +
+     long-form R-oracle leg ordered. Opus proposes the exact final
+     signature against the pins; Fable accepts; then it freezes.
    - RM .subjectCol$: report DELIVERED (REPORT_RM_SUBJECTCOL: dead
      from the first commit, read nowhere, every caller passes "";
      same for Friedman) — WITH IAN for wire-or-remove; natural
@@ -209,8 +214,12 @@ to failing checks; judgment half held by Opus (outcome contract +
 error fixes, bridge unification, RM signature edit once Ian rules
 .subjectCol$). Packet awaits Ian's push.
 
-WITH IAN: .subjectCol$ remove-or-wire (Fable recommends remove);
-the 82/53 triage table; the upstream R bug report (standing).
+IAN RULED 2 Sep (evening): melt approach APPROVED → RULING_RM_FORMATS
+(both shapes; .subjectCol$ wired); 82/53 triage APPROVED →
+RULING_ERROR_TRIAGE_APPROVED (fix 82 by priority; 6 unsure run named
+checks first; 53 filed to EXEMPT_SITES with reasons; v134 green
+before tag). WITH IAN still: the settlement-bundle push; the
+upstream R bug report (standing).
 
 ## F. The existing registers this tracker indexes
 
