@@ -48,7 +48,7 @@
 ; on a three-group table, then drew a violin plot. The Info window carried
 ; TWO complete Kruskal-Wallis reports ... The second is the graph door
 ; recomputing the analysis." This probe reproduces that shape exactly --
-; the menu door's @emlRunKWAnalysis, then @emlBridgeGroupComparison, the same
+; the menu door's @emlRunKruskalWallisAnalysis, then @emlRunAnnotationComparison, the same
 ; procedure the violin's brackets are drawn from -- and writes down what
 ; actually printed, so validate/v140 can count reports rather than trust
 ; that the mechanism works.
@@ -99,8 +99,8 @@ endproc
 ; is this same file run against a tree that does not have the item.
 procedure readPending
     .v$ = "absent"
-    if variableExists ("emlBridgeGroupComparison.notePending")
-        .v$ = string$ (emlBridgeGroupComparison.notePending)
+    if variableExists ("emlRunAnnotationComparison.notePending")
+        .v$ = string$ (emlRunAnnotationComparison.notePending)
     endif
 endproc
 
@@ -137,11 +137,11 @@ emlGroupSortAlphabetical = 0
 ; LEG A -- NO CHANGE. Analysis door, then figure, nothing edited in between.
 ; ===========================================================================
 writeInfoLine: "=== SENTINEL: MENU ANALYSIS BEGINS ==="
-@emlRunKWAnalysis: tableId, "value", "group", 1, "holm"
+@emlRunKruskalWallisAnalysis: tableId, "value", "group", 1, "holm"
 appendInfoLine: "=== SENTINEL: MENU ANALYSIS ENDS ==="
 
 appendInfoLine: "=== SENTINEL: NO-CHANGE FIGURE BEGINS ==="
-@emlBridgeGroupComparison: tableId, "value", "group", 0.05, "both", 1, 1,
+@emlRunAnnotationComparison: tableId, "value", "group", 0.05, "both", 1, 1,
 ... "nonparametric", 1
 ; THE REPRINT GATE, WHICH IS WHAT THE GRAPHS FORM CALLS. Without it this
 ; probe could never print a second report however broken the tree, and every
@@ -149,12 +149,12 @@ appendInfoLine: "=== SENTINEL: NO-CHANGE FIGURE BEGINS ==="
 ; sentinels because whatever it prints belongs to this draw.
 @emlGraphsReportBridgeIfNew: tableId, "value", "group"
 appendInfoLine: "=== SENTINEL: NO-CHANGE FIGURE ENDS ==="
-@note: "no_change", "verdict", emlBridgeGroupComparison.verdict$
-@note: "no_change", "note", emlBridgeGroupComparison.note$
-@note: "no_change", "printReport", string$ (emlBridgeGroupComparison.printReport)
+@note: "no_change", "verdict", emlRunAnnotationComparison.verdict$
+@note: "no_change", "note", emlRunAnnotationComparison.note$
+@note: "no_change", "printReport", string$ (emlRunAnnotationComparison.printReport)
 @readPending
 @note: "no_change", "notePending", readPending.v$
-@note: "no_change", "error", emlBridgeGroupComparison.error$
+@note: "no_change", "error", emlRunAnnotationComparison.error$
 
 ; ===========================================================================
 ; LEG B -- CHANGED SETTING. Same analysis, but the correction the FIGURE
@@ -163,16 +163,16 @@ appendInfoLine: "=== SENTINEL: NO-CHANGE FIGURE ENDS ==="
 ; ===========================================================================
 annotCorrectionMethod$ = "bonferroni"
 appendInfoLine: "=== SENTINEL: CHANGED-SETTING FIGURE BEGINS ==="
-@emlBridgeGroupComparison: tableId, "value", "group", 0.05, "both", 1, 1,
+@emlRunAnnotationComparison: tableId, "value", "group", 0.05, "both", 1, 1,
 ... "nonparametric", 1
 @emlGraphsReportBridgeIfNew: tableId, "value", "group"
 appendInfoLine: "=== SENTINEL: CHANGED-SETTING FIGURE ENDS ==="
-@note: "changed_setting", "verdict", emlBridgeGroupComparison.verdict$
-@note: "changed_setting", "note", emlBridgeGroupComparison.note$
-@note: "changed_setting", "printReport", string$ (emlBridgeGroupComparison.printReport)
+@note: "changed_setting", "verdict", emlRunAnnotationComparison.verdict$
+@note: "changed_setting", "note", emlRunAnnotationComparison.note$
+@note: "changed_setting", "printReport", string$ (emlRunAnnotationComparison.printReport)
 @readPending
 @note: "changed_setting", "notePending", readPending.v$
-@note: "changed_setting", "error", emlBridgeGroupComparison.error$
+@note: "changed_setting", "error", emlRunAnnotationComparison.error$
 
 ; ===========================================================================
 ; ITEM 1.2 -- LEG C. CHANGED DATA, SAME REPORT. The correction goes back to
@@ -182,7 +182,7 @@ appendInfoLine: "=== SENTINEL: CHANGED-SETTING FIGURE ENDS ==="
 ; ===========================================================================
 annotCorrectionMethod$ = "holm"
 appendInfoLine: "=== SENTINEL: LEG C MENU ANALYSIS BEGINS ==="
-@emlRunKWAnalysis: tableId, "value", "group", 1, "holm"
+@emlRunKruskalWallisAnalysis: tableId, "value", "group", 1, "holm"
 appendInfoLine: "=== SENTINEL: LEG C MENU ANALYSIS ENDS ==="
 
 ; 10.1 -> 10.2. Row 1 is the Zebra group's smallest value; the next value up
@@ -193,17 +193,17 @@ Set numeric value: 1, "value", 10.2
 @note: "changed_data_same_report", "edit", "row 1 value 10.1 -> 10.2"
 
 appendInfoLine: "=== SENTINEL: SAME-REPORT FIGURE BEGINS ==="
-@emlBridgeGroupComparison: tableId, "value", "group", 0.05, "both", 1, 1,
+@emlRunAnnotationComparison: tableId, "value", "group", 0.05, "both", 1, 1,
 ... "nonparametric", 1
 @emlGraphsReportBridgeIfNew: tableId, "value", "group"
 appendInfoLine: "=== SENTINEL: SAME-REPORT FIGURE ENDS ==="
-@note: "changed_data_same_report", "verdict", emlBridgeGroupComparison.verdict$
-@note: "changed_data_same_report", "note", emlBridgeGroupComparison.note$
+@note: "changed_data_same_report", "verdict", emlRunAnnotationComparison.verdict$
+@note: "changed_data_same_report", "note", emlRunAnnotationComparison.note$
 @note: "changed_data_same_report", "printReport",
-... string$ (emlBridgeGroupComparison.printReport)
+... string$ (emlRunAnnotationComparison.printReport)
 @readPending
 @note: "changed_data_same_report", "notePending", readPending.v$
-@note: "changed_data_same_report", "error", emlBridgeGroupComparison.error$
+@note: "changed_data_same_report", "error", emlRunAnnotationComparison.error$
 
 ; ===========================================================================
 ; ITEM 1.2 -- LEG D. CHANGED DATA, DIFFERENT REPORT. The anti-vacuity half:
@@ -217,16 +217,16 @@ Set numeric value: 8, "value", 12.0
 @note: "changed_data_new_report", "edit", "row 8 value 8.4 -> 12.0"
 
 appendInfoLine: "=== SENTINEL: NEW-REPORT FIGURE BEGINS ==="
-@emlBridgeGroupComparison: tableId, "value", "group", 0.05, "both", 1, 1,
+@emlRunAnnotationComparison: tableId, "value", "group", 0.05, "both", 1, 1,
 ... "nonparametric", 1
 @emlGraphsReportBridgeIfNew: tableId, "value", "group"
 appendInfoLine: "=== SENTINEL: NEW-REPORT FIGURE ENDS ==="
-@note: "changed_data_new_report", "verdict", emlBridgeGroupComparison.verdict$
-@note: "changed_data_new_report", "note", emlBridgeGroupComparison.note$
+@note: "changed_data_new_report", "verdict", emlRunAnnotationComparison.verdict$
+@note: "changed_data_new_report", "note", emlRunAnnotationComparison.note$
 @note: "changed_data_new_report", "printReport",
-... string$ (emlBridgeGroupComparison.printReport)
+... string$ (emlRunAnnotationComparison.printReport)
 @readPending
 @note: "changed_data_new_report", "notePending", readPending.v$
-@note: "changed_data_new_report", "error", emlBridgeGroupComparison.error$
+@note: "changed_data_new_report", "error", emlRunAnnotationComparison.error$
 
 appendInfoLine: "=== SENTINEL: PROBE COMPLETE ==="

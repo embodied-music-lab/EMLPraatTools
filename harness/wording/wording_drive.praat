@@ -54,7 +54,7 @@ writeFile: outDir$ + "/02_twoway.txt", info$ ()
 # ── 3. Kruskal-Wallis ───────────────────────────────────────────────────────
 writeInfoLine: ""
 selectObject: oneway
-@emlRunKWAnalysis: oneway, "SPL_dB", "voice_type", 1, "holm"
+@emlRunKruskalWallisAnalysis: oneway, "SPL_dB", "voice_type", 1, "holm"
 writeFile: outDir$ + "/03_kruskal.txt", info$ ()
 
 # ── 4. independent t test ───────────────────────────────────────────────────

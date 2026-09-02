@@ -37,7 +37,7 @@
 #           still computes (ties, not a zero-variance test).
 #
 # The KW/rank-biserial sibling of SITE 2 (stats/eml-analysis.praat's
-# @emlRunKWAnalysis and its graphs/eml-annotation-procedures.praat twin) gets
+# @emlRunKruskalWallisAnalysis and its graphs/eml-annotation-procedures.praat twin) gets
 # the identical mechanical fix but is NOT driven here: @emlKruskalWallis
 # itself refuses outright when any group has 0 observations ("Group ""X""
 # has 0 observations. Every group needs at least 1.", stats/eml-inferential.praat,

@@ -92,7 +92,7 @@ for csI from 1 to csN
     Set string value: csI, "group", csGrp$# [csI]
 endfor
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 # The form's globals @emlDrawScatterPlot reads directly (not as procedure
 # arguments) -- see the ruling on undotted globals in CLAUDE.md. Correlation

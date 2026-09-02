@@ -39,7 +39,7 @@ include ../../plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
 include ../../plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
 include ../../plugin_EML_StatsGraphs/graphs/eml-graphs-form.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 ltLeg$ = environment$ ("EML_LT_LEG")
 ltOut$ = environment$ ("EML_LT_OUT")

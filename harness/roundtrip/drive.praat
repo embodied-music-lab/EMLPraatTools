@@ -86,7 +86,7 @@
 # ============================================================================
 include eml-lib.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 rtOut$ = environment$ ("EML_RT_OUT")
 rtCsv$ = environment$ ("EML_RT_CSV")

@@ -53,7 +53,7 @@ if tag$ = ""
     tag$ = "run"
 endif
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 # ---------------------------------------------------------------------------
 # THE CORPUS. Every string here is either a literal an EML call site builds or
@@ -67,7 +67,7 @@ procedure addCase: .text$
     case$[nCase] = .text$
 endproc
 
-; Omnibus lines — @emlBridgeGroupComparison, both arms, all four tests.
+; Omnibus lines — @emlRunAnnotationComparison, both arms, all four tests.
 @addCase: "F(2, 21) = 4.31, p = .027"
 @addCase: "One-way ANOVA: F(3, 76) = 5.02, p = .003, \ep^2 = 0.165"
 @addCase: "Welch t: t(31.4) = 2.14, p = .041, d = 0.83"

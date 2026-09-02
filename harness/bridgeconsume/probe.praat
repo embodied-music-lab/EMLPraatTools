@@ -6,7 +6,7 @@
 ; THE READ SIDE, MEASURED IN ISOLATION FROM THE WRITE SIDE. The store's single
 ; write site is a separate piece of work; this probe stands a publication up
 ; BY HAND, in the published names the read side's contract block names, and
-; drives @emlBridgeGroupComparison against it. That is deliberate rather than
+; drives @emlRunAnnotationComparison against it. That is deliberate rather than
 ; a stopgap: the read side's contract is "given these globals, do this", and a
 ; probe that could only run once the writer existed would be testing the pair
 ; and not the rule.
@@ -91,17 +91,17 @@ annotCorrectionMethod$ = "holm"
 procedure drive: .case$, .tid, .layout
     writeInfo: ""
     @emlClearAnnotations
-    @emlBridgeGroupComparison: .tid, "value", "group", 0.05, "p-value", 1, 1,
+    @emlRunAnnotationComparison: .tid, "value", "group", 0.05, "p-value", 1, 1,
     ... testType$, .layout
     .said$ = info$ ()
 
-    @note: .case$, "verdict", emlBridgeGroupComparison.verdict$
-    @note: .case$, "consumed", string$ (emlBridgeGroupComparison.consumed)
-    @note: .case$, "printReport", string$ (emlBridgeGroupComparison.printReport)
-    @note: .case$, "note", emlBridgeGroupComparison.note$
-    @note: .case$, "error", emlBridgeGroupComparison.error$
-    @note: .case$, "omnibus", emlBridgeGroupComparison.omnibus$
-    @note: .case$, "nGroups", string$ (emlBridgeGroupComparison.nGroups)
+    @note: .case$, "verdict", emlRunAnnotationComparison.verdict$
+    @note: .case$, "consumed", string$ (emlRunAnnotationComparison.consumed)
+    @note: .case$, "printReport", string$ (emlRunAnnotationComparison.printReport)
+    @note: .case$, "note", emlRunAnnotationComparison.note$
+    @note: .case$, "error", emlRunAnnotationComparison.error$
+    @note: .case$, "omnibus", emlRunAnnotationComparison.omnibus$
+    @note: .case$, "nGroups", string$ (emlRunAnnotationComparison.nGroups)
     @note: .case$, "bracketN", string$ (annotBracketN)
     @note: .case$, "matrixN", string$ (annotMatrixN)
     @note: .case$, "captionTest", annotBracketPosthoc$
@@ -149,9 +149,9 @@ procedure publish: .tid, .dataCol$, .groupCol$
     selectObject: .tid
     .tableName$ = selected$ ("Table")
     @emlStoreKeyTake: .tid, .dataCol$, .groupCol$
-    .n = emlBridgeGroupComparison.nGroups
+    .n = emlRunAnnotationComparison.nGroups
     for .g from 1 to .n
-        emlPublishInLabel$ [.g] = emlBridgeGroupComparison.gLabel$ [.g]
+        emlPublishInLabel$ [.g] = emlRunAnnotationComparison.gLabel$ [.g]
     endfor
     @emlBridgeStoreIdentity: .n, testType$, annotCorrectionMethod$
     if .n > 2
@@ -163,16 +163,16 @@ procedure publish: .tid, .dataCol$, .groupCol$
     ... emlStoreKeyTake.key$, emlStoreKeyTake.error$, .tid, .tableName$,
     ... .dataCol$, .groupCol$, emlBridgeStoreIdentity.test$,
     ... emlBridgeStoreIdentity.correction$, 0.05, emlStoreKeyTake.sort$,
-    ... .n, emlBridgeGroupComparison.omniLabel$,
-    ... emlBridgeGroupComparison.omniStat, emlBridgeGroupComparison.omniDf1,
-    ... emlBridgeGroupComparison.omniDf2, emlBridgeGroupComparison.omniP,
-    ... emlBridgeGroupComparison.omniEffectLabel$,
-    ... emlBridgeGroupComparison.omniEffect, emlBridgeGroupComparison.omniN,
+    ... .n, emlRunAnnotationComparison.omniLabel$,
+    ... emlRunAnnotationComparison.omniStat, emlRunAnnotationComparison.omniDf1,
+    ... emlRunAnnotationComparison.omniDf2, emlRunAnnotationComparison.omniP,
+    ... emlRunAnnotationComparison.omniEffectLabel$,
+    ... emlRunAnnotationComparison.omniEffect, emlRunAnnotationComparison.omniN,
     ... "", undefined, undefined, undefined, "", undefined,
-    ... emlBridgeGroupComparison.postHoc$, .hasMatrix,
-    ... emlBridgeGroupComparison.statLabel$, emlBridgeGroupComparison.effLabel$,
-    ... emlBridgeGroupComparison.pRes##, emlBridgeGroupComparison.diffRes##,
-    ... emlBridgeGroupComparison.statRes##, emlBridgeGroupComparison.eRes##
+    ... emlRunAnnotationComparison.postHoc$, .hasMatrix,
+    ... emlRunAnnotationComparison.statLabel$, emlRunAnnotationComparison.effLabel$,
+    ... emlRunAnnotationComparison.pRes##, emlRunAnnotationComparison.diffRes##,
+    ... emlRunAnnotationComparison.statRes##, emlRunAnnotationComparison.eRes##
 endproc
 
 ; ---------------------------------------------------------------------------

@@ -4,9 +4,9 @@
 # Ian Howell -- Embodied Music Lab -- GPL-3.0-or-later
 #
 # Punch list 4.5 / OPEN_ITEMS "the regression group column" ruling. Drives
-# stats/eml-analysis.praat's @emlRunGroupedRegression directly -- the same
+# stats/eml-analysis.praat's @emlRunGroupedRegressionAnalysis directly -- the same
 # choice harness/doorcensus/probe.praat makes ("direct kernel calls where
-# [the door] is an API") -- rather than through a dialog: @emlRunGroupedRegression
+# [the door] is an API") -- rather than through a dialog: @emlRunGroupedRegressionAnalysis
 # IS the shared call both eml-regress.praat and eml-wizard.praat now make, so
 # driving it here is driving the shipped code, not a stand-in for it.
 #
@@ -102,11 +102,11 @@ else
     # ── Door step 2: the per-group port (punch list 4.5) -- the SAME call
     # both eml-regress.praat and eml-wizard.praat now make. ──
     selectObject: regTab
-    @emlRunGroupedRegression: regTab, "x", "y", "group"
+    @emlRunGroupedRegressionAnalysis: regTab, "x", "y", "group"
 
-    @emitNum: "pgTotal", emlRunGroupedRegression.pgTotal
-    @emitNum: "pgRun", emlRunGroupedRegression.pgRun
-    @emitNum: "pgSkipped", emlRunGroupedRegression.pgSkipped
+    @emitNum: "pgTotal", emlRunGroupedRegressionAnalysis.pgTotal
+    @emitNum: "pgRun", emlRunGroupedRegressionAnalysis.pgRun
+    @emitNum: "pgSkipped", emlRunGroupedRegressionAnalysis.pgSkipped
 
     @eml_colIndex: "glance", "n.groups"
     @emit: "glance_n_groups", emlGlance_val$ [eml_colIndex.idx]

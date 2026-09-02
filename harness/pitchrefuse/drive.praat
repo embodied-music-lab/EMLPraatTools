@@ -38,7 +38,7 @@ include ../../plugin/graphs/eml-annotation-procedures.praat
 include ../../plugin/graphs/eml-draw-procedures.praat
 include ../../plugin/graphs/eml-graphs-form.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 leg$ = environment$ ("EML_PR_LEG")
 out$ = environment$ ("EML_PR_OUT")

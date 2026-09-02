@@ -25,7 +25,7 @@
 #                                       literal 1 and is now the launching
 #                                       dialog's answer, so this leg's
 #                                       door 2 is DRIVEN (see the two
-#                                       @emlBridgeGroupComparison calls at
+#                                       @emlRunAnnotationComparison calls at
 #                                       the foot of the leg 3 block) rather
 #                                       than restated
 #   leg2  unequal-spread ANOVA      -- the SAME shared reporter,
@@ -106,7 +106,7 @@ include ../../plugin/stats/eml-inferential.praat
 ; @emlOneWayAnova and @emlTukeyHSD the way the bridge calls them, and then
 ; emitting door 2's post-hoc behaviour as a literal -- would restate the
 ; answer it is meant to measure, and would read identically whether item 3.5
-; is built or not. @emlBridgeGroupComparison is driven below instead, on the
+; is built or not. @emlRunAnnotationComparison is driven below instead, on the
 ; same fixture, with the dialog's post-hoc answer in force, twice: that
 ; difference is the only thing that can tell the two trees apart.
 ; It draws nothing: the bridge fills the annotation arrays and this probe
@@ -171,7 +171,7 @@ selectObject: leg1tab
 @emitNum: "leg1", "df_AB", emlPairwiseT.dfMatrix## [1, 2]
 
 # Door B: the figure's own annotation -- the numbers the figure carries when
-# the figure was asked for a post-hoc. @emlBridgeGroupComparison's parametric
+# the figure was asked for a post-hoc. @emlRunAnnotationComparison's parametric
 # k-group branch runs @emlOneWayAnova with the post-hoc the launching dialog
 # asked for (ITEM 3.5); the kernel call below is that branch with the answer
 # set to "yes", which is what leg 1's comparison is about. The two drives of
@@ -214,7 +214,7 @@ selectObject: leg1tab
 # ============================================================================
 # ITEM 3.5 -- THE DRAW DOOR, DRIVEN TWICE, WITH THE DIALOG'S ANSWER IN FORCE
 # ============================================================================
-# LAST IN THIS SECTION ON PURPOSE. @emlBridgeGroupComparison re-runs
+# LAST IN THIS SECTION ON PURPOSE. @emlRunAnnotationComparison re-runs
 # @emlOneWayAnova, @emlTukeyHSD and @emlCountGroups internally, so every
 # emission above that reads those procedures' outputs has already been made
 # by the time these two drives start. Praat procedure outputs survive only
@@ -239,35 +239,35 @@ selectObject: leg1tab
 @emlClearAnnotations
 annotPostHoc = 1
 selectObject: leg1tab
-@emlBridgeGroupComparison: leg1tab, "value", "group", 0.05, "p-value", 0, 0,
+@emlRunAnnotationComparison: leg1tab, "value", "group", 0.05, "p-value", 0, 0,
 ... "parametric", 3
-optin_pairwise = emlBridgeGroupComparison.hasPairwise
+optin_pairwise = emlRunAnnotationComparison.hasPairwise
 ; READ THROUGH variableExists SO THIS PROBE RUNS ON BOTH TREES. Before item
 ; 3.5 the bridge had no .doTukey to publish -- the argument was a literal --
 ; so an unguarded read stops Praat dead and there is no artefact to compare
 ; the red demonstration against. "absent" is the pre-item answer and it is a
 ; fact worth recording, not an error.
 optin_dotukey$ = "absent"
-if variableExists ("emlBridgeGroupComparison.doTukey")
-    optin_dotukey$ = string$ (emlBridgeGroupComparison.doTukey)
+if variableExists ("emlRunAnnotationComparison.doTukey")
+    optin_dotukey$ = string$ (emlRunAnnotationComparison.doTukey)
 endif
 optin_matrix = annotMatrixN
-optin_err$ = emlBridgeGroupComparison.error$
+optin_err$ = emlRunAnnotationComparison.error$
 
 @emlClearAnnotations
 annotPostHoc = 0
 selectObject: leg1tab
-@emlBridgeGroupComparison: leg1tab, "value", "group", 0.05, "p-value", 0, 0,
+@emlRunAnnotationComparison: leg1tab, "value", "group", 0.05, "p-value", 0, 0,
 ... "parametric", 3
-optout_pairwise = emlBridgeGroupComparison.hasPairwise
+optout_pairwise = emlRunAnnotationComparison.hasPairwise
 optout_dotukey$ = "absent"
-if variableExists ("emlBridgeGroupComparison.doTukey")
-    optout_dotukey$ = string$ (emlBridgeGroupComparison.doTukey)
+if variableExists ("emlRunAnnotationComparison.doTukey")
+    optout_dotukey$ = string$ (emlRunAnnotationComparison.doTukey)
 endif
 optout_matrix = annotMatrixN
 optout_text = annotTextN
-optout_omnibus$ = emlBridgeGroupComparison.omnibus$
-optout_err$ = emlBridgeGroupComparison.error$
+optout_omnibus$ = emlRunAnnotationComparison.omnibus$
+optout_err$ = emlRunAnnotationComparison.error$
 
 # The opt-IN drive, on leg 1: the figure still shows Tukey when the figure
 # was asked for Tukey. Item 3.5 withholds nothing from a user who asked.

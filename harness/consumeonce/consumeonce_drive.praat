@@ -78,7 +78,7 @@ include ../../plugin/graphs/eml-graphs-form.praat
 # harness that never ran. Learned the hard way by harness/drawlayer.
 Text writing preferences: "UTF-8"
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 leg$ = environment$ ("EML_CO_LEG")
 out$ = environment$ ("EML_CO_OUT")
@@ -287,7 +287,7 @@ elsif leg$ = "bridge_then_qq"
     @emitStamp: "bridge_then_qq_afterpublish"
 
     @emlSetAdaptiveTheme: figure_width, figure_height
-    @emlBridgeGroupComparison: coTable.id, "val", "grp", 0.05, "stars", 0, 0,
+    @emlRunAnnotationComparison: coTable.id, "val", "grp", 0.05, "stars", 0, 0,
     ... "auto", 2
     @emit: "bridge_then_qq_brackets", string$ (annotBracketN)
     @emitStamp: "bridge_then_qq_afterbridge"

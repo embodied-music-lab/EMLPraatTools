@@ -48,7 +48,7 @@ procedure rnd
     .g = (.u - 0.5) * 3.2
 endproc
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 Erase all
 
 ; --- the fixture. One long table serves every type; each draw call reads the

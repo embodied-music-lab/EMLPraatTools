@@ -24,8 +24,8 @@
 # That behaviour is already documented at the call site
 # (graphs/eml-annotation-procedures.praat, the "WHAT THE SPLIT COST HERE"
 # comment) and is NOT a finding. probe2.praat is the file that asks the same
-# question at the real doors -- @emlRunAnovaAnalysis, @emlRunKWAnalysis,
-# @emlBridgeGroupComparison -- and its answers are the ones that count.
+# question at the real doors -- @emlRunAnovaAnalysis, @emlRunKruskalWallisAnalysis,
+# @emlRunAnnotationComparison -- and its answers are the ones that count.
 #
 # Usage:
 #     source harness/_env.sh

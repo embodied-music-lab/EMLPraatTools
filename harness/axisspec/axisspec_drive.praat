@@ -44,7 +44,7 @@ include ../../plugin/stats/eml-analysis.praat
 # harness that never ran. Learned the hard way by harness/drawlayer.
 Text writing preferences: "UTF-8"
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 leg$ = environment$ ("EML_AS_LEG")

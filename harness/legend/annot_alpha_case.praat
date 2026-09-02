@@ -1,6 +1,6 @@
 include _prelude.praat
 Erase all
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 Create Table with column names: "t", 0, "x y"
 for i from 1 to 600
     Append row

@@ -101,7 +101,7 @@ endproc
 # difference between legs is a difference in the dispatch and not in the seed.
 # ---------------------------------------------------------------------------
 procedure dpFormState: .type, .id
-    ; THE DRAW LAYER'S DOCUMENTED PRECONDITION, FIRST. @emlInitDrawingDefaults
+    ; THE DRAW LAYER'S DOCUMENTED PRECONDITION, FIRST. @emlInitializeDrawingDefaults
     ; seeds every global the draw procedures read. The shipped form does not
     ; call it -- it sets those globals itself, from its own dialogs -- so a
     ; harness that skips it aborts on the first one the form would have set
@@ -109,7 +109,7 @@ procedure dpFormState: .type, .id
     ; file died on an unguarded read of the subtitle. Seeding the defaults and
     ; then overriding with the form's values is what any non-form caller must
     ; do, and it is what the emitted recorder scripts do.
-    @emlInitDrawingDefaults
+    @emlInitializeDrawingDefaults
     graph_type = .type
     objectId = .id
     title$ = "dispatch leg"

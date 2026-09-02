@@ -21,7 +21,7 @@ include ../../plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
 include ../../plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
 include ../../plugin_EML_StatsGraphs/graphs/eml-graphs-form.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlLoadConfig
 
 secondOut$ = environment$ ("EML_OUT")

@@ -366,7 +366,7 @@ observable -- every matrix cell, its significance flag and its effect size,
 every bracket's indices, p, effect and label, the omnibus sentence and both
 caption halves -- at both layouts on both arms. All identical.
 
-FOUR ARMS AND ONE RENDERER. The four arms of `@emlBridgeGroupComparison` each
+FOUR ARMS AND ONE RENDERER. The four arms of `@emlRunAnnotationComparison` each
 carried their own copy of the bracket loop and the matrix loop; the consume
 path would have been a fifth. They now build one display-ordered p matrix and
 one SIGNED effect matrix and hand them to `@emlBridgeRenderAnnotations`, which
@@ -419,7 +419,7 @@ STILL OPEN, AND EACH IS NAMED WHERE IT BITES:
     not an empty report — the changed-setting path publishes `""`, and a
     stored `""` never matches, so a later run cannot fall silent against a
     report nobody has read.
-  - THE PRE-PRINT COMPARISON IS IN `@emlBridgeGroupComparison`, not in
+  - THE PRE-PRINT COMPARISON IS IN `@emlRunAnnotationComparison`, not in
     `@emlGraphsReportBridgeIfNew`, because that procedure's own header
     forbids it a rule of its own. On a `data` verdict the bridge renders
     buffer-only, compares against `emlStoreReport$` AS IT STANDS BEFORE ITS
@@ -464,7 +464,7 @@ STILL OPEN, AND EACH IS NAMED WHERE IT BITES:
     every gloss. On the path that stays silent it runs once and nothing
     prints.
   - **`v112`'S CENSUS GREW BY SIX, and the reason is the render moving
-    inside the door.** `@emlBridgeGroupComparison`'s closure now reaches
+    inside the door.** `@emlRunAnnotationComparison`'s closure now reaches
     `@emlReportBridgeStats` and the result writer. THE DRAW PATH ALWAYS RAN
     THAT CODE — the graphs form has always called
     `@emlGraphsReportBridgeIfNew` right after the bridge — but the form is
@@ -533,7 +533,7 @@ coverage question is worth settling before the store lands rather than after.
   graphs form's shared Comparison menu carries an **"ANOVA only, no pairwise
   tests"** row (the wizard's own language-batch item-4 wording, punch list
   4.2), all six annotate-capable pages commit it to a new `annotPostHoc`
-  global, and `@emlBridgeGroupComparison` reads that global on the same
+  global, and `@emlRunAnnotationComparison` reads that global on the same
   channel `annotCorrectionMethod$` uses. `@emlReportBridgeStats` reads the
   bridge's resolved flag rather than restating it, so the report and the
   three broom declarations under it follow the same one answer. A ROW AND
@@ -547,7 +547,7 @@ coverage question is worth settling before the store lands rather than after.
     behaviour. Against the pre-item tree the amended `v127` reports **10
     FAILED of 68**; against the tree with the item built, **68/68**. The
     probe (`harness/doorcensus/probe.praat`) drives
-    `@emlBridgeGroupComparison` twice on the leg1 fixture: pre-item both
+    `@emlRunAnnotationComparison` twice on the leg1 fixture: pre-item both
     drives give `hasPairwise = 1`, `matrix rows = 3`; after, the opt-out
     drive gives `0`/`0` with the omnibus line unchanged.
   - **`v112`** gains `annotPostHoc` as RESULT-AFFECTING, with that
@@ -619,7 +619,7 @@ repo from 26 Aug on.
 ### RULED 26 Aug (Fable) — D-KW-ETA is a documented absence, not an exemption
 
 `docs/RULING_KIT_DELTAS_2026-08-26.md`. The Kruskal-Wallis eta-squared[H] row
-(`walkthrough/kit/quantities.tsv`, `emlRunKWAnalysis` / `eta_squared`, 80 kit
+(`walkthrough/kit/quantities.tsv`, `emlRunKruskalWallisAnalysis` / `eta_squared`, 80 kit
 rows) reads as a coverage gap in `compare.R`'s current `DECLARED[]` text — "a
 coverage gap, not an error." Fable's ruling recharacterises it: the plugin
 reports epsilon-squared only, by decision, and that decision is now recorded
@@ -809,7 +809,7 @@ moment it happens, in the output the user reads and in the recorded script.
   group was drawn overlapped.
 - The regression group column: CLOSED (punch list 4.5, 26 August 2026). Ported
   the correlate dialog's whole pattern into ONE shared procedure,
-  `@emlRunGroupedRegression` (stats/eml-analysis.praat), called from BOTH
+  `@emlRunGroupedRegressionAnalysis` (stats/eml-analysis.praat), called from BOTH
   doors -- the menu's scripts/eml-regress.praat and both of the wizard's
   regression pages (B_REG_COLUMNS and D_PREDICT_COLUMNS) -- rather than a
   copy per door. Per-group fits beside the overall one, groups too small
@@ -887,7 +887,7 @@ strings were written once.
    `validate/v115_settings_publication.R` reads it, 105 checks;
    `harness/settingspub/break.sh` removes the call and reds 53 of them. The census moves 14 -> 15 emitted,
    18 -> 17 not-emitted user choices; it sees only `annotAlpha`, because
-   its frame is `@emlInitDrawingDefaults`' seeded block and the other two
+   its frame is `@emlInitializeDrawingDefaults`' seeded block and the other two
    belong to the form and to `stats/eml-extract.praat`.
 
    WHAT IS LEFT OF THIS ITEM: the twelve DISPLAY-ONLY settings v112's

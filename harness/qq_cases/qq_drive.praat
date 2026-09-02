@@ -68,7 +68,7 @@ include ../../plugin/graphs/eml-draw-qq.praat
 # UTF-8. Without this every output file is unreadable by the validator.
 Text writing preferences: "UTF-8"
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 src$ = environment$ ("EML_QQ_INPUT")
 col$ = environment$ ("EML_QQ_COL")

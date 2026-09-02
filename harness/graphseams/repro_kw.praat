@@ -4,7 +4,7 @@
 # Drives the EXACT pair of calls the graphs form makes at its annotation
 # bridge (eml-graphs-form.praat, the `graph_type = 7` arm):
 #
-#     @emlBridgeGroupComparison: ... annotTestType$ = "nonparametric" ...
+#     @emlRunAnnotationComparison: ... annotTestType$ = "nonparametric" ...
 #     @emlReportBridgeStats:     ...
 #
 # with a three-group table whose omnibus is significant, which is the branch
@@ -35,7 +35,7 @@ include ../../plugin/graphs/eml-graph-procedures.praat
 include ../../plugin/graphs/eml-annotation-procedures.praat
 include ../../plugin/graphs/eml-draw-procedures.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 out$ = environment$ ("EML_KW_OUT")
 if out$ = ""
@@ -54,11 +54,11 @@ emlShowExplanations = 1
 writeInfoLine: "repro_kw: bridge, nonparametric, k = 3, significant omnibus"
 
 # eml-graphs-form.praat: the Violin arm of the annotation bridge.
-@emlBridgeGroupComparison: table, "SPL_dB", "voice_type", 0.05, "p-value", 0, 1,
+@emlRunAnnotationComparison: table, "SPL_dB", "voice_type", 0.05, "p-value", 0, 1,
 ... "nonparametric", 1
-appendInfoLine: "bridge returned, error$ = '" + emlBridgeGroupComparison.error$ + "'"
+appendInfoLine: "bridge returned, error$ = '" + emlRunAnnotationComparison.error$ + "'"
 
-if emlBridgeGroupComparison.error$ = ""
+if emlRunAnnotationComparison.error$ = ""
     @emlReportBridgeStats: table, "SPL_dB", "voice_type"
 endif
 

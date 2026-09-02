@@ -22,7 +22,7 @@ include ../../plugin/graphs/eml-draw-procedures.praat
 # lookup fails with "not found".
 Text writing preferences: "UTF-8"
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 src$ = environment$ ("EML_R7_INPUT")
 out$ = environment$ ("EML_R7_OUT")

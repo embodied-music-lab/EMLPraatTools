@@ -37,7 +37,7 @@
 #
 # WHAT IS FIXTURE AND WHAT IS UNDER TEST. The globals set below are the
 # OUTPUTS of the form's earlier stages — the resolved y-range, the bracket
-# and omnibus state @emlBridgeGroupComparison produced, the canvas geometry.
+# and omnibus state @emlRunAnnotationComparison produced, the canvas geometry.
 # Supplying those is fixture. Everything from @emlGraphsPostDispatchAnnotations
 # onward is the shipped code, unmodified. The pre-dispatch bracket-headroom
 # step is a different stage and is not under test here; valueMin/valueMax are

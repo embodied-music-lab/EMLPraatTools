@@ -105,7 +105,7 @@ include _prelude.praat
 # argument from reading @emlDrawLegend's placement-3 branch and not a
 # measurement. This is the measurement.
 #
-# THE MATRIX IS REAL, NOT SYNTHESISED. @emlBridgeGroupComparison is called on
+# THE MATRIX IS REAL, NOT SYNTHESISED. @emlRunAnnotationComparison is called on
 # a deterministic k-group table, so annotMatrixN, annotMatrixLabel$[], the
 # cell strings, the significance flags and the Cohen's d values are the ones
 # a one-way ANOVA with Tukey HSD actually produces. A hand-filled matrix
@@ -116,7 +116,7 @@ include _prelude.praat
 # EML_TCH IS THE RED PATH, AND IT IS ONE VARIABLE. The form computes
 # figure_height + matrixGap + matrixPanelHeight and leaves it in
 # totalCanvasHeight before it selects the outer viewport, so inside the form
-# that global is always there. It is a FORM LOCAL: @emlInitDrawingDefaults —
+# that global is always there. It is a FORM LOCAL: @emlInitializeDrawingDefaults —
 # the documented entry point for "standalone scripts or PraatGen companion
 # files" — sets emlLegendPlacement and does NOT set it. EML_TCH=0 is that
 # caller. Everything else about the page is identical between the two,
@@ -293,10 +293,10 @@ if matrixK >= 2
             ... + 0.9 * invGaussQ ((ki - 0.5) / mxPerGroup)
         endfor
     endfor
-    @emlBridgeGroupComparison: mxTable, "val", "grp", 0.05, "p-value",
+    @emlRunAnnotationComparison: mxTable, "val", "grp", 0.05, "p-value",
     ... 1, 1, "parametric", 3
     removeObject: mxTable
-    appendInfoLine: "BRIDGE error=[", emlBridgeGroupComparison.error$,
+    appendInfoLine: "BRIDGE error=[", emlRunAnnotationComparison.error$,
     ... "] n=", annotMatrixN
 
     # The form's pre-dispatch block, term for term. See the PRE-DISPATCH

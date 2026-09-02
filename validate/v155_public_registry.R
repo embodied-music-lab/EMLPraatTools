@@ -40,7 +40,7 @@
 # Every site in the recorder (and its callers) that assembles that text
 # does so by concatenating a Praat string literal that opens
 # `"@emlSomething` -- `.code$ = "@emlDrawViolinPlot: data, ...`,
-# `.text$ = .text$ + "@emlInitDrawingDefaults" + newline$`, and so on -- so
+# `.text$ = .text$ + "@emlInitializeDrawingDefaults" + newline$`, and so on -- so
 # grep-ing every non-dev/ .praat file in the tree for the pattern
 # `"@eml[A-Z]\w*` and reading off the name after the quote finds every site
 # that assembles emittable text, by construction, with no procedure list to

@@ -58,7 +58,7 @@ include plugin/stats/eml-analysis.praat
 # a harness that never ran.
 Text writing preferences: "UTF-8"
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 tsv$ = environment$ ("EML_VECFIG_TSV")

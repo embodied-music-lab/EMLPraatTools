@@ -5,7 +5,7 @@ include fixture.praat
 # every press, which is what the graphs form does. This case sets none of
 # them and draws the same figure single.praat draws, so what it renders is
 # what a caller that has never heard of page composition gets:
-# @emlInitDrawingDefaults' erase-on single panel at the origin.
+# @emlInitializeDrawingDefaults' erase-on single panel at the origin.
 #
 # validate/v94 asserts this PNG is byte-identical to single.png. That is the
 # whole of the compatibility claim, and it is a comparison between two files

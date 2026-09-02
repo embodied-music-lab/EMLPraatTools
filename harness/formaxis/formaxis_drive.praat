@@ -56,7 +56,7 @@ include ../../plugin/graphs/eml-annotation-procedures.praat
 include ../../plugin/graphs/eml-draw-procedures.praat
 include ../../plugin/graphs/eml-graphs-form.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 leg$ = environment$ ("EML_FA_LEG")
 out$ = environment$ ("EML_FA_OUT")
@@ -97,7 +97,7 @@ endproc
 # THE FIXTURE. Deterministic, because a byte-for-byte comparison cannot be
 # built on randomGauss with no seed — see §14 of
 # audit/GRAPHING_PUSH_REMAINING.md. Four cohorts around 200 Hz, well enough
-# separated that @emlBridgeGroupComparison returns at least one bracket, which
+# separated that @emlRunAnnotationComparison returns at least one bracket, which
 # is the gate @emlGraphsPreDispatchHeadroom's resolver sits behind.
 # ---------------------------------------------------------------------------
 procedure faTable: .sep, .spread, .nPer
@@ -210,7 +210,7 @@ if leg$ = "bracket_auto" or leg$ = "bracket_typed"
     @emitPub: leg$ + "_afterpublish"
 
     @emlSetAdaptiveTheme: figure_width, figure_height
-    @emlBridgeGroupComparison: faTable.id, "val", "grp", 0.05, "stars", 0, 0,
+    @emlRunAnnotationComparison: faTable.id, "val", "grp", 0.05, "stars", 0, 0,
     ... "auto", 2
     @emit: leg$ + "_brackets", string$ (annotBracketN)
     @emitPub: leg$ + "_afterbridge"

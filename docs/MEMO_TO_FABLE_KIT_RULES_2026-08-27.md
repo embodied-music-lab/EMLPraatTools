@@ -80,7 +80,7 @@ claimed it did.
 **`D-MINOR` — 28 rows, false on both limbs.** It says
 `@emlRunPairedAnalysis` exposes no excluded-row count; `eml-analysis.praat:2536`
 assigns one, and driven against R's `n_excluded` it matches on every cell — 22
-rows would agree. It also says `@emlRunGroupedRegression` exposes no adjusted
+rows would agree. It also says `@emlRunGroupedRegressionAnalysis` exposes no adjusted
 R-squared; the plugin computes it and the runner already reaches it.
 
 **`D-WILCOXR` — 32 rows. False reason, but the rows stay excused.** The claim
