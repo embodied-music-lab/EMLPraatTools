@@ -80,36 +80,51 @@ so before proceeding.
 
 ## How to reach the other two sessions
 
-Three sessions work on this repository and none of us can talk to each
-other. Ian carries mail. `mailbox/` is where it is kept, and an inbox is
-named for its READER.
+Three sessions work here and none of us can talk to each other. Mail is
+how we pass things. There is one rule and one place:
 
-- `mailbox/to-sonnet/` is YOURS. Read everything in it before you start
-  and again whenever you resume. Rulings that bear on your work, answers
-  to your questions, and corrections to these instructions land there.
+**`_mailbox_live/` IS THE MAILBOX. Read there. Write there. Nothing else.**
 
-WRITE to `_mailbox_live/<inbox>/`, not to `mailbox/<inbox>/`. The first
-is git-ignored and is where mail actually arrives; the second is the
-committed archive that Opus syncs from it. A note written straight into
-the tracked `mailbox/` becomes an untracked file, and git refuses to
-overwrite untracked files during a merge -- which is precisely the
-divergence you found and correctly refused to force on 2 September.
-- `mailbox/to-fable/` reaches Fable, who owns planning, sequencing and
-  rulings. A question about WHAT to do, or a case no ruling covers, goes
-  there. Write the question, the evidence, and the options with their
-  consequences. Do not decide it yourself.
-- `mailbox/to-opus/` reaches Opus, who executes and maintains the gate,
-  the work order and the tooling. A defect in any of those goes there.
-  Say what you measured and quote the command that measured it.
+    _mailbox_live/to-sonnet/    YOUR INBOX -- read it
+    _mailbox_live/to-fable/     write to Fable here
+    _mailbox_live/to-opus/      write to Opus here
 
-If you cannot tell which, write to Fable. A question that turns out to be
-Opus's gets forwarded; a decision made in place cannot be un-made.
+`mailbox/` at the repository root is the committed ARCHIVE. It holds a
+copy of every note for the history, and you never read or write it. If
+you write there, git sees an untracked file, refuses to overwrite it
+during a merge, and blocks the next sync -- which is exactly the
+divergence you found on 2 September and correctly refused to force.
 
-Never edit a file already sitting in an inbox. Add a new one that says
-what it supersedes.
+To see what has arrived for you:
 
-Your completion report is separate from all of this and goes where the
-work order says: `out/REPORT.md` in this directory.
+    bash walkthrough/kit/mailbox_check.sh sonnet
+
+It lists what is unread, and shows each file's header: who it is for,
+whether a human is needed, and what it blocks. After you read one:
+
+    bash walkthrough/kit/mailbox_check.sh sonnet --acted <file> "<what you did>"
+
+Check before you start a unit of work, when you finish one, and before
+you tell Ian you are blocked -- the answer may already be sitting there.
+`mailbox/PROCEDURE.md` states when you may act without him, which is
+most of the time.
+
+Start every file you write with this header, or the reader holds it:
+
+    To:       fable
+    From:     sonnet
+    Needs:    fable
+    Blocking: <what stops until this is answered, or "nothing">
+
+A question about WHAT to do, or a case no ruling covers, goes to Fable:
+the question, the evidence, the options with their consequences. Do not
+decide it yourself. A defect in the gate, the work order or the tooling
+goes to Opus, with the command that measured it. If you cannot tell
+which, write to Fable -- a misrouted question gets forwarded, a decision
+made in place cannot be un-made.
+
+Your completion report is not mail and does not change: it goes to
+`out/REPORT.md` in this directory.
 
 ## When you finish
 

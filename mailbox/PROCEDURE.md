@@ -1,5 +1,11 @@
 # Procedure — checking mail and acting without Ian
 
+**One rule before anything else: `_mailbox_live/` is the mailbox.**
+Sessions read and write there and nowhere else. `mailbox/`, where this
+file sits, is the committed archive; Opus copies the live folder into
+it before each push. Writing into `mailbox/` creates an untracked file
+that blocks the next merge, which cost most of 2 September.
+
 Three sessions work on this repository. Ian is the only human, and he
 is not always at the machine. This procedure exists so that mail keeps
 moving while he is away, and so that nothing is silently dropped when

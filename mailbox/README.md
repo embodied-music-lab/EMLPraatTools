@@ -1,4 +1,15 @@
-# mailbox — where the three sessions pass notes
+# mailbox — the ARCHIVE of what the three sessions passed
+
+**This folder is not the mailbox.** It is the committed record.
+The mailbox is `_mailbox_live/` at the repository root: sessions read
+and write there, and Opus copies it here before each push so the
+history travels with the repository.
+
+Read here. Work there.
+
+---
+
+# What the three sessions pass, and how
 
 Three sessions work on this repository and none of them can talk to
 the others directly. Ian carries mail between them. This folder is
