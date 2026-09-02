@@ -331,7 +331,23 @@ if (is.null(resultTbl) || nrow(resultTbl) == 0) {
     } else {
         cat("\n      No failing cells against the properly-converged reference.\n")
     }
+    # Per-cell evidence to disk. A verdict whose per-cell numbers exist only in
+    # a scrolled terminal cannot be audited, and every cell below is the input
+    # to the oracle-arbitration step (walkthrough/kit/audit/arbitrate_v154.R).
+    outDir <- repo_path("walkthrough", "kit", "audit")
+    dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
+    outFile <- file.path(outDir, "v154_cells.tsv")
+    write.table(resultTbl, outFile, sep = "\t", row.names = FALSE,
+                quote = FALSE, na = "NA")
+    cat(sprintf("\n      per-cell evidence written: %s (%d rows)\n",
+                outFile, nrow(resultTbl)))
+
     # bucket breakdown for forward cells, evidence not hidden inside a pass count
+    # NOTE ON THE ABSOLUTE LIMB. The standard rule passes a cell when the
+    # absolute error is at or below 1e-12. Once the oracle probability itself
+    # falls below 1e-12, that limb is satisfied by ANY answer, so the two
+    # deepest buckets cannot fail and their pass counts assert nothing. Read
+    # their worst relative error, not their fail count.
     fwdTbl <- resultTbl[resultTbl$kind == "forward" & !is.na(resultTbl$bucket), ]
     if (nrow(fwdTbl) > 0) {
         cat("\n      forward, by p-magnitude bucket:\n")
@@ -340,6 +356,11 @@ if (is.null(resultTbl) || nrow(resultTbl) == 0) {
             if (nrow(s3) == 0) next
             cat(sprintf("        %-14s n=%3d fail=%2d worst relErr=%.3e\n",
                         bk, nrow(s3), sum(!s3$pass), max(s3$relErr[is.finite(s3$relErr)], 0)))
+        }
+        vac <- fwdTbl[is.finite(fwdTbl$oracle) & abs(fwdTbl$oracle) <= 1e-12, ]
+        if (nrow(vac) > 0) {
+            cat(sprintf("        (%d of these cells pass on the absolute limb alone,\n", nrow(vac)))
+            cat("         because the oracle itself is at or below the 1e-12 floor.)\n")
         }
     }
 }
