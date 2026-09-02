@@ -26,7 +26,15 @@ The local clone is behind the work. If you begin without syncing, you will
 rename files that have since changed and produce conflicts that look like
 your own errors.
 
-Run this first, from the repository root:
+If Ian has already pushed, pull:
+
+```bash
+cd ~/EMLPraatTools
+git pull --ff-only origin main
+git log --oneline -3
+```
+
+If he has not, fetch the bundle he placed beside the repository:
 
 ```bash
 cd ~/EMLPraatTools
@@ -34,6 +42,9 @@ git fetch ~/EMLPraatTools/eml-settlement-handoff.bundle HEAD:refs/remotes/bundle
 git merge --ff-only refs/remotes/bundle/settlement
 git log --oneline -3
 ```
+
+Either way, the top commit should be the one that adds this directory,
+`handoff: settlement session packet`.
 
 If the merge is not a fast-forward, stop and report it. Do not force it.
 
