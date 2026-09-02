@@ -45,6 +45,23 @@ include ../stats/eml-core-utilities.praat
 include ../stats/eml-core-descriptive.praat
 include ../stats/eml-extract.praat
 include ../stats/eml-output.praat
+; The two-way kernel, which eml-inferential.praat calls at its line 5259 and
+; which nothing included. Added 2 September 2026 under
+; RULING_RECORDER_AND_WIRING_2026-09-02.md after a probe drove the real menu
+; item and reproduced what a user hits:
+;
+;     Error: Procedure "emlAnovaKernelTwoWay" not found.
+;     Script line 17003 not performed or completed:
+;     « @emlAnovaKernelTwoWay: .tableId, .dataCol$, .factor1$, .factor2$, 3 »
+;
+; The failure lands on Praat's own uncaught-error dialog rather than the
+; plugin's, because it happens before the orchestrator can set .error$. The
+; module was in setup.praat's table all along, so the generated barrel could
+; load it and a user's own script worked; only the menu route was broken.
+;
+; It goes BEFORE eml-inferential.praat because an include is a parse-time
+; paste and the caller must find the procedure already defined.
+include ../stats/eml-anova-kernel.praat
 include ../stats/eml-inferential.praat
 include ../stats/eml-result-writer.praat
 ; The recorder defines procedures and touches nothing at include time --
