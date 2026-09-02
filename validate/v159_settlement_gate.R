@@ -155,6 +155,22 @@ for (nm in c("emlRunGroupedRegressionAnalysis", "emlDrawQQPlot")) {
                grepl(sprintf("\\b%s\\b", nm), recText))
 }
 
+# ---- F. repeated-measures signature, REPORT ONLY ----------------------------
+# WORK_ORDER_API_SETTLEMENT item 1 rules the string-vector form canonical for
+# 1.0. Report only, because that work order also calls the pipe form a
+# compatibility wrapper and the later no-wrappers ruling forbids wrappers. The
+# two disagree and Fable has not resolved it. Promote when she does.
+cat("\n  ---- F. repeated-measures signature (report only, conflict unresolved) ----\n")
+for (nm in c("emlRunRepeatedMeasuresAnalysis", "emlRunFriedmanAnalysis")) {
+    sig <- grep(sprintf("^%s\\t", nm), regRows, value = TRUE)
+    form <- if (length(sig) && grepl("conditionCols\\$", sig)) {
+        "pipe-delimited string (ruled against)"
+    } else if (length(sig) && grepl("conditionCols\\$#", sig)) {
+        "string vector (canonical)"
+    } else "unrecognised"
+    cat(sprintf("      %-32s %s\n", nm, form))
+}
+
 # ---- E. recorder against registry, REPORT ONLY ----------------------------
 # Not ruled. Prints; never fails.
 cat("\n  ---- E. recorder against registry (report only, not ruled) ----\n")

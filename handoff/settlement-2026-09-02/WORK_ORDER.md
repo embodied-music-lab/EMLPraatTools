@@ -93,6 +93,33 @@ Before your change it reports 37 of 38 operations recording, with `twoway`
 failing. If your change alters that count in any direction other than the
 two new hooks, stop and report it.
 
+## Task 5 — the repeated-measures signature, HELD
+
+Ruling: `rulings/WORK_ORDER_API_SETTLEMENT_2026-08-31.md` item 1.
+
+This task is real, it is decided, and you must NOT start it. It is written
+here so that it cannot be forgotten, and so that you recognise it if you meet
+it while doing tasks 1 through 4.
+
+`emlRunRepeatedMeasuresAnalysis` and `emlRunFriedmanAnalysis` receive their
+condition columns as one pipe-delimited string, `.conditionCols$`, split
+inside `@emlExtractConditionMatrix`. Item 1 of the API settlement rules that
+a string vector is the canonical form for 1.0. The pipe-delimited string is a
+signature already ruled against.
+
+Two things must be answered before anyone writes the change:
+
+1. The work order says the pipe form "becomes a compatibility wrapper."
+   `rulings/MEMO_NO_WRAPPERS_2026-09-01.md` and
+   `rulings/NOTE_NAMES_ACCEPTED_2026-09-01.md` establish that this plugin
+   creates no compatibility wrappers, because it has never shipped. Those two
+   rulings disagree, and the later one appears to govern. Fable confirms which.
+2. `.subjectCol$` in the same signature is awaiting Ian's wire-or-remove
+   ruling. Both changes edit the same procedure header. Whether they land
+   together is a sequencing call.
+
+If a task above leads you into this signature, stop and report it.
+
 ## Explicitly out of scope
 
 Do not start either of these. Both are ruled, and both need judgment that
