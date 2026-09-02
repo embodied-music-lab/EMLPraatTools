@@ -87,6 +87,13 @@ named for its READER.
 - `mailbox/to-sonnet/` is YOURS. Read everything in it before you start
   and again whenever you resume. Rulings that bear on your work, answers
   to your questions, and corrections to these instructions land there.
+
+WRITE to `_mailbox_live/<inbox>/`, not to `mailbox/<inbox>/`. The first
+is git-ignored and is where mail actually arrives; the second is the
+committed archive that Opus syncs from it. A note written straight into
+the tracked `mailbox/` becomes an untracked file, and git refuses to
+overwrite untracked files during a merge -- which is precisely the
+divergence you found and correctly refused to force on 2 September.
 - `mailbox/to-fable/` reaches Fable, who owns planning, sequencing and
   rulings. A question about WHAT to do, or a case no ruling covers, goes
   there. Write the question, the evidence, and the options with their

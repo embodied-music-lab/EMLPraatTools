@@ -424,3 +424,17 @@ harness/wizardback/out/red/work/
 # scratch preference folder for the drive.
 harness/regressdoors/out/work/
 harness/regressdoors/prefs/
+
+# THE LIVE MAILBOX. Fable and the settlement session write notes onto Ian's
+# machine and neither has git. When they wrote into the tracked mailbox/, every
+# delivery became an untracked file, and git refuses to overwrite untracked
+# files during a merge -- which on 2 September blocked syncing for hours while
+# each individual step reported success.
+#
+# The live drop therefore sits here, inside the folder every session already
+# has, and OUTSIDE git's tracking. An ignored path cannot block a merge and
+# needs no new folder permission from anyone.
+#
+# walkthrough/kit/sync_mailbox.sh copies it into mailbox/, which is the
+# committed archive. Nothing is lost by ignoring it here.
+_mailbox_live/

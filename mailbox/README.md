@@ -38,10 +38,10 @@ writing to Fable, you write into `to-fable/`.
 
 ## Where mail actually arrives, and why this folder is an archive
 
-Fable and the settlement session write to a live mailbox OUTSIDE this
-repository. Opus copies it in and commits it as part of preparing a
-push, so this folder is the archived record rather than the working
-drop point.
+Fable and the settlement session write to `_mailbox_live/` at the
+repository root, which git ignores. Opus copies it into this folder and
+commits it as part of preparing a push, so this folder is the archived
+record rather than the working drop point.
 
 The reason is mechanical. A file written straight into the working
 tree is untracked, and git refuses to overwrite untracked files
@@ -50,5 +50,14 @@ several hours: the fetch succeeded, the merge aborted, and the push
 reported success while carrying nothing. Keeping the live drop
 outside the repository removes that failure entirely.
 
-`walkthrough/kit/sync_mailbox.sh` does the copy. Run it before
-building a bundle.
+The live folder sits inside the repository rather than beside it for a
+practical reason: `~/EMLPraatTools` is the only folder connected to
+these sessions. A directory anywhere else would be invisible until Ian
+granted it separately, to each session, from his machine. An ignored
+subdirectory needs no permission and every session can already reach it.
+
+`walkthrough/kit/sync_mailbox.sh` does the copy. Run it before building
+a bundle.
+
+    ~/EMLPraatTools/_mailbox_live/to-opus/     <- write here
+    ~/EMLPraatTools/mailbox/to-opus/           <- read the archive here

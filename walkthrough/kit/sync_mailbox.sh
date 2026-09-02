@@ -12,9 +12,15 @@
 # hours: the fetch succeeded, the merge aborted, and the push reported success
 # while carrying nothing.
 #
-# So the live drop is OUTSIDE the repository and this script copies it in.
-# mailbox/ in the repository is the archive; ~/EML-mailbox/ is where mail
-# actually arrives.
+# So the live drop is outside GIT'S TRACKING while staying inside the folder
+# every session already has. _mailbox_live/ is gitignored; mailbox/ is the
+# committed archive.
+#
+# It lives inside the repository folder rather than beside it because that
+# folder is the only one connected to these sessions. A directory at
+# ~/EML-mailbox would be invisible to every session until Ian granted it
+# separately, to each of them, from the machine. An ignored subdirectory needs
+# no permission from anyone and every session can already reach it.
 #
 # HOW TO RUN, before building a bundle:
 #
@@ -26,12 +32,12 @@
 set -uo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-LIVE="${EML_MAILBOX:-$HOME/EML-mailbox}"
+LIVE="${EML_MAILBOX:-$REPO/_mailbox_live}"
 DEST="$REPO/mailbox"
 
 if [ ! -d "$LIVE" ]; then
     echo "no live mailbox at $LIVE"
-    echo "  Set EML_MAILBOX to point somewhere else, or create it:"
+    echo "  Create it, or set EML_MAILBOX to point elsewhere:"
     echo "    mkdir -p $LIVE/{to-opus,to-fable,to-sonnet}"
     exit 0
 fi
