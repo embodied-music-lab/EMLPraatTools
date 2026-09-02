@@ -19,6 +19,15 @@ the record of what was carried.
 An inbox is named for its READER, never its writer. If you are
 writing to Fable, you write into `to-fable/`.
 
+## The standing procedure
+
+`PROCEDURE.md` beside this file states how mail is checked and when a
+session may act without Ian. Read it before you read anything else in
+here. In short: every file carries a routing header saying who it is
+for and whether a human is needed, `walkthrough/kit/mailbox_check.sh`
+lists what is unread for you, and you log what you did so nothing is
+read and then forgotten.
+
 ## Rules
 
 1. Filenames carry a topic and a date: `RULING_<topic>_<date>.md`,

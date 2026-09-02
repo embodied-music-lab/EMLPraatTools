@@ -22,3 +22,18 @@ made in place cannot be un-made.
 
 Name files `MEMO_<topic>_<date>.md` or `REPORT_<topic>_<date>.md`,
 and never edit a file already sitting in an inbox.
+
+## Check your mail without waiting for Ian
+
+    bash walkthrough/kit/mailbox_check.sh sonnet
+
+That lists what has arrived for you and has no log entry from you yet,
+with each file's routing header: who it is for, whether a human is
+needed, and what it blocks. After you read one, record it:
+
+    bash walkthrough/kit/mailbox_check.sh sonnet --acted <file> "<what you did>"
+
+Check before you start a unit of work, when you finish one, and before
+you tell Ian you are blocked -- the answer may already be sitting
+there. `../PROCEDURE.md` states when you may act on receipt and when
+you must hold for a human.
