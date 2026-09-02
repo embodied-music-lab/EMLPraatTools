@@ -157,10 +157,12 @@ for (nm in c("emlRunGroupedRegressionAnalysis", "emlDrawQQPlot")) {
 
 # ---- F. repeated-measures signature, REPORT ONLY ----------------------------
 # WORK_ORDER_API_SETTLEMENT item 1 rules the string-vector form canonical for
-# 1.0. Report only, because that work order also calls the pipe form a
-# compatibility wrapper and the later no-wrappers ruling forbids wrappers. The
-# two disagree and Fable has not resolved it. Promote when she does.
-cat("\n  ---- F. repeated-measures signature (report only, conflict unresolved) ----\n")
+# 1.0. Ian ruled on 2 September that the pipe form does not become a
+# compatibility wrapper: the plugin has never shipped, so it simply stops
+# existing. Still report-only, because the change is held on Ian's
+# wire-or-remove ruling for .subjectCol$ in the same signature. Promote to a
+# binding check when that lands.
+cat("\n  ---- F. repeated-measures signature (report only, held on .subjectCol$) ----\n")
 for (nm in c("emlRunRepeatedMeasuresAnalysis", "emlRunFriedmanAnalysis")) {
     sig <- grep(sprintf("^%s\\t", nm), regRows, value = TRUE)
     form <- if (length(sig) && grepl("conditionCols\\$", sig)) {

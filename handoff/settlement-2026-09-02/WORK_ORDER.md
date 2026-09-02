@@ -107,16 +107,19 @@ inside `@emlExtractConditionMatrix`. Item 1 of the API settlement rules that
 a string vector is the canonical form for 1.0. The pipe-delimited string is a
 signature already ruled against.
 
-Two things must be answered before anyone writes the change:
+RULED by Ian, 2 September: there is no backward compatibility requirement,
+because the plugin has never shipped. The pipe-delimited form does NOT become
+a compatibility wrapper. It stops existing, exactly as the six retired names
+in task 1 do. The work order's "becomes a compatibility wrapper" clause is
+superseded.
 
-1. The work order says the pipe form "becomes a compatibility wrapper."
-   `rulings/MEMO_NO_WRAPPERS_2026-09-01.md` and
-   `rulings/NOTE_NAMES_ACCEPTED_2026-09-01.md` establish that this plugin
-   creates no compatibility wrappers, because it has never shipped. Those two
-   rulings disagree, and the later one appears to govern. Fable confirms which.
-2. `.subjectCol$` in the same signature is awaiting Ian's wire-or-remove
-   ruling. Both changes edit the same procedure header. Whether they land
-   together is a sequencing call.
+One thing remains open, and it is a sequencing call, not a design question:
+
+`.subjectCol$` sits in the same procedure header and is awaiting Ian's
+wire-or-remove ruling (`rulings/RULING_REGISTRY_VERDICTS_2026-09-01.md`
+section 3). Changing the condition columns without it means editing that
+signature twice and revalidating every caller twice, the recorder included.
+Until Ian rules, this task stays held.
 
 If a task above leads you into this signature, stop and report it.
 

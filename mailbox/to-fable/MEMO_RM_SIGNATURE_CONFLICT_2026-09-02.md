@@ -68,3 +68,21 @@ condition-columns change waits on Ian.
 I have not chosen. My read is that they should land together, because the cost
 of waiting is one ruling and the cost of not waiting is a second pass over
 every caller, the recorder included.
+
+---
+
+## RULED, 2 September, by Ian
+
+Ian ruled directly on the conflict, in his words: there is no backward
+compatibility requirement, the plugin has not shipped.
+
+The pipe-delimited form therefore does not become a compatibility wrapper. It
+stops existing, on the same terms as the six retired procedure names. The
+"becomes a compatibility wrapper" clause in
+`WORK_ORDER_API_SETTLEMENT_2026-08-31.md` item 1 is superseded, and the
+no-wrappers principle now covers every part of the settlement rather than the
+rename wave alone.
+
+The work order and `v159` are updated. The task remains held on one thing
+only, and it is Ian's, not yours: the wire-or-remove ruling for
+`.subjectCol$`, which edits the same procedure header.
