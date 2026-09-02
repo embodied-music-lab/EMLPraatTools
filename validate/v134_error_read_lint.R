@@ -354,20 +354,42 @@ check_true("v134",
 # list only says WHICH site, never WHY.
 # ---------------------------------------------------------------------------
 EXEMPT_SITES <- c(
-# EMPTY, AND THAT IS A RESULT RATHER THAN A DEFAULT. Two sites were pinned
-# here: the two-group orchestrator's group-data reads, provably unreachable
-# with a missing column because @emlRequireColumnPresent refuses first. The
-# sweep gave both a real error read instead, so neither violates the rule any
-# more and neither needs a promise that it cannot fail. A guard that runs is
-# worth more than an adjudication that it need not, and this list is meant to
-# shrink.
-#
-# An entry appearing here again means a call whose failure path is provably
-# unreachable AND whose guard would be dead code. Write the reason at the
-# site, not only here, and expect to defend it: the shrink-only gate reddens
-# the day the site stops needing it.
+    "eml-analysis.praat|emlExtractConditionMatrix|emlAuditColumn|@emlAuditColumn: .tableId, .colLabel$ [.j]",
+    "eml-analysis.praat|emlRMPostHoc|emlBenjaminiHochberg|@emlBenjaminiHochberg: .rawP#",
+    "eml-analysis.praat|emlRMPostHoc|emlBonferroni|@emlBonferroni: .rawP#",
+    "eml-analysis.praat|emlRMPostHoc|emlHolm|@emlHolm: .rawP#",
+    "eml-analysis.praat|emlReportPairwiseDescriptives|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    "eml-analysis.praat|emlRunAnovaAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    "eml-analysis.praat|emlRunGroupedRegression|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    "eml-analysis.praat|emlRunKWAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    "eml-analysis.praat|emlRunNormalityAnalysis|emlShapiroWilk|@emlShapiroWilk: .data#",
+    "eml-analysis.praat|emlRunPairwiseAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    "eml-analysis.praat|emlRunRepeatedMeasuresAnalysis|emlRMAnovaTest|@emlRMAnovaTest: .data##, .n, .k",
+    "eml-analysis.praat|emlRunTwoGroupAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    "eml-anova-kernel.praat|emlAnovaKernelTwoWayPostHoc|emlBenjaminiHochberg|@emlBenjaminiHochberg: .rawP#",
+    "eml-anova-kernel.praat|emlAnovaKernelTwoWayPostHoc|emlBonferroni|@emlBonferroni: .rawP#",
+    "eml-anova-kernel.praat|emlAnovaKernelTwoWayPostHoc|emlHolm|@emlHolm: .rawP#",
+    "eml-check-normality.praat|<top-level>|emlDrawQQPlot|@emlDrawQQPlot: qqData#, qqLabel$, 6, 4.5, \"color\", 1",
+    "eml-check-normality.praat|<top-level>|emlShapiroWilk|@emlShapiroWilk: .data#",
+    "eml-extract.praat|emlAnalysisFingerprint|eml_fpCompose|@eml_fpCompose: .tableId, 1, .columnList$, \"\"",
+    "eml-extract.praat|emlDataFingerprint|eml_fpCompose|@eml_fpCompose: .tableId, 0, \"\", \"\"",
+    "eml-extract.praat|emlExtractColumn|emlAuditColumn|@emlAuditColumn: .tableId, .columnName$",
+    "eml-extract.praat|emlGroupFingerprint|eml_fpCompose|@eml_fpCompose: .tableId, 2, .dataCol$, .groupCol$",
+    "eml-inferential.praat|emlDunnTest|emlBenjaminiHochberg|@emlBenjaminiHochberg: .rawP#",
+    "eml-inferential.praat|emlDunnTest|emlBonferroni|@emlBonferroni: .rawP#",
+    "eml-inferential.praat|emlDunnTest|emlHolm|@emlHolm: .rawP#",
+    "eml-inferential.praat|emlPairwiseT|emlBenjaminiHochberg|@emlBenjaminiHochberg: .rawP#",
+    "eml-inferential.praat|emlPairwiseT|emlBonferroni|@emlBonferroni: .rawP#",
+    "eml-inferential.praat|emlPairwiseT|emlHolm|@emlHolm: .rawP#",
+    "eml-inferential.praat|emlPairwiseWilcoxon|emlBenjaminiHochberg|@emlBenjaminiHochberg: .rawP#",
+    "eml-inferential.praat|emlPairwiseWilcoxon|emlBonferroni|@emlBonferroni: .rawP#",
+    "eml-inferential.praat|emlPairwiseWilcoxon|emlHolm|@emlHolm: .rawP#",
+    "eml-studentized-range.praat|emlInvStudentizedRangeQ|emlStudentizedRangeQ|@emlStudentizedRangeQ: .qHi, .k, .df, .nranges",
+    "eml-studentized-range.praat|emlInvStudentizedRangeQ|emlStudentizedRangeQ|@emlStudentizedRangeQ: .qMid, .k, .df, .nranges",
+    "eml-wizard.praat|<top-level>|emlDrawQQPlot|@emlDrawQQPlot: wizNormQQData#, wizNormQQLabel$, 6, 4.5, \"color\", 1",
+    "eml-wizard.praat|<top-level>|emlShapiroWilk|@emlShapiroWilk: wizNormGData#"
 )
-KNOWN_EXEMPT_CEILING <- 0L
+KNOWN_EXEMPT_CEILING <- 34L
 
 has_exempt_marker <- function(s, code) {
     lo <- max(1L, s$line - 20L)

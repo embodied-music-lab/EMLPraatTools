@@ -2018,6 +2018,31 @@ scripts <- c(
                                  # committed artifact. Reports today; becomes
                                  # blocking at the authoritative run, per
                                  # INSPECTION_PROTOCOL section 3.
+    ,
+    "v161_table_s2_generation.R" # Table S2 is GENERATED from REGISTRY.tsv by
+                                 # walkthrough/kit/build_table_s2.py, and the
+                                 # committed table_s2.tsv is byte-identical to
+                                 # what that generator emits today -- the
+                                 # Table S2 third of RULING_PUBLIC_SURFACE
+                                 # mechanism item 3, and CLAIMS_EVIDENCE_
+                                 # LEDGER row 11's one remaining GAP, now
+                                 # closed for that third. Row count is read
+                                 # from REGISTRY.tsv, not hardcoded at 42 or
+                                 # 43. The barrel third and the docs third
+                                 # of item 3 remain open.
+    ,
+    "v162_door_chain_population.R" # setup.praat's barrel table vs
+                                 # scripts/eml-lib.praat's own transitively
+                                 # resolved includes -- the two-way door
+                                 # defect (RULING_RECORDER_AND_WIRING_2026-
+                                 # 09-02.md): v88 checks the barrel against
+                                 # disk, not against the hand-maintained
+                                 # chain the plugin's own menu doors
+                                 # actually include, so it stayed green
+                                 # while the two-way ANOVA door crashed
+                                 # before dispatch. RED until the door
+                                 # chain gains stats/eml-anova-kernel.praat;
+                                 # that is what it is for.
 )
 
 # ---------------------------------------------------------------------------
