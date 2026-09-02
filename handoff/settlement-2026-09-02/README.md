@@ -26,18 +26,14 @@ The local clone is behind the work. If you begin without syncing, you will
 rename files that have since changed and produce conflicts that look like
 your own errors.
 
-If Ian has already pushed, pull:
+Fetch the bundle Ian placed beside the repository. This is the PRIMARY
+route: his local folder is the source of truth and GitHub is a backup, so
+a pull succeeding is a coincidence rather than the plan
+(`RULING_SOURCE_OF_TRUTH_2026-09-02.md`).
 
-```bash
-cd ~/EMLPraatTools
-git pull --ff-only origin main
-git log --oneline -3
-```
-
-If he has not, fetch the bundle he placed beside the repository. Merge
-`FETCH_HEAD` rather than a named remote ref: a bundle fetch always records
-`FETCH_HEAD`, and on 2 September a merge against an assumed ref name silently
-did nothing while the fetch itself had succeeded.
+Merge `FETCH_HEAD` rather than a named remote ref: a bundle fetch always
+records `FETCH_HEAD`, and on 2 September a merge against an assumed ref
+name silently did nothing while the fetch itself had succeeded.
 
 ```bash
 cd ~/EMLPraatTools
@@ -45,6 +41,8 @@ git fetch ~/EMLPraatTools/eml-settlement-handoff.bundle 'refs/heads/*:refs/remot
 git merge --ff-only FETCH_HEAD
 git log --oneline -3
 ```
+
+Never wait for origin to update before starting work.
 
 Either way, the top commit should be the one that adds this directory,
 `handoff: settlement session packet`.

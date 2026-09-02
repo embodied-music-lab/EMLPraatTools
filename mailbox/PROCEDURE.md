@@ -51,6 +51,28 @@ To see what is unread for you:
 
 It lists files in your inbox with no log entry from you.
 
+## Ian's local folder is the source of truth; GitHub is a backup
+
+Ruled 2 September (`RULING_SOURCE_OF_TRUTH`), in Ian's words. Every
+rule naming "the repository of record" anchors at
+`~/EMLPraatTools` on his machine, not at origin.
+
+Nobody waits on origin. A stale origin is the normal state of a
+backup. A session blocked "until Ian pushes" is blocked on nothing:
+take current state from his disk and proceed. Where sync
+instructions offer a pull or a bundle, the bundle is the primary
+route and a successful pull is a coincidence.
+
+If origin and local disagree, local wins and origin is brought up to
+date when Ian chooses. Origin is never a tiebreaker.
+
+Pushing stays Ian's alone and is a backup operation. One thing still
+depends on it, deliberately: the authoritative run happens at a
+commit that has been backed up to GitHub first. That is
+tamper-evidence — an off-machine copy of the exact commit the paper's
+numbers anchor to — not GitHub having authority. One backup, once,
+before the run. Nothing else in any lane waits on a push.
+
 ## Verify a delivery at its destination
 
 A file has LANDED when a listing of the destination shows it, or when a
