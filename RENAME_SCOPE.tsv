@@ -47,11 +47,10 @@ handoff/	OUT_OF_SCOPE	Session handoff packets, dated. Same rule.
 docs/error-census/	OUT_OF_SCOPE	A census report of what the tree held at a date, not a declaration the code reads.
 docs/frozen-choice-map/	OUT_OF_SCOPE	A correspondence map recorded at a date.
 planning/	OUT_OF_SCOPE	Planning registers and trackers, dated.
+_out/	REGENERATE	Any harness output directory whose name ends "_out": replay_out, stress_out, qq_out, axis_out, graph_out and any later sibling. WIDENED 2 September after the delegate found axis_out/ and graph_out/ falling through an exact-name list and defaulting to RENAME. Each of those files is headed "recorded on Praat 6.6.30"; it handled them by kind, and this row is the letter catching up to the kind.
 /out/	REGENERATE	Harness run output. Produced by that harness's own run.sh.
-/replay_out/	REGENERATE	Recorder replay output. Same.
-/stress_out/	REGENERATE	Stress-harness output. Same.
-/qq_out/	REGENERATE	Q-Q harness output. Same.
 __pycache__/	REGENERATE	Python bytecode. Rebuilt on import.
+.patch	UNTOUCHED	An applied patch file is the record of a fix already made, not live code. Ruled specifically for harness/errorprop91/fixes_9_1.patch in ANSWER_RECONCILE_SITE_COUNTS; stated here so the general default matches the specific ruling next time.
 walkthrough/kit/coverage_map.tsv	REGENERATE	Emitted by walkthrough/kit/build_coverage_map.py.
 walkthrough/kit/table_s2.tsv	REGENERATE	Emitted by walkthrough/kit/build_table_s2.py.
 walkthrough/kit/results/	UNTOUCHED	Output of a past kit run. Superseded by the authoritative run, not repaired.

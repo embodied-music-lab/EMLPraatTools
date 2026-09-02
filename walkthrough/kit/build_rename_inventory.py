@@ -49,6 +49,21 @@ RENAMES = {
     "emlInitDrawingDefaults":   "emlInitializeDrawingDefaults",
 }
 
+# THE CENSUS IS TAKEN AT THE REPOSITORY, NOT IN A WORKING DIRECTORY.
+# Ordered 2 September (ORDER_CENSUS_INTEGRITY) after the delegate found the
+# census citing 27 line numbers in walkthrough/kit/RUN_KIT_LINUX.praat, a file
+# that exists in no repository: it is gitignored at walkthrough/kit/.gitignore
+# line 13, generated locally, and present only in the container that built the
+# census. Nothing was lost -- but a census that reads a private clone's
+# untracked files describes that clone, not the repository everyone else has.
+# Measured at the time: 165 untracked files contributing 1,259 rows.
+#
+# git ls-files IS the repository, so the universe comes from there.
+def tracked_files():
+    out = subprocess.run(["git", "ls-files", "-z"],
+                         capture_output=True, text=True).stdout
+    return set(f for f in out.split("\0") if f)
+
 SELF = {"walkthrough/kit/audit/rename_call_sites.tsv",
         "walkthrough/kit/build_rename_inventory.py",
         "RENAME_SCOPE.tsv"}
@@ -66,6 +81,7 @@ def load_scope(path="RENAME_SCOPE.tsv"):
     return rows
 
 SCOPE = load_scope()
+TRACKED = tracked_files()
 
 def disposition(path):
     for pat, disp in SCOPE:          # first match wins; unmatched is RENAME
@@ -101,12 +117,14 @@ for old, new in RENAMES.items():
     hits = subprocess.run(["grep", "-rn", r"\b%s\b" % old, ".",
                            "--exclude-dir=.git"],
                           capture_output=True, text=True).stdout.splitlines()
+    # Untracked paths are dropped below rather than here, so the count of what
+    # was excluded stays measurable rather than silently absent.
     for h in hits:
         parts = h.split(":", 2)
         if len(parts) < 3:
             continue
         f, ln, txt = parts[0].lstrip("./"), parts[1], parts[2]
-        if f in SELF:
+        if f in SELF or f not in TRACKED:
             continue
         disp = disposition(f)
         klass, why = classify(old, txt)

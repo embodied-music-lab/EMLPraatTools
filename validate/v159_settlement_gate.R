@@ -146,9 +146,18 @@ if (file.exists(scopeFile)) {
         if (length(hit)) disps[hit[1]] else "RENAME"
     }
 
-    allFiles <- list.files(repo_path("."), recursive = TRUE, full.names = FALSE,
-                           all.files = FALSE)
-    allFiles <- allFiles[!grepl("^\\.git/", allFiles)]
+    # THE REPOSITORY, NOT THE WORKING DIRECTORY. list.files() reads whatever
+    # happens to be on the disk this runs on, including gitignored local
+    # artifacts, and on 2 September that made the census describe one
+    # container rather than the repository everyone shares. git ls-files is
+    # the repository by definition. Same fix as build_rename_inventory.py,
+    # made in the same pass so the two cannot disagree again.
+    allFiles <- tryCatch(
+        system2("git", c("-C", shQuote(repo_path(".")), "ls-files"),
+                stdout = TRUE, stderr = FALSE),
+        error = function(e) character(0))
+    check_true(V, "git ls-files returned the repository's file list",
+               length(allFiles) > 0)
     inScope  <- allFiles[vapply(allFiles, dispositionFor, character(1)) == "RENAME"]
     inScope  <- inScope[!grepl("^plugin_EML_StatsGraphs/", inScope)]
 
