@@ -438,3 +438,12 @@ harness/regressdoors/prefs/
 # walkthrough/kit/sync_mailbox.sh copies it into mailbox/, which is the
 # committed archive. Nothing is lost by ignoring it here.
 _mailbox_live/
+
+# The captured pass/fail record of a validate/run_all.R run, written by
+# run_all.R itself and read by walkthrough/kit/grand_ledger.R. A RUN OUTPUT,
+# ignored for the same reason audit/praat_results.tsv and audit/VERDICT.txt
+# are: its value is only ever the last run on this machine, and its mtime is
+# what the ledger's freshness check reads. A committed copy would be stale the
+# moment anyone checked it out, and would let the ledger report a pass count
+# that no run on that machine produced.
+validate/RUN_ALL_SUMMARY.tsv
