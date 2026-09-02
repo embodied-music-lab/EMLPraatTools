@@ -9,17 +9,18 @@ is cited as DIGEST and is itself the established record, not re-derived.
 
 ## Summary — flagged rows
 
-**GAP (artifact not yet named anywhere): 2**
-1. Row 8 — Table S2 / registry generation wiring (docs, barrel, Table S2
+**GAP (artifact not yet named anywhere): 1**
+1. Row 11 — Table S2 / registry generation wiring (docs, barrel, Table S2
    generated FROM the registry) has no committed generator script named in
    the record; only the *coverage-map* generator (`build_coverage_map.py`)
-   exists. The registry→Table S2 generation step itself is described as
-   "currently honest attestations say not wired" (tracker line 63-64).
-2. Row 11 — "possible upstream R bug report": CLOSED TO
-   EXISTS-UNCOMMITTED same day (Fable, 2 Sep) — the draft now exists at
+   exists. Closes when the settlement wave's registry-wiring item lands.
+2. Row 9 — "possible upstream R bug report": CLOSED TO
+   EXISTS-UNCOMMITTED same day (Fable, 2 Sep) — the draft exists at
    `planning/DRAFT_R_BUG_REPORT_2026-09-02.md` with two bracketed
    [INSERT exact values from the committed grid] placeholders to fill
    at filing time. Ian's go/no-go on actually filing remains open.
+   (Summary row numbers corrected 2 Sep late — the first issue of this
+   file mislabeled rows 9/11 here; the TABLE numbering was always right.)
 
 **AWAITING_RUN: 4**
 1. Row 1 — Two-way rewrite as correctness fix: kernel not yet built
@@ -34,7 +35,7 @@ is cited as DIGEST and is itself the established record, not re-derived.
 3. Row 6 — Table S2 = 42 canonical rows generated from the registry:
    generation step gated by v159 (settlement wave, mechanical half),
    not yet run (DIGEST: "currently 1 passing").
-4. Row 9 — version assertion as provenance: ruled (wording settled) but
+4. Row 7 — version assertion as provenance: ruled (wording settled) but
    only takes effect as an actual run record at the authoritative run
    (A.8), which DIGEST states is "NOT RUN."
 
@@ -54,13 +55,13 @@ All other rows are EXISTS-COMMITTED or EXISTS-UNCOMMITTED, cited below.
 | 6 | Table S2 = the 42 canonical rows, generated from the registry. | Row-count ruling: RULING_WAVE_TWO_2026-09-01.md ("44 rows minus the stub is the Table S2 row count"); RULING_PUBLIC_SURFACE_2026-09-01.md ("Table S2's row count is the registry's row count... docs, the barrel, and Table S2 are GENERATED from the registry"). Generation mechanism itself: **no script path is named** for the registry→Table S2 step; tracker (line 63-64) records it as ordered work, not yet wired: "registry wiring: docs, barrel, Table S2 GENERATED from the registry (currently honest attestations say not wired)." | Not named. | AWAITING_RUN (gated by v159, settlement wave mechanical half, DIGEST: "currently 1 passing"). |
 | 7 | Version assertion described as provenance, in those words. | RULING_PROVENANCE_AND_CANCELLATION_2026-09-01.md ("the version assertion is a provenance record, not a reproducibility guarantee... the run additionally RECORDS whatever build-identifying information the environment exposes"). This is a ruling on wording, not yet an executed run record. | None (the assertion is written into the authoritative run's own output at run time; no separate script named). | AWAITING_RUN (DIGEST: "Authoritative run (A.8): NOT RUN"). |
 | 8 | Census bright line: methods ours; host may supply special functions only under continuous kit measurement including far tail. | RULING_CONSOLIDATED_KERNELS_2026-09-01.md §1 ("Class A — elementary distribution tails: KEEP... Bright line: statistical METHODS are ours; special functions may come from the host, on condition of continuous measured agreement — which the kit provides by construction"), ratified by Ian per the same ruling. Measurement backing the "continuous... including far tail" clause: MEMO_STATUS_A4_2026-09-01.md's two-reference gate (row 4 above). | `$ cd walkthrough/kit && python3 check_classA_two_reference.py` (same as row 4). | EXISTS-COMMITTED. |
-| 9 | Possible upstream R bug report (Ian's call; evidence ready). | `briefs/FACTS_R_BUG_REPORT.md` (fact sheet: findings 1 and 2, the k=2 note, style/format requirements for a Bugzilla submission). No drafted report file and no submission exist in the record. Ian's decision is explicitly open (RULING_SCOPE_CORRECTION_2026-09-01.md: ptukey disposition is "Ian's call... Both are defensible; neither is mine or Opus's to pick"). | None (no draft to re-run; underlying figures re-run via `validate/v154_srange_against_reference.R` / `arbitrate_v154.R`, see row 3). | GAP — the fact sheet exists, but the report artifact itself (the draft named in this delegation's own task list, "R bug report draft") is not yet written, and no file path for it exists anywhere in the record. |
+| 9 | Possible upstream R bug report (Ian's call; evidence ready). | `briefs/FACTS_R_BUG_REPORT.md` (fact sheet: findings 1 and 2, the k=2 note, style/format requirements for a Bugzilla submission). No drafted report file and no submission exist in the record. Ian's decision is explicitly open (RULING_SCOPE_CORRECTION_2026-09-01.md: ptukey disposition is "Ian's call... Both are defensible; neither is mine or Opus's to pick"). | None (no draft to re-run; underlying figures re-run via `validate/v154_srange_against_reference.R` / `arbitrate_v154.R`, see row 3). | EXISTS-UNCOMMITTED — draft delivered 2 Sep: `planning/DRAFT_R_BUG_REPORT_2026-09-02.md` (two bracketed [INSERT exact grid values] placeholders remain for filing time; Ian's go/no-go on filing is open). |
 | 10 | Coverage claim must name its subset (17 analysis procedures numerically validated, not all 42 registry rows); per-registry-row kit-coverage map ordered so the claim is a table. | `walkthrough/kit/coverage_map.tsv` (43 rows, one per REGISTRY.tsv row) + `walkthrough/kit/build_coverage_map.py` (generator) — REPORT_COVERAGE_MAP_2026-09-02.md, to-fable. Verified via diff/md5sum in the same report. | `python3 walkthrough/kit/build_coverage_map.py > walkthrough/kit/coverage_map.tsv` (REPORT_COVERAGE_MAP_2026-09-02.md). | EXISTS-COMMITTED (per the report; committed status not independently re-confirmed here — report states the file and script are on disk and reproducing bit-identically). |
 | 11 | Table S2/registry generation wiring — no committed generator script named for the registry→Table S2/docs/barrel step. | None named. Tracker (TRACKER_KIT_AND_1p0.md line 63-64) records the step as ordered, unwired: "registry wiring: docs, barrel, Table S2 GENERATED from the registry (currently honest attestations say not wired) [RULING_PUBLIC_SURFACE mechanism 3]." | Not named. | GAP — would need a committed `generate_registry_outputs`-type script (docs + barrel + Table S2 from `REGISTRY.tsv`), analogous to `build_coverage_map.py` but for the registry surface itself; no such path exists yet in the record. |
 | 12 | R-side findings taxonomy entry — `effectsize` 0.8.6 loses sign on paired rank-biserial correlation when all differences share one magnitude. | `README.md` ("Errors this kit has found," item 1). Underlying rows: `disagreements_all.tsv`. | None named. | EXISTS-COMMITTED. |
 | 13 | R-side findings taxonomy entry — `psych::alpha` two-item alpha-if-deleted disagrees with definition (−3.0 vs −8/3 exactly). | `README.md` ("Errors this kit has found," item 2); ratified as R-side, nothing to build, in RULING_SCOPE_CORRECTION_2026-09-01.md. | None named. | EXISTS-COMMITTED. |
 | 14 | R-side findings taxonomy entry — `wilcox.test` Hodges-Lehmann uniroot artifact on the approximation branch, ~4e-5 from the exact-branch definitional answer (not an error; documented). | `README.md` ("Errors this kit has found," item 3); `disagreements_all.tsv` rows tagged `*_diff_wilcoxest`, "reported by R only (documented)," family of 261 rows per the row's own annotation. | None named. | EXISTS-COMMITTED. |
-| 15 | R-side findings taxonomy entry — R computes the exact studentized range at k=2 only via the plugin's own sqrt(2)·t identity; R's general algorithm approximates (3.2e-8 off). | `briefs/FACTS_R_BUG_REPORT.md` ("NOTE... at k=2 the exact identity range = sqrt(2)*|t| exists; R's general algorithm approximates and deviates ~3.2e-8 there"); ruled acceptance-reference status in RULING_WAVE_THREE_2026-09-01.md ("acceptance reference at k=2 becomes the exact sqrt(2)·qt form, not R's"). | None named. | EXISTS-COMMITTED (as a ruled, documented note; not framed as an error). |
+| 15 | R-side findings taxonomy entry — R computes the exact studentized range at k=2 only via the plugin's own sqrt(2)·t identity; R's general algorithm approximates (3.2e-8 off). | `briefs/FACTS_R_BUG_REPORT.md` ("NOTE... at k=2 the exact identity range = sqrt(2)*abs(t) exists; R's general algorithm approximates and deviates ~3.2e-8 there"); ruled acceptance-reference status in RULING_WAVE_THREE_2026-09-01.md ("acceptance reference at k=2 becomes the exact sqrt(2)·qt form, not R's"). | None named. | EXISTS-COMMITTED (as a ruled, documented note; not framed as an error). |
 
 ---
 

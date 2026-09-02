@@ -49,7 +49,17 @@ if (!exists("eml_report")) {
     source(file.path(if (length(.f)) dirname(normalizePath(.f)) else ".", "helpers.R"))
 }
 
-STATUSES <- c("EXISTS-COMMITTED", "AWAITING_RUN", "GAP")
+# EXISTS-UNCOMMITTED joined the set on 2 September, when Fable used it for a
+# claim whose backing artifact was delivered but not yet in a commit. It is a
+# real fourth state and not a typo: it says the evidence exists and cannot yet
+# be re-run from the repository.
+#
+# It is NOT a resting state. INSPECTION_PROTOCOL section 3 requires every
+# number to trace ledger -> backing file -> command, and a file outside the
+# repository cannot be traced that way. So this status reports here alongside
+# GAP, and both join the blocking set at the run.
+STATUSES <- c("EXISTS-COMMITTED", "EXISTS-UNCOMMITTED", "AWAITING_RUN", "GAP")
+UNSATISFIED <- c("GAP", "EXISTS-UNCOMMITTED")
 
 ledger <- repo_path("planning", "CLAIMS_EVIDENCE_LEDGER_2026-09-02.md")
 check_true(V, "the claims-to-evidence ledger exists", file.exists(ledger))
@@ -106,22 +116,24 @@ check_true(V, "every row names a backing artifact", length(emptyBack) == 0)
 # ---- the tally ------------------------------------------------------------
 cat("\n  ---- claim status ----\n")
 for (s in STATUSES)
-    cat(sprintf("      %-18s %d\n", s, sum(st == s)))
-cat(sprintf("      %-18s %d\n", "TOTAL", length(st)))
+    cat(sprintf("      %-20s %d\n", s, sum(st == s)))
+cat(sprintf("      %-20s %d\n", "TOTAL", length(st)))
 
 # ---- GAP rows -------------------------------------------------------------
-gaps <- which(st == "GAP")
-cat(sprintf("\n  ---- GAP rows: %d ----\n", length(gaps)))
+gaps <- which(st %in% UNSATISFIED)
+cat(sprintf("\n  ---- rows not yet traceable to a committed artifact: %d ----\n",
+            length(gaps)))
 for (i in gaps)
-    cat(sprintf("      %s. %s\n", cells[[i]][1], substr(cells[[i]][2], 1, 100)))
+    cat(sprintf("      %s. [%s] %s\n", cells[[i]][1], st[i],
+                substr(cells[[i]][2], 1, 90)))
 
 if (BLOCK_ON_GAP) {
-    check_true(V, "no claim is a GAP row", length(gaps) == 0)
+    check_true(V, "every claim traces to a committed artifact", length(gaps) == 0)
 } else {
-    cat("\n      GAP rows report and do not fail this file today. They join the\n")
+    cat("\n      These report and do not fail this file today. They join the\n")
     cat("      blocking set at the authoritative run: set BLOCK_ON_GAP to TRUE\n")
     cat("      when the run is scheduled. INSPECTION_PROTOCOL section 3 requires\n")
-    cat("      zero GAP rows at inspection.\n")
+    cat("      every number to trace to a file and a command.\n")
 }
 
 if (!exists("EML_SUITE")) { eml_report("v160 -- the claims ledger"); eml_exit() }
