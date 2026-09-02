@@ -2178,4 +2178,43 @@ if (n_checks < floor_checks)
                 "This is not a coverage judgement. A number this low means the",
                 "checks did not run or were not recorded at all."))
 
+# ---------------------------------------------------------------------------
+# RUN_ALL_SUMMARY.tsv -- a captured pass/fail record of THIS run.
+#
+# Ordered by RULING_SPLIT_AND_ACCEPTANCE_2026-09-02.md, so that
+# walkthrough/kit/grand_ledger.R can ever report n_validators_passing. Before
+# this, no captured summary of a suite run existed anywhere in the repository,
+# and the ledger correctly refused to guess one.
+#
+# One row per validator id, with the checks it recorded and how many passed.
+# The file is rewritten on every run, so its mtime is the run's timestamp and
+# the ledger's staleness check can see it.
+# ---------------------------------------------------------------------------
+if (!is.null(df) && nrow(df)) {
+    real <- df[df$expect != "attested", , drop = FALSE]
+    if (nrow(real)) {
+        per <- do.call(rbind, lapply(split(real, real$id), function(g)
+            data.frame(validator = g$id[1],
+                       checks    = nrow(g),
+                       passed    = sum(g$pass),
+                       failed    = sum(!g$pass),
+                       status    = if (all(g$pass)) "PASS" else "FAIL",
+                       stringsAsFactors = FALSE)))
+        per <- per[order(per$validator), , drop = FALSE]
+        out <- file.path(dirname(normalizePath(sub("^--file=", "",
+                   commandArgs(FALSE)[grep("^--file=", commandArgs(FALSE))][1]))),
+                   "RUN_ALL_SUMMARY.tsv")
+        writeLines(c(
+            "# RUN_ALL_SUMMARY.tsv -- captured pass/fail record of the last",
+            "# validate/run_all.R run. Written by run_all.R itself; read by",
+            "# walkthrough/kit/grand_ledger.R for n_validators_passing.",
+            "# Rewritten every run, so the mtime is the run's timestamp.",
+            paste(names(per), collapse = "\t"),
+            apply(per, 1, paste, collapse = "\t")), out)
+        cat(sprintf("\nwrote %s: %d validator(s), %d PASS, %d FAIL\n",
+                    basename(out), nrow(per), sum(per$status == "PASS"),
+                    sum(per$status == "FAIL")))
+    }
+}
+
 eml_exit()

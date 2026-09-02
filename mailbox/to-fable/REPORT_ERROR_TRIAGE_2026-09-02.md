@@ -1,7 +1,10 @@
 # Error-propagation triage — a decision table for Ian
 
 Opus — 2 September 2026. Builds on `REPORT_ERROR_PROPAGATION_2026-09-01.md`
-(Fable, 1 Sept) and answers the same tracker section D lane. Every number
+(the census agent, 1 Sept — CORRECTED 2 Sept: this line previously credited
+that report to Fable, which is wrong; Fable rules, she does not author our
+census reports, and provenance must not drift even in courtesy) and answers
+the same tracker section D lane. Every number
 below is the direct output of a command run against current HEAD
 `cd7c5fa` — `plugin_EML_StatsGraphs/` itself is unchanged since commit
 `9450ba1`, which is the tree `validate/v134_error_read_lint.R` was run
@@ -213,7 +216,7 @@ for two independent reasons:
 
 So: **the tracker's "63... fixed or adjudicated-safe" does not hold
 against the current tree.** As measured today, 4 hand fixes from 26
-August did land (three re-confirmed by Fable's 1 September report by
+August did land (three re-confirmed by the 1 September census report by
 reading the current lines; the fourth not re-located, flagged for a
 follow-up read), the lint exists and runs, and it is red: 121
 unadjudicated sites, 0 pinned exempt. This table narrows that 121 (135

@@ -28,6 +28,21 @@ an alias, or a deprecation shim.
 Measured scope as of 2 September: 222 file-touches outside the excluded
 directories. `./list_sites.sh` prints the current list.
 
+RECONCILE TWO COUNTS BEFORE YOU EDIT, ordered by
+`rulings/RULING_SPLIT_AND_ACCEPTANCE_2026-09-02.md`.
+`walkthrough/kit/audit/rename_call_sites.tsv` holds a 3000-row line-level
+inventory of the same six names. The two numbers differ because one counts
+files outside the excluded directories and the other counts lines everywhere,
+and about 83 percent of the 3000 is regenerated harness output that task 4
+handles by regeneration. Check the two against each other. If they disagree
+anywhere outside the regenerated directories, stop and report it rather than
+editing.
+
+YOU ALSO UPDATE `validate/recorder_coverage.tsv`. It names, per public
+procedure, the site that emits it into a recorded script. A renamed procedure
+changes its row there too, and the gate fails until it does. That file is the
+one thing outside `plugin_EML_StatsGraphs/` this task changes.
+
 ### Where the rename is silent, and why this task is not trivial
 
 Praat resolves a procedure name at call time and never checks a name that

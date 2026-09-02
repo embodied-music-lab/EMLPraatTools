@@ -1,6 +1,11 @@
 # Tracker — kit freeze and plugin 1.0
 
-Source of truth from 1 September 2026. Maintained by Fable at every
+Source of truth from 1 September 2026; last folded 2 September 2026
+(wave 4: MEMO_ORACLE_POLICY, MEMO_RECORDER_NAME_BINDING, and the four
+ordered reports — recorder coverage, RM subjectCol, punch intersection,
+error propagation — answered by RULING_PORT_ACCEPTANCE,
+RULING_RECORDER_AND_WIRING, RULING_PUNCHLIST_AND_ERRORS, all 2 Sep).
+Maintained by Fable at every
 ruling; Opus corrects statuses by memo, and each correction is folded
 here with the memo named. An item's authority is the newest ruling
 cited on its line. States: DONE (verified), IN-FLIGHT (with owner),
@@ -9,19 +14,32 @@ reported, not assumed).
 
 ## A. Kit critical path to the frozen release, in order
 
-1. Reference grid regenerated to its own convergence criterion
-   (48 unconverged rows; 4 quantile cells re-solved) — DECIDED,
-   Opus. [RULING_WAVE_THREE Q1]
-2. Port re-accepted against the regenerated grid (v154 clean);
-   inverse bisection tightened to the standard rule; k=2 exact
-   special case (reference there = sqrt(2)·qt). Port currently
-   repaired (91/107 vs the unconverged grid) and QUARANTINED.
-   [RULING_WAVE_THREE Q2, Q3]
+1. Reference grid regenerated to its own convergence criterion —
+   DONE (reported: 130/130 converged, float64 precision cap fixed;
+   re-verified at the gate inspection). Two k=10, df=3 quantile rows
+   whose solved q does not reach the stated target must be re-solved
+   or relabeled with a NAMED grid floor. [RULING_WAVE_THREE Q1;
+   MEMO_ORACLE_POLICY p5b; RULING_PORT_ACCEPTANCE]
+2. Port re-accepted against the regenerated grid — IN-FLIGHT, Opus,
+   under RULING_PORT_ACCEPTANCE: the grid is the ONLY oracle in both
+   directions (R/scipy demoted to documented comparison columns);
+   cells with true p < 1e-12 leave the pass/fail tally and become
+   labeled characterization cells (measured envelope, worded into the
+   paper); the two k=10, df=3 misses get one diagnostic resolution
+   pass, then fix-or-NAMED-bound; the domain flag gets one committed
+   definition with a recorded==recomputed assertion. Arbitration
+   already measured: port 106/108 forward + 22/22 quantile vs the
+   grid; all nine v154 "failures" are PORT_CLOSER. k=2 exact branch
+   and Illinois false position landed. [MEMO_ORACLE_POLICY;
+   RULING_WAVE_THREE Q2, Q3]
 3. invTukeyQ replaced by the port's inverse; 144 interval rows
    revalidate. [RULING_PROVENANCE_AND_CANCELLATION]
-4. Class A far-tail cancellation-signature sweep, two-reference gate
-   (R + scipy; escalate to grid on disagreement). UNMEASURED.
-   [RULING_UNIQUENESS_SWEEP; reference gate per RULING_PTUKEY_REFERENCE]
+4. Class A far-tail cancellation-signature sweep, two-reference gate —
+   DONE (verified) [MEMO_STATUS_A4]: all four Q functions agree with
+   scipy AND R to ~1e-14 in the far tail; gate never escalates; both
+   halves committed and re-runnable (SWEEP_HOST_FUNCTIONS.praat +
+   check_classA_two_reference.py). Class A confirmed free of the
+   cancellation signature. [RULING_UNIQUENESS_SWEEP]
 5. Pre-run settlement wave (one pass, all before the authoritative
    run) [RULING_CONSOLIDATED_KERNELS sequence; WORK_ORDER_API_SETTLEMENT]:
    - straight renames to the ACCEPTED canonical set (6 renames + 37
@@ -31,21 +49,44 @@ reported, not assumed).
    - annotation bridge unified onto the Family A dispatch,
      equivalence probes before/after + red demo
      [RULING_REGISTRY_VERDICTS §4]
-   - recorder hooks: emlRunGroupedRegression + emlDrawQQPlot fixed;
-     measured recorder-coverage census over every registry row
-     [RULING_REGISTRY_VERDICTS §2]
+   - recorder hooks: census DONE (REPORT_RECORDER_COVERAGE — the two
+     ruled gaps are the ONLY gaps among 43 rows; emitting site named
+     per row); the two hooks themselves are settlement-packet Task 3
+     [RULING_REGISTRY_VERDICTS §2; RULING_RECORDER_AND_WIRING]
+   - recorder binding: v159 §E promoted to FAILING checks (every row
+     reachable or documented unreachable-by-kind; no retired name in
+     recorder strings; explicit exemption table — first entry
+     emlRunReliabilityAnalysis with the census §2 proof). Generation
+     from the registry filed post-1.0. [RULING_RECORDER_AND_WIRING]
    - LMM exclusion entry (implemented, doors withdrawn, public
      post-1.0); registry at 42 rows [RULING_REGISTRY_VERDICTS §1]
    - registry wiring: docs, barrel, Table S2 GENERATED from the
      registry (currently honest attestations say not wired)
      [RULING_PUBLIC_SURFACE mechanism 3]
-   - string-vector RM as canonical with pipe-delimited wrapper
-     [WORK_ORDER_API_SETTLEMENT] — UNMEASURED
-   - RM .subjectCol$: code-level report to Ian, then wire-or-remove
-     [RULING_REGISTRY_VERDICTS §3] — report pending
-   - punch-list items 7+ ∩ waves intersection: report to Fable, then
-     fold-ins ruled [RULING_REGISTRY_VERDICTS §5] — pending
-   - two-way kernel: WIRED and matching car (v88 14/14) — DONE
+   - string-vector RM as canonical — NOT STARTED (REPORT_RM_STRINGVECTOR:
+     pipe form is the only form; v03/v04 30/30 each). WRAPPER CLAUSE
+     SUPERSEDED by Ian 2 Sep ("no backward compatibility — the plugin
+     has not shipped"): the pipe form CEASES TO EXIST, same terms as
+     the retired names. Signature edited ONCE, in the judgment half,
+     together with the .subjectCol$ outcome. [MEMO_RM_SIGNATURE_CONFLICT]
+   - RM .subjectCol$: report DELIVERED (REPORT_RM_SUBJECTCOL: dead
+     from the first commit, read nowhere, every caller passes "";
+     same for Friedman) — WITH IAN for wire-or-remove; natural
+     removal moment is the string-vector resettling, which changes
+     the signature anyway [RULING_REGISTRY_VERDICTS §3]
+   - punch-list items 7+ ∩ waves intersection: DELIVERED and RULED —
+     fold-ins: 8.1 leg1 + 8.4's Dunn literal into the bridge
+     unification acceptance (v127 + v116 re-run there); 68
+     wave-surface lint sites sequenced with the outcome contract;
+     LMM lint sites into EXEMPT_SITES in the exclusion-entry commit.
+     The "8.5" citation was Fable's error — struck (no such item).
+     [RULING_PUNCHLIST_AND_ERRORS]
+   - two-way kernel: kit route WIRED and matching car (v88 14/14) —
+     but the INTERACTIVE DOOR is broken (census §4: the hand-maintained
+     door barrel never gained eml-anova-kernel; v88 checks the wrong
+     copy). Fix + barrel-agreement check ordered in the two-way lane;
+     acceptance = TWOWAY_OK through the real door chain + record_e2e's
+     twoway op completes. [RULING_RECORDER_AND_WIRING]
    - one-extraction-per-case: DONE (743 assertions, values unchanged)
    - EMMs, post-hoc on EMMs, simple effects: LANDED (2345/2352,
      pooled error = emmeans::joint_tests) — wiring state verified at
@@ -53,18 +94,28 @@ reported, not assumed).
    - result-state/LMM stale export (v153): DONE (redone properly)
    - Wilcoxon H-L interval, approx branch = port of R's corrected-z
      inversion (intervals item 3.8, IN 1.0 by Ian's completeness
-     ruling) — UNMEASURED; carries the port-attribution header rule
+     ruling) — REPORTED BUILT with tests registered (commit e21b7b6,
+     2 Sep); artifact citation to be confirmed at the gate; carries
+     the port-attribution header rule
    - re-pointing grep-check: Get TukeyQ / Get invTukeyQ nowhere
      outside the port's file at landing [RULING_WAVE_THREE §track]
 6. Kit re-points to the canonical route; wrapper equivalence one
    probe each; D-WORDING re-measures. DECIDED-NOT-STARTED.
-7. grand_ledger built; all paper counts come from it (all current
-   headline counts are placeholders). DECIDED-NOT-STARTED.
+7. grand_ledger BUILT (REPORT_GRAND_LEDGER 2 Sep): 8 counts MEASURED
+   live, 7 AWAITING_RUN by design; refuses stale citations — the kit's
+   current result files span THREE generations (praat_results 31 Aug <
+   matrix.tsv 1 Sep; VERDICT.txt older than both; 667→669 cells), so
+   NO number leaves VERDICT.txt until A.8. No interim re-drive
+   (ruled). Ordered: run_all.R writes validate/RUN_ALL_SUMMARY.tsv.
+   [RULING_SPLIT_AND_ACCEPTANCE]
 8. Authoritative run on Ian's machine at a PUSHED commit; version
    asserted as PROVENANCE, build info recorded unasserted;
-   environment capture (runners record + assert, demonstrated) —
-   capture DONE, run NOT RUN. Acceptance rules and forest-plot
-   script committed BEFORE the run.
+   environment capture DONE, run NOT RUN. Acceptance rules
+   (ACCEPTANCE_RULES.md) + forest_plot.R BUILT 2 Sep — must be
+   COMMITTED before the run (ordered). NIST R-unavailable cell =
+   named R_UNAVAILABLE finding, blocks green until adjudicated;
+   forest plot Tier B only, NIST margin panel = Ian/Sol at drafting.
+   [RULING_SPLIT_AND_ACCEPTANCE]
 9. Tier B verdict (target derived from the 311 standalone
    quantities; NIST cells LRE-only; nothing from run_29_aug reused).
 10. Fable's gate inspection (independent reproduction, buckets,
@@ -82,6 +133,11 @@ reported, not assumed).
   extreme cells) with the grid + Monte Carlo evidence; ordinary-alpha
   R≡scipy bit-identity as R's verified-domain map; plugin exact at
   k=2 where R approximates (R-side NOTE).
+- R's far-tail defect is SPECIFIC to ptukey, measured: the four
+  natively-upper-tail Q functions agree with scipy to fourteen
+  digits in the same regime — one function, one identifiable
+  construction (1 − CDF subtraction), replaced. The structural
+  argument is now measurement. [MEMO_STATUS_A4]
 - D-clause table: all retire with the builds except D-WORDING
   (re-measures); R-side findings taxonomy (2 errors, 1 non-error,
   + the k=2 approximation note).
@@ -116,17 +172,45 @@ reported, not assumed).
 - Survey module lane (own gates; Stage 2 go, Stage 3 language
   approved; separate from the 1.0 tag).
 - Error-propagation sweep: IN the 1.0 round pre-tag by Ian's
-  emphatic ruling (4 hand fixes + error$-read lint + all 63 sites
-  fixed or adjudicated-safe) — status UNMEASURED, must be reported
-  before the tag.
+  emphatic ruling — MEASURED, NOT DONE (REPORT_ERROR_PROPAGATION,
+  2 Sep): 135 raw violations / 121 unique, EXEMPT_SITES empty, v134
+  gate red. The old "63 sites" figure was the 25 Aug census at
+  3e34b1a and is not comparable at line grain. Census verdicts:
+  31 SAFE (pre-approved for EXEMPT_SITES with reasons), 9 need the
+  named runtime checks, 76 UNSAFE (fix population — priority:
+  eml_getGroupData proxy cluster ×33 in the core engine, the
+  Pearson/Spearman sibling-drift one-liner, skew/kurtosis), LMM
+  sites exempted with the exclusion entry. v134 green IS the
+  acceptance; the tag does not ship over a red gate.
+  [RULING_PUNCHLIST_AND_ERRORS]
+- 8.1 leg4, NAMED so it cannot be lost: the spaghetti plot prints no
+  inferential statistic while the paired door does — a silent
+  disagreement. Post-kit (touches no wave surface); the unification
+  round's business. [RULING_PUNCHLIST_AND_ERRORS]
 - Plugin manager (separate repo, v0.7.0 shipped; catalog phase
   awaits kit freeze for its first real row).
 
 ## E. Immediate report requests to Opus (statuses, not work)
 
-Fill by memo, measured: A.4 sweep status; A.5 RM report; A.5
-punch-intersection; A.5 string-vector RM status; A.5 Wilcoxon 3.8
-status; D error-sweep status; the per-row coverage map (C).
+ALL FILLED as of 2 Sep second batch. Coverage map DONE
+(REPORT_COVERAGE_MAP: 43 rows = 13 numerically covered + 28 correct
+by kind + 2 genuine gaps, both already-ordered fixes; generated by
+build_coverage_map.py, diff-verified). Error triage DONE
+(REPORT_ERROR_TRIAGE: 82 FIX / 53 SAFE decision table for Ian;
+3 root-finder sites upgraded to SAFE on full proof, 6 not-sure run
+their named checks first per ruling). Rename inventory DONE
+(3000 line-sites, 83% regenerated harness output; delegate
+reconciles vs list_sites.sh before editing).
+
+SETTLEMENT SPLIT RULED (RULING_SPLIT_AND_ACCEPTANCE): the wave may
+run as two sessions — mechanical half delegated (renames, registry
+42 + exclusion, two hooks, regeneration) AFTER Opus promotes v159 §E
+to failing checks; judgment half held by Opus (outcome contract +
+error fixes, bridge unification, RM signature edit once Ian rules
+.subjectCol$). Packet awaits Ian's push.
+
+WITH IAN: .subjectCol$ remove-or-wire (Fable recommends remove);
+the 82/53 triage table; the upstream R bug report (standing).
 
 ## F. The existing registers this tracker indexes
 

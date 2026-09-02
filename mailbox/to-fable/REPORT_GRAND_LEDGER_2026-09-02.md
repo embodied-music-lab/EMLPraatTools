@@ -177,8 +177,10 @@ and which this pre-run ledger marks `AWAITING_RUN`:
 3. Number of comparisons resolved by the CONTRACT bucket (last stale
    figure: 1725) and by the DECLARED bucket (last stale figure: 316).
 4. Number of unexplained comparisons (last stale figure: 32 — tracker item
-   A.4, the Class A far-tail cancellation sweep, is itself still
-   UNMEASURED and bears on this bucket).
+   A.4, the Class A far-tail cancellation sweep, bears on this bucket.
+   CORRECTED 2 Sept: this line called A.4 "still UNMEASURED"; A.4 is DONE
+   and was folded to the tracker on 2 September, reported in
+   MEMO_STATUS_A4_2026-09-01.md).
 5. The kit's overall verdict line, GREEN vs. NOT GREEN.
 6. Number of `validate/` validators that pass, out of 151 total — no
    captured run of the suite exists at all, stale or otherwise.

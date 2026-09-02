@@ -173,6 +173,93 @@ for (nm in c("emlRunRepeatedMeasuresAnalysis", "emlRunFriedmanAnalysis")) {
     cat(sprintf("      %-32s %s\n", nm, form))
 }
 
+# ---- E. recorder binding, BINDING ------------------------------------------
+# Promoted from report-only by RULING_RECORDER_AND_WIRING_2026-09-02.md, which
+# rules that the recorder's dispatch table stays hand-kept for 1.0 and a check
+# asserts the copies agree. Generating the table from the registry is filed
+# post-1.0, because it would require the registry to grow argument-role
+# metadata that today lives only in the recorder's spec strings.
+#
+# The recorder emits from more than one file. An earlier draft of this section
+# searched stats/eml-record.praat alone and therefore reported four registry
+# rows as unreachable when one of them, emlCleanConvertedTable, is emitted from
+# graphs/eml-graph-procedures.praat. The emission surface is whatever
+# validate/recorder_coverage.tsv names, which comes from the measured census.
+cat("\n  ---- E. recorder binding (RULING_RECORDER_AND_WIRING) ----\n")
+
+covFile <- repo_path("validate", "recorder_coverage.tsv")
+covRaw  <- readLines(covFile, warn = FALSE)
+covRows <- covRaw[grepl("^eml", covRaw)]
+covName <- sub("\t.*$", "", covRows)
+covFld  <- strsplit(covRows, "\t", fixed = TRUE)
+covOf   <- function(nm, i) {
+    r <- covFld[[which(covName == nm)[1]]]
+    if (length(r) >= i) r[i] else ""
+}
+
+# E1. every registry row is accounted for in the table
+for (nm in regNames) {
+    check_true(V, sprintf("recorder table accounts for registry row %s", nm),
+               nm %in% covName)
+}
+
+# E2. no retired name survives anywhere in the emission surface
+emitFiles <- unique(Filter(nzchar, vapply(covName, covOf, character(1), 2)))
+emitPaths <- file.path(plug, emitFiles)
+emitPaths <- emitPaths[file.exists(emitPaths)]
+emitText  <- paste(unlist(lapply(emitPaths, readLines, warn = FALSE)),
+                   collapse = "\n")
+cat(sprintf("      emission surface: %d file(s) named by the coverage table\n",
+            length(emitPaths)))
+for (p in RENAMES) {
+    old <- p[1]
+    check_true(V, sprintf("retired name %s absent from the emission surface", old),
+               !grepl(sprintf("\\b%s\\b", old), emitText))
+}
+
+# E3. a covered row's named emitting file still mentions it.
+# This is the check that catches a rename which updated the procedure but not
+# the recorder string, which Praat would never report.
+for (nm in regNames) {
+    st <- covOf(nm, 4)
+    if (!(st %in% c("live", "code-trace", "live (refusal)"))) next
+    f  <- covOf(nm, 2)
+    fp <- file.path(plug, f)
+    ok <- nzchar(f) && file.exists(fp) &&
+          any(grepl(sprintf("\\b%s\\b", nm), readLines(fp, warn = FALSE)))
+    check_true(V, sprintf("emitting site for %s still names it (%s)", nm, f), ok)
+}
+
+# E4. every GAP row is one the rulings ordered fixed, and every EXEMPT row
+# carries a committed reason.
+for (i in seq_along(covName)) {
+    nm <- covName[i]; st <- covOf(nm, 4); why <- covOf(nm, 5)
+    if (st == "GAP") {
+        check_true(V, sprintf("GAP row %s is closed (a hook now exists)", nm), FALSE)
+    } else if (st == "EXEMPT") {
+        check_true(V, sprintf("exemption for %s states a reason", nm),
+                   nchar(why) > 80)
+    }
+}
+
+# ---- F. repeated-measures signature, REPORT ONLY ----------------------------
+# WORK_ORDER_API_SETTLEMENT item 1 rules the string-vector form canonical for
+# 1.0. Ian ruled on 2 September that the pipe form does not become a
+# compatibility wrapper: the plugin has never shipped, so it simply stops
+# existing. Still report-only, because the change is held on Ian's
+# wire-or-remove ruling for .subjectCol$ in the same signature. Promote to a
+# binding check when that lands.
+cat("\n  ---- F. repeated-measures signature (report only, held on .subjectCol$) ----\n")
+for (nm in c("emlRunRepeatedMeasuresAnalysis", "emlRunFriedmanAnalysis")) {
+    sig <- grep(sprintf("^%s\\t", nm), regRows, value = TRUE)
+    form <- if (length(sig) && grepl("conditionCols\\$", sig)) {
+        "pipe-delimited string (ruled against)"
+    } else if (length(sig) && grepl("conditionCols\\$#", sig)) {
+        "string vector (canonical)"
+    } else "unrecognised"
+    cat(sprintf("      %-32s %s\n", nm, form))
+}
+
 # ---- E. recorder against registry, REPORT ONLY ----------------------------
 # Not ruled. Prints; never fails.
 cat("\n  ---- E. recorder against registry (report only, not ruled) ----\n")
