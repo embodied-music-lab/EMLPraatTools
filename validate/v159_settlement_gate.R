@@ -52,7 +52,13 @@ if (!exists("eml_report")) {
 plug     <- repo_path("plugin_EML_StatsGraphs")
 registry <- file.path(plug, "REGISTRY.tsv")
 recorder <- file.path(plug, "stats", "eml-record.praat")
-excl     <- repo_path("RELEASE_EXCLUDE.tsv")
+# The procedure-level exclusion lives in v155's RUN_EXCLUSIONS list, which
+# the erosion check consults: every emlRun* procedure in the tree must have a
+# registry row unless that list names it with a stated reason. RELEASE_EXCLUDE.tsv
+# is a different thing entirely -- it names FILE PATHS the release zip drops,
+# and the builder rejects an entry that matches no path, so a procedure name
+# placed there would break the build.
+v155     <- repo_path("validate", "v155_public_registry.R")
 
 # The accepted renames are READ FROM THE PROPOSAL, not restated here. The
 # proposal at mailbox/to-fable/PROPOSAL_CANONICAL_NAMES_2026-09-01.md is what
@@ -128,9 +134,18 @@ check_true(V, "registry holds exactly 42 data rows", length(regRows) == 42)
 cat(sprintf("      registry data rows now: %d\n", length(regRows)))
 check_true(V, "emlRunLMMAnalysis absent from registry",
            sum(regNames == "emlRunLMMAnalysis") == 0)
-exclHas <- file.exists(excl) &&
-           any(grepl("emlRunLMMAnalysis", readLines(excl, warn = FALSE)))
-check_true(V, "emlRunLMMAnalysis carries an explicit exclusion entry", exclHas)
+v155txt <- paste(readLines(v155, warn = FALSE), collapse = "\n")
+runExcl <- regmatches(v155txt,
+             regexpr("(?s)RUN_EXCLUSIONS <- c\\(.*?\\n\\)", v155txt, perl = TRUE))
+exclNames <- if (length(runExcl))
+    unique(unlist(regmatches(runExcl, gregexpr("emlRun[A-Za-z0-9_]+", runExcl)))) else character(0)
+cat(sprintf("      v155 RUN_EXCLUSIONS currently names: %s\n",
+            paste(exclNames, collapse = ", ")))
+check_true(V, "emlRunLMMAnalysis named in v155 RUN_EXCLUSIONS",
+           "emlRunLMMAnalysis" %in% exclNames)
+check_true(V, "its exclusion entry states a reason",
+           length(runExcl) > 0 &&
+           grepl("emlRunLMMAnalysis\\s*=\\s*paste\\(|emlRunLMMAnalysis\\s*=\\s*\"", runExcl))
 
 # ---- D. the two ordered recorder hooks ------------------------------------
 cat("\n  ---- D. ordered recorder hooks ----\n")

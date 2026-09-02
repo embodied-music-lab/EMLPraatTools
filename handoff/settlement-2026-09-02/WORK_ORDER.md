@@ -48,10 +48,20 @@ against `./list_sites.sh`.
 Ruling: `rulings/RULING_REGISTRY_VERDICTS_2026-09-01.md` section 1.
 
 `emlRunLMMAnalysis` comes out of `plugin_EML_StatsGraphs/REGISTRY.tsv` for
-1.0. It is removed by an explicit, documented exclusion entry in
-`RELEASE_EXCLUDE.tsv`, in the same form the reliability stub already uses,
-reading "implemented and validated; menu and wizard doors withdrawn; public
-post-1.0". It is not deleted silently. The registry ends at 42 data rows.
+1.0. The mixed model is a post-1.0 procedure: implemented and validated, menu
+and wizard doors withdrawn, public after 1.0. The registry ends at 42 data
+rows.
+
+It is not deleted silently. The exclusion is recorded in the `RUN_EXCLUSIONS`
+list in `validate/v155_public_registry.R`, with a stated reason, in the same
+form `emlRunReliabilityAnalysis` already uses there. That list is what the
+erosion check consults: every `emlRun*` procedure in the tree must have a
+registry row unless this list names it. Remove the registry row without adding
+the list entry and v155 fails, which is the design working.
+
+Do NOT put the procedure name in `RELEASE_EXCLUDE.tsv`. That file names FILE
+PATHS the release zip drops, and its own header states that an entry matching
+no path is a build failure. A procedure name there would break the build.
 
 Read the reliability stub's existing entry first and match its shape.
 
