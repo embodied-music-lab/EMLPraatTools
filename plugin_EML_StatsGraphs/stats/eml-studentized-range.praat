@@ -709,7 +709,41 @@ procedure emlStudentizedRangeQ: .q, .k, .df, .nranges
             # validate/v154_srange_against_reference.R's 300-second timeout
             # (see that procedure's own .relTol comment for the other half
             # of that measurement).
-            .geoW0 = 0.005
+            # WIDENED 2 September 2026, from 0.005 to 0.0005, under
+            # RULING_PORT_ACCEPTANCE_2026-09-02.md point 4: the two k=10,
+            # df=3 cells missed the standard rule, and the ruling ordered one
+            # diagnostic pass to decide fix-or-name. It converges, so it is
+            # fixed rather than named.
+            #
+            # Measured, sweeping this value alone against the reference grid:
+            #
+            #   geoW0     p~1e-10 cell    p~1e-15 cell
+            #   0.005     3.985e-03       1.032e-02   (was)
+            #   0.0025    1.152e-05       7.330e-04
+            #   0.001     2.658e-10       5.211e-09
+            #   0.0005    2.696e-10       2.684e-10   (now)
+            #   0.0001    ~2.68e-10       ~2.68e-10   (plateau)
+            #
+            # The plateau near 2.7e-10 is the next error source down, three
+            # orders inside the 1e-9 rule, so there is nothing to gain below
+            # 0.0005. .geoRatio is NOT the lever: moving it 2.0 to 1.4 with
+            # this value unchanged gave exactly no improvement.
+            #
+            # Cost, measured by amortized-repeat slope to strip Praat's
+            # startup: 3.66 s/pair before, 3.47 s/pair after -- no measurable
+            # cost, because this only adds about three cheap sub-panels at
+            # the front of a mesh that already had to run. Cells that never
+            # trigger the mesh are untouched, so the 300-second quantile
+            # budget described above is unaffected.
+            #
+            # No regression: all 36 forward cells (k in {2,5,10} x df in
+            # {3,5,10,45} x p in {1e-6,1e-10,1e-15}) were compared before and
+            # after. None got worse. Four more improved to about 1e-9
+            # agreement -- k=5 df=3 at 1e-10 and 1e-15, k=5 df=5 at 1e-15,
+            # k=10 df=5 at 1e-15 -- all four previously hidden because R and
+            # scipy both underflow to zero there, so the old oracle could not
+            # see the error.
+            .geoW0 = 0.0005
             .geoRatio = 2.0
             .geoMaxSegs = 40
 
