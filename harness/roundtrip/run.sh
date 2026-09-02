@@ -557,7 +557,7 @@ tape anv 1 1 \
 # @emlGraphsDispatchDraw reads groupColName$ / valueColName$ / valueMin /
 # valueMax for it. valueMin = valueMax = 0 is the auto sentinel.
 #
-# @emlInitDrawingDefaults IS PART OF THE SUBSTITUTION, NOT AN EXTRA. MEASURED:
+# @emlInitializeDrawingDefaults IS PART OF THE SUBSTITUTION, NOT AN EXTRA. MEASURED:
 # without it the wrapper dies at "Unknown variable: emlSubtitle$" inside
 # @emlDrawViolinPlot — because emlSubtitle$ is one of the globals the FORM
 # assigns (eml-graphs-form.praat:3701, 3839, 3853, from config_subtitle$ /
@@ -565,7 +565,7 @@ tape anv 1 1 \
 # It is the documented entry point for a standalone caller and every harness
 # prelude in this tree calls it.
 tape anv 2 1 \
-    '@emlInitDrawingDefaults' \
+    '@emlInitializeDrawingDefaults' \
     'emlSubtitle$ = ""' \
     'graph_type = 7' \
     'objectId = tableId' \

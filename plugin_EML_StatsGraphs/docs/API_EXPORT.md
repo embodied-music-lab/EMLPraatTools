@@ -111,7 +111,7 @@ permanent property. `validate/v50_api_export.R` reads the list back out of
 |---|---|
 | `@emlRunTwoGroupAnalysis` | *t*-test / Mann–Whitney |
 | `@emlRunAnovaAnalysis` | one-way ANOVA (+ Tukey) |
-| `@emlRunKWAnalysis` | Kruskal–Wallis (+ Dunn) |
+| `@emlRunKruskalWallisAnalysis` | Kruskal–Wallis (+ Dunn) |
 | `@emlRunPairwiseAnalysis` | pairwise comparisons |
 | `@emlRunTwoWayAnalysis` | two-way ANOVA |
 | `@emlRunPairedAnalysis` | paired *t* / Wilcoxon |
@@ -126,7 +126,7 @@ permanent property. `validate/v50_api_export.R` reads the list back out of
 | procedure | what it is |
 |---|---|
 | `@emlRunDescriptiveAnalysis` | descriptive statistics for one column |
-| `@emlRunGroupedRegression` | per-group regression, beside an overall fit already run |
+| `@emlRunGroupedRegressionAnalysis` | per-group regression, beside an overall fit already run |
 
 `@emlRunDescriptiveAnalysis` became exportable on **14 August 2026** and it was
 deliberately wired to the **legacy buffer**, not converted. The reason is the
@@ -136,7 +136,7 @@ which only `skewness` and `kurtosis` are in it. `q1`, `q3`, `iqr`, `min`,
 `max`, `range`, `variance` and the median have no broom name to be filed
 under. One long-format file keeps all sixteen.
 
-`@emlRunGroupedRegression` (punch list 4.5, 25 August 2026) is the one entry
+`@emlRunGroupedRegressionAnalysis` (punch list 4.5, 25 August 2026) is the one entry
 on this list that DOES leave `tidy`/`glance` populated with real broom rows
 when it returns — it is listed here because of *how*, not *whether*, it gets
 there. It is not itself the analysis: it runs after `@emlRunRegressionAnalysis`

@@ -6,7 +6,7 @@
 ; docs/RISK_REGISTER_2026-08-25.md, R1: "a settings-permutation drive -- same
 ; data, every display setting toggled between draws -- asserting zero
 ; reprints." The DISPLAY-ONLY settings under test are the four
-; @emlBridgeGroupComparison itself takes as arguments and validate/v112's
+; @emlRunAnnotationComparison itself takes as arguments and validate/v112's
 ; census classifies as display-only for that door: .style$, .showNS,
 ; .showEffect, .layoutMode. Toggling any of these must never move the
 ; bridge's verdict to "settings" and must never print a "Recomputed:" line --
@@ -75,47 +75,47 @@ fixedAlpha = 0.05
 fixedTestType$ = "parametric"
 
 ; -- style$: "p-value" / "stars" / "both" ------------------------------------
-@emlBridgeGroupComparison: tableId, "value", "group", fixedAlpha, "p-value",
+@emlRunAnnotationComparison: tableId, "value", "group", fixedAlpha, "p-value",
 ... 1, 1, fixedTestType$, 1
-@note: "style_pvalue", "verdict", emlBridgeGroupComparison.verdict$
-@note: "style_pvalue", "note", emlBridgeGroupComparison.note$
+@note: "style_pvalue", "verdict", emlRunAnnotationComparison.verdict$
+@note: "style_pvalue", "note", emlRunAnnotationComparison.note$
 
-@emlBridgeGroupComparison: tableId, "value", "group", fixedAlpha, "stars",
+@emlRunAnnotationComparison: tableId, "value", "group", fixedAlpha, "stars",
 ... 1, 1, fixedTestType$, 1
-@note: "style_stars", "verdict", emlBridgeGroupComparison.verdict$
-@note: "style_stars", "note", emlBridgeGroupComparison.note$
+@note: "style_stars", "verdict", emlRunAnnotationComparison.verdict$
+@note: "style_stars", "note", emlRunAnnotationComparison.note$
 
 ; -- showNS: 0 / 1 ------------------------------------------------------------
-@emlBridgeGroupComparison: tableId, "value", "group", fixedAlpha, "both",
+@emlRunAnnotationComparison: tableId, "value", "group", fixedAlpha, "both",
 ... 0, 1, fixedTestType$, 1
-@note: "shownsigns_0", "verdict", emlBridgeGroupComparison.verdict$
-@note: "shownsigns_0", "note", emlBridgeGroupComparison.note$
+@note: "shownsigns_0", "verdict", emlRunAnnotationComparison.verdict$
+@note: "shownsigns_0", "note", emlRunAnnotationComparison.note$
 
-@emlBridgeGroupComparison: tableId, "value", "group", fixedAlpha, "both",
+@emlRunAnnotationComparison: tableId, "value", "group", fixedAlpha, "both",
 ... 1, 1, fixedTestType$, 1
-@note: "shownsigns_1", "verdict", emlBridgeGroupComparison.verdict$
-@note: "shownsigns_1", "note", emlBridgeGroupComparison.note$
+@note: "shownsigns_1", "verdict", emlRunAnnotationComparison.verdict$
+@note: "shownsigns_1", "note", emlRunAnnotationComparison.note$
 
 ; -- showEffect: 0 / 1 --------------------------------------------------------
-@emlBridgeGroupComparison: tableId, "value", "group", fixedAlpha, "both",
+@emlRunAnnotationComparison: tableId, "value", "group", fixedAlpha, "both",
 ... 1, 0, fixedTestType$, 1
-@note: "showeffect_0", "verdict", emlBridgeGroupComparison.verdict$
-@note: "showeffect_0", "note", emlBridgeGroupComparison.note$
+@note: "showeffect_0", "verdict", emlRunAnnotationComparison.verdict$
+@note: "showeffect_0", "note", emlRunAnnotationComparison.note$
 
-@emlBridgeGroupComparison: tableId, "value", "group", fixedAlpha, "both",
+@emlRunAnnotationComparison: tableId, "value", "group", fixedAlpha, "both",
 ... 1, 1, fixedTestType$, 1
-@note: "showeffect_1", "verdict", emlBridgeGroupComparison.verdict$
-@note: "showeffect_1", "note", emlBridgeGroupComparison.note$
+@note: "showeffect_1", "verdict", emlRunAnnotationComparison.verdict$
+@note: "showeffect_1", "note", emlRunAnnotationComparison.note$
 
 ; -- layoutMode: brackets (2) / matrix (3) -----------------------------------
-@emlBridgeGroupComparison: tableId, "value", "group", fixedAlpha, "both",
+@emlRunAnnotationComparison: tableId, "value", "group", fixedAlpha, "both",
 ... 1, 1, fixedTestType$, 2
-@note: "layout_brackets", "verdict", emlBridgeGroupComparison.verdict$
-@note: "layout_brackets", "note", emlBridgeGroupComparison.note$
+@note: "layout_brackets", "verdict", emlRunAnnotationComparison.verdict$
+@note: "layout_brackets", "note", emlRunAnnotationComparison.note$
 
-@emlBridgeGroupComparison: tableId, "value", "group", fixedAlpha, "both",
+@emlRunAnnotationComparison: tableId, "value", "group", fixedAlpha, "both",
 ... 1, 1, fixedTestType$, 3
-@note: "layout_matrix", "verdict", emlBridgeGroupComparison.verdict$
-@note: "layout_matrix", "note", emlBridgeGroupComparison.note$
+@note: "layout_matrix", "verdict", emlRunAnnotationComparison.verdict$
+@note: "layout_matrix", "note", emlRunAnnotationComparison.note$
 
 appendInfoLine: "=== SENTINEL: PROBE COMPLETE ==="

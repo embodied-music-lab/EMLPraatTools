@@ -135,7 +135,7 @@ KERNELS <- c(
 EXEMPT <- c(
     "emlReportAnovaComparison" =
         paste("the REPORT half of a run, not a run. It is called by",
-              "@emlRunAnovaAnalysis and by @emlBridgeGroupComparison, and the",
+              "@emlRunAnovaAnalysis and by @emlRunAnnotationComparison, and the",
               "extra comparisons it computes -- Brown-Forsythe, Welch's",
               "ANOVA, Games-Howell -- belong to whichever run called it. A",
               "reporter that published would publish twice per run and the",
@@ -553,7 +553,7 @@ if (!file.exists(measured)) {
 
     # EVERY DOOR ACTUALLY PUBLISHED, and named itself.
     for (d in c("emlRunTwoGroupAnalysis", "emlRunAnovaAnalysis",
-                "emlRunKWAnalysis", "emlRunPairwiseAnalysis")) {
+                "emlRunKruskalWallisAnalysis", "emlRunPairwiseAnalysis")) {
         check_true(V, sprintf("@%s published on the drive", d),
                    d %in% tsv$value[tsv$field == "producer"])
     }

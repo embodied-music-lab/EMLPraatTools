@@ -490,7 +490,7 @@ if (have) {
 # ===========================================================================
 # The plausible wrong repair is to take the stamp where the pair is published.
 # It is wrong on the ruling's own headline case: an annotated figure runs
-# @emlBridgeGroupComparison first, and the bridge RECORDS A STEP OF ITS OWN,
+# @emlRunAnnotationComparison first, and the bridge RECORDS A STEP OF ITS OWN,
 # so the comparison is step 1 and the figure is step 2. A publication-time
 # stamp names step 1, the figure is refused its own user's range, and ruling
 # 10(b) is undone by the repair meant to protect it -- with no error, and with

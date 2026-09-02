@@ -169,7 +169,7 @@ pick () {   # pick <file> <key>
 cat > "$OUT/leg1_record.praat" <<PRAAT
 $INCLUDES
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 emlRecordPluginRoot\$ = "$SRC"
 @emlRecordBegin: "$OUT"
@@ -302,7 +302,7 @@ kv leg3_data_hi "$(pick "$OUT/leg3.txt" DATAHI)"
 cat > "$OUT/leg4_native.praat" <<PRAAT
 $INCLUDES
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 $FIXTURE_B
 table = selected ("Table")
@@ -339,7 +339,7 @@ fi
 cat > "$OUT/leg5_explicit.praat" <<PRAAT
 $INCLUDES
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 emlRecordPluginRoot\$ = "$SRC"
 @emlRecordBegin: "$OUT"
@@ -419,7 +419,7 @@ fi
 cat > "$OUT/leg6_boxrecord.praat" <<PRAAT
 $INCLUDES
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 emlRecordPluginRoot\$ = "$SRC"
 @emlRecordBegin: "$OUT"
@@ -471,7 +471,7 @@ kv leg7_axis_hi "$(pick "$OUT/leg7.txt" AXISHI)"
 cat > "$OUT/leg8_boxnative.praat" <<PRAAT
 $INCLUDES
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 $FIXTURE_B
 table = selected ("Table")

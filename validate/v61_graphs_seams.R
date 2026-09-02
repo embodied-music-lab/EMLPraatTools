@@ -13,7 +13,7 @@
 #                  annotated nonparametric draw on three or more groups died
 #                  with "Unknown variable: emlKruskalWallis.rMatrix##" -- and
 #                  only when the omnibus was SIGNIFICANT, because that is the
-#                  branch on which @emlBridgeGroupComparison runs Dunn's test,
+#                  branch on which @emlRunAnnotationComparison runs Dunn's test,
 #                  and @emlReportKWComparison then stops computing the pairwise
 #                  rank-biserial matrix for itself and reads the one its header
 #                  says "the orchestrator guarantees". stats/eml-analysis.praat
@@ -651,7 +651,7 @@ check_true("v61",
 
 # THE CRASH LEG RAN NOTHING FIRST, and this is the check that keeps this file
 # honest. Driven 15 Aug 2026 with the bridge's declaration deleted, a leg whose
-# driver called @emlRunKWAnalysis before handing over completed every dialog
+# driver called @emlRunKruskalWallisAnalysis before handing over completed every dialog
 # and wrote every value: the ORCHESTRATOR had already declared the matrix, so
 # the bridge's omission could not show. A one-section report is what says the
 # annotation bridge is the only thing that reported on this leg.

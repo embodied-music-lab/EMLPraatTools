@@ -166,7 +166,7 @@ endproc
 # ---------------------------------------------------------------------------
 # @runLeg — bridge, form post-dispatch, emit, save.
 #
-# .layout is passed straight to @emlBridgeGroupComparison: 2 forces brackets,
+# .layout is passed straight to @emlRunAnnotationComparison: 2 forces brackets,
 # which is what every leg here wants. Forcing rather than relying on the k<=2
 # auto rule is deliberate — the defect is in the BRACKET layout and the
 # ruling is about bracket figures, and a user can select "Brackets" from the
@@ -178,9 +178,9 @@ procedure runLeg: .tbl, .title$, .w, .h, .test$, .layout, .correction$
     if .correction$ <> ""
         annotCorrectionMethod$ = .correction$
     endif
-    @emlBridgeGroupComparison: .tbl, "val", "grp", 0.05, "stars", 0, 1,
+    @emlRunAnnotationComparison: .tbl, "val", "grp", 0.05, "stars", 0, 1,
     ... .test$, .layout
-    @emit: "bridge_error", emlBridgeGroupComparison.error$
+    @emit: "bridge_error", emlRunAnnotationComparison.error$
     @emit: "bracket_n", string$ (annotBracketN)
     @emit: "matrix_n", string$ (annotMatrixN)
     ; The two halves as the BRIDGE left them, before anything draws. Emitted
@@ -213,7 +213,7 @@ procedure runLeg: .tbl, .title$, .w, .h, .test$, .layout, .correction$
     ; bridge that set nothing from a form that routed it correctly.
     ;
     ; AUTHOR RULING C, 16 August 2026, is what this pair is for: every arm of
-    ; @emlBridgeGroupComparison that can produce a bracket names its test, and
+    ; @emlRunAnnotationComparison that can produce a bracket names its test, and
     ; validate/v76 pins the string composed HERE against the words tesseract
     ; reads off the figure. Two-group figures set neither of these before
     ; ruling C, which is why the label is guarded on the count: the drive has
@@ -284,7 +284,7 @@ procedure runLeg: .tbl, .title$, .w, .h, .test$, .layout, .correction$
     endif
 endproc
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ===========================================================================

@@ -42,7 +42,7 @@ for i from 1 to n
     Set string value: i, "group", g$# [i]
 endfor
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 annotate = 1
 scatterAnalysisType = 2
 annotCorrType$ = "pearson"

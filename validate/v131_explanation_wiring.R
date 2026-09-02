@@ -4,7 +4,7 @@
 # Ian Howell -- Embodied Music Lab -- GPL-3.0-or-later
 #
 # THE DEFECT THIS CLOSES (punch list 2026-08-25, lane 6.2). v130 proved the
-# explanations toggle works end to end for @emlRunKWAnalysis, because that
+# explanations toggle works end to end for @emlRunKruskalWallisAnalysis, because that
 # orchestrator's shared reporter already routed its glosses through
 # @emlEffectMatrixCaption. It did not prove anything about the reporters
 # that had NO such routing before this round: @emlReportPairwiseComparison's

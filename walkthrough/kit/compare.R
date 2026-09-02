@@ -500,7 +500,7 @@ DECLARED <- list(
 #          where = "r", id = "D-MINOR",
 #          why = paste("Quantities the R side reports on cells where the plugin either has no",
 #                      "output for them (@emlRunPairedAnalysis exposes no excluded-row count;",
-#                      "@emlRunGroupedRegression exposes no adjusted R-squared) or refused the",
+#                      "@emlRunGroupedRegressionAnalysis exposes no adjusted R-squared) or refused the",
 #                      "cell outright (the nine expect=ok cells listed in the README)."))
 # )
 
@@ -1439,7 +1439,7 @@ ID_TO_CLAUSE <- c(
 # posthoc_<PAIR>_ci_low on the same procedure).
 CONTRACT_CLAUSE_RULES <- list(
     list(proc = "emlRunAnovaAnalysis",  re = "^posthoc_.*_q$",              clause = "studentised-range-statistic"),
-    list(proc = "emlRunKWAnalysis",     re = "^eta_squared$",               clause = "rank-test-effect-size"),
+    list(proc = "emlRunKruskalWallisAnalysis",     re = "^eta_squared$",               clause = "rank-test-effect-size"),
     list(proc = c("emlRunNormalityAnalysis", "emlRunDescriptiveAnalysis"),
                                          re = "^(skewness_b1|kurtosis_b2)$", clause = "extra-shape-statistics"),
     list(proc = "emlRunCorrelationAnalysis", re = "^spearman_(t|df|s)$",    clause = "correlation-intermediates"),
@@ -1457,7 +1457,7 @@ CONTRACT_CLAUSE_RULES <- list(
     list(proc = "emlRunFriedmanAnalysis", re = "^kendalls_w$",              clause = "kendalls-w-derived"),
     list(proc = "emlRunFriedmanAnalysis", re = "^(chi_square|p)$",          clause = "friedman-all-identical"),
     list(proc = "emlRunTwoWayAnalysis", re = "_eta_squared$",               clause = "two-way-eta-squared-gap"),
-    list(proc = "emlRunGroupedRegression", re = "^overall_adj_r_squared$",  clause = "grouped-regression-adjusted-r2"),
+    list(proc = "emlRunGroupedRegressionAnalysis", re = "^overall_adj_r_squared$",  clause = "grouped-regression-adjusted-r2"),
     list(proc = "emlRunDescriptiveAnalysis", re = "^ci_(low|high)$",        clause = "constant-column-mean-interval"),
     list(proc = "emlCronbachAlpha",     re = "^alpha_if_deleted_",          clause = "alpha-two-item-scale")
 )

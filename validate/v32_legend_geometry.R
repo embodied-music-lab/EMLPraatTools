@@ -102,7 +102,7 @@
 # covered with no headroom pass, 0 with one.
 #
 # BLOCK 4 IS WHERE THE DEFECT WAS. totalCanvasHeight is a FORM local.
-# @emlInitDrawingDefaults -- the documented entry point for "standalone
+# @emlInitializeDrawingDefaults -- the documented entry point for "standalone
 # scripts or PraatGen companion files" -- sets emlLegendPlacement and does not
 # set it. A caller outside the form that laid out its own matrix and asked for
 # placement 3 got a legend band starting at the plot's own bottom edge, drawn
@@ -1497,14 +1497,14 @@ check_true("v32", "the fixture calls @emlMeasureGraphLayout where the form does"
            any(grepl("@emlMeasureGraphLayout:", case_src, fixed = TRUE)))
 
 # --- ...and the matrix half of it drives the real thing too. The matrix has
-# to be REAL -- @emlBridgeGroupComparison run on a table, not a hand-filled
+# to be REAL -- @emlRunAnnotationComparison run on a table, not a hand-filled
 # set of annotMatrix* globals -- or the panel would be measured against
 # content the bridge never produces, and the height that decides where the
 # legend band starts is content-driven. The order matters as much: the form
 # measures the matrix BEFORE dispatch and renders it AFTER, so the legend is
 # drawn while the matrix exists as a measurement and not yet as ink.
 check_true("v32", "the fixture's matrix comes from the real bridge",
-           any(grepl("@emlBridgeGroupComparison:", case_src, fixed = TRUE)))
+           any(grepl("@emlRunAnnotationComparison:", case_src, fixed = TRUE)))
 check_true("v32", "the fixture sizes the matrix the way the form's pre-dispatch block does",
            any(grepl("@emlMeasureMatrixLayout:", case_src, fixed = TRUE)) &&
            any(grepl("emlMatrixLayout_yMax", case_src, fixed = TRUE)) &&
@@ -1750,7 +1750,7 @@ for (s in seq_len(nrow(SIZES))) {
 #
 # --- rp_notch_*  THE GLOBAL IS NOT THERE, AND THIS IS WHERE THE DEFECT WAS.
 #
-# totalCanvasHeight is a FORM local. @emlInitDrawingDefaults -- whose own
+# totalCanvasHeight is a FORM local. @emlInitializeDrawingDefaults -- whose own
 # comment says it is for "standalone scripts or PraatGen companion files" --
 # sets emlLegendPlacement and does not set it. So "matrix present, page bottom
 # unpublished" is not a contrived input: it is every caller of the drawing

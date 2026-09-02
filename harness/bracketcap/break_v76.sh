@@ -5,7 +5,7 @@
 # ============================================================================
 # Ian Howell — Embodied Music Lab — GPL-3.0-or-later
 #
-# validate/v76 makes one claim — every arm of @emlBridgeGroupComparison that
+# validate/v76 makes one claim — every arm of @emlRunAnnotationComparison that
 # can produce a bracket names its test — and proves it two ways: by
 # ENUMERATING the arms out of the source, and by READING the name off two
 # driven figures. Each half exists because the other cannot see a particular

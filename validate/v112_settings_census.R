@@ -46,7 +46,7 @@
 #   names together. This file finds it by walking the code, not by being told.
 #
 # HOW THE POPULATION IS DERIVED. Two doors compute a result at DRAW time, and
-# the ruling names both: @emlBridgeGroupComparison, which runs the t-test,
+# the ruling names both: @emlRunAnnotationComparison, which runs the t-test,
 # Mann-Whitney, ANOVA, Kruskal-Wallis, Tukey and Dunn behind a figure's
 # brackets, and @emlDrawScatterPlot, which computes r and p from
 # annotCorrType$ on the way past. From each door:
@@ -142,7 +142,7 @@ if (!nzchar(measured))
 # make this file complain -- it makes the population empty, and an empty
 # population satisfies every assertion under it.
 # ---------------------------------------------------------------------------
-DOORS <- c("emlBridgeGroupComparison", "emlDrawScatterPlot")
+DOORS <- c("emlRunAnnotationComparison", "emlDrawScatterPlot")
 
 # ---------------------------------------------------------------------------
 # 1. THE DERIVATION
@@ -316,11 +316,11 @@ RESULT_AFFECTING <- c(
     #    plainest sense; carried by the section (a) fingerprint rather than by
     #    a settings comparison, but a change here must re-run either way and
     #    a list that omitted them would be making a claim it cannot support.
-    "emlBridgeGroupComparison.tableId" =
+    "emlRunAnnotationComparison.tableId" =
         "the table the comparison runs on",
-    "emlBridgeGroupComparison.dataCol$" =
+    "emlRunAnnotationComparison.dataCol$" =
         "the numeric column compared",
-    "emlBridgeGroupComparison.factorCol$" =
+    "emlRunAnnotationComparison.factorCol$" =
         "the column the groups come from",
     "emlDrawScatterPlot.objectId" =
         "the table the correlation runs on",
@@ -330,7 +330,7 @@ RESULT_AFFECTING <- c(
         "the y column the correlation runs on",
 
     # -- the three the ruling counted
-    "emlBridgeGroupComparison.testType$" =
+    "emlRunAnnotationComparison.testType$" =
         paste("parametric or nonparametric: which test runs at all.",
               "MEASURED: one-way ANOVA F(2,15) = 277.80 with Tukey p =",
               "6e-9 becomes Kruskal-Wallis H(2) = 15.19 with Dunn p = .103",
@@ -343,7 +343,7 @@ RESULT_AFFECTING <- c(
               "it"),
     # ITEM 3.5. The Comparison menu's post-hoc row, carried to the bridge on
     # the same channel annotCorrectionMethod$ uses and for the same reason --
-    # @emlBridgeGroupComparison takes it as a global, not as an argument.
+    # @emlRunAnnotationComparison takes it as a global, not as an argument.
     # RESULT-AFFECTING is not a judgement call here: it decides whether
     # @emlOneWayAnova runs Tukey at all, so it decides whether a pairwise
     # p-value EXISTS on the figure, which is the strongest form of affecting a
@@ -357,7 +357,7 @@ RESULT_AFFECTING <- c(
               "3-row matrix panel; at 0 it reports 0 and fills none, while",
               "the omnibus line is the same characters both times",
               "(One-way ANOVA: F(2, 15) = 53.39, p < .001)"),
-    "emlBridgeGroupComparison.alpha" =
+    "emlRunAnnotationComparison.alpha" =
         paste("the threshold the significance verdict is taken at. It moves",
               "no p-value, it moves the VERDICT.",
               "MEASURED on a borderline pair (p = .039): annotMatrixSig goes",
@@ -416,18 +416,18 @@ RESULT_AFFECTING <- c(
 
 DISPLAY_ONLY <- c(
     # -- the four the ruling counted
-    "emlBridgeGroupComparison.style$" =
+    "emlRunAnnotationComparison.style$" =
         paste("p-value, stars or both: the TEXT of the bracket label.",
               "MEASURED: every p and every d identical, only",
               "dis.label changes ('p < .001, d = 6.93' / '***, d = 6.93')"),
-    "emlBridgeGroupComparison.showNS" =
+    "emlRunAnnotationComparison.showNS" =
         paste("whether non-significant brackets are drawn.",
               "MEASURED on Dunn's test: showNS 0 publishes one bracket and",
               "showNS 1 publishes three, and the p of the pair present in",
               "both is .000292 either way. Suppression of publication, not a",
               "different result -- and section (d)'s single write site",
               "removes even the suppression"),
-    "emlBridgeGroupComparison.showEffect" =
+    "emlRunAnnotationComparison.showEffect" =
         paste("whether effect sizes are shown.",
               "MEASURED: p unchanged; the d values go from computed to",
               "undefined. CONDITIONAL: display-only holds because section",
@@ -435,7 +435,7 @@ DISPLAY_ONLY <- c(
               "run. In the bridge as it stands showEffect = 0 means Cohen's",
               "d is never computed, so a result published under it cannot",
               "serve a later figure that wants effect sizes"),
-    "emlBridgeGroupComparison.layoutMode" =
+    "emlRunAnnotationComparison.layoutMode" =
         paste("brackets or a comparison matrix.",
               "MEASURED: same omnibus, same labels, same post-hoc and the",
               "same formatted p in both layouts. NOTE for the store: the",
@@ -554,7 +554,7 @@ DISPLAY_ONLY <- c(
     #    reason the recorder's captures above are: the door does that work on
     #    every draw, so the walk finds them in its call graph.
     #
-    #    WHAT CHANGED, SAID PLAINLY. @emlBridgeGroupComparison now renders its
+    #    WHAT CHANGED, SAID PLAINLY. @emlRunAnnotationComparison now renders its
     #    report BUFFER-ONLY and compares it against the stored one before
     #    deciding whether to print it, so @emlReportBridgeStats and the result
     #    writer under it are inside the door. THE DRAW PATH ALWAYS RAN THAT

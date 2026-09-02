@@ -301,7 +301,7 @@ check("v29", "no draw procedure assigns to emlSubtitle$ (the user's field)",
 #
 # THE FIELD HAS TO BE WRITABLE BY SOMEBODY. Four assignments in this
 # directory are not the defect and must not be broken by the ban:
-# @emlInitDrawingDefaults declares the default (""), and eml-graphs-form.praat
+# @emlInitializeDrawingDefaults declares the default (""), and eml-graphs-form.praat
 # — the form that OWNS the field — sets it three times from the user's own
 # form input and from config. A ban that forbade those would forbid the user
 # having a subtitle at all. So the ban is stated as three rules, two of which
@@ -388,9 +388,9 @@ check("v29",
 # Rule C -- the pinned inventory. Sorted so the comparison does not depend on
 # where in a file the assignments happen to sit.
 SUB_ALLOWED <- sort(c(
-  # The declared default. @emlInitDrawingDefaults seeds every drawing global,
+  # The declared default. @emlInitializeDrawingDefaults seeds every drawing global,
   # and an unset emlSubtitle$ makes @emlDrawTitle fail on "Unknown variable".
-  "eml-graph-procedures.praat @emlInitDrawingDefaults",
+  "eml-graph-procedures.praat @emlInitializeDrawingDefaults",
   # The form owns the field: from config when the advanced page is not shown,
   # and from the user's own "Subtitle" box when it is. Three sites, all in
   # @emlGraphsWorkflow, none of them a drawing procedure.

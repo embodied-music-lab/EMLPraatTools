@@ -17,7 +17,7 @@
 # with no brackets nothing resolves them and the post-dispatch block hands
 # (0, 0) to the annotation box.
 #
-# @emlBridgeGroupComparison produces exactly that state on its BRACKET path
+# @emlRunAnnotationComparison produces exactly that state on its BRACKET path
 # (nGroups <= 3, or layoutMode forcing brackets):
 #
 #     annotBracketN = 0
@@ -62,7 +62,7 @@ emlSubtitle$ = "SENTINEL-SUBTITLE"
 ; four groups gives three brackets and the defect does not appear.
 ;
 ; TWO ROUTES REACH THE SAME STATE, and the defaults take the first:
-;   1. Omnibus NOT significant. @emlBridgeGroupComparison's else-branch still
+;   1. Omnibus NOT significant. @emlRunAnnotationComparison's else-branch still
 ;      sets annotTextN = 1, so the "F(3, 52) = 0.46, p = .709" line exists
 ;      and has to be drawn somewhere.
 ;   2. Omnibus significant, no pair surviving correction. The bracket path
@@ -105,7 +105,7 @@ tblId = selected ("Table")
 
 @emlClearAnnotations
 ; layoutMode 2 = brackets. alpha .05, style "stars", showNS 0, showEffect 0.
-@emlBridgeGroupComparison: tblId, "v", "grp", 0.05, "stars", 0, 0, "auto", 2
+@emlRunAnnotationComparison: tblId, "v", "grp", 0.05, "stars", 0, 0, "auto", 2
 
 appendInfoLine: "OMNIBUSONLY brackets=", annotBracketN,
 ... " text=", annotTextN, " matrix=", annotMatrixN

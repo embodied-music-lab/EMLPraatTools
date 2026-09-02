@@ -89,7 +89,7 @@ if mode$ = ""
 endif
 
 Erase all
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 ; Deterministic noise. randomGauss would give every placement a different data
 ; set, and the whole point of this sweep is that only the FURNITURE moves. An

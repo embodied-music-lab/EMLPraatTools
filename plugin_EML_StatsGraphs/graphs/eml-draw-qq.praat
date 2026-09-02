@@ -209,10 +209,10 @@ procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode
         ; of which goes through the graphs form, and Praat aborts on an
         ; undefined global the moment one is read inside an if.
         if variableExists ("emlShowTicksX") = 0
-            @emlInitDrawingDefaults
+            @emlInitializeDrawingDefaults
         endif
         if variableExists ("scatterRegressionLine") = 0
-            @emlInitDrawingDefaults
+            @emlInitializeDrawingDefaults
         endif
 
         ; ── The plotted pairs, snapshotted ────────────────────────────────
@@ -250,7 +250,7 @@ procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode
         ; the form's settings altered behind it.
         ;
         ; annotate = 0 deliberately. The annotation path reads
-        ; scatterAnalysisType, which @emlInitDrawingDefaults does not define
+        ; scatterAnalysisType, which @emlInitializeDrawingDefaults does not define
         ; (only the graphs form does), and a Pearson r on a Q-Q plot would
         ; be a second, unlabelled normality statistic competing with the
         ; Shapiro-Wilk the checker already reported.

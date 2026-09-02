@@ -27,7 +27,7 @@ include ../../plugin/stats/eml-inferential.praat
 include ../../plugin/graphs/eml-annotation-procedures.praat
 include ../../plugin/graphs/eml-draw-procedures.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 leg$ = environment$ ("EML_AXES_LEG")
 out$ = environment$ ("EML_AXES_OUT")

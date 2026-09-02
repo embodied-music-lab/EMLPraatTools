@@ -58,7 +58,7 @@ include ../../plugin/stats/eml-inferential.praat
 include ../../plugin/graphs/eml-annotation-procedures.praat
 include ../../plugin/graphs/eml-draw-procedures.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 outPath$ = environment$ ("EML_SETTINGS_OUT")
 if outPath$ = ""
@@ -130,14 +130,14 @@ endproc
 
 procedure runVariant: .setting$, .variant$, .tableId, .alpha, .style$, .showNS, .showEffect, .testType$, .layoutMode
     @emlClearAnnotations
-    @emlBridgeGroupComparison: .tableId, "Score", "Grp", .alpha, .style$,
+    @emlRunAnnotationComparison: .tableId, "Score", "Grp", .alpha, .style$,
     ... .showNS, .showEffect, .testType$, .layoutMode
 
-    .err$ = emlBridgeGroupComparison.error$
-    .omni$ = emlBridgeGroupComparison.omnibus$
-    .n = emlBridgeGroupComparison.nGroups
+    .err$ = emlRunAnnotationComparison.error$
+    .omni$ = emlRunAnnotationComparison.omnibus$
+    .n = emlRunAnnotationComparison.nGroups
     for .i from 1 to .n
-        .lab$ [.i] = emlBridgeGroupComparison.gLabel$ [.i]
+        .lab$ [.i] = emlRunAnnotationComparison.gLabel$ [.i]
     endfor
     .bN = annotBracketN
     .mN = annotMatrixN
@@ -234,9 +234,9 @@ emlGroupSortAlphabetical = 1
 emlGroupSortAlphabetical = 0
 
 ; --- testType$ -------------------------------------------------------------
-@runVariant: "emlBridgeGroupComparison.testType$", "parametric", three, 0.05,
+@runVariant: "emlRunAnnotationComparison.testType$", "parametric", three, 0.05,
 ... "p-value", 1, 1, "parametric", 2
-@runVariant: "emlBridgeGroupComparison.testType$", "nonparametric", three,
+@runVariant: "emlRunAnnotationComparison.testType$", "nonparametric", three,
 ... 0.05, "p-value", 1, 1, "nonparametric", 2
 
 ; --- annotCorrectionMethod$ ------------------------------------------------
@@ -263,10 +263,10 @@ annotCorrectionMethod$ = "holm"
 ; does -- it passes the one dialog value into both channels. The leg below
 ; separates them on purpose.
 annotAlpha = 0.05
-@runVariant: "emlBridgeGroupComparison.alpha", "0.05", border, 0.05, "stars",
+@runVariant: "emlRunAnnotationComparison.alpha", "0.05", border, 0.05, "stars",
 ... 1, 1, "parametric", 3
 annotAlpha = 0.01
-@runVariant: "emlBridgeGroupComparison.alpha", "0.01", border, 0.01, "stars",
+@runVariant: "emlRunAnnotationComparison.alpha", "0.01", border, 0.01, "stars",
 ... 1, 1, "parametric", 3
 annotAlpha = 0.05
 
@@ -284,9 +284,9 @@ annotAlpha = 0.05
 ... "stars", 1, 1, "parametric", 3
 
 ; --- .style$ ---------------------------------------------------------------
-@runVariant: "emlBridgeGroupComparison.style$", "p-value", three, 0.05,
+@runVariant: "emlRunAnnotationComparison.style$", "p-value", three, 0.05,
 ... "p-value", 1, 1, "parametric", 2
-@runVariant: "emlBridgeGroupComparison.style$", "stars", three, 0.05, "stars",
+@runVariant: "emlRunAnnotationComparison.style$", "stars", three, 0.05, "stars",
 ... 1, 1, "parametric", 2
 
 ; --- .showNS ---------------------------------------------------------------
@@ -294,21 +294,21 @@ annotAlpha = 0.05
 ; and showNS = 0 has something to suppress. On the parametric table every pair
 ; is overwhelming and the setting does nothing at all, which would be a
 ; negative about the table rather than about the setting.
-@runVariant: "emlBridgeGroupComparison.showNS", "0", three, 0.05, "p-value",
+@runVariant: "emlRunAnnotationComparison.showNS", "0", three, 0.05, "p-value",
 ... 0, 1, "nonparametric", 2
-@runVariant: "emlBridgeGroupComparison.showNS", "1", three, 0.05, "p-value",
+@runVariant: "emlRunAnnotationComparison.showNS", "1", three, 0.05, "p-value",
 ... 1, 1, "nonparametric", 2
 
 ; --- .showEffect -----------------------------------------------------------
-@runVariant: "emlBridgeGroupComparison.showEffect", "0", three, 0.05,
+@runVariant: "emlRunAnnotationComparison.showEffect", "0", three, 0.05,
 ... "p-value", 1, 0, "parametric", 2
-@runVariant: "emlBridgeGroupComparison.showEffect", "1", three, 0.05,
+@runVariant: "emlRunAnnotationComparison.showEffect", "1", three, 0.05,
 ... "p-value", 1, 1, "parametric", 2
 
 ; --- .layoutMode -----------------------------------------------------------
-@runVariant: "emlBridgeGroupComparison.layoutMode", "2", three, 0.05,
+@runVariant: "emlRunAnnotationComparison.layoutMode", "2", three, 0.05,
 ... "p-value", 1, 1, "parametric", 2
-@runVariant: "emlBridgeGroupComparison.layoutMode", "3", three, 0.05,
+@runVariant: "emlRunAnnotationComparison.layoutMode", "3", three, 0.05,
 ... "p-value", 1, 1, "parametric", 3
 
 removeObject: two, three, border

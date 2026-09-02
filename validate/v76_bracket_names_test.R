@@ -4,7 +4,7 @@
 # Ian Howell -- Embodied Music Lab -- GPL-3.0-or-later
 #
 # THE RULING THIS FILE IMPLEMENTS (author ruling C, change order 9, 16 August
-# 2026). @emlBridgeGroupComparison has four arms that can put a bracket on a
+# 2026). @emlRunAnnotationComparison has four arms that can put a bracket on a
 # figure: Welch's t and Mann-Whitney U at k = 2, one-way ANOVA with Tukey and
 # Kruskal-Wallis with Dunn at k >= 3. All four compose an omnibus string --
 # "Welch t: t(22.0) = -14.90, p < .001, d = -6.08" -- and hand it back to the
@@ -192,7 +192,7 @@ depths_of <- function(b) {
     list(d = d, final = cur, ok = cur == 0L && all(d >= 0L))
 }
 
-body   <- proc_body_of(code, "emlBridgeGroupComparison")
+body   <- proc_body_of(code, "emlRunAnnotationComparison")
 parsed <- depths_of(body)
 dep    <- parsed$d
 
@@ -329,7 +329,7 @@ if (have_tsv) {
 # The claim has always been: a path that can put a BRACKET on a figure also
 # puts the OMNIBUS in the corner box, and that omnibus opens with the name of
 # the test which produced the bracket. Until the result store's read side
-# landed, each of the four arms of @emlBridgeGroupComparison wrote its own
+# landed, each of the four arms of @emlRunAnnotationComparison wrote its own
 # bracket loop and its own corner box, so the claim was checked as a
 # dominance argument inside one procedure: for every bracket-label write, is
 # there an `annotTextN = 1` above it in an enclosing block?
@@ -363,7 +363,7 @@ BRACKET_SITE <- "^annotBracketLabel\\$\\[[^]]+\\] = "
 
 arm_ids <- character(0)
 if (have_src) {
-    check_true(ID, "@emlBridgeGroupComparison is present and parses balanced",
+    check_true(ID, "@emlRunAnnotationComparison is present and parses balanced",
                length(body) > 0 && parsed$ok)
 
     body_rend <- proc_body_of(code, "emlBridgeRenderAnnotations")
@@ -417,7 +417,7 @@ if (have_src) {
         sprintf("no other procedure in the file writes a bracket label (%d file-wide)",
                 length(grep(BRACKET_SITE, code))),
         length(grep(BRACKET_SITE, code)) == 1)
-    check_true(ID, "and @emlBridgeGroupComparison no longer writes one itself",
+    check_true(ID, "and @emlRunAnnotationComparison no longer writes one itself",
                length(grep(BRACKET_SITE, body)) == 0)
 
     # ---- (c) FOUR ARMS, ENUMERATED THE SAME WAY ---------------------------

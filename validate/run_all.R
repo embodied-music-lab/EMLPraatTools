@@ -725,7 +725,7 @@ scripts <- c(
     # byte-identical to the one the recording drew.
     "v75_legend_single_step.R",
     # AUTHOR RULING C, CHANGE ORDER 9, 16 AUGUST 2026 -- EVERY BRACKET-BEARING
-    # FIGURE NAMES ITS TEST. Both two-group arms of @emlBridgeGroupComparison
+    # FIGURE NAMES ITS TEST. Both two-group arms of @emlRunAnnotationComparison
     # composed an omnibus string, handed it back for the Info window and set
     # annotTextN on NEITHER path; only the k >= 3 arms did. So the form's
     # post-dispatch stage had no line to route into the corner box and a Welch
@@ -1630,7 +1630,7 @@ scripts <- c(
     "v136_regression_grouping.R" # punch list 4.5: per-group regression
                                  # fits beside the overall one, ported from
                                  # the correlate dialog's pattern into ONE
-                                 # shared procedure (@emlRunGroupedRegression)
+                                 # shared procedure (@emlRunGroupedRegressionAnalysis)
                                  # both the menu door and both wizard
                                  # regression pages call. Oracled against
                                  # base R's lm() per group on Sol's Simpson
@@ -1703,7 +1703,7 @@ scripts <- c(
                                  # "Recomputed:" announcement, no second
                                  # report block). READS RED TODAY: the
                                  # drive aborts inside
-                                 # @emlBridgeGroupComparison's own
+                                 # @emlRunAnnotationComparison's own
                                  # recompute-then-republish call to
                                  # @emlPublishAnalysisResult, whose argument
                                  # count and order do not yet match the
@@ -1741,7 +1741,7 @@ scripts <- c(
                                  # docs/RISK_REGISTER_2026-08-25.md, R1: a
                                  # settings-permutation drive over the four
                                  # display-only settings v112's census gives
-                                 # @emlBridgeGroupComparison (style$, showNS,
+                                 # @emlRunAnnotationComparison (style$, showNS,
                                  # showEffect, layoutMode), same data,
                                  # asserting zero reprints for every one of
                                  # them. READS RED TODAY, for the identical

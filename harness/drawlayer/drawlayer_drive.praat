@@ -47,7 +47,7 @@ include ../../plugin/stats/eml-analysis.praat
 # harness that never ran.
 Text writing preferences: "UTF-8"
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 leg$ = environment$ ("EML_DL_LEG")
@@ -305,11 +305,11 @@ elsif leg$ = "posthoc_tukey" or leg$ = "posthoc_dunn"
     @emlDrawViolinPlot: t, "Post-hoc disclosure", "Cohort", "Power (dB)",
     ... 6, 4, "color", 1, "grp", "val", 0, 0
     if leg$ = "posthoc_tukey"
-        @emlBridgeGroupComparison: t, "val", "grp", 0.05, "stars", 1, 1,
+        @emlRunAnnotationComparison: t, "val", "grp", 0.05, "stars", 1, 1,
         ... "parametric", 3
     else
         annotCorrectionMethod$ = "holm"
-        @emlBridgeGroupComparison: t, "val", "grp", 0.05, "stars", 1, 1,
+        @emlRunAnnotationComparison: t, "val", "grp", 0.05, "stars", 1, 1,
         ... "nonparametric", 3
     endif
     @emit: "posthoc_label", annotMatrixPosthoc$
@@ -354,7 +354,7 @@ elsif leg$ = "info_degenerate"
     writeInfoLine: "degenerate"
     selectObject: t
     @emlRunAnovaAnalysis: t, "val", "grp", 1
-    @emlRunKWAnalysis: t, "val", "grp", 1, "holm"
+    @emlRunKruskalWallisAnalysis: t, "val", "grp", 1, "holm"
 
 # THE TINY LEG. Values a few ulps from zero, which is what a real measurement
 # that cancels looks like. This is where fixed$ escalates PAST the precision

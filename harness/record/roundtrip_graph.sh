@@ -65,7 +65,7 @@ include $ROOT/plugin/graphs/eml-graph-procedures.praat
 include $ROOT/plugin/graphs/eml-annotation-procedures.praat
 include $ROOT/plugin/graphs/eml-draw-procedures.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 emlRecordPluginRoot\$ = "$ROOT/plugin"
 @emlRecordBegin: "$OUT"

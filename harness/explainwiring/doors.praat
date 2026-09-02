@@ -10,7 +10,7 @@
 # @emlReportPairwiseComparison (all four test arms: Welch, Student, Scheffe,
 # Wilcoxon), @emlRunRepeatedMeasuresAnalysis, @emlRunFriedmanAnalysis, and
 # @emlReportDescriptiveAnalysis. harness/explaingate already covers
-# @emlRunKWAnalysis via @emlEffectMatrixCaption; this rig covers the sites
+# @emlRunKruskalWallisAnalysis via @emlEffectMatrixCaption; this rig covers the sites
 # that were the actual gap.
 #
 # SAME IDIOM AS harness/explaingate/doors.praat: one leg per process, chosen

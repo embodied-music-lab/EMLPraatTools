@@ -5474,7 +5474,7 @@ endproc
 #                    (RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5). A
 #                    caller needing the raw values after this procedure
 #                    returns (e.g. the rank-biserial-r fallback in
-#                    @emlRunKWAnalysis) reads this instead of
+#                    @emlRunKruskalWallisAnalysis) reads this instead of
 #                    re-extracting. Valid only until @emlKruskalWallis
 #                    runs again.
 #   .meanRank[i]   - mean rank for group i

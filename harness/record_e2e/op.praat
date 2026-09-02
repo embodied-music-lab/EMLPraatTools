@@ -23,10 +23,10 @@ op$ = op$
 
 ; THE DRAW PATH NEEDS ITS GLOBALS, and a caller that skips this gets
 ; "Unknown variable: emlSubtitle$" from inside the draw procedure rather than
-; anything that names the cause. @emlInitDrawingDefaults is the documented
+; anything that names the cause. @emlInitializeDrawingDefaults is the documented
 ; entry point for standalone callers; every harness prelude in this tree calls
 ; it, and so must anything driving a draw procedure directly.
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 ; The preamble every draw procedure needs from a standalone caller. Factored
 ; because it is identical for all fourteen and a caller that skips any of it
@@ -47,7 +47,7 @@ if op$ = "anova"
 elsif op$ = "twogroup"
     @emlRunTwoGroupAnalysis: id, "spl", "grp", "welch", 0
 elsif op$ = "kw"
-    @emlRunKWAnalysis: id, "spl", "grp", 0, "holm"
+    @emlRunKruskalWallisAnalysis: id, "spl", "grp", 0, "holm"
 elsif op$ = "descriptive"
     @emlRunDescriptiveAnalysis: id, "spl"
 elsif op$ = "normality"
@@ -219,11 +219,11 @@ elsif op$ = "scattermonotonic"
     scatterRegressionLine = 1
     @emlDrawScatterPlot: id, "Scatter, monotonic fit", "x", "y", 6, 4, "color", 1, "spl", "spl2", "", 0, 0, 0, 0, 1
 elsif op$ = "bridge"
-    ; The graphs -> stats direction: @emlBridgeGroupComparison runs the
+    ; The graphs -> stats direction: @emlRunAnnotationComparison runs the
     ; omnibus test and the post-hoc that the figure's brackets are drawn
     ; from. Same statistics as @emlRunAnovaAnalysis, reached the other way.
     @emlPrepDraw
-    @emlBridgeGroupComparison: id, "spl", "grp3", 0.05, "stars", 0, 1, "parametric", 1
+    @emlRunAnnotationComparison: id, "spl", "grp3", 0.05, "stars", 0, 1, "parametric", 1
 endif
 
 appendInfoLine: "OPDONE ", op$

@@ -47,7 +47,7 @@ endform
 placement = number (placement$)
 
 Erase all
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 figure_width = 6
 figure_height = 4.5

@@ -24,7 +24,7 @@ kind is inferred from the name/description, not hand-typed per row:
   - starts with "emlRun"                                -> analysis
   - description contains the bridge's own self-description,
     "the second path to the same statistics"             -> analysis
-    (catches emlBridgeGroupComparison, which does not match emlRun*
+    (catches emlRunAnnotationComparison, which does not match emlRun*
     but runs the same four tests as the stats menu -- see
     mailbox/to-opus/RULING_REGISTRY_VERDICTS_2026-09-01.md #4)
   - else starts with "emlDraw"                           -> drawing
@@ -36,7 +36,7 @@ reason_if_not_covered is generated per kind:
     build time, not hand-listed), because for these kinds "not numerically
     covered" is the CORRECT, by-design state (no scalar R-comparable
     output exists) rather than a gap.
-  - emlRunLMMAnalysis and emlBridgeGroupComparison are the two exceptions:
+  - emlRunLMMAnalysis and emlRunAnnotationComparison are the two exceptions:
     both are kind=analysis (they compute real statistics), so kind alone
     does not excuse the missing coverage. Their reasons are hardcoded
     below because they cite specific rulings, not a mechanical pattern:
@@ -79,7 +79,7 @@ HARDCODED_REASONS = {
         "list does not yet name it. Until the removal lands, this is a "
         "real, open gap, not a by-design exclusion."
     ),
-    "emlBridgeGroupComparison": (
+    "emlRunAnnotationComparison": (
         "GAP, tracked: kind=analysis (runs the actual t-test/Mann-Whitney/"
         "ANOVA/Kruskal-Wallis behind a figure's annotation brackets -- 'the "
         "second path to the same statistics as the stats menu', its own "

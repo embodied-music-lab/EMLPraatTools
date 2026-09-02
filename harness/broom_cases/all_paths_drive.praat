@@ -50,7 +50,7 @@ t = Read Table from comma-separated file: inDir$ + "v08_twogroup_input.csv"
 removeObject: t
 
 t = Read Table from comma-separated file: inDir$ + "v10_kw_dunn_input.csv"
-@emlRunKWAnalysis: t, "SPL_dB", "voice_type", 1, "holm"
+@emlRunKruskalWallisAnalysis: t, "SPL_dB", "voice_type", 1, "holm"
 @flush: "ship_kruskal"
 removeObject: t
 

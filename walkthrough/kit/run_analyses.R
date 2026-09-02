@@ -751,7 +751,7 @@ process_anova <- function(row) {
 }
 
 # =============================================================================
-# emlRunKWAnalysis -- Kruskal-Wallis (+ optional Dunn's post hoc)
+# emlRunKruskalWallisAnalysis -- Kruskal-Wallis (+ optional Dunn's post hoc)
 # stats::kruskal.test is the standard omnibus call.
 # eta-squared[H]: rstatix::kruskal_effsize AND effectsize::rank_eta_squared
 # -- both compute the SAME H-based eta-squared quantity (verified against
@@ -1427,7 +1427,7 @@ process_regression <- function(row) {
 }
 
 # =============================================================================
-# emlRunGroupedRegression -- overall + per-group simple regression
+# emlRunGroupedRegressionAnalysis -- overall + per-group simple regression
 #   col_a=predCol, col_b=respCol, col_c=groupCol
 # The `prereq` column (a prior emlRunRegressionAnalysis call, so Praat's
 # global namespace already holds the overall fit) is a Praat-only concern:
@@ -1945,14 +1945,14 @@ process_wilson <- function(row) {
 dispatch <- list(
     emlRunTwoGroupAnalysis         = process_two_group,
     emlRunAnovaAnalysis            = process_anova,
-    emlRunKWAnalysis               = process_kw,
+    emlRunKruskalWallisAnalysis               = process_kw,
     emlRunPairwiseAnalysis         = process_pairwise,
     emlRunTwoWayAnalysis           = process_twoway,
     emlRunPairedAnalysis           = process_paired,
     emlRunCorrelationAnalysis      = process_correlation,
     emlRunDescriptiveAnalysis      = process_descriptive,
     emlRunRegressionAnalysis       = process_regression,
-    emlRunGroupedRegression        = process_grouped_regression,
+    emlRunGroupedRegressionAnalysis        = process_grouped_regression,
     emlRunNormalityAnalysis        = process_normality,
     emlRunRepeatedMeasuresAnalysis = process_rm,
     emlRunFriedmanAnalysis         = process_friedman,

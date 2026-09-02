@@ -425,14 +425,14 @@ check_true(ID, "the per-group Shapiro-Wilk p is rendered in APA style",
 # "0" to "0.0000" is a layout change to figures nobody asked to move.
 # @emlBridgeOmnibusLine and @emlBridgeRenderAnnotations JOINED THIS LIST when
 # the result store's read side landed. They are not new figure text: they are
-# the figure text the four arms of @emlBridgeGroupComparison used to build
+# the figure text the four arms of @emlRunAnnotationComparison used to build
 # inline, lifted into one procedure so that a figure drawn from a STORED
 # result and the same figure drawn from a re-run are the same characters. The
 # sweep rule follows the text, not the procedure it happens to sit in -- so
 # the omnibus sentence and the bracket labels are still measured here, and are
 # still forbidden from going through the Info formatter below.
 drawn_procs <- c("emlFormatStars", "emlFormatAnnotLabel", "emlMeasureMatrixLayout",
-                 "emlDrawMatrixPanel", "emlBridgeGroupComparison",
+                 "emlDrawMatrixPanel", "emlRunAnnotationComparison",
                  "emlBridgeOmnibusLine", "emlBridgeRenderAnnotations",
                  "emlBridgeCorrelation")
 drawn_fixed <- sum(vapply(drawn_procs, function(nm)

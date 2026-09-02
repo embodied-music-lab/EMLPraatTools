@@ -528,6 +528,57 @@ repeat
                             appendInfoLine: "  ", emlDrawQQPlot.nDropped,
                             ... " row(s) excluded as missing."
                         endif
+
+                        ; RECORD WORKFLOW. Same three-part guard every other
+                        ; draw hook uses -- present, initialised, recording --
+                        ; but placed HERE at the call site rather than inside
+                        ; @emlDrawQQPlot itself, because that procedure takes
+                        ; .data# already extracted and has no .objectId of its
+                        ; own to hand @emlRecordSource: this Table, still
+                        ; selected, is the only object in scope. Recorded on
+                        ; the success branch only, matching @emlDrawQQPlot's
+                        ; own real refusal path (unlike every other draw
+                        ; procedure, this one can decline to draw at all --
+                        ; see its .drew output) -- a refusal here draws
+                        ; nothing, so there is nothing to record.
+                        ;
+                        ; .code$ REBUILDS .data# RATHER THAN NAMING `data`,
+                        ; unlike every other draw hook's one-line call. Those
+                        ; rely on the generic column-manifest machinery to
+                        ; build `data` from a valueCol$ role before the call;
+                        ; @emlDrawQQPlot has no such role here (see the empty
+                        ; .spec$ branch added for it in
+                        ; stats/eml-record.praat's emlRecordColumnSpec, and
+                        ; the comment there on why: .colLabel$ is a caption
+                        ; already resolved by this caller, composite on the
+                        ; grouped path, not a column name a retarget could
+                        ; feed back into a table read). So the replay has to
+                        ; carry the extraction itself. This mirrors the two
+                        ; branches above exactly; it has not been run through
+                        ; an emitted script and replayed, so treat it as a
+                        ; documented best effort rather than a proven one.
+                        if variableExists ("emlRecordLoaded")
+                            if hasGroupCol
+                                .qqCode$ = "@eml_getGroupData: data, """
+                                ... + qqCol$ + """, """ + groupCol$ + """, """
+                                ... + qqGroup$ + """" + newline$
+                                ... + "data# = eml_getGroupData.data#"
+                            else
+                                .qqCode$ = "data# = zero# (Get number of rows)"
+                                ... + newline$ + "for iRow from 1 to size (data#)"
+                                ... + newline$ + "    data# [iRow] = Get value: iRow, """
+                                ... + qqCol$ + """" + newline$ + "endfor"
+                            endif
+                            .qqCode$ = .qqCode$ + newline$
+                            ... + "@emlDrawQQPlot: data#, """ + qqLabel$
+                            ... + """, 6, 4.5, ""color"", 1"
+                            @emlRecordDrawStep: tableId, "Normal Q-Q plot",
+                            ... qqLabel$,
+                            ... "Points on the line mean the column matches a normal distribution; a systematic curve away from it does not.",
+                            ... .qqCode$,
+                            ... "In the GUI: run Check normality..., then Draw Q-Q plot for a tested column",
+                            ... ""
+                        endif
                     endif
                 endif
 

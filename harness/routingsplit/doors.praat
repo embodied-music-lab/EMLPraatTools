@@ -96,11 +96,11 @@ elsif analysis$ = "anova_only"
 
 elsif analysis$ = "kw_dunn"
     tableId = Read Table from comma-separated file: "fixture_k.csv"
-    @emlRunKWAnalysis: tableId, "Loud", "Voice", 1, "holm"
+    @emlRunKruskalWallisAnalysis: tableId, "Loud", "Voice", 1, "holm"
 
 elsif analysis$ = "kw_only"
     tableId = Read Table from comma-separated file: "fixture_k.csv"
-    @emlRunKWAnalysis: tableId, "Loud", "Voice", 0, "holm"
+    @emlRunKruskalWallisAnalysis: tableId, "Loud", "Voice", 0, "holm"
 
 elsif analysis$ = "pairwise_welch"
     tableId = Read Table from comma-separated file: "fixture_k.csv"
@@ -158,7 +158,7 @@ elsif analysis$ = "caution_anova"
 
 elsif analysis$ = "caution_kw"
     tableId = Read Table from comma-separated file: "fixture_flat.csv"
-    @emlRunKWAnalysis: tableId, "Loud", "Voice", 1, "holm"
+    @emlRunKruskalWallisAnalysis: tableId, "Loud", "Voice", 1, "holm"
 
 elsif analysis$ = "caution_pairwise"
     tableId = Read Table from comma-separated file: "fixture_flat.csv"

@@ -135,7 +135,7 @@ sed -i 's/^\( *\)if scatterShowFormula = 1$/\1if 1 = 1/' \
 # FAILS, and all seventy classifications turn stale at once.
 run_leg C
 C="$SEED_DIR/C/plugin_EML_StatsGraphs"
-sed -i 's/^procedure emlBridgeGroupComparison:/procedure emlBridgeGroupComparisonRenamed:/' \
+sed -i 's/^procedure emlRunAnnotationComparison:/procedure emlBridgeGroupComparisonRenamed:/' \
     "$C/graphs/eml-annotation-procedures.praat"
 sed -i 's/^procedure emlDrawScatterPlot:/procedure emlDrawScatterPlotRenamed:/' \
     "$C/graphs/eml-draw-procedures.praat"

@@ -116,11 +116,11 @@ elsif leg$ = "anova_notukey"
 
 elsif leg$ = "kw_dunn"
     @loadK
-    @emlRunKWAnalysis: loadK.id, "F0_Hz", "voice_type", 1, "holm"
+    @emlRunKruskalWallisAnalysis: loadK.id, "F0_Hz", "voice_type", 1, "holm"
 
 elsif leg$ = "kw_nodunn"
     @loadK
-    @emlRunKWAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
+    @emlRunKruskalWallisAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
 
 elsif leg$ = "anova_tukey_sig"
     ; v122's closed ratchet: SIGNIFICANT omnibus, post-hoc chosen -> the
@@ -132,7 +132,7 @@ elsif leg$ = "anova_tukey_sig"
 
 elsif leg$ = "kw_dunn_sig"
     @loadKSig
-    @emlRunKWAnalysis: loadKSig.id, "F0_Hz", "voice_type", 1, "holm"
+    @emlRunKruskalWallisAnalysis: loadKSig.id, "F0_Hz", "voice_type", 1, "holm"
 
 elsif leg$ = "pairwise_scheffe"
     @loadK
@@ -172,37 +172,37 @@ elsif leg$ = "bridge_kw_matrix"
     @loadK
     @emlClearAnnotations
     annotCorrectionMethod$ = "holm"
-    @emlBridgeGroupComparison: loadK.id, "F0_Hz", "voice_type", 0.05,
+    @emlRunAnnotationComparison: loadK.id, "F0_Hz", "voice_type", 0.05,
     ... "p-value", 1, 1, "nonparametric", 3
-    appendInfoLine: "BRIDGE error=[", emlBridgeGroupComparison.error$, "]"
-    appendInfoLine: "BRIDGE omnibus=[", emlBridgeGroupComparison.omnibus$, "]"
-    @dumpAnnot: emlBridgeGroupComparison.nGroups
+    appendInfoLine: "BRIDGE error=[", emlRunAnnotationComparison.error$, "]"
+    appendInfoLine: "BRIDGE omnibus=[", emlRunAnnotationComparison.omnibus$, "]"
+    @dumpAnnot: emlRunAnnotationComparison.nGroups
     @emlReportBridgeStats: loadK.id, "F0_Hz", "voice_type"
 
 elsif leg$ = "bridge_kw_brackets"
     @loadK
     @emlClearAnnotations
     annotCorrectionMethod$ = "holm"
-    @emlBridgeGroupComparison: loadK.id, "F0_Hz", "voice_type", 0.05,
+    @emlRunAnnotationComparison: loadK.id, "F0_Hz", "voice_type", 0.05,
     ... "p-value", 1, 1, "nonparametric", 2
-    appendInfoLine: "BRIDGE error=[", emlBridgeGroupComparison.error$, "]"
-    @dumpAnnot: emlBridgeGroupComparison.nGroups
+    appendInfoLine: "BRIDGE error=[", emlRunAnnotationComparison.error$, "]"
+    @dumpAnnot: emlRunAnnotationComparison.nGroups
 
 elsif leg$ = "bridge_anova_brackets"
     @loadK
     @emlClearAnnotations
-    @emlBridgeGroupComparison: loadK.id, "F0_Hz", "voice_type", 0.05,
+    @emlRunAnnotationComparison: loadK.id, "F0_Hz", "voice_type", 0.05,
     ... "p-value", 1, 1, "parametric", 2
-    appendInfoLine: "BRIDGE error=[", emlBridgeGroupComparison.error$, "]"
-    @dumpAnnot: emlBridgeGroupComparison.nGroups
+    appendInfoLine: "BRIDGE error=[", emlRunAnnotationComparison.error$, "]"
+    @dumpAnnot: emlRunAnnotationComparison.nGroups
 
 elsif leg$ = "bridge_anova_matrix"
     @loadK
     @emlClearAnnotations
-    @emlBridgeGroupComparison: loadK.id, "F0_Hz", "voice_type", 0.05,
+    @emlRunAnnotationComparison: loadK.id, "F0_Hz", "voice_type", 0.05,
     ... "p-value", 1, 1, "parametric", 3
-    appendInfoLine: "BRIDGE error=[", emlBridgeGroupComparison.error$, "]"
-    @dumpAnnot: emlBridgeGroupComparison.nGroups
+    appendInfoLine: "BRIDGE error=[", emlRunAnnotationComparison.error$, "]"
+    @dumpAnnot: emlRunAnnotationComparison.nGroups
     @emlReportBridgeStats: loadK.id, "F0_Hz", "voice_type"
 
 else

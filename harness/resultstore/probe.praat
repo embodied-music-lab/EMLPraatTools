@@ -165,13 +165,13 @@ endproc
 @emlRunAnovaAnalysis: tableId, "value", "group", 0
 @snapshot: "anova_only"
 
-@emlRunKWAnalysis: tableId, "value", "group", 1, "holm"
+@emlRunKruskalWallisAnalysis: tableId, "value", "group", 1, "holm"
 @snapshot: "kw_dunn_holm"
 
-@emlRunKWAnalysis: tableId, "value", "group", 1, "bonferroni"
+@emlRunKruskalWallisAnalysis: tableId, "value", "group", 1, "bonferroni"
 @snapshot: "kw_dunn_bonferroni"
 
-@emlRunKWAnalysis: tableId, "value", "group", 0, "holm"
+@emlRunKruskalWallisAnalysis: tableId, "value", "group", 0, "holm"
 @snapshot: "kw_only"
 
 @emlRunPairwiseAnalysis: tableId, "value", "group", "welch", "holm"

@@ -10,7 +10,7 @@
 # are put in. A recorded step carries its call and its arguments, so a step
 # that does not state those three replays under whatever the replaying process
 # happens to hold -- which for an emitted script is the seed
-# @emlInitDrawingDefaults writes at the top of the file.
+# @emlInitializeDrawingDefaults writes at the top of the file.
 #
 # WHAT THIS RIG ESTABLISHES, AND WHY GREP WOULD NOT.
 #

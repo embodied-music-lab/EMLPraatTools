@@ -12,7 +12,7 @@
 # reads decide what the answer IS rather than how it looks:
 #
 #   annotCorrectionMethod$    the multiple-comparison correction, resolved
-#                             inside @emlBridgeGroupComparison, which has no
+#                             inside @emlRunAnnotationComparison, which has no
 #                             parameter for it
 #   annotAlpha                the level every confidence interval in the
 #                             reporters is built at, through @emlCIAlphaInForce
@@ -78,7 +78,7 @@ include ../../plugin/stats/eml-demo-tables.praat
 # harness that never ran.
 Text writing preferences: "UTF-8"
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 leg$ = environment$ ("EML_SP_LEG")
 out$ = environment$ ("EML_SP_OUT")
@@ -204,10 +204,10 @@ if leg$ = "corr_holm" or leg$ = "corr_bonf"
     @spRecordBegin
     @spSettings: corr$, 0.05, 0
     @emlClearAnnotations
-    @emlBridgeGroupComparison: spTable3.id, "val", "grp", 0.05, "p-value",
+    @emlRunAnnotationComparison: spTable3.id, "val", "grp", 0.05, "p-value",
     ... 1, 0, "nonparametric", 2
-    @emit: leg$ + "_bridge_error", emlBridgeGroupComparison.error$
-    @emit: leg$ + "_omnibus", emlBridgeGroupComparison.omnibus$
+    @emit: leg$ + "_bridge_error", emlRunAnnotationComparison.error$
+    @emit: leg$ + "_omnibus", emlRunAnnotationComparison.omnibus$
     @spEmitBrackets: leg$ + "_session"
     @emlRecordFlush: aux$ + "/emitted.praat"
     @emit: leg$ + "_flushed", string$ (emlRecordFlush.written)

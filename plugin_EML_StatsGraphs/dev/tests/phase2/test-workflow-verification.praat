@@ -235,7 +235,7 @@ for .i from 21 to 30
 endfor
 
 selectObject: tableId
-@emlRunKWAnalysis: tableId, "Data", "Group", 0, "holm"
+@emlRunKruskalWallisAnalysis: tableId, "Data", "Group", 0, "holm"
 .info$ = info$ ()
 
 @emlTestAssertContains: "KW header present",

@@ -34,7 +34,7 @@ include ../../plugin_EML_StatsGraphs/stats/eml-record.praat
 include ../../plugin_EML_StatsGraphs/stats/eml-analysis.praat
 include ../../plugin_EML_StatsGraphs/graphs/eml-graphs-form.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 include data.praat
 tableId = selected ("Table")

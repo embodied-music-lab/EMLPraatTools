@@ -10,7 +10,7 @@ include ../../../plugin/stats/eml-inferential.praat
 include ../../../plugin/graphs/eml-annotation-procedures.praat
 include ../../../plugin/graphs/eml-draw-procedures.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 axOut$ = environment$ ("EML_OUT")
 if axOut$ = ""

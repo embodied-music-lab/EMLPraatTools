@@ -845,7 +845,7 @@ if goal = 1
 
                 # doDunn is the row's own choice now (punch list 4.2) — the
                 # "Kruskal-Wallis only" row passes doDunn = 0 to
-                # @emlRunKWAnalysis the way the menu KW wrapper's own
+                # @emlRunKruskalWallisAnalysis the way the menu KW wrapper's own
                 # "Kruskal-Wallis" row does (eml-compare-kw.praat), instead of
                 # the old doDunn = 1 literal.
                 doDunn = 0
@@ -877,13 +877,13 @@ if goal = 1
                 if phTest$ = "wilcoxon"
                     emlPairwiseFollows = 1
                 endif
-                @emlRunKWAnalysis: tableId, dataCol$, groupCol$, doDunn,
+                @emlRunKruskalWallisAnalysis: tableId, dataCol$, groupCol$, doDunn,
                 ... adjMethod$
                 emlPairwiseFollows = 0
-                if emlRunKWAnalysis.error$ <> ""
+                if emlRunKruskalWallisAnalysis.error$ <> ""
                     # An analysis error must not tear down the wizard. Return
                     # the user into the back-chain with every answer intact.
-                    @emlErrorDialog: emlRunKWAnalysis.error$, emlRunKWAnalysis.remedy$, "wizard"
+                    @emlErrorDialog: emlRunKruskalWallisAnalysis.error$, emlRunKruskalWallisAnalysis.remedy$, "wizard"
                     if emlErrorDialog.back
                         goto A2B_NORM_PAGE
                     endif
@@ -1672,11 +1672,11 @@ elsif goal = 2
 
         # Per-group regression (punch list 4.5) -- @emlLinearRegression ran
         # once above for the whole table and its globals still hold that
-        # overall fit; @emlRunGroupedRegression reads them before anything
+        # overall fit; @emlRunGroupedRegressionAnalysis reads them before anything
         # else runs.
         if wizRegHasGroupCol
             selectObject: tableId
-            @emlRunGroupedRegression: tableId, predictor_column$,
+            @emlRunGroupedRegressionAnalysis: tableId, predictor_column$,
             ... response_column$, wizRegGroupCol$
         endif
 
@@ -2796,7 +2796,7 @@ elsif goal = 4
     # comment above; the precondition is identical.
     if wizRegHasGroupCol
         selectObject: tableId
-        @emlRunGroupedRegression: tableId, predictor_column$,
+        @emlRunGroupedRegressionAnalysis: tableId, predictor_column$,
         ... outcome_column$, wizRegGroupCol$
     endif
 
@@ -3207,6 +3207,36 @@ elsif wizDrawSource$ = "normality"
                     appendInfoLine: "  ", emlDrawQQPlot.nDropped,
                     ... " row(s) excluded as missing."
                 endif
+
+                ; RECORD WORKFLOW. Same hook as the standalone Check
+                ; normality wrapper's own Q-Q call (scripts/eml-check-
+                ; normality.praat) -- see that site for the full reasoning
+                ; on why this lives here rather than inside @emlDrawQQPlot,
+                ; why only the success branch records, and why .code$
+                ; rebuilds .data# rather than naming `data`.
+                if variableExists ("emlRecordLoaded")
+                    if wizNormQQGrouped
+                        .wizQqCode$ = "@eml_getGroupData: data, """
+                        ... + wizNormQQPlotCol$ + """, """
+                        ... + wizNormQQGroupCol$ + """, """
+                        ... + wizNormQQPlotGroup$ + """" + newline$
+                        ... + "data# = eml_getGroupData.data#"
+                    else
+                        .wizQqCode$ = "data# = zero# (Get number of rows)"
+                        ... + newline$ + "for iRow from 1 to size (data#)"
+                        ... + newline$ + "    data# [iRow] = Get value: iRow, """
+                        ... + wizNormQQPlotCol$ + """" + newline$ + "endfor"
+                    endif
+                    .wizQqCode$ = .wizQqCode$ + newline$
+                    ... + "@emlDrawQQPlot: data#, """ + wizNormQQLabel$
+                    ... + """, 6, 4.5, ""color"", 1"
+                    @emlRecordDrawStep: tableId, "Normal Q-Q plot",
+                    ... wizNormQQLabel$,
+                    ... "Points on the line mean the column matches a normal distribution; a systematic curve away from it does not.",
+                    ... .wizQqCode$,
+                    ... "In the GUI: the wizard's normality check, then Draw Q-Q plot for a tested column",
+                    ... ""
+                endif
             endif
         endif
 
@@ -3436,7 +3466,7 @@ endproc
 #          .phAdj$  (the adjustment for the row's pairwise test — "none" for
 #                    Scheffe, else "holm"/"bonferroni"/"bh", the SAME
 #                    .adjMethod$ vocabulary @emlRunPairwiseAnalysis and
-#                    @emlRunKWAnalysis already take)
+#                    @emlRunKruskalWallisAnalysis already take)
 #          .phLabel$ (the exact string @wizardReportPlan prints for this
 #                    row's post-hoc — the ONE source, so the plan can never
 #                    name a post-hoc other than the one the row describes)

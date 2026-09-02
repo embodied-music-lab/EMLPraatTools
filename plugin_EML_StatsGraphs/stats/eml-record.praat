@@ -120,7 +120,7 @@ emlRecordLoaded = 1
 # @emlRecordInit
 # Idempotent. Establishes the globals with no side effects, so any procedure
 # here can be called defensively without knowing whether recording ever
-# started. Mirrors @emlInitDrawingDefaults in shape and intent.
+# started. Mirrors @emlInitializeDrawingDefaults in shape and intent.
 # ----------------------------------------------------------------------------
 procedure emlRecordInit
     if not variableExists ("emlRecordActive")
@@ -2078,7 +2078,7 @@ endproc
 #   annotAlpha                the level every confidence interval in the
 #                             reporters is built at, through
 #                             @emlCIAlphaInForce. An emitted script opens with
-#                             @emlInitDrawingDefaults, which seeds 0.05, so an
+#                             @emlInitializeDrawingDefaults, which seeds 0.05, so an
 #                             unstated alpha of 0.01 replays as an interval
 #                             that is narrower than the session's and labelled
 #                             95%.
@@ -3143,7 +3143,7 @@ endproc
 # the block's promise is "edit a name to run the same workflow on other data".
 # Column names hard-coded at the call sites --
 #
-#     @emlBridgeGroupComparison: data, "val", "grp", 0.05, ...
+#     @emlRunAnnotationComparison: data, "val", "grp", 0.05, ...
 #
 # -- would mean hunting literals through the steps to re-point a recorded
 # workflow at a same-shape table with different headers, which is the exact
@@ -3237,7 +3237,7 @@ procedure emlRecordColumnSpec: .proc$
         .spec$ = "2=valueCol 3=groupCol"
     elsif .proc$ = "emlRunAnovaAnalysis"
         .spec$ = "2=valueCol 3=groupCol"
-    elsif .proc$ = "emlRunKWAnalysis"
+    elsif .proc$ = "emlRunKruskalWallisAnalysis"
         .spec$ = "2=valueCol 3=groupCol"
     elsif .proc$ = "emlRunPairwiseAnalysis"
         .spec$ = "2=valueCol 3=groupCol"
@@ -3251,6 +3251,15 @@ procedure emlRecordColumnSpec: .proc$
         .spec$ = "2=valueCol"
     elsif .proc$ = "emlRunRegressionAnalysis"
         .spec$ = "2=outcomeCol 3=predictorCol"
+    elsif .proc$ = "emlRunGroupedRegressionAnalysis"
+        ; SAME TWO ROLES AS THE OVERALL FIT, PLUS THE GROUPING COLUMN. Read
+        ; from the signature (.tableId, .predCol$, .respCol$, .groupCol$),
+        ; not assumed from the ungrouped sibling above: the predictor comes
+        ; first here and the response second, the reverse of
+        ; emlRunRegressionAnalysis's (.tableId, .depCol$, .predCol$), so the
+        ; role names below are pinned by position, not by which name reads
+        ; naturally first.
+        .spec$ = "2=predictorCol 3=outcomeCol 4=groupCol"
     elsif .proc$ = "emlRunNormalityAnalysis"
         .spec$ = "2=valueCol"
     elsif .proc$ = "emlRunReliabilityAnalysis"
@@ -3266,11 +3275,11 @@ procedure emlRecordColumnSpec: .proc$
         .spec$ = "2=subjectCol 3=conditionCols"
 
     ; ---- the figure's own statistics (graphs/eml-annotation-procedures) ----
-    elsif .proc$ = "emlBridgeGroupComparison"
+    elsif .proc$ = "emlRunAnnotationComparison"
         .spec$ = "2=valueCol 3=groupCol"
 
     ; ---- the melt (graphs/eml-graph-procedures.praat) ---------------------
-    ; NOT A DRAW AND NOT AN ANALYSIS. @emlGraphsMeltSeries is recorded as a
+    ; NOT A DRAW AND NOT AN ANALYSIS. @emlReshapeSeriesLong is recorded as a
     ; CONVERT step by the graphs form: several columns of one measurement are
     ; stacked into the long shape the drawing layer takes, and the emitted
     ; script has to rebuild that table because the form removes it before the
@@ -3279,7 +3288,7 @@ procedure emlRecordColumnSpec: .proc$
     ; is the seriesCols$ SPEC section 8 names -- so they belong in the block
     ; where a reader retargets everything else. Arguments count `data` as 1:
     ; data, timeCol$, cols$.
-    elsif .proc$ = "emlGraphsMeltSeries"
+    elsif .proc$ = "emlReshapeSeriesLong"
         .spec$ = "2=timeCol 3=seriesCols"
 
     ; ---- the pivot (graphs/eml-graph-procedures.praat) --------------------
@@ -3297,7 +3306,7 @@ procedure emlRecordColumnSpec: .proc$
     ; sharing a name in one run are two variables in the block, and a reader
     ; retargeting the workflow would be editing whichever one the renderer
     ; numbered first.
-    elsif .proc$ = "emlGraphsPivotSeries"
+    elsif .proc$ = "emlReshapeSeriesWide"
         .spec$ = "2=timeCol 3=longValueCol 4=seriesNameCol 5=seriesLevels"
 
     ; ---- the draw procedures (graphs/eml-draw-procedures.praat) -----------
@@ -3323,9 +3332,30 @@ procedure emlRecordColumnSpec: .proc$
         .spec$ = "9=categoryCol 10=subgroupCol 11=valueCol"
     elsif .proc$ = "emlDrawGroupedBoxPlot"
         .spec$ = "9=categoryCol 10=subgroupCol 11=valueCol"
+    elsif .proc$ = "emlDrawQQPlot"
+        ; PRESENT WITH AN EMPTY SPEC, UNLIKE THE ACOUSTIC FOUR BELOW, and the
+        ; difference is deliberate. @emlDrawQQPlot: .data#, .colLabel$, .vpW,
+        ; .vpH, .colorMode$, .gridMode takes no table at all -- the caller
+        ; (scripts/eml-check-normality.praat, scripts/eml-wizard.praat) has
+        ; already read the column into `data#` before calling, the same shape
+        ; @emlRecordSource documents for a Sound converted before a draw. So
+        ; argument 2, .colLabel$, is not a column NAME a retargeted script
+        ; could feed back into a `Get value` loop -- it is the caption the
+        ; caller already resolved, and on the grouped path it is composite
+        ; ("qqCol$ + \" -- \" + qqGroup$"), not a bare column at all. Giving
+        ; it a role here would tell a reader retargeting the workflow that
+        ; editing this argument changes what is plotted, which is false: it
+        ; only relabels the figure the caller already built. An explicit
+        ; branch with an empty .spec$, rather than silence, is what
+        ; documents that this was checked and decided, the same reason
+        ; @emlRunReliabilityAnalysis is spelled out above instead of omitted.
+        .spec$ = ""
     endif
     ; Waveform, spectrum and LTAS take no column: they draw a Sound, a
     ; Spectrum or an Ltas whole. They are absent on purpose, not by omission.
+    ; @emlDrawQQPlot is the one exception spelled out above instead of left
+    ; absent: see its branch for why an explicit empty spec, not silence, is
+    ; the correct record of that decision.
 
     ; ---- THE AXIS PAIR, ONE ENTRY PER DRAW PROCEDURE ----------------------
     ; Argument indices count `data` as argument 1, exactly as above. All
@@ -5047,7 +5077,7 @@ procedure emlRecordRender
     ; idempotent, it costs nothing in an analysis-only file, and a condition
     ; here would be one more thing that can be wrong in a file whose whole
     ; purpose is to run somewhere else.
-    .text$ = .text$ + "@emlInitDrawingDefaults" + newline$
+    .text$ = .text$ + "@emlInitializeDrawingDefaults" + newline$
     ; AND CLEAR THE ANNOTATION STATE. The graphs form calls this before every
     ; draw; an emitted file that carries an annotated figure has to call it
     ; too, or the first bridge in the file adds its bracket to whatever

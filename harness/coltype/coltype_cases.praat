@@ -233,10 +233,10 @@ procedure runCase: .case$, .kind$
 
     ; --- 3. Kruskal-Wallis --------------------------------------------------
     clearinfo
-    @emlRunKWAnalysis: .tid, "y", "grp3", 1, "holm"
+    @emlRunKruskalWallisAnalysis: .tid, "y", "grp3", 1, "holm"
     .out$ = info$ ()
-    if emlRunKWAnalysis.error$ <> ""
-        @refuse: .case$, "kw", emlRunKWAnalysis.error$
+    if emlRunKruskalWallisAnalysis.error$ <> ""
+        @refuse: .case$, "kw", emlRunKruskalWallisAnalysis.error$
     else
         @emit: .case$, "kw", "statistic", emlKruskalWallis.h
         @emit: .case$, "kw", "p.value", emlKruskalWallis.p

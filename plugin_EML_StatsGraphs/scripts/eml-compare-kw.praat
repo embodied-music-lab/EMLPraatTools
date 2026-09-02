@@ -7,7 +7,7 @@
 # Version: 3.1
 # V3.1: the post-hoc is now under the user's control. "Run Dunn post
 #        hoc" and "Adjustment" fields replace the hardcoded 1, "holm"
-#        arguments to @emlRunKWAnalysis, matching the ANOVA sibling's
+#        arguments to @emlRunKruskalWallisAnalysis, matching the ANOVA sibling's
 #        "Tukey HSD post hoc" control. The chosen adjustment is also carried
 #        into the graph annotation so Draw cannot silently disagree with the
 #        report.
@@ -71,7 +71,7 @@ repeat
         endfor
         # ONE CONTROL. "Run Dunn post hoc" and "Adjustment (post hoc only)"
         # were two fields, and the adjustment was read and reported on every
-        # pass yet never reached @emlRunKWAnalysis when the tickbox was off
+        # pass yet never reached @emlRunKruskalWallisAnalysis when the tickbox was off
         # (stats/eml-analysis.praat: .adjMethod$ sits inside `if .doDunn`).
         # One list of complete choices removes the dead pairing by
         # construction — see docs/RULING_DEAD_CONTROLS.md #4.
@@ -126,11 +126,11 @@ repeat
     @emlHandleCommonFields
 
     selectObject: tableId
-    @emlRunKWAnalysis: tableId, dataCol$, groupCol$, doDunn, adjMethod$
-    if emlRunKWAnalysis.error$ <> ""
+    @emlRunKruskalWallisAnalysis: tableId, dataCol$, groupCol$, doDunn, adjMethod$
+    if emlRunKruskalWallisAnalysis.error$ <> ""
         # An error must not strand the user on a form the error has
         # just ruled out. Present it with guidance, and honour Quit.
-        @emlErrorDialog: emlRunKWAnalysis.error$, emlRunKWAnalysis.remedy$, "menu"
+        @emlErrorDialog: emlRunKruskalWallisAnalysis.error$, emlRunKruskalWallisAnalysis.remedy$, "menu"
         if not emlErrorDialog.back
             allDone = 1
         endif

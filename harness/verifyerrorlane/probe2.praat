@@ -50,22 +50,22 @@ elsif which$ = "anova_nonnumeric"
     @emlRunAnovaAnalysis: tBad, "score", "g", 0
     appendInfoLine: "error=[", emlRunAnovaAnalysis.error$, "]"
 elsif which$ = "kw_missing"
-    @emlRunKWAnalysis: tThree, "nosuchcol", "g", 0, "holm"
-    appendInfoLine: "error=[", emlRunKWAnalysis.error$, "]"
+    @emlRunKruskalWallisAnalysis: tThree, "nosuchcol", "g", 0, "holm"
+    appendInfoLine: "error=[", emlRunKruskalWallisAnalysis.error$, "]"
 elsif which$ = "kw_groupmissing"
-    @emlRunKWAnalysis: tThree, "score", "nosuchgroup", 0, "holm"
-    appendInfoLine: "error=[", emlRunKWAnalysis.error$, "]"
+    @emlRunKruskalWallisAnalysis: tThree, "score", "nosuchgroup", 0, "holm"
+    appendInfoLine: "error=[", emlRunKruskalWallisAnalysis.error$, "]"
 elsif which$ = "audit_nonnumeric"
     @emlRequireNumericColumn: tBad, "Data column", "score", 0
     appendInfoLine: "strict=0 error=[", emlRequireNumericColumn.error$, "]"
     @emlRequireNumericColumn: tBad, "Data column", "score", 1
     appendInfoLine: "strict=1 error=[", emlRequireNumericColumn.error$, "]"
 elsif which$ = "bridge_missing"
-    @emlBridgeGroupComparison: tThree, "nosuchcol", "g", 0.05, "brackets", 0, 1, "parametric", 1
-    appendInfoLine: "bridge error=[", emlBridgeGroupComparison.error$, "]"
+    @emlRunAnnotationComparison: tThree, "nosuchcol", "g", 0.05, "brackets", 0, 1, "parametric", 1
+    appendInfoLine: "bridge error=[", emlRunAnnotationComparison.error$, "]"
 endif
 if which$ = "bridge_nonnumeric"
-    @emlBridgeGroupComparison: tBad, "score", "g", 0.05, "brackets", 0, 1, "parametric", 1
-    appendInfoLine: "bridge error=[", emlBridgeGroupComparison.error$, "]"
-    appendInfoLine: "bridge n=", emlBridgeGroupComparison.nGroups
+    @emlRunAnnotationComparison: tBad, "score", "g", 0.05, "brackets", 0, 1, "parametric", 1
+    appendInfoLine: "bridge error=[", emlRunAnnotationComparison.error$, "]"
+    appendInfoLine: "bridge n=", emlRunAnnotationComparison.nGroups
 endif

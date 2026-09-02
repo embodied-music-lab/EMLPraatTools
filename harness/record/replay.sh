@@ -161,7 +161,7 @@ graph_type = 7
 prev_violinShowJitter = 1
 @emlClearAnnotations
 @emlSetAdaptiveTheme: 6, 4
-@emlBridgeGroupComparison: table, "val", "grp", annotAlpha, annotStyle$,
+@emlRunAnnotationComparison: table, "val", "grp", annotAlpha, annotStyle$,
 ... annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
 selectObject: table
 dMax = Get maximum: "val"
@@ -230,7 +230,7 @@ run_praat () {   # run_praat <script> <log>
 # ===========================================================================
 cat > "$OUT/adv_record.praat" <<PRAAT
 $INCLUDES
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 @emlRecordBegin: ""
 emlRecordPluginRoot\$ = "$PLUG"
@@ -351,7 +351,7 @@ kv emit_states_absolute      "$(grepc 'These paths are ABSOLUTE')"
 SAVE_STEM='vt_two-group_20260814_120000'
 cat > "$OUT/save_record.praat" <<PRAAT
 $INCLUDES
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 @emlRecordBegin: ""
 emlRecordPluginRoot\$ = "$PLUG"
@@ -682,7 +682,7 @@ fi
 DEEP="$OUT/deep/level2/level3"
 cat > "$OUT/folder_replay.praat" <<PRAAT
 $INCLUDES
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 $FIXTURE
 table = selected ("Table")
 @emlRunTwoGroupAnalysis: table, "val", "grp", "parametric", 0
@@ -780,7 +780,7 @@ PRAATRT
 
 cat > "$OUT/retarget_record.praat" <<PRAAT
 $INCLUDES
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 @emlRecordBegin: ""
 emlRecordPluginRoot\$ = "$PLUG"
@@ -814,7 +814,7 @@ run_praat "$OUT/retarget_record.praat" "$OUT/retarget_record.log"
 # retargeted file's own idea of itself.
 cat > "$OUT/retarget_reference.praat" <<PRAAT
 $INCLUDES
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 $FIXTURE_RT
 table = selected ("Table")
 @emlRunTwoWayAnalysis: table, "dB", "cohort", "room"
@@ -1091,7 +1091,7 @@ PRAATLGF
 cat > "$OUT/legend_record.praat" <<PRAAT
 $INCLUDES
 include $PLUG/graphs/eml-graphs-form.praat
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 @emlRecordBegin: ""
 emlRecordPluginRoot\$ = "$PLUG"
@@ -1269,7 +1269,7 @@ kv legend_plain_vs_tuned_over32  "$(pdiff "$OUT/LEG_REPLAY.png" "$OUT/LEG_TUNED.
 cat > "$OUT/legend_after_record.praat" <<PRAAT
 $INCLUDES
 include $PLUG/graphs/eml-graphs-form.praat
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 @emlRecordBegin: ""
 emlRecordPluginRoot\$ = "$PLUG"

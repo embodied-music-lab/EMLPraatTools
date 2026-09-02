@@ -8,7 +8,7 @@
 #     Unknown variable: emlKruskalWallis.rMatrix##
 #
 # and it fired ONLY when the omnibus was significant, because that is the
-# branch on which @emlBridgeGroupComparison runs Dunn's test and
+# branch on which @emlRunAnnotationComparison runs Dunn's test and
 # @emlReportKWComparison therefore stops computing the pairwise rank-biserial
 # matrix for itself and reads the one "the orchestrator guarantees". The
 # graphs bridge is a second orchestrator and guaranteed nothing. The whole
@@ -58,8 +58,8 @@ appendInfoLine: "SEAMS begin tableId=", tableId
 # buffer it fills is what the Save panel later offers, and the report section
 # it prints is the baseline the bridge's own section is counted against.
 selectObject: tableId
-@emlRunKWAnalysis: tableId, "SPL_dB", "voice_type", 1, "holm"
-appendInfoLine: "SEAMS analysis error=[", emlRunKWAnalysis.error$, "]"
+@emlRunKruskalWallisAnalysis: tableId, "SPL_dB", "voice_type", 1, "holm"
+appendInfoLine: "SEAMS analysis error=[", emlRunKruskalWallisAnalysis.error$, "]"
 appendInfoLine: "SEAMS omnibus p=", emlKruskalWallis.p
 appendInfoLine: "SEAMS csvRows=", emlCSV_n
 

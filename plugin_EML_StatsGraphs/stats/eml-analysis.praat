@@ -897,7 +897,7 @@ endproc
 #
 # ============================================================================
 
-procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$
+procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$
     .recResult$ = ""
 
     ; ---------------------------------------------------------------------
@@ -1169,7 +1169,7 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
     endif
 
     @emlReportAlpha
-    @emlPublishAnalysisResult: "emlRunKWAnalysis", "menu", "group",
+    @emlPublishAnalysisResult: "emlRunKruskalWallisAnalysis", "menu", "group",
     ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
     ... .dataCol$, .groupCol$, .stTest$, .stCorrection$,
     ... emlReportAlpha.value, .stSort$,
@@ -1193,7 +1193,7 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
         @emlRecordAnalysisStep: .tableId, "Kruskal-Wallis",
         ... .dataCol$ + " by " + .groupCol$,
         ... "Rank-based; it does not assume normality and does not test it.",
-        ... "@emlRunKWAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, " + string$ (.doDunn) + ", """ + .adjMethod$ + """",
+        ... "@emlRunKruskalWallisAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, " + string$ (.doDunn) + ", """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Stats & Graphs > Compare k groups (Kruskal-Wallis)...",
         ... .recResult$, .error$
     endif
@@ -1280,7 +1280,7 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         goto END_PAIRWISE
     endif
     ; CAPTURED HERE. @emlCountGroups is re-invoked inside every post-hoc
-    ; procedure below -- the hazard @emlBridgeGroupComparison documents at
+    ; procedure below -- the hazard @emlRunAnnotationComparison documents at
     ; length -- so .nGroups must be taken now or not at all.
     .recGroups = emlCountGroups.nGroups
     if emlCountGroups.nGroups < 2
@@ -3426,7 +3426,7 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
             ; CAPTURED HERE, NOT AT THE HOOK. @emlReportRegressionAnalysis and
             ; @emlDeclareRegressionResult both re-invoke @emlLinearRegression,
             ; and a Praat procedure's outputs survive only until it runs
-            ; again -- the same hazard @emlBridgeGroupComparison documents for
+            ; again -- the same hazard @emlRunAnnotationComparison documents for
             ; @emlCountGroups. Reading emlLinearRegression.slope after those
             ; calls would read whatever the LAST invocation left.
             .recResult$ = .depCol$ + " = "
@@ -3476,7 +3476,7 @@ endproc
 
 
 # ============================================================================
-# @emlRunGroupedRegression -- per-group regression fits beside the overall one
+# @emlRunGroupedRegressionAnalysis -- per-group regression fits beside the overall one
 # ============================================================================
 # Punch list 4.5 / OPEN_ITEMS "the regression group column" ruling: the
 # correlate dialog's per-group block (eml-correlate.praat) is the whole
@@ -3493,7 +3493,7 @@ endproc
 # are read into this procedure's own dotted locals in its first lines, before
 # anything below re-invokes @emlLinearRegression on a group's data and
 # overwrites those globals -- the same hazard @emlDeclareRegressionResult's
-# comment documents for @emlBridgeGroupComparison.
+# comment documents for @emlRunAnnotationComparison.
 #
 # Two passes over the groups, for the reason @emlCountGroups is called before
 # any group prints: pass 1 only counts complete pairs per group, so the block
@@ -3530,7 +3530,7 @@ endproc
 #                                   check); the Info report already states
 #                                   them in words.
 # ============================================================================
-procedure emlRunGroupedRegression: .tableId, .predCol$, .respCol$, .groupCol$
+procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .groupCol$
     ; Read directly from the object rather than taking it as an argument --
     ; @emlRunRegressionAnalysis does the same for its own report, and the
     ; menu door (which HAS a tableName$ global) and the wizard (which does
@@ -3658,6 +3658,35 @@ procedure emlRunGroupedRegression: .tableId, .predCol$, .respCol$, .groupCol$
         appendInfoLine: "  regressions that can be computed."
     endif
     appendInfoLine: emlReportHeader.border$
+
+    selectObject: .tableId
+
+    ; RECORD WORKFLOW. Inert unless a recording is running, the same
+    ; three-part guard @emlRunRegressionAnalysis uses just above --
+    ; present, initialised, recording. This procedure has no refusal path
+    ; of its own to record: its own header states the PRECONDITION that it
+    ; is only ever called right after @emlRunRegressionAnalysis has
+    ; already succeeded for the whole table, so there is nothing here for
+    ; an error branch to catch and no .error$ local to read.
+    ;
+    ; .ovIntercept and .ovSlope are the overall fit, captured into this
+    ; procedure's own locals in its first lines before any per-group call
+    ; overwrites emlLinearRegression's globals -- see the header comment.
+    ; .pgRun and .pgTotal are set above by the same per-group loop the
+    ; Info report reads, not re-derived here.
+    if variableExists ("emlRecordLoaded")
+        .recResult$ = .respCol$ + " = "
+        ... + fixed$ (.ovIntercept, 4) + " + "
+        ... + fixed$ (.ovSlope, 4) + " x " + .predCol$ + " (overall)"
+        ... + newline$ + "  " + string$ (.pgRun) + " of "
+        ... + string$ (.pgTotal) + " group(s) fit within " + .groupCol$
+        @emlRecordAnalysisStep: .tableId, "Per-group linear regression",
+        ... .respCol$ + " on " + .predCol$ + " within " + .groupCol$,
+        ... "Groups with fewer than 3 complete pairs are skipped, not fit, and are reported once as a count rather than a line each.",
+        ... "@emlRunGroupedRegressionAnalysis: data, """ + .predCol$ + """, """ + .respCol$ + """, """ + .groupCol$ + """",
+        ... "In the GUI: New > EML Stats & Graphs > Linear regression..., after running the overall fit",
+        ... .recResult$, ""
+    endif
 
     selectObject: .tableId
 endproc

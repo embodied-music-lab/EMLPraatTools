@@ -24,7 +24,7 @@
 # ONE FIXTURE, THE SAME ONE harness/wizardback's "kgroups" leg drives through
 # the real wizard: fixture_k.csv, column Loud by Voice, Kruskal-Wallis with
 # NO Dunn (doDunn = 0) — the exact call
-# @emlRunKWAnalysis: id, "Loud", "Voice", 0, "holm"
+# @emlRunKruskalWallisAnalysis: id, "Loud", "Voice", 0, "holm"
 # the wizard's own dispatch makes for that row, so the STATISTICS half of the
 # acceptance ("identical statistics") is not merely similar, it is the same
 # engine call on the same table with the same doDunn/adjustment arguments.
@@ -80,19 +80,19 @@ if leg$ = "wizard_equivalent"
     ; harness/wizardback's "kgroups" (GUI, under Xvfb); this is not a
     ; replacement for that evidence, it is the other half of the diff.
     emlShowExplanations = 1
-    @emlRunKWAnalysis: tableId, "Loud", "Voice", 0, "holm"
+    @emlRunKruskalWallisAnalysis: tableId, "Loud", "Voice", 0, "holm"
 
 elsif leg$ = "menu_off"
     clear_Info_window = 0
     annotate_results_with_explanations = 0
     @emlHandleCommonFields
-    @emlRunKWAnalysis: tableId, "Loud", "Voice", 0, "holm"
+    @emlRunKruskalWallisAnalysis: tableId, "Loud", "Voice", 0, "holm"
 
 elsif leg$ = "menu_on"
     clear_Info_window = 0
     annotate_results_with_explanations = 1
     @emlHandleCommonFields
-    @emlRunKWAnalysis: tableId, "Loud", "Voice", 0, "holm"
+    @emlRunKruskalWallisAnalysis: tableId, "Loud", "Voice", 0, "holm"
 
 else
     exitScript: "explaingate: unknown leg '", leg$, "'"

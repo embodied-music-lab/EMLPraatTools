@@ -56,7 +56,7 @@ removeObject: tid
 ; lets v10 re-check the group sizes and the rank ordering against v09.
 clearinfo
 tid = Read Table from comma-separated file: csvDir$ + "/v10_kw_dunn_input.csv"
-@emlRunKWAnalysis: tid, "SPL_dB", "voice_type", 1, "holm"
+@emlRunKruskalWallisAnalysis: tid, "SPL_dB", "voice_type", 1, "holm"
 writeFile: outDir$ + "/v10_kw_dunn_info.txt", info$ ()
 nDriven += 1
 removeObject: tid

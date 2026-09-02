@@ -40,7 +40,7 @@
 # Every site in the recorder (and its callers) that assembles that text
 # does so by concatenating a Praat string literal that opens
 # `"@emlSomething` -- `.code$ = "@emlDrawViolinPlot: data, ...`,
-# `.text$ = .text$ + "@emlInitDrawingDefaults" + newline$`, and so on -- so
+# `.text$ = .text$ + "@emlInitializeDrawingDefaults" + newline$`, and so on -- so
 # grep-ing every non-dev/ .praat file in the tree for the pattern
 # `"@eml[A-Z]\w*` and reading off the name after the quote finds every site
 # that assembles emittable text, by construction, with no procedure list to
@@ -345,7 +345,16 @@ RUN_EXCLUSIONS <- c(
         "REGISTRY.tsv by ruling (Fable, 2026-09-01: 'an unconditional-",
         "error stub is not surface') and excluded here from the erosion",
         "check for the same reason -- unimplemented; excluded until it",
-        "works.")
+        "works."),
+    emlRunLMMAnalysis = paste(
+        "Implemented and validated (stats/eml-lmm.praat), but its menu",
+        "entry and the wizard's mixed-model page are both withdrawn -- no",
+        "door reaches it today. Excluded from REGISTRY.tsv for 1.0 by",
+        "ruling (Ian, RULING_REGISTRY_VERDICTS_2026-09-01.md section 1:",
+        "'post-1.0 procedure: implemented and validated, menu and wizard",
+        "doors withdrawn, public after 1.0'). Excluded here from the",
+        "erosion check for the same reason -- public by the emlRun* name",
+        "pattern alone, with no interactive path, until the doors reopen.")
 )
 
 for (nm in names(RUN_EXCLUSIONS)) {

@@ -128,7 +128,7 @@ endif
 if leg$ = "kw_only_wizard" or leg$ = "kw_only_menu"
     @loadK
     selectObject: loadK.id
-    @emlRunKWAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
+    @emlRunKruskalWallisAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
 endif
 
 # ---------------------------------------------------------------------------
@@ -179,7 +179,7 @@ endif
 if leg$ = "pw_wilcoxon_holm_wizard"
     @loadK
     selectObject: loadK.id
-    @emlRunKWAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
+    @emlRunKruskalWallisAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
     appendInfoLine: "===PARITY_BLOCK_START==="
     selectObject: loadK.id
     @emlRunPairwiseAnalysis: loadK.id, "F0_Hz", "voice_type", "wilcoxon", "holm"
@@ -196,7 +196,7 @@ endif
 if leg$ = "pw_wilcoxon_bonf_wizard"
     @loadK
     selectObject: loadK.id
-    @emlRunKWAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
+    @emlRunKruskalWallisAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
     appendInfoLine: "===PARITY_BLOCK_START==="
     selectObject: loadK.id
     @emlRunPairwiseAnalysis: loadK.id, "F0_Hz", "voice_type", "wilcoxon", "bonferroni"
@@ -213,7 +213,7 @@ endif
 if leg$ = "pw_wilcoxon_bh_wizard"
     @loadK
     selectObject: loadK.id
-    @emlRunKWAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
+    @emlRunKruskalWallisAnalysis: loadK.id, "F0_Hz", "voice_type", 0, "holm"
     appendInfoLine: "===PARITY_BLOCK_START==="
     selectObject: loadK.id
     @emlRunPairwiseAnalysis: loadK.id, "F0_Hz", "voice_type", "wilcoxon", "bh"

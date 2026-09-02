@@ -5,7 +5,7 @@ include fixture.praat
 # wrapper, a PraatGen companion, a probe in this tree and a replayed script
 # all call @emlDrawTimeSeries directly, and none of them runs
 # @emlGraphsPublishSeriesPens. What such a caller gets is whatever
-# emlLineStyle holds, which @emlInitDrawingDefaults seeds at 1.
+# emlLineStyle holds, which @emlInitializeDrawingDefaults seeds at 1.
 #
 # This case is that caller with nothing drawn before it. The case beside it is
 # the same caller after a dotted press, and validate/v96 requires the two

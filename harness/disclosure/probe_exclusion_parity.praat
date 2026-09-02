@@ -3,7 +3,7 @@
 #
 # They do not, and this probe is the measurement rather than the argument.
 #
-# THE QUESTION. @emlBridgeGroupComparison computes an ANOVA or Kruskal-Wallis
+# THE QUESTION. @emlRunAnnotationComparison computes an ANOVA or Kruskal-Wallis
 # and hands the form an omnibus line, which the form then draws onto a figure
 # produced by @emlDrawViolinPlot. If the two disagree about which rows are
 # usable, the number printed on the figure describes a different data set from

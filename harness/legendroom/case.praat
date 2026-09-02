@@ -36,7 +36,7 @@ include ../../plugin/graphs/eml-annotation-procedures.praat
 include ../../plugin/graphs/eml-draw-procedures.praat
 include ../../plugin/graphs/eml-graphs-form.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlLoadConfig
 
 # A fixture with enough groups that the legend is real rather than decorative.

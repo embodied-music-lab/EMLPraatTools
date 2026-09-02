@@ -33,7 +33,7 @@
 registry_name	emitting_file	emitting_line	status	reason_or_site	evidence
 emlRunTwoGroupAnalysis	stats/eml-analysis.praat	460-463	live	stats/eml-analysis.praat:460-463	recorded.praat:362
 emlRunAnovaAnalysis	stats/eml-analysis.praat	775	live	stats/eml-analysis.praat:775 (bespoke `@emlRecordAnova`)	recorded.praat:343
-emlRunKWAnalysis	stats/eml-analysis.praat	1193	live	stats/eml-analysis.praat:1193	recorded.praat:379
+emlRunKruskalWallisAnalysis	stats/eml-analysis.praat	1193	live	stats/eml-analysis.praat:1193	recorded.praat:379
 emlRunTwoWayAnalysis	stats/eml-analysis.praat	2800	code-trace	stats/eml-analysis.praat:2800	Hook present; unreachable this session — see §4, a separate defect blocks the whole door before recording is reached
 emlRunCorrelationAnalysis	stats/eml-analysis.praat	3218	live	stats/eml-analysis.praat:3218	recorded.praat:429
 emlRunDescriptiveAnalysis	stats/eml-analysis.praat	3321	live	stats/eml-analysis.praat:3321	recorded.praat:395
@@ -56,12 +56,12 @@ emlDrawHistogram	graphs/eml-draw-procedures.praat		live	:6440	recorded.praat:572
 emlDrawGroupedViolin	graphs/eml-draw-procedures.praat		live	:6841	recorded.praat:689
 emlDrawGroupedBoxPlot	graphs/eml-draw-procedures.praat		live	:7166	recorded.praat:709
 emlDrawSpaghettiPlot	graphs/eml-draw-procedures.praat		live	:3496	recorded.praat:629
-emlBridgeGroupComparison	graphs/eml-annotation-procedures.praat	4524-4531	live	graphs/eml-annotation-procedures.praat:4524-4531	recorded.praat:1035
-emlGraphsMeltSeries	graphs/eml-graphs-form.praat	6172-6178,	code-trace	graphs/eml-graphs-form.praat:6172-6178, via `@emlRecordConvert`	Not exercised this session; source comment cites a prior measurement (harness/linetree's rec_subjects4 leg) I did not re-run
-emlGraphsPivotSeries	graphs/eml-graphs-form.praat	6355-6363	code-trace	graphs/eml-graphs-form.praat:6355-6363	Mirror of #31, not exercised this session
+emlRunAnnotationComparison	graphs/eml-annotation-procedures.praat	4524-4531	live	graphs/eml-annotation-procedures.praat:4524-4531	recorded.praat:1035
+emlReshapeSeriesLong	graphs/eml-graphs-form.praat	6172-6178,	code-trace	graphs/eml-graphs-form.praat:6172-6178, via `@emlRecordConvert`	Not exercised this session; source comment cites a prior measurement (harness/linetree's rec_subjects4 leg) I did not re-run
+emlReshapeSeriesWide	graphs/eml-graphs-form.praat	6355-6363	code-trace	graphs/eml-graphs-form.praat:6355-6363	Mirror of #31, not exercised this session
 emlCleanConvertedTable	graphs/eml-graph-procedures.praat	7920, 7938	live	graphs/eml-graph-procedures.praat:7920, 7938 (inside `@emlConvertForGraph`)	recorded.praat:969 (tor2table), :1002 (matrix2table)
 emlBeginPanel	stats/eml-record.praat	1968	live	stats/eml-record.praat:1968	recorded.praat:521 and before every draw step
-emlInitDrawingDefaults	stats/eml-record.praat	5050	live	stats/eml-record.praat:5050	recorded.praat:42, top of file
+emlInitializeDrawingDefaults	stats/eml-record.praat	(shifted by this session's edits, not re-verified)	live	stats/eml-record.praat, still present -- exact line moved by this pass's own additions to the file	recorded.praat:42, top of file
 emlClearAnnotations	stats/eml-record.praat	2302, 5056	live	stats/eml-record.praat:2302, 5056	recorded.praat:43
 emlDrawAnnotations	stats/eml-record.praat	2286	code-trace	stats/eml-record.praat:2286	Only emitted with annotation brackets on; none of this session's ops enabled them
 emlDrawAnnotationBlock	stats/eml-record.praat	2296	code-trace	stats/eml-record.praat:2296	Same reason as #37
@@ -72,6 +72,6 @@ emlRecordReplayRead	stats/eml-record.praat	1825	code-trace	stats/eml-record.praa
 emlDemoTable	scripts/eml-create-demo.praat	101	code-trace	scripts/eml-create-demo.praat:101	Fixture builds its table directly, not through eml-create-demo.praat
 emlRunPairwiseAnalysis	stats/eml-analysis.praat	1545	live	stats/eml-analysis.praat:1545	recorded.praat:456 -- refusal path; the fixture passed a bad test string, the hook fired and recorded the refusal
 emlRunPairedAnalysis	stats/eml-analysis.praat	3028	live	stats/eml-analysis.praat:3028	recorded.praat:464 -- refusal path; the fixture's two columns are identical, which is fixture data rather than a defect
-emlRunGroupedRegression			GAP	no emitting site exists; RULING_REGISTRY_VERDICTS section 2 orders a hook added, and the rename pass carries it as task 3	census section 1, exhaustive
-emlDrawQQPlot			GAP	no emitting site exists; RULING_REGISTRY_VERDICTS section 2 orders a hook added, and the rename pass carries it as task 3	census section 1, exhaustive
+emlRunGroupedRegressionAnalysis	stats/eml-analysis.praat	(end of procedure, after the per-group report)	live	stats/eml-analysis.praat, `@emlRecordAnalysisStep` guarded call added by this pass, same shape as the ungrouped sibling `emlRunRegressionAnalysis`	stats/eml-record.praat emlRecordColumnSpec, new `emlRunGroupedRegressionAnalysis` entry ("2=predictorCol 3=outcomeCol 4=groupCol")
+emlDrawQQPlot	scripts/eml-check-normality.praat	(success branch of the Draw Q-Q plot call site)	live	scripts/eml-check-normality.praat, `@emlRecordDrawStep` guarded call added by this pass, plus an identical hook at scripts/eml-wizard.praat's own Q-Q call site (:3199 area) -- NOT inside @emlDrawQQPlot itself, which takes .data# already extracted and has no .objectId; hooked at each caller instead, using the still-selected Table. See either call site's comment for why .code$ rebuilds the vector instead of naming `data`, and why this deviates from every other draw procedure's shape. Not exercised against a live Praat run -- verified by inspection only, not replayed.	stats/eml-record.praat emlRecordColumnSpec, new `emlDrawQQPlot` entry with an explicit empty .spec$ (see that branch's comment for why no column role is claimed)
 emlRunReliabilityAnalysis	stats/eml-record.praat		EXEMPT	Not a registry row. Its dispatch entry can only ever emit a refusal comment: the stub sets .error$ unconditionally, the .api$ branch is unreachable, and the 1093-line live artifact contains no replayable call. Exempted by RULING_RECORDER_AND_WIRING_2026-09-02.md, which makes it the exemption table's first entry and takes this reason from REPORT_RECORDER_COVERAGE section 2. Whether the entry is dead code is a post-1.0 measurement, not a settlement edit.	census section 2

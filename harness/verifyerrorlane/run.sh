@@ -9,8 +9,8 @@
 # two swept sites FOR REAL and read what comes out.
 #
 # probe2.praat is the file that matters: it drives the real orchestrators
-# (@emlRunTwoGroupAnalysis, @emlRunAnovaAnalysis, @emlRunKWAnalysis) and the
-# graph bridge (@emlBridgeGroupComparison) with (a) a column that does not
+# (@emlRunTwoGroupAnalysis, @emlRunAnovaAnalysis, @emlRunKruskalWallisAnalysis) and the
+# graph bridge (@emlRunAnnotationComparison) with (a) a column that does not
 # exist and (b) a data column holding one non-numeric cell.
 # probe.praat drives the two-group door end to end plus, for the record, the
 # annotation-layer reporters called directly -- see its own header for why

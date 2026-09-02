@@ -304,7 +304,7 @@ if (canDrive) {
         u <- file.path(work, "s1", "user"); dir.create(u, recursive = TRUE,
                                                        showWarnings = FALSE)
         writeLines(c("include ~/.praat-dir/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat",
-                     "@emlInitDrawingDefaults",
+                     "@emlInitializeDrawingDefaults",
                      '@emlFormatP: 0.0123',
                      'writeInfoLine: "BARREL RAN ", emlFormatP.formatted$'),
                    file.path(u, "mine.praat"))
@@ -548,7 +548,7 @@ if (canDrive) {
     u <- file.path(work, "s3", "user")
     dir.create(u, recursive = TRUE, showWarnings = FALSE)
     writeLines(c("include ~/moved-prefs/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat",
-                 "@emlInitDrawingDefaults",
+                 "@emlInitializeDrawingDefaults",
                  'writeInfoLine: "MOVED BARREL RAN"'), file.path(u, "m.praat"))
     r <- launch(home3, new3, file.path(u, "m.praat"))
     check_true("v82", "and the repaired barrel runs from a user's folder",
@@ -583,7 +583,7 @@ if (canDrive) {
     u <- file.path(work, "s4", "user")
     dir.create(u, recursive = TRUE, showWarnings = FALSE)
     writeLines(c("include ~/.config/praat/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat",
-                 "@emlInitDrawingDefaults",
+                 "@emlInitializeDrawingDefaults",
                  'writeInfoLine: "V7 BARREL RAN"'), file.path(u, "m.praat"))
     r <- launch(home4, new4, file.path(u, "m.praat"))
     check_true("v82", "and that barrel runs from a user's folder too",

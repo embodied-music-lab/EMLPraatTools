@@ -9,7 +9,7 @@
 # @emlReportKWComparison on the significant branch, where .doDunn = 1 makes the
 # reporter skip its own fallback compute and read a matrix it believes an
 # orchestrator left for it. stats/eml-analysis.praat DOES leave one --
-# @emlRunKWAnalysis copies it out of @emlDunnTest one line after the call. So a
+# @emlRunKruskalWallisAnalysis copies it out of @emlDunnTest one line after the call. So a
 # leg that runs the wrapper's analysis before handing over to the form has
 # already populated the global, and the bridge's failure to populate it is
 # INVISIBLE: driven 15 Aug 2026 with the bridge's copy deleted, that leg

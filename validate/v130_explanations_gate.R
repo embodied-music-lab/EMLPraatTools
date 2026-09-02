@@ -34,7 +34,7 @@
 #   menu_off, menu_on.
 #
 # THE FIXTURE IS ONE TABLE, ONE ENGINE CALL, ACROSS ALL FOUR CAPTURES:
-# @emlRunKWAnalysis on fixture_k.csv, column Loud by Voice, doDunn = 0. That
+# @emlRunKruskalWallisAnalysis on fixture_k.csv, column Loud by Voice, doDunn = 0. That
 # is what makes "identical statistics" checkable rather than assumed: H,
 # df, p, epsilon-squared, effect magnitude and all three groups' mean ranks
 # are asserted equal across all four captures, not merely eyeballed.

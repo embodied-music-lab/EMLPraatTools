@@ -26,7 +26,7 @@ include ../../plugin/stats/eml-inferential.praat
 include ../../plugin/graphs/eml-annotation-procedures.praat
 include ../../plugin/graphs/eml-draw-procedures.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 ; EML_OUT is set by harness/stress_graphs.sh for every case. The fallback is
 ; only reached by a case run BY HAND, and it is deliberately relative so that

@@ -1236,7 +1236,7 @@ endproc
 # ============================================================================
 # ADJUSTMENT-METHOD LOOKUP
 # ============================================================================
-# Maps a correction index onto the string @emlBridgeGroupComparison expects in
+# Maps a correction index onto the string @emlRunAnnotationComparison expects in
 # annotCorrectionMethod$. The index now comes from @emlComparisonFromMenu, so
 # the family and the correction are two outputs of one chosen row and cannot
 # disagree; see THE COMPARISON MENU below for why that replaced two controls
@@ -1278,7 +1278,7 @@ procedure emlComparisonMenuRows
     option: "-- Parametric --"
     ; ITEM 3.5 -- THE POST-HOC OPT-OUT, AS A ROW.
     ;
-    ; WHAT IT CLOSES. @emlBridgeGroupComparison decides, on every parametric
+    ; WHAT IT CLOSES. @emlRunAnnotationComparison decides, on every parametric
     ; k >= 3 figure, whether to run a pairwise post-hoc. That decision belongs
     ; to the user, and a page with no way to state it hands the bridge a
     ; literal instead -- a figure showing Tukey whatever was asked for, and
@@ -1320,7 +1320,7 @@ endproc
 #          .doPostHoc (ITEM 3.5. 1 = run the pairwise post-hoc, 0 = omnibus
 #                      only. This is the value the pages commit to
 #                      annotPostHoc, which is the ONLY channel it has to
-#                      @emlBridgeGroupComparison — that procedure reads the
+#                      @emlRunAnnotationComparison — that procedure reads the
 #                      global, exactly as it reads annotCorrectionMethod$,
 #                      because its argument list is fixed by four call sites
 #                      in this file and by every user script that calls it.)
@@ -3225,7 +3225,7 @@ procedure emlGraphsPostDispatchAnnotations
         #     (192, 214) and a box handed (0, 0): placed at y = 0, outside
         #     the frame, and clipped away with no error and no note.
         #
-        # NO BRACKETS IS NOT AN EDGE CASE. @emlBridgeGroupComparison sets
+        # NO BRACKETS IS NOT AN EDGE CASE. @emlRunAnnotationComparison sets
         # annotTextN = 1 for the omnibus on every path, and leaves
         # annotBracketN at 0 whenever no pair clears alpha — which includes
         # every non-significant omnibus. Driven by
@@ -3637,7 +3637,7 @@ annotShowEffect = 0
 annotAlpha = 0.05
 annotCorrectionMethod$ = "holm"
 ; ITEM 3.5 -- the channel the Comparison menu's post-hoc row reaches
-; @emlBridgeGroupComparison through. Initialised here, beside
+; @emlRunAnnotationComparison through. Initialised here, beside
 ; annotCorrectionMethod$ and for the same reason: the bridge is also called
 ; by scripts that never open this form, and a global nothing has set stops
 ; Praat dead. 1 is the behaviour every caller had before this item.
@@ -3767,9 +3767,9 @@ scatterCorrScope = 1
     # the calling test actually used.
     #
     # annotCorrectionMethod$ is the ONLY channel this value has:
-    # @emlBridgeGroupComparison does not take it as an argument, it reads the
+    # @emlRunAnnotationComparison does not take it as an argument, it reads the
     # global — the `.correction$ = "holm"` resolution block inside
-    # @emlBridgeGroupComparison, eml-annotation-procedures.praat. (Search for
+    # @emlRunAnnotationComparison, eml-annotation-procedures.praat. (Search for
     # the assignment, not for a line number: a line number in a comment
     # drifts.) So the job here is to make sure the global is well defined by
     # the time the bridge runs, on BOTH test paths — the bridge resolves
@@ -3789,7 +3789,7 @@ scatterCorrScope = 1
     #     rather than later from inside the annotation layer.
     #
     # WHAT THIS DOES NOT DECIDE: on the parametric k >= 3 path the consuming
-    # side ignores the value. The Tukey branch of @emlBridgeGroupComparison —
+    # side ignores the value. The Tukey branch of @emlRunAnnotationComparison —
     # the branch opening `# --- One-way ANOVA + Tukey HSD ---` in
     # eml-annotation-procedures.praat — does not read .correction$; only the
     # Dunn branch does, because Tukey's p is already family-wise. Delivering
@@ -6122,10 +6122,10 @@ repeat
                             # never asked about: several series become the
                             # long shape the draw layer has always taken.
                             if tsSeriesRole = 1 and tsNSeries >= 2
-                                @emlGraphsMeltSeries: objectId, timeColName$,
+                                @emlReshapeSeriesLong: objectId, timeColName$,
                                 ... tsSeriesCols$
                                 tsOrigObjectId = objectId
-                                tsMeltTableId = emlGraphsMeltSeries.tableId
+                                tsMeltTableId = emlReshapeSeriesLong.tableId
 
                                 # ---- THE MELT, RECORDED AS A CONVERSION ----
                                 # WITHOUT THIS THE EMITTED SCRIPT CANNOT RUN.
@@ -6171,10 +6171,10 @@ repeat
                                 if variableExists ("emlRecordLoaded")
                                     @emlRecordInit
                                     if emlRecordActive = 1
-                                        tsMeltCode$ = "@emlGraphsMeltSeries: data, """
+                                        tsMeltCode$ = "@emlReshapeSeriesLong: data, """
                                         ... + timeColName$ + """, """
                                         ... + tsSeriesCols$ + """" + newline$
-                                        ... + "data = emlGraphsMeltSeries.tableId"
+                                        ... + "data = emlReshapeSeriesLong.tableId"
                                         ... + newline$ + "selectObject: data"
                                         @emlRecordConvert: tsOrigObjectId,
                                         ... tsMeltTableId, tsMeltCode$,
@@ -6322,11 +6322,11 @@ repeat
                                 # question would leave the column page looking
                                 # at a table the user does not have.
                                 if allFormsDone = 1 and tsLevelMode = 1
-                                    @emlGraphsPivotSeries: objectId,
+                                    @emlReshapeSeriesWide: objectId,
                                     ... timeColName$, tsLongValueCol$,
                                     ... tsLevelNameCol$, tsSeriesCols$
                                     tsOrigObjectId = objectId
-                                    tsPivotTableId = emlGraphsPivotSeries.tableId
+                                    tsPivotTableId = emlReshapeSeriesWide.tableId
 
                                     # ---- RECORDED AS A CONVERSION ----
                                     # WITHOUT THIS THE EMITTED SCRIPT CANNOT
@@ -6352,12 +6352,12 @@ repeat
                                     if variableExists ("emlRecordLoaded")
                                         @emlRecordInit
                                         if emlRecordActive = 1
-                                            tsPivotCode$ = "@emlGraphsPivotSeries: data, """
+                                            tsPivotCode$ = "@emlReshapeSeriesWide: data, """
                                             ... + timeColName$ + """, """
                                             ... + tsLongValueCol$ + """, """
                                             ... + tsLevelNameCol$ + """, """
                                             ... + tsSeriesCols$ + """" + newline$
-                                            ... + "data = emlGraphsPivotSeries.tableId"
+                                            ... + "data = emlReshapeSeriesWide.tableId"
                                             ... + newline$ + "selectObject: data"
                                             @emlRecordConvert: tsOrigObjectId,
                                             ... tsPivotTableId, tsPivotCode$,
@@ -6873,7 +6873,7 @@ repeat
                     ; committed here beside the correction for the same reason: this is the
                     ; page's Draw arm, so what the bridge reads is what the dialog was
                     ; showing when the user pressed Draw. annotPostHoc is the only channel
-                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
                     annotPostHoc = emlComparisonFromMenu.doPostHoc
                     prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
@@ -7375,7 +7375,7 @@ repeat
                     ; committed here beside the correction for the same reason: this is the
                     ; page's Draw arm, so what the bridge reads is what the dialog was
                     ; showing when the user pressed Draw. annotPostHoc is the only channel
-                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
                     annotPostHoc = emlComparisonFromMenu.doPostHoc
                     prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
@@ -8496,7 +8496,7 @@ repeat
                     ; committed here beside the correction for the same reason: this is the
                     ; page's Draw arm, so what the bridge reads is what the dialog was
                     ; showing when the user pressed Draw. annotPostHoc is the only channel
-                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
                     annotPostHoc = emlComparisonFromMenu.doPostHoc
                     prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
@@ -9060,7 +9060,7 @@ repeat
                     ; committed here beside the correction for the same reason: this is the
                     ; page's Draw arm, so what the bridge reads is what the dialog was
                     ; showing when the user pressed Draw. annotPostHoc is the only channel
-                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
                     annotPostHoc = emlComparisonFromMenu.doPostHoc
                     prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
@@ -9626,7 +9626,7 @@ repeat
                     ; committed here beside the correction for the same reason: this is the
                     ; page's Draw arm, so what the bridge reads is what the dialog was
                     ; showing when the user pressed Draw. annotPostHoc is the only channel
-                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
                     annotPostHoc = emlComparisonFromMenu.doPostHoc
                     prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
@@ -10132,7 +10132,7 @@ repeat
                     ; committed here beside the correction for the same reason: this is the
                     ; page's Draw arm, so what the bridge reads is what the dialog was
                     ; showing when the user pressed Draw. annotPostHoc is the only channel
-                    ; it has to @emlBridgeGroupComparison; see @emlComparisonMenuRows.
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
                     annotPostHoc = emlComparisonFromMenu.doPostHoc
                     prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
@@ -10686,7 +10686,7 @@ repeat
     ; READ THROUGH variableExists, because a tree in which the bridge has not
     ; run -- an error path, a user script -- has no .printReport to read, and
     ; the safe answer in that case is the old one: print.
-    # Every @emlBridgeGroupComparison call below delivers the
+    # Every @emlRunAnnotationComparison call below delivers the
     # multiple-comparison method through the annotCorrectionMethod$ global, not
     # through the argument list — the bridge has no parameter for it. That
     # global is live here for both values of annotTestType$: it is seeded from
@@ -10697,37 +10697,37 @@ repeat
     # then uses it is decided in eml-annotation-procedures.praat.
     if (graph_type = 6 or graph_type = 7 or graph_type = 9) and annotate = 1
         # Bar chart / Violin / Box plot: run group comparison bridge
-        @emlBridgeGroupComparison: objectId, valueColName$, groupColName$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, valueColName$, groupColName$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
             @emlGraphsReportBridgeIfNew: objectId, valueColName$, groupColName$
         endif
     elsif graph_type = 11 and annotate = 1
         # Grouped Violin: compare sub-groups (pooled across categories)
-        @emlBridgeGroupComparison: objectId, gvValueCol$, gvSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, gvValueCol$, gvSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
-            emlBridgeGroupComparison.omnibus$ = emlBridgeGroupComparison.omnibus$ + " (pooled)"
+            emlRunAnnotationComparison.omnibus$ = emlRunAnnotationComparison.omnibus$ + " (pooled)"
             annotMatrixOmnibus$ = annotMatrixOmnibus$ + " (pooled)"
             @emlGraphsReportBridgeIfNew: objectId, gvValueCol$, gvSubCol$
         endif
     elsif graph_type = 10 and annotate = 1 and histGroupCol$ <> ""
         # Histogram: group comparison (matrix only, no brackets)
-        @emlBridgeGroupComparison: objectId, histValueCol$, histGroupCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, histValueCol$, histGroupCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
             @emlGraphsReportBridgeIfNew: objectId, histValueCol$, histGroupCol$
         endif
     elsif graph_type = 12 and annotate = 1
         # Grouped Box Plot: compare sub-groups (pooled across categories)
-        @emlBridgeGroupComparison: objectId, gbValueCol$, gbSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, gbValueCol$, gbSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
-            emlBridgeGroupComparison.omnibus$ = emlBridgeGroupComparison.omnibus$ + " (pooled)"
+            emlRunAnnotationComparison.omnibus$ = emlRunAnnotationComparison.omnibus$ + " (pooled)"
             annotMatrixOmnibus$ = annotMatrixOmnibus$ + " (pooled)"
             @emlGraphsReportBridgeIfNew: objectId, gbValueCol$, gbSubCol$
         endif
