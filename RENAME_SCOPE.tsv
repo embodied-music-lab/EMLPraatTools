@@ -1,0 +1,61 @@
+# ============================================================================
+# RENAME_SCOPE.tsv — what a public-procedure rename touches, and what it does not
+#
+# Ian Howell — Embodied Music Lab — GPL-3.0-or-later
+#
+# THE SCOPE IS A FILE, NOT A FLAG IN FOUR SCRIPTS. Before this file existed the
+# same exemption set was restated in list_sites.sh, in v159's section A, in the
+# grep that built the rename inventory, and in the work order — and they
+# disagreed. The inventory's grep searched four extensions and missed sixteen
+# shell scripts, one of which passes a procedure name as a live argument. The
+# reconciliation the ruling ordered before editing is what caught it.
+# RULING_RENAME_SCOPE_2026-09-02.md settles the scope by KIND and orders it
+# stated once, here, for every consumer to read.
+#
+# THREE COLUMNS, TAB SEPARATED:
+#   pattern      A path fragment. A row matches a file when the fragment
+#                appears anywhere in its repository-relative path. No globs —
+#                a pattern that can match a file nobody has written yet is not
+#                a statement about what exists.
+#   disposition  RENAME | REGENERATE | UNTOUCHED | OUT_OF_SCOPE
+#   why          one line, for the reader deciding whether the row is right.
+#
+# THE DISPOSITIONS, from the ruling:
+#
+#   RENAME       Live code and live hand-maintained inputs. A retired name here
+#                is a silent-until-run failure. The default for anything not
+#                matched by a row below.
+#   REGENERATE   Has a committed generator. Run the generator after the rename
+#                and byte-compare. Hand-editing a generated file is the defect
+#                the drift checks exist to catch, whatever the reason.
+#   UNTOUCHED    The output of a past run. It records what the old code produced
+#                under its old names. It cannot be regenerated until the
+#                authoritative run, and editing it would falsify a record.
+#   OUT_OF_SCOPE Narrative and dated records. A record of what was true when
+#                written keeps its words — the mailbox principle, extended.
+#
+# ANYTHING NOT MATCHED HERE IS RENAME. That default is deliberate: a new file
+# nobody thought about is live code until someone says otherwise, and the cost
+# of a needless rename is smaller than the cost of a missed one.
+# ============================================================================
+pattern	disposition	why
+.git/	OUT_OF_SCOPE	Git's own storage. Not source.
+mailbox/	OUT_OF_SCOPE	Correspondence. A note is never edited once written; the newest file on a topic supersedes rather than revises.
+_mailbox_live/	OUT_OF_SCOPE	The live mailbox. Same rule as the archive.
+audit/	OUT_OF_SCOPE	Dated audit records. What was true when written.
+handoff/	OUT_OF_SCOPE	Session handoff packets, dated. Same rule.
+docs/error-census/	OUT_OF_SCOPE	A census report of what the tree held at a date, not a declaration the code reads.
+docs/frozen-choice-map/	OUT_OF_SCOPE	A correspondence map recorded at a date.
+planning/	OUT_OF_SCOPE	Planning registers and trackers, dated.
+/out/	REGENERATE	Harness run output. Produced by that harness's own run.sh.
+/replay_out/	REGENERATE	Recorder replay output. Same.
+/stress_out/	REGENERATE	Stress-harness output. Same.
+/qq_out/	REGENERATE	Q-Q harness output. Same.
+__pycache__/	REGENERATE	Python bytecode. Rebuilt on import.
+walkthrough/kit/coverage_map.tsv	REGENERATE	Emitted by walkthrough/kit/build_coverage_map.py.
+walkthrough/kit/table_s2.tsv	REGENERATE	Emitted by walkthrough/kit/build_table_s2.py.
+walkthrough/kit/results/	UNTOUCHED	Output of a past kit run. Superseded by the authoritative run, not repaired.
+walkthrough/kit/audit/	UNTOUCHED	Per-run evidence tables. Same.
+walkthrough/kit/audit/rename_call_sites.tsv	OUT_OF_SCOPE	The rename inventory itself. It lists the retired names by definition, and searching it would make the census include itself and never settle.
+walkthrough/kit/build_rename_inventory.sh	OUT_OF_SCOPE	The inventory generator. Its old-to-new mapping table states the rename; renaming the left-hand side would erase the mapping it exists to record.
+RENAME_SCOPE.tsv	OUT_OF_SCOPE	This file. It describes the rename and is not a caller of anything.

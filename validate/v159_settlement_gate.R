@@ -117,39 +117,62 @@ for (p in RENAMES) {
 }
 
 # ---- A2. the wider footprint, REPORT ONLY ----------------------------------
-# Check A globs *.praat inside plugin_EML_StatsGraphs/ only. The settlement
-# session measured what that misses and the answer is not cosmetic: the rename
-# inventory this gate was built beside searched four extensions -- .R, .praat,
-# .md, .txt -- and never looked at shell scripts. harness/roundtrip/run.sh:568
-# passes '@emlInitDrawingDefaults' as a live argument to its replay mechanism,
-# with its own header calling it load-bearing. A rename that lands in the
-# plugin and not there breaks that driver the next time anyone runs it, which
-# is the same silent-until-run failure the recorder checks exist to prevent.
+# Check A globs *.praat inside plugin_EML_StatsGraphs/ only, and the settlement
+# session measured what that misses. THE SCOPE IS NOT RESTATED HERE: it is read
+# from RENAME_SCOPE.tsv, which RULING_RENAME_SCOPE_2026-09-02.md orders stated
+# once. Before that file existed, this check, list_sites.sh, the inventory grep
+# and the work order each carried their own copy and disagreed.
 #
-# This reports rather than binds because whether those files are in scope is a
-# question with Fable (QUESTION_RECONCILE_SITE_COUNTS_2026-09-02). Promote it
-# when she rules. Reporting it now means the ruling has the real numbers.
+# Reporting against the shared scope means these counts go to zero as the
+# rename lands, instead of counting history forever.
 cat("\n  ---- A2. retired names outside plugin_EML_StatsGraphs (report only) ----\n")
-outsideDirs <- c("harness", "validate", "walkthrough", "docs", "scripts")
-for (p in RENAMES) {
-    old <- p[1]
-    hits <- character(0)
-    for (d in outsideDirs) {
-        dp <- repo_path(d)
-        if (!dir.exists(dp)) next
-        fs <- list.files(dp, recursive = TRUE, full.names = TRUE)
-        fs <- fs[!grepl("/(out|replay_out|stress_out|qq_out|__pycache__)/", fs)]
-        for (f in fs) {
-            if (!file.exists(f)) next
-            ln <- tryCatch(readLines(f, warn = FALSE), error = function(e) character(0))
-            if (any(grepl(sprintf("\\b%s\\b", old), ln))) hits <- c(hits, f)
+
+scopeFile <- repo_path("RENAME_SCOPE.tsv")
+check_true(V, "RENAME_SCOPE.tsv exists (the scope is stated once)",
+           file.exists(scopeFile))
+
+if (file.exists(scopeFile)) {
+    sc <- readLines(scopeFile, warn = FALSE)
+    sc <- sc[!grepl("^#", sc) & nzchar(sc)]
+    sc <- sc[-1]                                  # column header
+    parts <- strsplit(sc, "\t", fixed = TRUE)
+    pats  <- vapply(parts, `[`, character(1), 1)
+    disps <- vapply(parts, `[`, character(1), 2)
+
+    # First matching row wins; unmatched is RENAME, per the file's own default.
+    dispositionFor <- function(path) {
+        hit <- which(vapply(pats, function(p) grepl(p, path, fixed = TRUE),
+                            logical(1)))
+        if (length(hit)) disps[hit[1]] else "RENAME"
+    }
+
+    allFiles <- list.files(repo_path("."), recursive = TRUE, full.names = FALSE,
+                           all.files = FALSE)
+    allFiles <- allFiles[!grepl("^\\.git/", allFiles)]
+    inScope  <- allFiles[vapply(allFiles, dispositionFor, character(1)) == "RENAME"]
+    inScope  <- inScope[!grepl("^plugin_EML_StatsGraphs/", inScope)]
+
+    cat(sprintf("      scope: %d file(s) marked RENAME outside the plugin tree\n",
+                length(inScope)))
+    stillThere <- 0
+    for (p in RENAMES) {
+        old <- p[1]; n <- 0
+        for (f in inScope) {
+            fp <- repo_path(f)
+            if (!file.exists(fp)) next
+            ln <- tryCatch(readLines(fp, warn = FALSE), error = function(e) character(0))
+            if (any(grepl(sprintf("\\b%s\\b", old), ln))) n <- n + 1
+        }
+        if (n > 0) {
+            cat(sprintf("      %-26s %d file(s)\n", old, n))
+            stillThere <- stillThere + n
         }
     }
-    if (length(hits))
-        cat(sprintf("      %-26s %d file(s) outside the plugin tree\n",
-                    old, length(hits)))
+    if (stillThere == 0)
+        cat("      none remain -- the rename has landed across the shared scope\n")
+    else
+        cat("      Check A does not see these. They are in scope per the ruling.\n")
 }
-cat("      Check A does not see these. Scope is with Fable.\n")
 
 # ---- B. the six new names are live ---------------------------------------
 cat("\n  ---- B. new names defined and registered ----\n")
