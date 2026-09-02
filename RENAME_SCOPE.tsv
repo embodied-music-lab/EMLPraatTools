@@ -34,6 +34,19 @@
 #   OUT_OF_SCOPE Narrative and dated records. A record of what was true when
 #                written keeps its words — the mailbox principle, extended.
 #
+# DOCUMENTED KEEPS. Two places hold a retired name on purpose and are not
+# defects, so a reader comparing the census against the tree is not left
+# guessing:
+#
+#   walkthrough/kit/build_rename_inventory.py -- the old-to-new mapping table.
+#       Covered by its row below.
+#   validate/v159_settlement_gate.R, the comment at the head of the RENAMES
+#       block -- it records that an earlier draft restated a pair from memory
+#       and names both the wrong and the right spelling. That is the argument
+#       for reading the pairs from the proposal file rather than restating
+#       them, and renaming it would falsify the account it exists to give.
+#       Not exempted by path, because the file around it is live code.
+#
 # ANYTHING NOT MATCHED HERE IS RENAME. That default is deliberate: a new file
 # nobody thought about is live code until someone says otherwise, and the cost
 # of a needless rename is smaller than the cost of a missed one.
@@ -56,5 +69,5 @@ walkthrough/kit/table_s2.tsv	REGENERATE	Emitted by walkthrough/kit/build_table_s
 walkthrough/kit/results/	UNTOUCHED	Output of a past kit run. Superseded by the authoritative run, not repaired.
 walkthrough/kit/audit/	UNTOUCHED	Per-run evidence tables. Same.
 walkthrough/kit/audit/rename_call_sites.tsv	OUT_OF_SCOPE	The rename inventory itself. It lists the retired names by definition, and searching it would make the census include itself and never settle.
-walkthrough/kit/build_rename_inventory.sh	OUT_OF_SCOPE	The inventory generator. Its old-to-new mapping table states the rename; renaming the left-hand side would erase the mapping it exists to record.
+walkthrough/kit/build_rename_inventory.py	OUT_OF_SCOPE	The inventory generator. Its old-to-new mapping table states the rename; renaming the left-hand side would erase the mapping it exists to record. (The .sh predecessor is superseded and refuses to run.)
 RENAME_SCOPE.tsv	OUT_OF_SCOPE	This file. It describes the rename and is not a caller of anything.
