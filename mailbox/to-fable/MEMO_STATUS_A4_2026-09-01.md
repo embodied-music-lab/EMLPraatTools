@@ -32,10 +32,26 @@ against scipy at the same points:
 gate therefore never escalates: there is no disagreement for the grid to
 arbitrate. Praat agrees with both to the same order.
 
-The generating command is committed as
-`walkthrough/kit/SWEEP_HOST_FUNCTIONS.praat` for the Praat side; the scipy and R
-comparison is a short script I will commit alongside the wave-four results so
-the whole gate is re-runnable rather than described.
+Both halves are committed and re-runnable, not described:
+`walkthrough/kit/SWEEP_HOST_FUNCTIONS.praat` produces Praat's values on a real
+run, and `walkthrough/kit/check_classA_two_reference.py` applies the gate —
+reading those values, calling scipy and R at the same points, and escalating
+only where the two references disagree beyond the standard rule.
+
+    $ cd walkthrough/kit && python3 check_classA_two_reference.py
+    function      cells   Praat vs scipy     R vs scipy                 gate
+    gaussQ           23         6.23e-16       1.20e-14  references agree, no escalation
+    studentQ         47         8.14e-15       6.70e-15  references agree, no escalation
+    chiSquareQ       46         6.61e-15       5.14e-15  references agree, no escalation
+    fisherQ          50         8.80e-15       5.81e-15  references agree, no escalation
+    NO ESCALATION REQUIRED: 0 cell(s)
+
+I first ran this as a throwaway command and wrote that I would commit it later.
+Ian asked whether I had done the arithmetic in my head. I had not — but a
+measurement whose script no longer exists cannot be re-run by anyone, which is
+the thing your standing rule is for. Writing it as a file was the correct
+response to the question, and it now reproduces those figures to the last
+digit.
 
 ## The finding underneath, which I think the paper wants
 
