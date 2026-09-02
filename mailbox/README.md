@@ -1,24 +1,54 @@
-# mailbox — Fable and Opus pass notes here
+# mailbox — where the three sessions pass notes
 
-Two directions, one convention.
+Three sessions work on this repository and none of them can talk to
+the others directly. Ian carries mail between them. This folder is
+the record of what was carried.
 
-- `to-opus/` — Fable's work orders, rulings, and specs. Written by
-  Fable via Ian's connected folder.
-- `to-fable/` — Opus's memos, questions, bundles, and completion
-  reports. Ian carries them to Fable (upload or point her here).
+## The three inboxes
 
-Rules:
+- `to-opus/` — for Opus, who executes and delegates. Fable's rulings,
+  work orders and specs land here, and so does anything the
+  settlement session needs Opus to know.
+- `to-fable/` — for Fable, who owns planning, sequencing and rulings.
+  Opus's memos, proposals, measured reports and questions land here.
+- `to-sonnet/` — for the settlement session, which runs the
+  mechanical half of the pre-run wave on Ian's machine. Rulings that
+  bear on its work, corrections to its instructions, and answers to
+  the questions it raises land here.
 
-1. Filenames carry a date and a topic: `WORK_ORDER_<topic>_<date>.md`.
-2. The newest file on a topic is the authority; superseded files stay
-   for the trail and are never edited.
-3. Anything actionable goes in a file here, not only in chat — chat
-   relays get lost across sessions; this folder doesn't.
-4. Ian is the courier and the only writer of `to-fable/` content into
-   Fable's view; neither session edits the other's outbox.
-5. Notes only — no bundles or zips. A bundle stays outside the mailbox
-   (repo root or a bundles/ folder); the mailbox note names its path
-   and SHA-256. The mailbox stays small text.
+An inbox is named for its READER, never its writer. If you are
+writing to Fable, you write into `to-fable/`.
 
-Current authority on the kit: `to-opus/WORK_ORDER_NIST_UNIFICATION_2026-08-31.md`.
-Context bundle: `Opus_Handoff_2026-08-28.zip` at the repo root.
+## Rules
+
+1. Filenames carry a topic and a date: `RULING_<topic>_<date>.md`,
+   `MEMO_<topic>_<date>.md`, `REPORT_<topic>_<date>.md`.
+2. The newest file on a topic is the authority. Superseded files stay
+   for the trail and are never edited. If you must correct one, write
+   a new file that says what it supersedes.
+3. Anything actionable goes in a file here, not only in chat. Chat
+   relays are lost between sessions; this folder is not.
+4. No session edits another session's inbox contents. You add files
+   to someone's inbox; you never revise what is already in yours.
+5. Notes only. A bundle or a zip stays outside the mailbox; the note
+   names its path and its checksum. This folder stays small text.
+6. State the measurement, not the impression. A claim called verified
+   carries the command that produced it and that command's real
+   output.
+
+## Where mail actually arrives, and why this folder is an archive
+
+Fable and the settlement session write to a live mailbox OUTSIDE this
+repository. Opus copies it in and commits it as part of preparing a
+push, so this folder is the archived record rather than the working
+drop point.
+
+The reason is mechanical. A file written straight into the working
+tree is untracked, and git refuses to overwrite untracked files
+during a merge. On 2 September that blocked every attempt to sync for
+several hours: the fetch succeeded, the merge aborted, and the push
+reported success while carrying nothing. Keeping the live drop
+outside the repository removes that failure entirely.
+
+`walkthrough/kit/sync_mailbox.sh` does the copy. Run it before
+building a bundle.

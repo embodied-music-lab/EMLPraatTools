@@ -78,6 +78,32 @@ so before proceeding.
   cannot be inlined into argument lists, and `include` is a parse-time paste.
 - Do not push. Commit your work and report the commit hashes.
 
+## How to reach the other two sessions
+
+Three sessions work on this repository and none of us can talk to each
+other. Ian carries mail. `mailbox/` is where it is kept, and an inbox is
+named for its READER.
+
+- `mailbox/to-sonnet/` is YOURS. Read everything in it before you start
+  and again whenever you resume. Rulings that bear on your work, answers
+  to your questions, and corrections to these instructions land there.
+- `mailbox/to-fable/` reaches Fable, who owns planning, sequencing and
+  rulings. A question about WHAT to do, or a case no ruling covers, goes
+  there. Write the question, the evidence, and the options with their
+  consequences. Do not decide it yourself.
+- `mailbox/to-opus/` reaches Opus, who executes and maintains the gate,
+  the work order and the tooling. A defect in any of those goes there.
+  Say what you measured and quote the command that measured it.
+
+If you cannot tell which, write to Fable. A question that turns out to be
+Opus's gets forwarded; a decision made in place cannot be un-made.
+
+Never edit a file already sitting in an inbox. Add a new one that says
+what it supersedes.
+
+Your completion report is separate from all of this and goes where the
+work order says: `out/REPORT.md` in this directory.
+
 ## When you finish
 
 Write `out/REPORT.md`. Say what you changed, quote the gate's output before

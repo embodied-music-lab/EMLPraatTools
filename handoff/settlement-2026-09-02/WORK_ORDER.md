@@ -158,5 +158,14 @@ than starting it.
 
 ## If you hit a case no ruling covers
 
-Stop and write it into `out/REPORT.md` as an open question. Do not decide it.
-Design questions go to Fable through Ian, never adjudicated in place.
+Stop. Do not decide it.
+
+Write it into `mailbox/to-fable/` as a memo — the question, the evidence,
+and the options with their consequences — and name it in `out/REPORT.md`
+so it is visible in both places. Design questions are Fable's; they are
+never adjudicated in place.
+
+A defect in the gate, the work order, or the tooling goes to
+`mailbox/to-opus/` instead, with the command that measured it. Your report
+of 2 September is the model: it found four such defects before touching a
+file, and all four were real.
