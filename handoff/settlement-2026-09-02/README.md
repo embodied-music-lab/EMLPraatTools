@@ -34,12 +34,15 @@ git pull --ff-only origin main
 git log --oneline -3
 ```
 
-If he has not, fetch the bundle he placed beside the repository:
+If he has not, fetch the bundle he placed beside the repository. Merge
+`FETCH_HEAD` rather than a named remote ref: a bundle fetch always records
+`FETCH_HEAD`, and on 2 September a merge against an assumed ref name silently
+did nothing while the fetch itself had succeeded.
 
 ```bash
 cd ~/EMLPraatTools
-git fetch ~/EMLPraatTools/eml-settlement-handoff.bundle HEAD:refs/remotes/bundle/settlement
-git merge --ff-only refs/remotes/bundle/settlement
+git fetch ~/EMLPraatTools/eml-settlement-handoff.bundle 'refs/heads/*:refs/remotes/bundle/*'
+git merge --ff-only FETCH_HEAD
 git log --oneline -3
 ```
 
