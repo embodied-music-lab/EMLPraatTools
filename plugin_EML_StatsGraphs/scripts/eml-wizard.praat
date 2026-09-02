@@ -3207,6 +3207,36 @@ elsif wizDrawSource$ = "normality"
                     appendInfoLine: "  ", emlDrawQQPlot.nDropped,
                     ... " row(s) excluded as missing."
                 endif
+
+                ; RECORD WORKFLOW. Same hook as the standalone Check
+                ; normality wrapper's own Q-Q call (scripts/eml-check-
+                ; normality.praat) -- see that site for the full reasoning
+                ; on why this lives here rather than inside @emlDrawQQPlot,
+                ; why only the success branch records, and why .code$
+                ; rebuilds .data# rather than naming `data`.
+                if variableExists ("emlRecordLoaded")
+                    if wizNormQQGrouped
+                        .wizQqCode$ = "@eml_getGroupData: data, """
+                        ... + wizNormQQPlotCol$ + """, """
+                        ... + wizNormQQGroupCol$ + """, """
+                        ... + wizNormQQPlotGroup$ + """" + newline$
+                        ... + "data# = eml_getGroupData.data#"
+                    else
+                        .wizQqCode$ = "data# = zero# (Get number of rows)"
+                        ... + newline$ + "for iRow from 1 to size (data#)"
+                        ... + newline$ + "    data# [iRow] = Get value: iRow, """
+                        ... + wizNormQQPlotCol$ + """" + newline$ + "endfor"
+                    endif
+                    .wizQqCode$ = .wizQqCode$ + newline$
+                    ... + "@emlDrawQQPlot: data#, """ + wizNormQQLabel$
+                    ... + """, 6, 4.5, ""color"", 1"
+                    @emlRecordDrawStep: tableId, "Normal Q-Q plot",
+                    ... wizNormQQLabel$,
+                    ... "Points on the line mean the column matches a normal distribution; a systematic curve away from it does not.",
+                    ... .wizQqCode$,
+                    ... "In the GUI: the wizard's normality check, then Draw Q-Q plot for a tested column",
+                    ... ""
+                endif
             endif
         endif
 

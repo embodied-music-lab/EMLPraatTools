@@ -581,7 +581,7 @@ endproc
 # ============================================================================
 # Format "procName:arg1,arg2" (matrix.tsv header). Only one prereq shape is
 # declared anywhere in the matrix -- @emlRunRegressionAnalysis, called with
-# (depCol$, predCol$) immediately before @emlRunGroupedRegression reads
+# (depCol$, predCol$) immediately before @emlRunGroupedRegressionAnalysis reads
 # emlLinearRegression.* from its overall fit -- so that is the one this
 # recognises; an unrecognised prereq refuses loudly rather than silently
 # skipping the call it was supposed to make.
@@ -972,31 +972,31 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
             endif
         endif
 
-    elsif .proc$ = "emlRunKWAnalysis"
+    elsif .proc$ = "emlRunKruskalWallisAnalysis"
         # --- 3. KRUSKAL-WALLIS (+ DUNN) ----------------------------------
         .doDunn = number (.posthoc$)
-        @emlRunKWAnalysis: .tableId, .colA$, .colB$, .doDunn, .adjust$
-        if emlRunKWAnalysis.error$ <> ""
+        @emlRunKruskalWallisAnalysis: .tableId, .colA$, .colB$, .doDunn, .adjust$
+        if emlRunKruskalWallisAnalysis.error$ <> ""
             .refused = 1
-            .refuseReason$ = emlRunKWAnalysis.error$
+            .refuseReason$ = emlRunKruskalWallisAnalysis.error$
         else
-            @emlKitNum: .cellId$, "h", emlRunKWAnalysis.stOmni
-            @emlKitNum: .cellId$, "df", emlRunKWAnalysis.stDf1
-            @emlKitNum: .cellId$, "p", emlRunKWAnalysis.stP
-            @emlKitNum: .cellId$, "epsilon_squared", emlRunKWAnalysis.stEff
-            @emlKitNum: .cellId$, "n", emlRunKWAnalysis.stN
+            @emlKitNum: .cellId$, "h", emlRunKruskalWallisAnalysis.stOmni
+            @emlKitNum: .cellId$, "df", emlRunKruskalWallisAnalysis.stDf1
+            @emlKitNum: .cellId$, "p", emlRunKruskalWallisAnalysis.stP
+            @emlKitNum: .cellId$, "epsilon_squared", emlRunKruskalWallisAnalysis.stEff
+            @emlKitNum: .cellId$, "n", emlRunKruskalWallisAnalysis.stN
 
-            emlKitCurEffMat## = emlRunKWAnalysis.stEffMat##
-            if emlRunKWAnalysis.stDunnRan = 1
+            emlKitCurEffMat## = emlRunKruskalWallisAnalysis.stEffMat##
+            if emlRunKruskalWallisAnalysis.stDunnRan = 1
                 # @emlDunnTest returns no bound: its header lists .pMatrix##,
             # .zMatrix##, .rMatrix##, .rawP# and .adjustedP# and nothing else,
             # and the Kruskal-Wallis report prints no interval. Declared as an
             # R-side-only quantity in quantities.tsv, not emitted here.
             emlKitCurHasCI = 0
-            emlKitCurPMat## = emlRunKWAnalysis.stPMat##
-                emlKitCurStatMat## = emlRunKWAnalysis.stStatMat##
+            emlKitCurPMat## = emlRunKruskalWallisAnalysis.stPMat##
+                emlKitCurStatMat## = emlRunKruskalWallisAnalysis.stStatMat##
                 @emlKitEmitPosthocPairs: .cellId$,
-                ... emlRunKWAnalysis.stNGroups, "z", "rank_biserial", 0, 1, 1,
+                ... emlRunKruskalWallisAnalysis.stNGroups, "z", "rank_biserial", 0, 1, 1,
                 ... "dunn"
             endif
             # WITH THE POST HOC OFF, NO POST-HOC ROW IS WRITTEN. The library
@@ -1379,30 +1379,30 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
             endif
         endif
 
-    elsif .proc$ = "emlRunGroupedRegression"
+    elsif .proc$ = "emlRunGroupedRegressionAnalysis"
         # --- 9b. GROUPED REGRESSION (prereq already ran the overall fit) --
-        @emlRunGroupedRegression: .tableId, .colA$, .colB$, .colC$
+        @emlRunGroupedRegressionAnalysis: .tableId, .colA$, .colB$, .colC$
         @emlKitNum: .cellId$, "overall_slope",
-        ... emlRunGroupedRegression.ovSlope
+        ... emlRunGroupedRegressionAnalysis.ovSlope
         @emlKitNum: .cellId$, "overall_intercept",
-        ... emlRunGroupedRegression.ovIntercept
+        ... emlRunGroupedRegressionAnalysis.ovIntercept
         @emlKitNum: .cellId$, "overall_slope_se",
-        ... emlRunGroupedRegression.ovSeSlope
+        ... emlRunGroupedRegressionAnalysis.ovSeSlope
         @emlKitNum: .cellId$, "overall_intercept_se",
-        ... emlRunGroupedRegression.ovSeIntercept
+        ... emlRunGroupedRegressionAnalysis.ovSeIntercept
         @emlKitNum: .cellId$, "overall_slope_t",
-        ... emlRunGroupedRegression.ovTSlope
+        ... emlRunGroupedRegressionAnalysis.ovTSlope
         @emlKitNum: .cellId$, "overall_intercept_t",
-        ... emlRunGroupedRegression.ovTIntercept
+        ... emlRunGroupedRegressionAnalysis.ovTIntercept
         @emlKitNum: .cellId$, "overall_slope_p",
-        ... emlRunGroupedRegression.ovPSlope
+        ... emlRunGroupedRegressionAnalysis.ovPSlope
         @emlKitNum: .cellId$, "overall_intercept_p",
-        ... emlRunGroupedRegression.ovPIntercept
+        ... emlRunGroupedRegressionAnalysis.ovPIntercept
         # The orchestrator publishes the overall COEFFICIENTS but not the
         # overall FIT statistics. Re-run the same call the row's own prereq
         # names -- @emlRunRegressionAnalysis (respCol, predCol) -- and read
         # them off emlLinearRegression, which is exactly where
-        # @emlRunGroupedRegression itself reads its overall numbers from.
+        # @emlRunGroupedRegressionAnalysis itself reads its overall numbers from.
         # This is one computation read a second time for output, not a
         # second way of computing it. It must happen BEFORE the per-group
         # loop below, which overwrites emlLinearRegression on every group.
@@ -1414,21 +1414,21 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
             ... emlLinearRegression.seResidual
             @emlKitNum: .cellId$, "n", emlLinearRegression.n
         endif
-        @emlKitNum: .cellId$, "pg_total", emlRunGroupedRegression.pgTotal
-        @emlKitNum: .cellId$, "pg_run", emlRunGroupedRegression.pgRun
-        @emlKitNum: .cellId$, "pg_skipped", emlRunGroupedRegression.pgSkipped
+        @emlKitNum: .cellId$, "pg_total", emlRunGroupedRegressionAnalysis.pgTotal
+        @emlKitNum: .cellId$, "pg_run", emlRunGroupedRegressionAnalysis.pgRun
+        @emlKitNum: .cellId$, "pg_skipped", emlRunGroupedRegressionAnalysis.pgSkipped
 
         # Per-group coefficients: re-derive with the SAME kernel and the SAME
-        # extractor @emlRunGroupedRegression itself calls internally
+        # extractor @emlRunGroupedRegressionAnalysis itself calls internally
         # (@eml_getGroupPairedData + @emlLinearRegression) -- this is reading
         # the same computation a second time for output, not a second
         # computation.
-        for .gi from 1 to emlRunGroupedRegression.pgTotal
-            if emlRunGroupedRegression.pgN [.gi] >= 3
-                @emlKitSlug: emlRunGroupedRegression.pgLabel$ [.gi]
+        for .gi from 1 to emlRunGroupedRegressionAnalysis.pgTotal
+            if emlRunGroupedRegressionAnalysis.pgN [.gi] >= 3
+                @emlKitSlug: emlRunGroupedRegressionAnalysis.pgLabel$ [.gi]
                 .gLabel$ = emlKitSlug.result$
                 @eml_getGroupPairedData: .tableId, .colA$, .colB$, .colC$,
-                ... emlRunGroupedRegression.pgLabel$ [.gi]
+                ... emlRunGroupedRegressionAnalysis.pgLabel$ [.gi]
                 @emlLinearRegression: eml_getGroupPairedData.dataX#,
                 ... eml_getGroupPairedData.dataY#
                 if emlLinearRegression.error$ = ""
