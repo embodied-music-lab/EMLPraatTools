@@ -83,6 +83,62 @@
 #      at k=2 (since R is no longer the intended oracle there per Q3) is a
 #      question for whoever next touches validate/v154, not this file.
 #
+# FORWARD ROWS ARE NOMINAL, EXCEPT TWO CELLS NOW ROOT-SOLVED (RULING
+# RULING_PORT_ACCEPTANCE_2026-09-02.md point 5b; see
+# mailbox/to-fable/MEMO_GRID_ROWS_NEVER_SOLVED_2026-09-02.md for the full
+# diagnosis). Read this before trusting p_target on any "forward" row.
+#
+# EVERY OTHER forward row in this file is SEEDED, not solved: main()
+# picks q = scipy.stats.studentized_range.isf(p_target, k, df) and simply
+# records whatever true probability that q happens to give as mpmath_p.
+# p_target is therefore a NOMINAL label, accurate only to the extent
+# scipy's inverse is accurate at that (k, df, p) -- true almost everywhere
+# in this grid, since scipy's isf is close except at the corner this file
+# exists to probe (small df, deep p). It is NOT true at k=10, df=3 deep in
+# the tail: scipy's isf is off there by up to 100%, so the seeded q's
+# mpmath_p can land an order of magnitude from its own p_target with
+# nothing in the row flagging it. Do not assume p_target == mpmath_p for
+# any "forward" row without checking; compare the two columns yourself.
+#
+# THE TWO k=10, df=3 CELLS AT p_target IN {1e-10, 1e-15} are the
+# exception: both are now genuinely ROOT-SOLVED for q, per the ruling.
+# Method (build_srange_reference.py's own invert_q_for_p, plus one
+# verification step this regeneration added because invert_q_for_p's
+# internal secant runs on a cheap, non-maximal tier (TIERS[3]) whose own
+# "converged" self-check is not trustworthy this deep -- proved directly:
+# at p_target=1e-15 the cheap-tier candidate root reported converged and
+# was still 34% off in p when checked with a FULL escalated evaluation):
+#   1. qGuess = scipy isf(p_target, k, df) (starting point only).
+#   2. Full escalated evaluation (compute_p_upper_converged, ALL tiers,
+#      not just the cheap one) at qGuess -- point A.
+#   3. Candidate root qStar from invert_q_for_p, which itself ends in one
+#      full escalated evaluation at qStar -- point B.
+#   4. If point B's mpmath_p disagrees with p_target by more than 1e-6
+#      relative, take ONE secant step in log(q)/log(p) space using points
+#      A and B (both fully escalated, never the cheap tier), then a final
+#      full escalated evaluation at the corrected q.
+# Measured this regeneration (see the two "forward B 10 3" rows below):
+#   p_target=1e-10: candidate root (step 3) already agreed to 2.6e-7
+#     relative -- no correction step needed. q = 7865.71047518377,
+#     mpmath_p = 9.999997404358706e-11, agree_prev_tier = 2.94e-18.
+#   p_target=1e-15: candidate root (step 3) disagreed by 34% (q =
+#     419188.53, mpmath_p = 6.6e-16) -- the false-convergence failure
+#     above, reproduced directly. The log(q)/log(p) secant correction
+#     (step 4) landed at q = 365093.9318477482, mpmath_p =
+#     1.0000000070934784e-15 (7.1e-9 relative from target),
+#     agree_prev_tier = 2.44e-23. This q is roughly 46x the seeded q
+#     scipy's isf had picked for this row before -- these are genuinely
+#     different cells now, not a refinement of the old ones.
+# Both cells' q changed substantially from the prior (seeded) values, so
+# validate/v154_srange_against_reference.R is judging different cells
+# after this regeneration; re-run it rather than assuming the prior
+# pass/fail carries over.
+#
+# NOT DONE HERE, AND DELIBERATELY: no other forward row in this file was
+# re-solved by this pass. Whether the rest of the forward half should be
+# root-solved too is the open question in MEMO_GRID_ROWS_NEVER_SOLVED --
+# out of scope for the two named cells this pass was ordered to fix.
+#
 # type: "forward" (q chosen, mpmath_p = P(Q>q)) or "quantile" (p_target
 #   chosen, q solved by bisection against this file's own mpmath integral;
 #   mpmath_p is the converged P(Q>q) at the solved q, which should equal
@@ -221,8 +277,8 @@ forward	B	5	45	1e-06	8.945512687110783	1.0000000020622937e-06	30	5	3.45703968270
 forward	B	5	45	1e-10	12.827680930964094	1.0000198652120579e-10	34	5	5.999349728824053e-13	True	1.000000082740371e-10	nan	nan	0	1.0028844421583472e-10	True	55.662
 forward	B	5	45	1e-15	17.687970158991863	3.0070072938223234e-15	39	6	1.429742385657504e-20	True	9.992007221626409e-16	nan	nan	0	2.504663143554353e-13	True	176.283
 forward	B	10	3	1e-06	365.08223058929093	1.00000000035703e-06	30	6	7.29694493893771e-24	True	1.0000000000287557e-06	1.32e-06	2.2978250586152115e-07	25000000	0.0	False	167.551
-forward	B	10	3	1e-10	5100.219473202005	3.66814958708392e-10	34	6	8.015028447154068e-19	True	6.174072364473204e-11	nan	nan	0	0.0	False	192.135
-forward	B	10	3	1e-15	7916.059102018005	9.810399074349644e-11	39	6	1.6644836095769412e-16	True	9.992007221626409e-16	nan	nan	0	0.0	True	189.61
+forward	B	10	3	1e-10	7865.71047518377	9.999997404358706e-11	34	6	2.9400330919768496e-18	True	1.3322676295501878e-15	nan	nan	0	0.0	True	185.833
+forward	B	10	3	1e-15	365093.9318477482	1.0000000070934784e-15	39	7	2.4428241804744482e-23	True	0.0	nan	nan	0	0.0	True	354.793
 forward	B	10	5	1e-06	68.25465673732558	1.0000000004269213e-06	30	6	7.296666017128273e-24	True	1.0000000000287557e-06	8.4e-07	1.833030277982336e-07	25000000	1.1303266075346485e-06	False	170.954
 forward	B	10	5	1e-10	431.19826637697486	1.0001502703119233e-10	34	6	2.939590595585916e-18	True	1.000000082740371e-10	nan	nan	0	5.137385726827759e-07	False	182.043
 forward	B	10	5	1e-15	4495.035041977791	8.125609722171397e-16	39	7	3.006327255833103e-23	True	9.992007221626409e-16	nan	nan	0	5.137385726827759e-07	False	546.152
