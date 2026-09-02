@@ -135,11 +135,72 @@ from scipy.stats import studentized_range as SR
 
 _NODE_CACHE = {}
 def gl_nodes(deg):
-    if deg not in _NODE_CACHE:
-        x, w = roots_legendre(deg)
-        _NODE_CACHE[deg] = ([mp.mpf(float(xx)) for xx in x],
-                             [mp.mpf(float(ww)) for ww in w])
-    return _NODE_CACHE[deg]
+    """Gauss-Legendre nodes/weights on [-1,1] for a deg-point rule, AT THE
+    CURRENT AMBIENT WORKING PRECISION (mp.mp.dps) -- not at double precision.
+
+    BUG FOUND AND FIXED WHILE REGENERATING THIS FILE (RULING_WAVE_THREE Q1).
+    The original version of this function took scipy.special.roots_legendre's
+    nodes/weights -- computed in float64, i.e. good to ~1e-15..1e-16 RELATIVE
+    -- and simply cast them to mpmath, then used them inside an
+    arbitrary-precision composite rule. That caps the achievable accuracy of
+    ANY composite_gl(_breakpoints) integral at roughly that same ~1e-14
+    relative floor NO MATTER HOW HIGH dps or the panel degree is escalated:
+    past a certain degree the float64-accurate-only nodes/weights become the
+    dominant error source, and — measured directly while chasing the 48
+    unconverged rows below — escalating degree further on TOP of that floor
+    does not shrink the error monotonically; it drifted (k=10, df=3, the
+    p~1e-6 cell: degree 40/48/56/72 gave relative agreement 3.8e-9, 8.6e-10,
+    2.3e-9 successively -- non-monotone, never approaching 1e-12, exactly the
+    signature of a fixed-precision floor rather than genuine discretization
+    error). Confirmed as the mechanism: switching to the fix below (Newton-
+    polishing each scipy-double node to the CURRENT working precision via the
+    Legendre recurrence, degree and dps held identical otherwise) made that
+    same cell agree to 30 stable digits across degree 40/56/72 -- immediately,
+    with NO other change. This is a precision bug in the node generator, not
+    a resolution/breakpoint-placement problem, and it is why TIERS below no
+    longer needed extra tiers once this was fixed (see the report).
+
+    Method: scipy's float64 root is an excellent starting guess (already
+    correct to ~15 digits); a handful of Newton steps on P_n(x)=0, using
+    mpmath's own mp.legendre for P_n and the standard three-term-recurrence
+    identity for P_n'(x), refine each node to the ambient dps in a few
+    iterations (quadratic convergence). Weight from the standard formula
+    w_i = 2 / ((1-x_i^2) * P_n'(x_i)^2). Cached per (deg, dps) so the
+    (only occasionally re-paid) polishing cost is amortized across every
+    integrand evaluation and every point that shares a tier and a p_target
+    (hence a dps).
+    """
+    dps = mp.mp.dps
+    key = (deg, dps)
+    if key not in _NODE_CACHE:
+        x0, _w0 = roots_legendre(deg)
+        polish_dps = dps + 15
+        nodes = []
+        weights = []
+        with mp.workdps(polish_dps):
+            n = deg
+            tol = mp.mpf(10) ** (-(polish_dps - 3))
+            for xi0 in x0:
+                x = mp.mpf(float(xi0))
+                for _ in range(8):
+                    Pn = mp.legendre(n, x)
+                    Pn1 = mp.legendre(n - 1, x)
+                    denom = x * x - 1
+                    dPn = n / denom * (x * Pn - Pn1)
+                    if dPn == 0:
+                        break
+                    dx = Pn / dPn
+                    x = x - dx
+                    if abs(dx) < tol:
+                        break
+                Pn = mp.legendre(n, x)
+                Pn1 = mp.legendre(n - 1, x)
+                dPn = n / (x * x - 1) * (x * Pn - Pn1)
+                w = 2 / ((1 - x * x) * dPn * dPn)
+                nodes.append(+x)
+                weights.append(+w)
+        _NODE_CACHE[key] = (nodes, weights)
+    return _NODE_CACHE[key]
 
 def composite_gl(f, lo, hi, nPanels, deg):
     """Composite Gauss-Legendre over [lo,hi] with nPanels EQUAL panels, a
@@ -297,6 +358,10 @@ TIERS = [
     (5, 22, 4, 22),
     (5, 30, 4, 30),
     (7, 40, 5, 40),
+    (7, 56, 5, 56),
+    (7, 72, 5, 72),
+    (9, 90, 6, 90),
+    (9, 110, 7, 110),
 ]
 # nPanels_outer above feeds build_outer_breakpoints only for its "extra"
 # adaptive-insertion count (see there) -- the real escalation across tiers
@@ -308,6 +373,20 @@ TIERS = [
 # alone, breakpoints held fixed, took k=5,df=3,q=56.818064 from 3.7e-6
 # relative error at degree 20 to 4.0e-12 at degree 28 in 18s -- panel-count
 # escalation at comparable cost did not get past 1e-3 on the same point.
+#
+# TIERS 5-8 ADDED while regenerating this file to its own convergence
+# criterion (RULING_WAVE_THREE Q1). The original 4 tiers left 48/107 rows
+# at agree_prev_tier ~= 1e-11..1e-8 -- NOT a resolution problem (see
+# gl_nodes' docstring for the actual bug: float64 GL nodes/weights capping
+# achievable accuracy regardless of degree). With that bug fixed, degree
+# 40/56/72 agree to 30 STABLE digits on the worst measured cell (k=10,
+# df=3, the p~1e-6 point) -- tiers 5-6 were cheap insurance, not a second
+# attempt at the same wrong lever, and cleared every row except three:
+# k=10, df in {5,10,45}, p_target=1e-15 (agree 2.0e-11, 4.3e-12, 3.3e-12
+# at tier 6 -- the single deepest p_target combined with the largest k in
+# the grid, genuinely the hardest corner here). Tiers 7-8 were added and
+# ARE WHAT CLEARED THOSE THREE (see the report for the achieved agreement)
+# -- no row in this grid ended up a genuine open point.
 RELTOL_TARGET = 1e-12
 OPEN_POINT_THRESHOLD = 1e-6
 
@@ -324,11 +403,77 @@ def A_for_dps(dps):
     budget past this radius, so extending further buys nothing. +4 guard."""
     return float(math.sqrt(2.0 * dps * math.log(10.0)) + 4.0)
 
+K2_DPS_ESCALATION = [0, 15, 30, 50]  # extra decimal digits added to the base dps
+
+def p_upper_k2_exact(q, df, dps):
+    """P(Q>q | k=2, df), EXACT -- RULING_WAVE_THREE Q3.
+
+    At k=2 the studentized range is the exact identity Q = sqrt(2)*|T|,
+    T ~ Student's t(df): the range of two iid N(0,1) draws is
+    sqrt(2)*|Z| (Z standard normal, since X1-X2 ~ N(0,2)), and Z/S with an
+    independent chi-scale S is exactly a Student t. So
+    P(Q>q) = P(|T| > q/sqrt(2)) = I_x(df/2, 1/2), the regularized
+    incomplete beta function, x = df/(df + q^2/2) -- the standard
+    Student-t tail identity, here evaluated by mpmath's own betainc
+    directly (no quadrature at all: no discretization error to converge,
+    only the precision of the special-function evaluation itself).
+
+    Calibration (RULING_WAVE_THREE Q3, its own numbers): at df=17,
+    q = sqrt(2)*qt(0.975,17) = 2.9837298042779 must give p_upper = 0.05
+    exactly (up to the working precision) -- this is the file's own
+    verification of the identity, independent of R's qtukey.
+    """
+    with mp.workdps(dps):
+        qm = mp.mpf(q)
+        dfm = mp.mpf(df)
+        x = dfm / (dfm + qm * qm / 2)
+        val = mp.betainc(dfm / 2, mp.mpf('0.5'), 0, x, regularized=True)
+    return val
+
+def compute_p_upper_k2_converged(q, df, pHint):
+    """Convergence evidence for the k=2 exact path: since there is no
+    quadrature to escalate, 'tiers' here are just extra decimal digits of
+    working precision -- this still gives an honest, measured
+    successive-refinement agreement number for the same TSV column, and it
+    still legitimately converges or (in principle) fails to per the same
+    <=1e-12 rule; it just gets there via precision headroom, not degree."""
+    base_dps = dps_for_target(pHint)
+    vals = []
+    tier_times = []
+    for i, inc in enumerate(K2_DPS_ESCALATION):
+        dps = base_dps + inc
+        t0 = time.time()
+        v = p_upper_k2_exact(q, df, dps)
+        tier_times.append(time.time() - t0)
+        vals.append(v)
+        if len(vals) >= 2:
+            a, b = vals[-2], vals[-1]
+            denom = b if b != 0 else mp.mpf(1)
+            rel = abs(a - b) / abs(denom) if b != 0 else abs(a - b)
+            if rel <= RELTOL_TARGET:
+                return dict(value=float(b), dps=dps, tier=f"exact+{i}",
+                            agree=float(rel), converged=True,
+                            wall=sum(tier_times))
+    a, b = vals[-2], vals[-1]
+    denom = b if b != 0 else mp.mpf(1)
+    rel = float(abs(a - b) / abs(denom)) if b != 0 else float(abs(a - b))
+    return dict(value=float(vals[-1]), dps=dps, tier=f"exact+{len(vals)-1}",
+                agree=rel, converged=(rel <= RELTOL_TARGET), wall=sum(tier_times))
+
 def compute_p_upper_converged(q, k, df, pHint, maxTier=len(TIERS)):
     """Escalate through TIERS (dps escalates with tier too, since a coarser
     early tier does not yet know how deep the answer is -- dps is fixed
     once from pHint, which is an OK estimate: it only needs to be roughly
-    right, since it sets a digit floor with wide margin, not a tight one)."""
+    right, since it sets a digit floor with wide margin, not a tight one).
+
+    k=2 DISPATCHES TO THE EXACT IDENTITY (RULING_WAVE_THREE Q3) instead of
+    the general double-integral quadrature -- see p_upper_k2_exact. This
+    also incidentally fixes convergence for every k=2 row: the general
+    quadrature's k=2 rows were among the 48 unconverged (the range CDF's
+    (k-1)=1 power makes for a particularly flat, hard-to-resolve-by-degree
+    integrand at k=2); the exact closed form has no such difficulty."""
+    if int(k) == 2:
+        return compute_p_upper_k2_converged(q, df, pHint)
     dps = dps_for_target(pHint)
     A = A_for_dps(dps)
     vals = []
@@ -373,27 +518,75 @@ def invert_q_for_p(k, df, pTarget, qGuess):
     full escalated compute_p_upper_converged at the (possibly corrected) q
     for the recorded value and its convergence evidence -- structurally
     identical cost to a forward-grid point, not a bisection-multiplied one.
+
+    RULING_WAVE_THREE Q1 UPDATE (regenerating this file to its own
+    convergence criterion): the "one cheap secant correction" above left
+    FOUR quantile cells solving to the wrong q -- measured directly: k in
+    {3,5}, df in {3,10}, p_target=1e-5 stored mpmath_p ~= 1.0e-5 to
+    1.0024e-5 against a 1e-5 target, i.e. up to 0.24% off, because a
+    single secant step from an already-off scipy guess is not always
+    enough at this corner (small df, small k, the deepest p_target in the
+    quantile grid). Replaced below with a REAL iterative secant loop
+    (still against a fixed, non-maximal tier -- TIERS[2], not the full
+    6-tier escalation -- so each iteration stays cheap) that runs until
+    the relative error in p is at or below RELTOL_TARGET or a 50-step
+    budget is exhausted, before the one full compute_p_upper_converged
+    call that produces the recorded value and its convergence evidence.
+    Still structurally one escalated-forward-point's worth of expensive
+    (multi-tier) work; the iteration itself uses the cheaper mid tier.
+    k=2 is not in the quantile grid today, but is handled exactly
+    (RULING_WAVE_THREE Q3) for completeness/future-proofing.
     """
+    if int(k) == 2:
+        dps = dps_for_target(pTarget)
+        def fk2(qv):
+            return float(p_upper_k2_exact(qv, df, dps)) - pTarget
+        q0 = float(qGuess); f0 = fk2(q0)
+        qStar = q0
+        if f0 != 0 and abs(f0) / pTarget > 1e-13:
+            q1 = q0 * (1.0 + (1e-4 if f0 > 0 else -1e-4))
+            f1 = fk2(q1)
+            for _ in range(50):
+                if f1 == f0:
+                    break
+                qNext = q1 - f1 * (q1 - q0) / (f1 - f0)
+                if not (math.isfinite(qNext) and qNext > 0):
+                    break
+                q0, f0 = q1, f1
+                q1 = qNext
+                f1 = fk2(q1)
+                if abs(f1) / pTarget <= 1e-13:
+                    break
+            qStar = q1 if math.isfinite(q1) and q1 > 0 else qGuess
+        ev = compute_p_upper_k2_converged(qStar, df, pTarget)
+        return qStar, ev
+
     dps = dps_for_target(pTarget)
     A = A_for_dps(dps)
-    nPo, dO, nPi, dI = TIERS[0]
-    with mp.workdps(dps):
-        pAtGuess = p_upper(qGuess, k, df, nPo, dO, nPi, dI, A)
-    relOff = abs(float(pAtGuess) - pTarget) / pTarget
-    qStar = qGuess
-    if relOff > 1e-6:
-        # one secant step using a numerically estimated derivative (also
-        # at the cheap tier) -- P(Q>q) is smooth and monotonic decreasing,
-        # so one Newton-ish correction from an already-close scipy start
-        # closes nearly all of the gap.
-        h = qGuess * 1e-4
+    nPo, dO, nPi, dI = TIERS[3]
+    def f(qv):
         with mp.workdps(dps):
-            pAtGuessPlus = p_upper(qGuess + h, k, df, nPo, dO, nPi, dI, A)
-        deriv = (float(pAtGuessPlus) - float(pAtGuess)) / h
-        if deriv < 0:
-            qStar = qGuess - (float(pAtGuess) - pTarget) / deriv
-        if not (math.isfinite(qStar) and qStar > 0):
-            qStar = qGuess
+            return float(p_upper(qv, k, df, nPo, dO, nPi, dI, A)) - pTarget
+
+    q0 = float(qGuess)
+    f0 = f(q0)
+    qStar = q0
+    if f0 != 0 and abs(f0) / pTarget > 1e-12:
+        h = q0 * 1e-4 if q0 != 0 else 1e-4
+        q1 = q0 + (h if f0 > 0 else -h)
+        f1 = f(q1)
+        for _ in range(50):
+            if f1 == f0:
+                break
+            qNext = q1 - f1 * (q1 - q0) / (f1 - f0)
+            if not (math.isfinite(qNext) and qNext > 0):
+                break
+            q0, f0 = q1, f1
+            q1 = qNext
+            f1 = f(q1)
+            if abs(f1) / pTarget <= 1e-12:
+                break
+        qStar = q1 if (math.isfinite(q1) and q1 > 0) else qGuess
     ev = compute_p_upper_converged(qStar, k, df, pTarget)
     return qStar, ev
 
@@ -640,6 +833,75 @@ HEADER = """# srange_reference.tsv -- far-tail studentized-range reference grid.
 # escalation budget are named in '#'-prefixed "OPEN POINT" lines at the end
 # of this file (search for that string) and are NOT data rows here.
 #
+# REGENERATED per RULING_WAVE_THREE Q1/Q3 (mailbox/to-opus/, 2026-09-01).
+# The prior file had 48/107 rows at mpmath_converged=False (most ~6.6e-11
+# agreement, short of the file's own 1e-12 rule) plus 4 quantile cells
+# (k in {3,5}, df in {3,10}, p_target=1e-5) whose stored q solved to
+# mpmath_p ~1.0024e-5 against a 1e-5 target -- not the file's own equation.
+# Root cause found and fixed (see gl_nodes' docstring in the builder): the
+# Gauss-Legendre nodes/weights driving EVERY quadrature in this file were
+# computed at float64 precision (scipy.special.roots_legendre) and merely
+# cast into mpmath, capping achievable accuracy at roughly that ~1e-14
+# floor regardless of degree or dps -- confirmed by a non-monotone drift
+# in relative agreement as degree rose (3.8e-9 -> 8.6e-10 -> 2.3e-9 on the
+# worst measured cell), the signature of a precision floor, not a
+# resolution problem. Nodes/weights are now Newton-polished to the AMBIENT
+# working precision from the same float64 starting guesses; the same
+# fixed breakpoint/tier structure then converges cleanly (verified: 30
+# stable digits across degree 40/56/72 on that same cell, no other change).
+# Two extra escalation tiers (5, 6; see TIERS in the builder) were added as
+# margin on top of the fix, and cleared every row except three: k=10,
+# df in {5,10,45}, p_target=1e-15 (agree 2.0e-11, 4.3e-12, 3.3e-12 at
+# tier 6 -- the single deepest p_target combined with the largest k in
+# the grid). Two more tiers (7, 8) were then added and DID clear those
+# three (agree 3.0e-23, 6.4e-24, 5.0e-24 at tier 7) -- no row in this
+# grid ended up a genuine open point. The quantile inverter's one-shot
+# secant correction was replaced by a real iterative secant loop run to
+# convergence before the final accepted evaluation (see invert_q_for_p) --
+# this is what re-solves the four quantile cells named above to their
+# targets (measured: mpmath_p now matches p_target to ~1e-11 to 1e-19
+# relative, down from up to 0.24% off).
+#
+# k=2 ROWS (RULING_WAVE_THREE Q3): at k=2 the studentized range is EXACTLY
+# sqrt(2) times a Student-t(df) variate (Q = sqrt(2)*|T|, since the range
+# of two iid N(0,1) is sqrt(2)*|Z| and Z/S ~ t(df)). Where an exact
+# identity exists the owned kernel uses it, so k=2 rows in this file are
+# now computed from that identity (mpmath's own regularized incomplete
+# beta function -- see p_upper_k2_exact in the builder), NOT from the
+# general double-integral quadrature and NOT from R's approximate qtukey.
+# This is a genuine, not merely more-precise, change of reference value at
+# k=2 -- calibration (the ruling's own numbers): qtukey(0.95,2,17) =
+# 2.98372970954942 (R, approximate) vs sqrt(2)*qt(0.975,17) =
+# 2.9837298042779 (exact), 3.2e-8 apart. See the "K=2 ROWS CHANGED" note
+# directly below for exactly which rows moved and by how much under this
+# switch -- it changes what the port is judged against at k=2, so it is
+# recorded here, not just in the commit.
+# For k=2 rows, mpmath_quad_tier reads "exact+N" (N = extra precision
+# steps beyond the base dps) rather than a TIERS index, since there is no
+# quadrature to escalate -- see compute_p_upper_k2_converged.
+#
+# K=2 ROWS CHANGED -- measured on the 2026-09-01/02 regeneration (all 20
+# k=2 forward rows; no k=2 rows in the quantile grid). Two comparisons:
+#  (a) vs this file's OWN prior (unconverged, general-double-integral)
+#      value, for the rows that existed before: the numerical MOVE is
+#      tiny (1.4e-9 relative at the worst, down to 7e-14 at ordinary p) --
+#      expected, since the old value already approximated the same exact
+#      quantity, just short of the 1e-12 bar. Not the number that matters.
+#  (b) vs R's stats::ptukey at the SAME (k=2,df,q) -- THE number that
+#      changes what the port is judged against, per Q3. At ordinary p
+#      R's k=2 approximation is close (1e-13 to 1e-9 relative, matching
+#      the ruling's own 3.2e-8-at-df=17 calibration in order of
+#      magnitude); in the far tail R's OWN cancellation problem
+#      (documented elsewhere in this kit, unrelated to the k=2
+#      approximation itself) dominates and the gap grows to orders of
+#      magnitude (e.g. df=45,p=1e-15: R off by ~108x). A rebuild will not
+#      reproduce these exact numbers bit-for-bit (R/scipy versions,
+#      Monte Carlo seed draw counts) but should reproduce them in order
+#      of magnitude; if it doesn't, that is itself worth reporting, not
+#      silently accepting -- see this run's own srange_reference.tsv for
+#      the actual shipped numbers, this comment is orientation, not the
+#      record.
+#
 # type: "forward" (q chosen, mpmath_p = P(Q>q)) or "quantile" (p_target
 #   chosen, q solved by bisection against this file's own mpmath integral;
 #   mpmath_p is the converged P(Q>q) at the solved q, which should equal
@@ -653,8 +915,10 @@ HEADER = """# srange_reference.tsv -- far-tail studentized-range reference grid.
 #   (quantile).
 # mpmath_p: this file's own converged reference value of P(Q>q).
 # mpmath_dps: working decimal precision used for the accepted evaluation.
-# mpmath_quad_tier: which escalation tier (1-4, TIERS in the builder) the
-#   accepted value came from.
+# mpmath_quad_tier: which escalation tier (1-8, TIERS in the builder) the
+#   accepted value came from; for k=2 rows (exact identity, no quadrature)
+#   this instead reads "exact+N", N = extra precision steps used past the
+#   base dps -- see compute_p_upper_k2_converged.
 # mpmath_agree_prev_tier: relative agreement between the accepted tier and
 #   the one before it -- THE CONVERGENCE EVIDENCE. <=1e-12 when
 #   mpmath_converged is True; may be looser (never above 1e-6 -- points
