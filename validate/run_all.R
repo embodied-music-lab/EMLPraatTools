@@ -1994,6 +1994,30 @@ scripts <- c(
                                  # emlMinPraatVersion agrees with the pin.
                                  # Requires praat6630 on PATH; the live legs
                                  # are skipped (not failed) without it.
+    ,
+    "v158_wilcoxon_interval.R"   # the Hodges-Lehmann confidence interval's
+                                 # approximate branch, ported from R's
+                                 # corrected-z inversion, including the alpha
+                                 # widening R performs silently: the port
+                                 # reports it through .warning$ and
+                                 # .achievedLevel instead.
+    ,
+    "v159_settlement_gate.R"     # the pre-run settlement wave's mechanical
+                                 # claims: the six retired names appear
+                                 # nowhere, the six canonical names are
+                                 # defined and registered, the registry holds
+                                 # 42 rows with the mixed model excluded by an
+                                 # explicit entry, the two ordered recorder
+                                 # hooks exist, and the recorder's hand-kept
+                                 # dispatch table agrees with the registry.
+                                 # RED until the settlement wave lands; that
+                                 # is what it is for.
+    ,
+    "v160_claims_evidence.R"     # the claims-to-evidence ledger's shape, and
+                                 # its rows that do not yet trace to a
+                                 # committed artifact. Reports today; becomes
+                                 # blocking at the authoritative run, per
+                                 # INSPECTION_PROTOCOL section 3.
 )
 
 # ---------------------------------------------------------------------------

@@ -26,10 +26,13 @@
 #      explicit entry rather than by deletion
 #   D  the two ordered recorder hooks exist
 #
-# Check E is REPORT-ONLY. It measures the recorder against the registry,
-# which is a proposal in MEMO_RECORDER_NAME_BINDING_2026-09-02.md and not yet
-# ruled. It prints its findings and does not fail the file. Promote it to a
-# binding check only when a ruling says to.
+# Check E BINDS. RULING_RECORDER_AND_WIRING_2026-09-02.md ruled the recorder's
+# dispatch table stays hand-kept with a check asserting the copies agree, and
+# RULING_SPLIT_AND_ACCEPTANCE ordered E promoted before the delegated session
+# starts. It fails the file.
+#
+# Check F is the one that still reports only: the repeated-measures signature
+# is accepted but not yet implemented, so F prints the current form.
 #
 # HOW TO RUN
 #
@@ -155,24 +158,6 @@ for (nm in c("emlRunGroupedRegressionAnalysis", "emlDrawQQPlot")) {
                grepl(sprintf("\\b%s\\b", nm), recText))
 }
 
-# ---- F. repeated-measures signature, REPORT ONLY ----------------------------
-# WORK_ORDER_API_SETTLEMENT item 1 rules the string-vector form canonical for
-# 1.0. Ian ruled on 2 September that the pipe form does not become a
-# compatibility wrapper: the plugin has never shipped, so it simply stops
-# existing. Still report-only, because the change is held on Ian's
-# wire-or-remove ruling for .subjectCol$ in the same signature. Promote to a
-# binding check when that lands.
-cat("\n  ---- F. repeated-measures signature (report only, held on .subjectCol$) ----\n")
-for (nm in c("emlRunRepeatedMeasuresAnalysis", "emlRunFriedmanAnalysis")) {
-    sig <- grep(sprintf("^%s\\t", nm), regRows, value = TRUE)
-    form <- if (length(sig) && grepl("conditionCols\\$", sig)) {
-        "pipe-delimited string (ruled against)"
-    } else if (length(sig) && grepl("conditionCols\\$#", sig)) {
-        "string vector (canonical)"
-    } else "unrecognised"
-    cat(sprintf("      %-32s %s\n", nm, form))
-}
-
 # ---- E. recorder binding, BINDING ------------------------------------------
 # Promoted from report-only by RULING_RECORDER_AND_WIRING_2026-09-02.md, which
 # rules that the recorder's dispatch table stays hand-kept for 1.0 and a check
@@ -259,30 +244,5 @@ for (nm in c("emlRunRepeatedMeasuresAnalysis", "emlRunFriedmanAnalysis")) {
     } else "unrecognised"
     cat(sprintf("      %-32s %s\n", nm, form))
 }
-
-# ---- E. recorder against registry, REPORT ONLY ----------------------------
-# Not ruled. Prints; never fails.
-cat("\n  ---- E. recorder against registry (report only, not ruled) ----\n")
-lits <- unique(unlist(regmatches(recText,
-          gregexpr('"eml[A-Za-z0-9_]+"', recText))))
-lits <- gsub('"', '', lits)
-calls <- unique(unlist(regmatches(recText,
-          gregexpr('@eml[A-Za-z0-9_]+', recText))))
-calls <- gsub('@', '', calls)
-mentioned <- union(lits, calls)
-
-missing <- setdiff(regNames, mentioned)
-cat(sprintf("      registry rows the recorder never mentions: %d\n", length(missing)))
-for (m in missing) cat(sprintf("        %s\n", m))
-
-stale <- intersect(lits, unlist(lapply(RENAMES, `[`, 1)))
-cat(sprintf("      retired names still present as recorder strings: %d\n", length(stale)))
-for (s in stale) cat(sprintf("        %s\n", s))
-
-looksPublic <- grep("^eml(Run|Draw)[A-Z]", lits, value = TRUE)
-orphan <- setdiff(looksPublic, regNames)
-cat(sprintf("      recorder strings that look public but are not registry rows: %d\n",
-            length(orphan)))
-for (o in orphan) cat(sprintf("        %s\n", o))
 
 if (!exists("EML_SUITE")) { eml_report("v159 -- the settlement gate"); eml_exit() }

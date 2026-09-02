@@ -20,6 +20,13 @@
 # STATUS: live | code-trace | EXEMPT. An EXEMPT row is not reachable from
 # the recorder and carries its reason in reason_or_site.
 #
+# EMITTING FILE FILLED FOR 13 DRAWING ROWS, 2 September. The census writes
+# a bare ":848" for a row in the same file as the row above it, and the
+# first extraction carried that shorthand through as an empty filename, so
+# the check could not test those rows. The file is graphs/eml-draw-procedures.praat,
+# inherited from emlDrawF0Contour; each of the 13 names was confirmed present
+# in it by grep before the field was filled.
+#
 # THE RENAME PASS MUST UPDATE THIS FILE. A renamed procedure changes its
 # registry_name here too, and section E fails until it does.
 # ============================================================================
@@ -36,19 +43,19 @@ emlRunRepeatedMeasuresAnalysis	stats/eml-analysis.praat	4777	live	stats/eml-anal
 emlRunFriedmanAnalysis	stats/eml-analysis.praat	4932	live	stats/eml-analysis.praat:4932	recorded.praat:505
 emlRunLMMAnalysis			GAP-but-N/A	none in stats/eml-lmm.praat	§3 — no interactive door exists today to hook
 emlDrawF0Contour	graphs/eml-draw-procedures.praat	716	live	graphs/eml-draw-procedures.praat:716	recorded.praat:747
-emlDrawWaveform			live	:848	recorded.praat:728
-emlDrawSpectrum			live	:1037	recorded.praat:766
-emlDrawLTAS			live	:1313	recorded.praat:785
-emlDrawTimeSeries			live	:2339	recorded.praat:591
-emlDrawTimeSeriesCI			live	:2870	recorded.praat:610
-emlDrawBarChart			live	:3877	recorded.praat:649
-emlDrawViolinPlot			live	:4228 (call), :4245 (bespoke `@emlRecordViolin`), emits :4320	recorded.praat:527. Bespoke, same shape as @emlRecordAnova — a source comment (~line 4192) says an earlier unconditional call crashed a suite that loads the stats tree without the recorder, hence the variableExists guard
-emlDrawScatterPlot			live	:5540	recorded.praat:552
-emlDrawBoxPlot			live	:5813	recorded.praat:669
-emlDrawHistogram			live	:6440	recorded.praat:572
-emlDrawGroupedViolin			live	:6841	recorded.praat:689
-emlDrawGroupedBoxPlot			live	:7166	recorded.praat:709
-emlDrawSpaghettiPlot			live	:3496	recorded.praat:629
+emlDrawWaveform	graphs/eml-draw-procedures.praat		live	:848	recorded.praat:728
+emlDrawSpectrum	graphs/eml-draw-procedures.praat		live	:1037	recorded.praat:766
+emlDrawLTAS	graphs/eml-draw-procedures.praat		live	:1313	recorded.praat:785
+emlDrawTimeSeries	graphs/eml-draw-procedures.praat		live	:2339	recorded.praat:591
+emlDrawTimeSeriesCI	graphs/eml-draw-procedures.praat		live	:2870	recorded.praat:610
+emlDrawBarChart	graphs/eml-draw-procedures.praat		live	:3877	recorded.praat:649
+emlDrawViolinPlot	graphs/eml-draw-procedures.praat		live	:4228 (call), :4245 (bespoke `@emlRecordViolin`), emits :4320	recorded.praat:527. Bespoke, same shape as @emlRecordAnova — a source comment (~line 4192) says an earlier unconditional call crashed a suite that loads the stats tree without the recorder, hence the variableExists guard
+emlDrawScatterPlot	graphs/eml-draw-procedures.praat		live	:5540	recorded.praat:552
+emlDrawBoxPlot	graphs/eml-draw-procedures.praat		live	:5813	recorded.praat:669
+emlDrawHistogram	graphs/eml-draw-procedures.praat		live	:6440	recorded.praat:572
+emlDrawGroupedViolin	graphs/eml-draw-procedures.praat		live	:6841	recorded.praat:689
+emlDrawGroupedBoxPlot	graphs/eml-draw-procedures.praat		live	:7166	recorded.praat:709
+emlDrawSpaghettiPlot	graphs/eml-draw-procedures.praat		live	:3496	recorded.praat:629
 emlBridgeGroupComparison	graphs/eml-annotation-procedures.praat	4524-4531	live	graphs/eml-annotation-procedures.praat:4524-4531	recorded.praat:1035
 emlGraphsMeltSeries	graphs/eml-graphs-form.praat	6172-6178,	code-trace	graphs/eml-graphs-form.praat:6172-6178, via `@emlRecordConvert`	Not exercised this session; source comment cites a prior measurement (harness/linetree's rec_subjects4 leg) I did not re-run
 emlGraphsPivotSeries	graphs/eml-graphs-form.praat	6355-6363	code-trace	graphs/eml-graphs-form.praat:6355-6363	Mirror of #31, not exercised this session

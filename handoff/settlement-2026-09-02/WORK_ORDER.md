@@ -25,8 +25,10 @@ The six pairs, read from the proposal:
 This is a straight rename. The old name stops existing. Do not add a wrapper,
 an alias, or a deprecation shim.
 
-Measured scope as of 2 September: 222 file-touches outside the excluded
-directories. `./list_sites.sh` prints the current list.
+Scope moves as the repository does. Run `./list_sites.sh` and use what it
+prints; do not use a number from this file. It read 222 file-touches when
+this order was written and 227 a few hours later, because the repository
+gained files in between.
 
 RECONCILE TWO COUNTS BEFORE YOU EDIT, ordered by
 `rulings/RULING_SPLIT_AND_ACCEPTANCE_2026-09-02.md`.

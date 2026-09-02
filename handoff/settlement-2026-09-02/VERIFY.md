@@ -12,11 +12,21 @@ Rscript validate/v159_settlement_gate.R
 ```
 
 Tasks 1 through 3 are done when this reports every binding check passing.
-Before you start it reports 24 checks, 1 passed, 23 failed.
 
-Section E of the gate is report-only and does not need to pass. It measures
-the recorder against the registry, which is a proposal awaiting a ruling.
-Include its output in your report so the ruling has current numbers.
+Do not treat any number in this file as the starting point. Run the gate
+first and record what it actually says; the count moves whenever the gate
+gains a check, and it has already moved twice. As of 2 September it reports
+117 checks, 85 passed, 32 failed.
+
+SECTION E BINDS. It was report-only in the first version of this file.
+RULING_RECORDER_AND_WIRING_2026-09-02.md ruled the recorder's dispatch table
+stays hand-kept with a check asserting the copies agree, and
+RULING_SPLIT_AND_ACCEPTANCE ordered section E promoted to failing checks
+before you start. It must pass.
+
+Section F is the one that reports only. The repeated-measures signature is
+accepted but not yet implemented, so F prints the current form and never
+fails.
 
 ## Do not weaken the gate
 
