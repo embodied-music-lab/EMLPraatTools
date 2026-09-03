@@ -1937,8 +1937,169 @@ process_wilson <- function(row) {
 }
 
 # =============================================================================
+# Survey lane, DOORWAYS. Signatures frozen by
+# mailbox/to-opus/RULING_SURVEY_ROWS_ACCEPTED_2026-09-03.md:
+#   emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfluence
+#   emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$, .countCol$, .correction
+#   emlRunProportionAnalysis:  .tableId, .col$, .successValue$, .countCol$, .confidence
+# Unlike the four kernel rows just above, these three take column NAMES off
+# the fixture (matrix.tsv col_a/col_b/col_c), not a whole-CSV matrix -- the
+# same shape the analysis-lane doorways take. matrix.tsv has no dedicated
+# itemCols/countCol/successValue slots (header's own note): the item list
+# rides pipe-delimited in col_a, countCol rides in col_c (empty = raw data),
+# successValue rides in col_b, and doInfluence rides in the posthoc column.
+# =============================================================================
+
+# emlRunReliabilityAnalysis: same psych::alpha / psych::alpha.ci oracle as
+# process_cronbach, restricted to the col_a item list, plus the same
+# leave-one-out composition as process_alpha_influence when the row's
+# posthoc (doInfluence) = "1". The doorway itself (eml-analysis.praat) does
+# NOT surface per-respondent delta_row_<ROW> -- only delta_max/delta_max_row
+# reach its own reporter and its own namespace -- so this oracle does not
+# emit delta_row_<ROW> either, matching quantities.tsv's contract for this
+# procedure exactly.
+process_reliability_analysis <- function(row) {
+    cid <- row$cell_id
+    d <- readDataset(row$dataset)
+    items <- strsplit(row$col_a, "|", fixed = TRUE)[[1]]
+    if (length(items) < 2) { refuseCell(cid, sprintf("Need at least 2 item columns (found %d).", length(items))); return(invisible()) }
+    M <- as.matrix(as.data.frame(lapply(d[items], function(col) suppressWarnings(as.numeric(col)))))
+    colnames(M) <- items
+    conf <- as.numeric(row$conf)
+    doInfluence <- identical(row$posthoc, "1")
+    keep <- stats::complete.cases(M)
+    Mc <- M[keep, , drop = FALSE]
+    origIdx <- which(keep)
+    k <- ncol(Mc); n <- nrow(Mc); nExcl <- sum(!keep)
+    if (n < 3) {
+        refuseCell(cid, sprintf("Alpha needs at least 3 complete respondents; %d arrived and %d remained after listwise deletion.",
+                                 nrow(M), n))
+        return(invisible())
+    }
+    a <- psych::alpha(Mc, check.keys = FALSE, warnings = FALSE)
+    alphaVal <- unname(a$total$raw_alpha)
+    ci <- psych::alpha.ci(alphaVal, n.obs = n, n.var = k, p.val = 1 - conf)
+    emit(cid, "alpha", alphaVal, "psych::alpha")
+    emit(cid, "alpha_ci_low", ci$lower.ci, "psych::alpha.ci")
+    emit(cid, "alpha_ci_high", ci$upper.ci, "psych::alpha.ci")
+    emit(cid, "n", n, "base::nrow"); emit(cid, "k", k, "base::ncol")
+    emit(cid, "n_excluded", nExcl, "base::sum")
+    lines <- c(sprintf("Reliability doorway -- %s (items=%s, conf=%.2f, doInfluence=%s)",
+                        row$dataset, paste(items, collapse = "|"), conf, doInfluence),
+               sprintf("n=%d (excluded %d) k=%d", n, nExcl, k),
+               sprintf("alpha=%.4f  CI[%.4f, %.4f] (psych::alpha / psych::alpha.ci, Feldt)", alphaVal, ci$lower.ci, ci$upper.ci), "")
+    if (k >= 3) {
+        dropAlpha <- a$alpha.drop$raw_alpha
+        itemNames <- colnames(Mc)
+        for (j in seq_len(k)) {
+            emit(cid, paste0("alpha_if_deleted_", slug(itemNames[j])), dropAlpha[j], "psych::alpha")
+            lines <- c(lines, sprintf("  alpha if item %s deleted = %.4f", itemNames[j], dropAlpha[j]))
+        }
+    }
+    if (doInfluence) {
+        deltas <- numeric(n)
+        for (j in seq_len(n)) {
+            sub <- Mc[-j, , drop = FALSE]
+            aj <- tryCatch(psych::alpha(sub, check.keys = FALSE, warnings = FALSE), error = function(e) NULL)
+            deltas[j] <- if (is.null(aj)) NA_real_ else unname(aj$total$raw_alpha) - alphaVal
+        }
+        if (any(!is.na(deltas))) {
+            dmax <- max(abs(deltas), na.rm = TRUE)
+            whichMax <- which(abs(deltas) == dmax)[1]
+            emit(cid, "delta_max", dmax, "psych::alpha")
+            emit(cid, "delta_max_row", origIdx[whichMax], "psych::alpha")
+            lines <- c(lines, sprintf("largest |delta| (leave-one-out) = %.4f at original row %d", dmax, origIdx[whichMax]))
+        }
+    }
+    writeReport(cid, lines)
+}
+
+# emlRunCategoricalAnalysis: builds the SAME observed-count matrix the
+# doorway builds -- raw one-row-per-observation when col_c is empty, weighted
+# by the col_c count column when it is not -- via base::table/base::xtabs,
+# then the same stats::chisq.test / rstatix::cramer_v / effectsize::cramers_v
+# oracle process_chisq already uses on a matrix taken straight off a CSV.
+# Row levels come from row$col_a's column, column levels from row$col_b's.
+process_categorical_analysis <- function(row) {
+    cid <- row$cell_id
+    d <- readDataset(row$dataset)
+    rowCol <- chrcol(d, row$col_a); colCol <- chrcol(d, row$col_b)
+    if (identical(row$col_a, row$col_b)) { refuseCell(cid, sprintf("Row and column categories must be different columns; both are '%s'.", row$col_a)); return(invisible()) }
+    if (nzchar(row$col_c)) {
+        wt <- numcol(d, row$col_c)
+        if (any(is.na(wt)) || any(wt < 0) || any(wt != round(wt))) { refuseCell(cid, sprintf("Count column '%s' must hold non-negative whole numbers.", row$col_c)); return(invisible()) }
+    } else {
+        wt <- rep(1, length(rowCol))
+    }
+    M <- stats::xtabs(wt ~ rowCol + colCol)
+    M <- unclass(M); attr(M, "call") <- NULL
+    if (nrow(M) < 2 || ncol(M) < 2) { refuseCell(cid, sprintf("After tallying, the table is %dx%d; chi-square needs at least 2x2.", nrow(M), ncol(M))); return(invisible()) }
+    correction <- identical(row$correction, "1")
+    ct <- suppressWarnings(stats::chisq.test(M, correct = correction))
+    emit(cid, "chi_square", unname(ct$statistic), "stats::chisq.test"); emit(cid, "df", unname(ct$parameter), "stats::chisq.test")
+    emit(cid, "p", ct$p.value, "stats::chisq.test"); emit(cid, "n", sum(M), "base::sum")
+    emit(cid, "min_expected", min(ct$expected), "stats::chisq.test")
+    emit(cid, "n_cells_below5", sum(ct$expected < 5), "stats::chisq.test")
+    cv_rs <- rstatix::cramer_v(M, correct = FALSE)
+    emit(cid, "cramers_v", cv_rs, "rstatix::cramer_v")
+    emit(cid, "cramers_v_yates", rstatix::cramer_v(M, correct = TRUE), "rstatix::cramer_v")
+    cv_es <- effectsize::cramers_v(M, adjust = FALSE, ci = NULL, verbose = FALSE)
+    emit(cid, "cramers_v", cv_es[[1]][1], "effectsize::cramers_v")
+    cv_adj <- effectsize::cramers_v(M, adjust = TRUE, ci = NULL, verbose = FALSE)
+    emit(cid, "cramers_v_bias_corrected", cv_adj[[1]][1], "effectsize::cramers_v")
+    lines <- c(sprintf("Categorical doorway -- %s (%s x %s, countCol=%s, correction=%s)", row$dataset, row$col_a, row$col_b,
+                        if (nzchar(row$col_c)) row$col_c else "<none>", correction),
+               sprintf("chi-square(%d)=%.4f p=%.4g", ct$parameter, ct$statistic, ct$p.value),
+               sprintf("Cramer's V: rstatix=%.4f effectsize=%.4f | Bergsma bias-corrected=%.4f", cv_rs, cv_es[[1]][1], cv_adj[[1]][1]),
+               sprintf("min expected=%.4f, cells<5: %d/%d", min(ct$expected), sum(ct$expected < 5), length(ct$expected)), "")
+    writeReport(cid, lines)
+}
+
+# emlRunProportionAnalysis: tallies successes/n from row$col_a's column
+# (raw mode, col_c empty: n = usable rows, a blank cell is missing not a
+# category) or from row$col_c's count column (pre-aggregated mode, every
+# row's count counts toward n regardless of a blank col_a cell -- the same
+# asymmetry the doorway itself documents), then the same
+# stats::prop.test(correct=FALSE) oracle process_wilson already uses.
+process_proportion_analysis <- function(row) {
+    cid <- row$cell_id
+    d <- readDataset(row$dataset)
+    col <- chrcol(d, row$col_a)
+    successValue <- row$col_b
+    conf <- as.numeric(row$conf)
+    if (nzchar(row$col_c)) {
+        wt <- numcol(d, row$col_c)
+        if (any(is.na(wt)) || any(wt < 0) || any(wt != round(wt))) { refuseCell(cid, sprintf("Count column '%s' must hold non-negative whole numbers.", row$col_c)); return(invisible()) }
+        nExcluded <- 0L
+        levelsPresent <- sort(unique(col))
+    } else {
+        blank <- col == "" | is.na(col)
+        nExcluded <- sum(blank)
+        wt <- ifelse(blank, 0, 1)
+        levelsPresent <- sort(unique(col[!blank]))
+    }
+    if (!(successValue %in% levelsPresent)) {
+        refuseCell(cid, sprintf("successValue '%s' does not match any value in '%s'. Values present: %s",
+                                 successValue, row$col_a, paste(sprintf("'%s'", levelsPresent), collapse = ", ")))
+        return(invisible())
+    }
+    successes <- sum(wt[col == successValue])
+    n <- sum(wt)
+    if (n < 1) { refuseCell(cid, "After excluding blank values, n = 0; a proportion needs at least 1 usable observation."); return(invisible()) }
+    pt <- stats::prop.test(successes, n, conf.level = conf, correct = FALSE)
+    emit(cid, "prop_hat", successes / n, "stats::prop.test")
+    emit(cid, "ci_low", pt$conf.int[1], "stats::prop.test"); emit(cid, "ci_high", pt$conf.int[2], "stats::prop.test")
+    emit(cid, "n", n, "base::sum")
+    lines <- c(sprintf("Proportion doorway -- %s (%s = '%s', countCol=%s, conf=%.2f)", row$dataset, row$col_a, successValue,
+                        if (nzchar(row$col_c)) row$col_c else "<none>", conf),
+               sprintf("p_hat=%.4f  CI[%.4f, %.4f] (stats::prop.test, correct=FALSE)", successes / n, pt$conf.int[1], pt$conf.int[2]),
+               sprintf("successes=%d, n=%d", successes, n))
+    writeReport(cid, lines)
+}
+
+# =============================================================================
 # Dispatch -- keyed by procedure name only. This is the entire "list" this
-# file carries: 17 entries, one per procedure the declaration can name, none
+# file carries: 20 entries, one per procedure the declaration can name, none
 # per cell_id, dataset, or option value. A new row against an existing
 # procedure runs with zero code change here.
 # =============================================================================
@@ -1959,7 +2120,10 @@ dispatch <- list(
     emlCronbachAlpha               = process_cronbach,
     emlAlphaInfluence              = process_alpha_influence,
     emlChiSquareIndependence       = process_chisq,
-    emlWilsonInterval              = process_wilson
+    emlWilsonInterval              = process_wilson,
+    emlRunReliabilityAnalysis      = process_reliability_analysis,
+    emlRunCategoricalAnalysis      = process_categorical_analysis,
+    emlRunProportionAnalysis       = process_proportion_analysis
 )
 
 # =============================================================================

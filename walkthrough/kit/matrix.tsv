@@ -787,3 +787,17 @@ c0670	analysis	emlRunAnovaAnalysis	nist_SmLs06_input	value	grp			0			discovery		
 c0671	analysis	emlRunAnovaAnalysis	nist_SmLs07_input	value	grp			0			discovery				ok	nist study: NIST StRD certified dataset SmLs07 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
 c0672	analysis	emlRunAnovaAnalysis	nist_SmLs08_input	value	grp			0			discovery				ok	nist study: NIST StRD certified dataset SmLs08 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
 c0673	analysis	emlRunAnovaAnalysis	nist_SmLs09_input	value	grp			0			discovery				ok	nist study: NIST StRD certified dataset SmLs09 -- compared directly against nist_certified.tsv's published constants, no R oracle (validate/v19_nist_strd.R)	nist
+c0676	survey	emlRunReliabilityAnalysis	lane_survey_alpha_clean	item1|item2|item3|item4|item5				0				0.95			ok	doorway over emlCronbachAlpha; doInfluence=0 in posthoc	options
+c0677	survey	emlRunReliabilityAnalysis	lane_survey_alpha_clean	item1|item2|item3|item4|item5				1				0.95			ok	doorway; doInfluence=1 in posthoc also runs leave-one-out (emlAlphaInfluence)	options
+c0678	survey	emlRunReliabilityAnalysis	lane_survey_alpha_missing	item1|item2|item3|item4|item5				0				0.95			ok	listwise deletion disclosure (3 of 24 rows have an NA item); doInfluence=0	options
+c0679	survey	emlRunReliabilityAnalysis	lane_survey_alpha_missing	item1|item2|item3|item4|item5				1				0.95			ok	listwise deletion disclosure; doInfluence=1 also runs leave-one-out on the 21 complete rows	options
+c0680	survey	emlRunCategoricalAnalysis	lane_survey_crosstab_raw	group	response								0		ok	raw one-row-per-observation (70 rows); countCol empty in col_c; pairs bit-for-bit with crosstab_counts	options
+c0681	survey	emlRunCategoricalAnalysis	lane_survey_crosstab_raw	group	response								1		ok	raw one-row-per-observation; Yates correction on	options
+c0682	survey	emlRunCategoricalAnalysis	lane_survey_crosstab_counts	group	response	n							0		ok	pre-aggregated (group,response,n); count column in col_c; same table as crosstab_raw	options
+c0683	survey	emlRunCategoricalAnalysis	lane_survey_crosstab_counts	group	response	n							1		ok	pre-aggregated; Yates correction on	options
+c0684	survey	emlRunCategoricalAnalysis	lane_survey_crosstab_sparse_raw	group	response								0		ok	10 raw obs, all four expected counts below 5 -- the warning case	options
+c0685	survey	emlRunCategoricalAnalysis	lane_survey_crosstab_sparse_raw	group	response								1		ok	sparse table; Yates correction on	options
+c0686	survey	emlRunProportionAnalysis	lane_survey_prop_raw	passed	yes							0.95			ok	raw one-row-per-respondent (40 obs, 12 "yes"); countCol empty in col_c	options
+c0687	survey	emlRunProportionAnalysis	lane_survey_prop_raw	passed	yes							0.99			ok	raw one-row-per-respondent; conf 0.99	options
+c0688	survey	emlRunProportionAnalysis	lane_survey_prop_counts	response	yes	n						0.95			ok	pre-aggregated (37 yes, 83 no); count column in col_c; successValue in col_b	options
+c0689	survey	emlRunProportionAnalysis	lane_survey_prop_counts	response	yes	n						0.99			ok	pre-aggregated; conf 0.99	options

@@ -677,7 +677,7 @@ procedure emlKitProcessRow: .cellId$, .lane$, .proc$, .dataset$, .colA$,
         @emlKitGetTable: .dataset$
         .tableId = emlKitGetTable.tableId
         @emlKitDispatchSurvey: .cellId$, .proc$, .tableId, .colA$, .colB$,
-        ... .colC$, .conf$, .correction$
+        ... .colC$, .conf$, .correction$, .posthoc$
         .refused = emlKitDispatchSurvey.refused
         .refuseReason$ = emlKitDispatchSurvey.refuseReason$
     else
@@ -1643,15 +1643,27 @@ endproc
 
 
 # ============================================================================
-# SECTION 8 -- @emlKitDispatchSurvey: the 4 survey-lane kernels
+# SECTION 8 -- @emlKitDispatchSurvey: the survey-lane kernels and doorways
 # ============================================================================
-# These four have no menu item and no dialog -- matrix.tsv calls them
+# The first four (emlCronbachAlpha, emlAlphaInfluence, emlChiSquareIndependence,
+# emlWilsonInterval) have no menu item and no dialog -- matrix.tsv calls them
 # directly, on a matrix/scalar input rather than a Table, so each branch
 # below builds that input from the dataset's own CSV first.
+#
+# The next three (emlRunReliabilityAnalysis, emlRunCategoricalAnalysis,
+# emlRunProportionAnalysis) are the DOORWAYS over those same kernels --
+# signatures frozen by mailbox/to-opus/RULING_SURVEY_ROWS_ACCEPTED_2026-09-03.md
+# -- and take column NAMES/lists off the Table, the way the analysis lane's
+# doorways do, then build the kernel's matrix/scalar input themselves. Every
+# survey-lane CSV has a QUOTED header (@emlKitStripQuotes's own note above),
+# so a column name read out of matrix.tsv's col_a/col_b/col_c must be turned
+# into the table's RAW (quoted) label via @emlKitFindColRaw before it is
+# passed to a Table command or to the doorway itself -- the doorway's own
+# `Get value:` calls need exactly what @emlKitFindColRaw returns.
 # Output: .refused, .refuseReason$
 # ============================================================================
 procedure emlKitDispatchSurvey: .cellId$, .proc$, .tableId, .colA$, .colB$,
-    ... .colC$, .conf$, .correction$
+    ... .colC$, .conf$, .correction$, .posthoc$
 
     .refused = 0
     .refuseReason$ = ""
@@ -1755,6 +1767,141 @@ procedure emlKitDispatchSurvey: .cellId$, .proc$, .tableId, .colA$, .colB$,
                 @emlKitNum: .cellId$, "ci_high", emlWilsonInterval.ciHigh
                 @emlKitNum: .cellId$, "n", .n
             endif
+        endif
+
+    elsif .proc$ = "emlRunReliabilityAnalysis"
+        # DOORWAY over @emlCronbachAlpha / @emlAlphaInfluence. col_a is the
+        # pipe-delimited item-column list (matrix.tsv header note); THIS
+        # RUNNER splits it into the .itemCols$# vector the frozen signature
+        # takes, the same "|"-split @emlExtractConditionMatrix (RM/Friedman)
+        # does on its own input, done here instead because the reliability
+        # signature takes a vector, not a delimited string. .doInfluence
+        # rides in matrix.tsv's posthoc column (header note: a "do*" boolean,
+        # not a post-hoc test, reusing that column's shape).
+        .relN = 0
+        .relRest$ = .colA$ + "|"
+        .relBarPos = index (.relRest$, "|")
+        while .relBarPos > 0
+            .relTok$ = left$ (.relRest$, .relBarPos - 1)
+            if .relTok$ <> ""
+                .relN = .relN + 1
+                .relItemClean$ [.relN] = .relTok$
+            endif
+            .relRest$ = mid$ (.relRest$, .relBarPos + 1,
+            ... length (.relRest$) - .relBarPos)
+            .relBarPos = index (.relRest$, "|")
+        endwhile
+        # A string VECTOR (.name$#) must exist before an indexed assignment
+        # into it -- "{ }" does not parse as an empty literal (CLAUDE.md's
+        # own Praat note) and an out-of-bounds index into a never-created
+        # vector fails with "does not exist", not a resize. So .itemCols$#
+        # is allocated to the now-known .relN first, THEN filled.
+        .itemCols$# = empty$# (.relN)
+        for .relJ from 1 to .relN
+            @emlKitFindColRaw: .tableId, .relItemClean$ [.relJ]
+            .itemCols$# [.relJ] = emlKitFindColRaw.rawName$
+        endfor
+        .confN = number (.conf$)
+        .doInf = number (.posthoc$)
+        @emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confN, .doInf
+        if emlRunReliabilityAnalysis.error$ <> ""
+            .refused = 1
+            .refuseReason$ = emlRunReliabilityAnalysis.error$
+        else
+            @emlKitNum: .cellId$, "alpha", emlRunReliabilityAnalysis.alpha
+            @emlKitNum: .cellId$, "alpha_ci_low",
+            ... emlRunReliabilityAnalysis.ciLow
+            @emlKitNum: .cellId$, "alpha_ci_high",
+            ... emlRunReliabilityAnalysis.ciHigh
+            @emlKitNum: .cellId$, "n", emlRunReliabilityAnalysis.n
+            @emlKitNum: .cellId$, "k", emlRunReliabilityAnalysis.k
+            @emlKitNum: .cellId$, "n_excluded",
+            ... emlRunReliabilityAnalysis.nExcluded
+            # alphaIfDeleted# lives on @emlCronbachAlpha's OWN namespace --
+            # the doorway never copies it to its own locals (it reads it
+            # straight off the kernel to build its report). Safe to read
+            # here only because we are on the doorway's SUCCESS path, which
+            # is reached only after @emlCronbachAlpha just ran, on THIS
+            # cell's own data, earlier in this very call.
+            if emlRunReliabilityAnalysis.k >= 3
+                for .j from 1 to emlRunReliabilityAnalysis.k
+                    @emlKitSlug: .relItemClean$ [.j]
+                    @emlKitNum: .cellId$,
+                    ... "alpha_if_deleted_" + emlKitSlug.result$,
+                    ... emlCronbachAlpha.alphaIfDeleted# [.j]
+                endfor
+            endif
+            if .doInf = 1
+                @emlKitNum: .cellId$, "delta_max",
+                ... emlRunReliabilityAnalysis.deltaMax
+                @emlKitNum: .cellId$, "delta_max_row",
+                ... emlRunReliabilityAnalysis.deltaMaxRow
+            endif
+        endif
+
+    elsif .proc$ = "emlRunCategoricalAnalysis"
+        # DOORWAY over @emlChiSquareIndependence. col_a/col_b are .rowCol$/
+        # .colCol$; col_c is .countCol$ (matrix.tsv has no dedicated slot --
+        # header note) -- empty means raw one-row-per-observation, a name
+        # means the table already arrived pre-aggregated. All three are
+        # column NAMES, so each needs its RAW (quoted-header) form.
+        @emlKitFindColRaw: .tableId, .colA$
+        .rowColRaw$ = emlKitFindColRaw.rawName$
+        @emlKitFindColRaw: .tableId, .colB$
+        .colColRaw$ = emlKitFindColRaw.rawName$
+        .countColRaw$ = ""
+        if .colC$ <> ""
+            @emlKitFindColRaw: .tableId, .colC$
+            .countColRaw$ = emlKitFindColRaw.rawName$
+        endif
+        .corrN = number (.correction$)
+        @emlRunCategoricalAnalysis: .tableId, .rowColRaw$, .colColRaw$,
+        ... .countColRaw$, .corrN
+        if emlRunCategoricalAnalysis.error$ <> ""
+            .refused = 1
+            .refuseReason$ = emlRunCategoricalAnalysis.error$
+        else
+            @emlKitNum: .cellId$, "chi_square",
+            ... emlRunCategoricalAnalysis.chiSq
+            @emlKitNum: .cellId$, "df", emlRunCategoricalAnalysis.df
+            @emlKitNum: .cellId$, "p", emlRunCategoricalAnalysis.p
+            @emlKitNum: .cellId$, "cramers_v",
+            ... emlRunCategoricalAnalysis.cramersV
+            @emlKitNum: .cellId$, "n", emlRunCategoricalAnalysis.n
+            @emlKitNum: .cellId$, "min_expected",
+            ... emlRunCategoricalAnalysis.minExpected
+            @emlKitNum: .cellId$, "n_cells_below5",
+            ... emlRunCategoricalAnalysis.nCellsBelow5
+        endif
+
+    elsif .proc$ = "emlRunProportionAnalysis"
+        # DOORWAY over @emlWilsonInterval. col_a is .col$ (a column name --
+        # raw form needed); col_b is .successValue$, A VALUE, not a column
+        # (matrix.tsv header note, same non-column precedent as col_a's
+        # Wilson case label) -- read as-is, because a quoted DATA cell's
+        # quotes are already stripped by "Get value:" (@emlKitStripQuotes's
+        # own note), so it matches the doorway's own literal-string compare
+        # with no extra handling here. col_c is .countCol$, same convention
+        # as categorical above.
+        @emlKitFindColRaw: .tableId, .colA$
+        .propColRaw$ = emlKitFindColRaw.rawName$
+        .propCountColRaw$ = ""
+        if .colC$ <> ""
+            @emlKitFindColRaw: .tableId, .colC$
+            .propCountColRaw$ = emlKitFindColRaw.rawName$
+        endif
+        .confN = number (.conf$)
+        @emlRunProportionAnalysis: .tableId, .propColRaw$, .colB$,
+        ... .propCountColRaw$, .confN
+        if emlRunProportionAnalysis.error$ <> ""
+            .refused = 1
+            .refuseReason$ = emlRunProportionAnalysis.error$
+        else
+            @emlKitNum: .cellId$, "prop_hat",
+            ... emlRunProportionAnalysis.propHat
+            @emlKitNum: .cellId$, "ci_low", emlRunProportionAnalysis.ciLow
+            @emlKitNum: .cellId$, "ci_high", emlRunProportionAnalysis.ciHigh
+            @emlKitNum: .cellId$, "n", emlRunProportionAnalysis.n
         endif
 
     else

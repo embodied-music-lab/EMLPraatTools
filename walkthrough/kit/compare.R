@@ -1449,6 +1449,7 @@ CONTRACT_CLAUSE_RULES <- list(
     list(proc = "emlRunTwoGroupAnalysis", re = "^wilcox_r$",                clause = "rosenthal-r"),
     list(proc = "emlRunPairedAnalysis", re = "^wilcox_r$",                  clause = "second-rank-effect-size"),
     list(proc = "emlChiSquareIndependence", re = "^cramers_v_(yates|bias_corrected)$", clause = "cramers-v-corrected"),
+    list(proc = "emlRunCategoricalAnalysis", re = "^cramers_v_(yates|bias_corrected)$", clause = "cramers-v-corrected"),
     list(proc = "emlRunFriedmanAnalysis", re = "^posthoc_.*_ci_(low|high)$", clause = "hl-interval-scope"),
     list(proc = "emlRunPairwiseAnalysis", re = "^posthoc_.*_ci_(low|high)$", clause = "pairwise-interval-scope",
          bucketExclude = "^CONTRACT_ONLY_PRAAT$"),   # excludes the Scheffe-arm CI -- see the collision note below
@@ -1582,11 +1583,11 @@ REF <- data.frame(
     procedure           = unname(procOf[matchedRefuse]),
     dataset             = unname(datasetOf[matchedRefuse]),
     declared_expect     = unname(expectOf[matchedRefuse]),
-    praat_refused       = "yes",
-    r_refused           = "yes",
+    praat_refused       = rep("yes", length(matchedRefuse)),
+    r_refused           = rep("yes", length(matchedRefuse)),
     praat_reason        = unname(reasonP[matchedRefuse]),
     r_reason            = unname(reasonR[matchedRefuse]),
-    reason              = READER[["refusal-wording"]],
+    reason              = rep(READER[["refusal-wording"]], length(matchedRefuse)),
     study               = unname(studyOf[matchedRefuse]),
     stringsAsFactors = FALSE)
 REF <- REF[order(REF$cell_id), ]
