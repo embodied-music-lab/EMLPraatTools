@@ -1,4 +1,26 @@
 #!/usr/bin/env bash
+
+# ---------------------------------------------------------------------------
+# THIS SCRIPT READS THIS CHECKOUT'S COPY, NOT THE MAILBOX.
+#
+# The mailbox is the _mailbox_live/ folder on IAN'S DISK:
+#
+#     /Users/ianhowell/EMLPraatTools/_mailbox_live/to-<recipient>/
+#
+# That is where the other sessions read and write. A cloud session's own
+# checkout has a COPY, which goes stale the moment anyone else writes, and
+# which no other session can see. On 3 September that copy reported "nothing
+# unread in to-opus" while a ruling answering six memos sat in the real inbox,
+# and six memos this session believed it had sent had never left the container.
+#
+# So: a session with the device bridge checks mail with device_list_dir on the
+# path above and stages what is new; it does not trust this script's answer.
+# A session without the bridge can only say what its own copy holds, and must
+# say so in those words. This script cannot reach the bridge -- it is a shell
+# script and the bridge is a tool call -- which is exactly why the warning is
+# here rather than a fix.
+# ---------------------------------------------------------------------------
+
 # ============================================================================
 # mailbox_check.sh -- what is unread in your inbox, and recording what you did.
 #
