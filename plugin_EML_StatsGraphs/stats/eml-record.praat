@@ -5034,6 +5034,19 @@ procedure emlRecordRender
     ... + newline$
     .text$ = .text$ + "include " + .p$ + "/stats/eml-extract.praat" + newline$
     .text$ = .text$ + "include " + .p$ + "/stats/eml-output.praat" + newline$
+    ; The two-way kernel, which eml-inferential.praat calls at its line 5259
+    ; and which nothing here included until this line. Same defect as
+    ; scripts/eml-lib-stats.praat had before RULING_RECORDER_AND_WIRING_2026-09-02.md
+    ; fixed that copy of the list: setup.praat's barrel (module 5 of 15) has
+    ; carried this module since the kernel's extraction, and this render list
+    ; did not, so a recorded script using @emlRunTwoWayAnalysis emitted a file
+    ; that died with "Procedure emlAnovaKernelTwoWay not found" on replay --
+    ; found by harness/record/replay.sh's RETARGET leg. It goes before
+    ; eml-inferential.praat for the same reason as the other copy: `include`
+    ; is a parse-time paste and the caller must find the procedure already
+    ; defined.
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-anova-kernel.praat"
+    ... + newline$
     .text$ = .text$ + "include " + .p$ + "/stats/eml-inferential.praat"
     ... + newline$
     ; The SURVEY kernels -- Cronbach's alpha and its respondent-influence

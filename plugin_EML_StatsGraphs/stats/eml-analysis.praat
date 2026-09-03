@@ -4091,6 +4091,15 @@ endproc
 # rather than repeating their checks, and reports the exclusion as a
 # WARNING on the success path -- the analysis is valid on the complete
 # cases, and the reader is told how many rows were set aside.
+#
+# mailbox/to-opus/RULING_SETTLEMENT_QUESTIONS_2026-09-03.md
+# (QUESTION_INFLUENCE_SURFACE): when .doInfluence = 1 and the check
+# succeeds, @emlAlphaInfluence's own .delta# / .rowIndex# are copied onto
+# THIS procedure's namespace as .delta# / .rowIndex#, the same
+# per-respondent vector the kernel documents (eml-psychometrics.praat:251).
+# The printed report is unchanged and still names only the single most
+# influential respondent -- the vector is an output for a caller (a
+# generated report script, the kit), not new prose.
 procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfluence
     .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
@@ -4105,6 +4114,21 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
     .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
+    ; INFLUENCE OUTPUTS, INITIALISED HERE AT ENTRY -- not at the
+    ; @emlAlphaInfluence call site further down. A procedure local in Praat
+    ; is a namespaced global that outlives the call (CLAUDE.md), and an
+    ; earlier guard's `goto END_RELIABILITY` -- k < 2, a bad confidence, a
+    ; non-numeric item column, or a refusal from @emlCronbachAlpha itself --
+    ; must not leave the PREVIOUS run's .delta#/.rowIndex# sitting on this
+    ; namespace for a caller who reads them without also checking .doInf.
+    ; Same trap as .usingCounts in the categorical doorway above -- a crash
+    ; earlier today -- fixed here before it could recur.
+    .doInf = 0
+    .infError$ = ""
+    .deltaMax = undefined
+    .deltaMaxRow = 0
+    .delta# = zero# (1) + undefined
+    .rowIndex# = zero# (1) + undefined
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
@@ -4200,10 +4224,6 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
         ... + " respondents)."
     endif
 
-    .doInf = 0
-    .infError$ = ""
-    .deltaMax = undefined
-    .deltaMaxRow = 0
     if .doInfluence = 1
         @emlAlphaInfluence: .data##
         .infError$ = emlAlphaInfluence.error$
@@ -4211,6 +4231,16 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
             .doInf = 1
             .deltaMax = emlAlphaInfluence.deltaMax
             .deltaMaxRow = emlAlphaInfluence.deltaMaxRow
+            ; THE RESULTS COME BACK ONTO THIS PROCEDURE'S OWN NAMESPACE,
+            ; the same house pattern @emlRunCategoricalAnalysis follows for
+            ; emlChiSquareIndependence's outputs just below in this file --
+            ; a kernel's locals are namespaced globals shared by every
+            ; caller and outliving every call, so reading them off the
+            ; doorway (safe only after .ok, or here after .doInf) is what a
+            ; caller must do instead of reaching past this doorway into
+            ; @emlAlphaInfluence's own namespace.
+            .delta# = emlAlphaInfluence.delta#
+            .rowIndex# = emlAlphaInfluence.rowIndex#
         else
             ; INFLUENCE IS AN ADD-ON, NOT THE ANALYSIS. Alpha already
             ; succeeded on this same matrix, so a refusal here is reported
@@ -5092,9 +5122,17 @@ procedure emlExtractConditionMatrix: .tableId, .conditionCols$
     for .j from 1 to .k
         @eml_openColumn: .tableId, .colLabel$ [.j]
         .clean [.j] = eml_openColumn.clean
-        ; ERROR-READ EXEMPT -- this column was already confirmed present on this same
-        ; unmutated table via @eml_openColumn just above; emlAuditColumn's one failure
-        ; mode (column not found) is unreachable here.
+        ; ERROR-READ EXEMPT -- the column was already confirmed present on this same
+        ; unmutated table by the `Get column index:` / `.ci = 0` existence check at
+        ; :5094-5095, well above, so emlAuditColumn's one failure mode (column not
+        ; found) is unreachable here.
+        ;
+        ; NOT by the @eml_openColumn call two lines up, which is what an earlier
+        ; draft of this marker said. error_site_triage.tsv corrects exactly that
+        ; attribution: eml_openColumn does NOT check column existence
+        ; (stats/eml-extract.praat:1069-1085 -- it only classifies whether the column
+        ; is numerically clean for a fast-path read). Same conclusion, different
+        ; guard, and the guard is the part a future reader would rely on.
         @emlAuditColumn: .tableId, .colLabel$ [.j]
         if emlAuditColumn.note$ <> ""
             if .parseNote$ <> ""
