@@ -9,11 +9,12 @@ is cited as DIGEST and is itself the established record, not re-derived.
 
 ## Summary — flagged rows
 
-**GAP (artifact not yet named anywhere): 1**
-1. Row 11 — Table S2 / registry generation wiring (docs, barrel, Table S2
-   generated FROM the registry) has no committed generator script named in
-   the record; only the *coverage-map* generator (`build_coverage_map.py`)
-   exists. Closes when the settlement wave's registry-wiring item lands.
+**GAP (artifact not yet named anywhere): 0** (as of 2 Sep evening)
+1. Row 11 — Table S2 generation wiring: CLOSED 2 Sep evening — Table S2
+   now generates from the registry with a drift check (Opus,
+   MEMO_THREE_DOORS status note). The barrel and docs thirds of the
+   registry-wiring item remain inside the plugin tree, tracked in the
+   settlement wave, but the S2 generator artifact exists and is named.
 2. Row 9 — "possible upstream R bug report": CLOSED TO
    EXISTS-UNCOMMITTED same day (Fable, 2 Sep) — the draft exists at
    `planning/DRAFT_R_BUG_REPORT_2026-09-02.md` with two bracketed
