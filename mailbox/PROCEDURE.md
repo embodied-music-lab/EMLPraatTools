@@ -114,6 +114,21 @@ without the bridge, the memo travels in a bundle and is not delivered
 until Ian applies it. Say which of those two happened. Never say a memo
 was sent because a file exists where you wrote it.
 
+## Stage by named file
+
+`git add -A`, or `git add <dir>`, on a path a delegated session may be
+writing sweeps that session's half-finished work into a commit whose
+message describes something else. On 3 September commit 0b18915f did
+exactly that to two sessions at once, and its message says it corrects
+one comment.
+
+Stage the files you edited, by name. If a delegated session is running
+against the repository at all, that is the only safe form. The commit
+that results is the one its message describes, which is what every
+other rule here depends on.
+
+Adopted as standing procedure by RULING_VECTOR_EMISSION_2026-09-03.
+
 ## Record what you did
 
 After reading a file, append one line to your log. This is what stops
