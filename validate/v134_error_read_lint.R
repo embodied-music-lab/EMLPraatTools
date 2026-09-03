@@ -360,7 +360,15 @@ EXEMPT_SITES <- c(
     "eml-analysis.praat|emlRMPostHoc|emlHolm|@emlHolm: .rawP#",
     "eml-analysis.praat|emlReportPairwiseDescriptives|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
     "eml-analysis.praat|emlRunAnovaAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
-    "eml-analysis.praat|emlRunGroupedRegressionAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    # REMOVED 2026-09-03, RULING_EXEMPT_LEAK: this site was pinned here and
+    # the census calls it UNSAFE. eml-analysis.praat:3567 reads
+    # emlCountGroups.nGroups straight into .pgTotal and reads .error$ nowhere,
+    # so a bad column name reports "0 groups" instead of the real reason.
+    # emlCountGroups is one of the clusters RULING_ERROR_TRIAGE_APPROVED names
+    # for the FIX list (getGroupData x33 -> countGroups x20 -> Pearson drift ->
+    # skew/kurtosis), so a countGroups site was never eligible for this list at
+    # all. It does not shrink to a corrected reason; it leaves and joins the fix
+    # population. The pin was made on the cluster name against the wrong list.
     "eml-analysis.praat|emlRunKruskalWallisAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
     "eml-analysis.praat|emlRunNormalityAnalysis|emlShapiroWilk|@emlShapiroWilk: .data#",
     "eml-analysis.praat|emlRunPairwiseAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
@@ -389,7 +397,10 @@ EXEMPT_SITES <- c(
     "eml-wizard.praat|<top-level>|emlDrawQQPlot|@emlDrawQQPlot: wizNormQQData#, wizNormQQLabel$, 6, 4.5, \"color\", 1",
     "eml-wizard.praat|<top-level>|emlShapiroWilk|@emlShapiroWilk: wizNormGData#"
 )
-KNOWN_EXEMPT_CEILING <- 34L
+# 34 -> 33 on 2026-09-03 with the countGroups leak's removal. The ceiling
+# FOLLOWS the list down, always: a ceiling left above the list is room for the
+# next wrong pin to fit without tripping anything.
+KNOWN_EXEMPT_CEILING <- 33L
 
 has_exempt_marker <- function(s, code) {
     lo <- max(1L, s$line - 20L)

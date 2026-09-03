@@ -1051,6 +1051,18 @@ procedure emlInvStudentizedRangeQ: .p, .k, .df, .nranges
             .qLo = 0
             .pLo = 1
             .qHi = 1
+            # ERROR-READ EXEMPT -- @emlStudentizedRangeQ's only failure modes are
+            # df < 2, k < 2 and nranges < 1, and this procedure's own top-of-body
+            # guard (:983-994) sets .error$ and skips the whole solve on every one
+            # of them before the root-finder can run. .k, .df and .nranges are
+            # read-only parameters, never reassigned in this body, so what the
+            # guard accepted is what the callee receives at every iteration.
+            #
+            # Adjudicated SAFE by REPORT_ERROR_TRIAGE_2026-09-02, accepted in
+            # RULING_ERROR_TRIAGE_APPROVED. That supersedes the 1 September
+            # census, which had this cluster as LIKELY-SAFE-UNTRACED with an
+            # explicit hedge -- a marker written from the census would have
+            # understated a proof that exists.
             @emlStudentizedRangeQ: .qHi, .k, .df, .nranges
             .pHi = emlStudentizedRangeQ.p
             .expand = 0
@@ -1098,6 +1110,18 @@ procedure emlInvStudentizedRangeQ: .p, .k, .df, .nranges
                         .qMid = 0.5 * (.qLo + .qHi)
                     endif
 
+                    # ERROR-READ EXEMPT -- @emlStudentizedRangeQ's only failure modes are
+                    # df < 2, k < 2 and nranges < 1, and this procedure's own top-of-body
+                    # guard (:983-994) sets .error$ and skips the whole solve on every one
+                    # of them before the root-finder can run. .k, .df and .nranges are
+                    # read-only parameters, never reassigned in this body, so what the
+                    # guard accepted is what the callee receives at every iteration.
+                    #
+                    # Adjudicated SAFE by REPORT_ERROR_TRIAGE_2026-09-02, accepted in
+                    # RULING_ERROR_TRIAGE_APPROVED. That supersedes the 1 September
+                    # census, which had this cluster as LIKELY-SAFE-UNTRACED with an
+                    # explicit hedge -- a marker written from the census would have
+                    # understated a proof that exists.
                     @emlStudentizedRangeQ: .qMid, .k, .df, .nranges
                     .pMid = emlStudentizedRangeQ.p
                     .fMid = .pMid - .p
