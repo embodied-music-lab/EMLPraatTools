@@ -117,9 +117,6 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
-    ; ERROR-READ EXEMPT -- .nBlankRows is 0 until the success-path row loop increments
-    ; it, so it cannot be wrong on failure; the real check, on .nGroups, reads
-    ; emlCountGroups.error$ immediately after.
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -534,9 +531,6 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
-    ; ERROR-READ EXEMPT -- .nBlankRows is 0 until the success-path row loop increments
-    ; it, so it cannot be wrong on failure; the real check, on .nGroups, reads
-    ; emlCountGroups.error$ immediately after.
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -960,9 +954,6 @@ procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn,
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
-    ; ERROR-READ EXEMPT -- .nBlankRows is 0 until the success-path row loop increments
-    ; it, so it cannot be wrong on failure; the real check, on .nGroups, reads
-    ; emlCountGroups.error$ immediately after.
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -1274,9 +1265,6 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
-    ; ERROR-READ EXEMPT -- .nBlankRows is 0 until the success-path row loop increments
-    ; it, so it cannot be wrong on failure; the real check, on .nGroups, reads
-    ; emlCountGroups.error$ immediately after.
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -1835,9 +1823,6 @@ endproc
 #   .tableId, .dataCol$, .groupCol$ — as passed to the test
 # ============================================================================
 procedure emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
-    ; ERROR-READ EXEMPT -- .nBlankRows is 0 until the success-path row loop increments
-    ; it, so it cannot be wrong on failure; the real check, on .nGroups, reads
-    ; emlCountGroups.error$ immediately after.
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -4141,19 +4126,27 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
     ; see @emlRecordAnalysisStep below -- and it needs something to show for
     ; .itemCols$#. `{ }` does not parse as an empty vector literal, so a
     ; refusal with zero items reproduces as `empty$# (0)` instead.
+    ;
+    ; NAMED .recItemCols$, NOT .itemsRepro$ -- RULING_VECTOR_EMISSION_2026-09-03.
+    ; validate/v58's column census reads THIS SOURCE FILE for a variable whose
+    ; name says it is a column ("...Col$", "...Cols$", ...); .itemsRepro$ told
+    ; that census nothing, so it read a call that plainly names columns as
+    ; naming none and reported this map entry dead. The variable still holds
+    ; exactly what it held before -- the item names, quoted, braced -- only its
+    ; name changed.
     .itemsList$ = ""
-    .itemsRepro$ = "empty$# (0)"
+    .recItemCols$ = "empty$# (0)"
     if .k > 0
-        .itemsRepro$ = "{"
+        .recItemCols$ = "{"
         for .j from 1 to .k
             if .j > 1
                 .itemsList$ = .itemsList$ + ", "
-                .itemsRepro$ = .itemsRepro$ + ", "
+                .recItemCols$ = .recItemCols$ + ", "
             endif
             .itemsList$ = .itemsList$ + .itemCols$# [.j]
-            .itemsRepro$ = .itemsRepro$ + """" + .itemCols$# [.j] + """"
+            .recItemCols$ = .recItemCols$ + """" + .itemCols$# [.j] + """"
         endfor
-        .itemsRepro$ = .itemsRepro$ + "}"
+        .recItemCols$ = .recItemCols$ + "}"
     endif
 
     if .k < 2
@@ -4324,7 +4317,7 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
         ... "Alpha describes internal consistency of THIS scale on THIS "
         ... + "sample; it is not evidence the items measure one trait, and "
         ... + "it is not a licence for any later test.",
-        ... "@emlRunReliabilityAnalysis: data, " + .itemsRepro$ + ", "
+        ... "@emlRunReliabilityAnalysis: data, " + .recItemCols$ + ", "
         ... + string$ (.confidence) + ", " + string$ (.doInfluence),
         ... "Not in the GUI: there is no menu entry for this yet.",
         ... .recResult$, .error$

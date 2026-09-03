@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Thu Sep  3 12:09:53 2026  --  recorded on Praat 6.6.30
+# Thu Sep  3 18:39:21 2026  --  recorded on Praat 6.6.30
 # (The session's start time was lost -- its record table was
 # removed from the Objects window -- so the time above is when
 # the recorder noticed, not when recording began.)
@@ -78,7 +78,7 @@ selectObject: data1$
 data = selected ()
 # a recorded step
 
-@emlReportContext: "recorded script (recorded Thu Sep  3 12:09:53 2026, originally analysis dialog)", ""
+@emlReportContext: "recorded script (recorded Thu Sep  3 18:39:21 2026, originally analysis dialog)", ""
 emlGroupSortAlphabetical = 0
 emlShowExplanations = 0
 ; nothing
@@ -89,7 +89,7 @@ selectObject: data2$
 data = selected ()
 # a recorded step
 
-@emlReportContext: "recorded script (recorded Thu Sep  3 12:09:53 2026, originally analysis dialog)", ""
+@emlReportContext: "recorded script (recorded Thu Sep  3 18:39:21 2026, originally analysis dialog)", ""
 emlGroupSortAlphabetical = 0
 emlShowExplanations = 0
 ; nothing

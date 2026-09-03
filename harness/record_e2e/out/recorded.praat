@@ -28,6 +28,7 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-extract.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-anova-kernel.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-inferential.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-categorical.praat
@@ -126,6 +127,9 @@ predictorCol7$   = "spl2"   ; the predictor column -- run 7, step 7 (analysis)
 valueCol9$       = "spl"   ; the measured column -- run 9, step 9 (analysis)
 factorACol9$     = "grp"   ; the first factor -- run 9, step 9 (analysis)
 factorBCol9$     = "grp2"   ; the second factor -- run 9, step 9 (analysis)
+itemCols1_11$    = "c1"   ; item column 1 -- run 11, step 11 (analysis)
+itemCols2_11$    = "c2"   ; item column 2 -- run 11, step 11 (analysis)
+itemCols3_11$    = "c3"   ; item column 3 -- run 11, step 11 (analysis)
 subjectCol12$    = "subj"   ; the subject identifier -- run 12, step 12 (analysis)
 conditionCols12$ = "c1|c2|c3"   ; the condition columns -- run 12, step 12 (analysis)
 subjectCol13$    = "subj"   ; the subject identifier -- run 13, step 13 (analysis)
@@ -499,7 +503,7 @@ data = selected ()
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
 emlShowExplanations = 0
-@emlRunReliabilityAnalysis: data, {"c1", "c2", "c3"}, 0.95, 1
+@emlRunReliabilityAnalysis: data, {itemCols1_11$, itemCols2_11$, itemCols3_11$}, 0.95, 1
 
 # alpha = 0.2725, 95% CI [-0.4339, 0.6618]
 #   n = 24 respondents, k = 3 items
@@ -581,6 +585,7 @@ emlShowExplanations = 0
 scatterAnalysisType = 0
 annotCorrType$ = "pearson"
 scatterRegressionLine = 0
+scatterCorrScope = 1
 @emlDrawScatterPlot: data, "Scatter", "x", "y", 6, 4, "color", 1, xCol15$, yCol15$, "", 0, 0, axisYMin15, axisYMax15, 0
 
 # The same step through the menu:
@@ -1089,6 +1094,7 @@ emlShowExplanations = 0
 scatterAnalysisType = 3
 annotCorrType$ = "spearman"
 scatterRegressionLine = 1
+scatterCorrScope = 1
 @emlDrawScatterPlot: data, "Scatter with stats", "x", "y", 6, 4, "color", 1, xCol37$, yCol37$, "", 0, 0, axisYMin37, axisYMax37, 1
 
 # spearman correlation reported on 24 complete pairs
@@ -1115,6 +1121,7 @@ emlShowExplanations = 0
 scatterAnalysisType = 1
 annotCorrType$ = "spearman"
 scatterRegressionLine = 1
+scatterCorrScope = 1
 @emlDrawScatterPlot: data, "Scatter, monotonic fit", "x", "y", 6, 4, "color", 1, xCol38$, yCol38$, "", 0, 0, axisYMin38, axisYMax38, 1
 
 # spearman correlation reported on 24 complete pairs

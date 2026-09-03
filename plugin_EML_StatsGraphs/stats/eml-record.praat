@@ -3275,6 +3275,29 @@ procedure emlRecordColumnSpec: .proc$
         ; retargeted the wrong positions and would have offered the user a
         ; confidence level to edit as though it were a column name.
         .spec$ = "2=itemCols"
+    elsif .proc$ = "emlRunCategoricalAnalysis"
+        ; SIGNATURE FROZEN by
+        ; mailbox/to-opus/RULING_CATEGORICAL_DOORWAY_2026-09-03.md:
+        ; .tableId, .rowCol$, .colCol$, .countCol$, .correction. Argument 1
+        ; is `data`, so rowCol is 2 and colCol is 3, exactly as every other
+        ; two-column doorway above. .countCol$ (argument 4) is a column name
+        ; when the run was pre-aggregated and "" when it tallied raw rows --
+        ; the empty-literal skip a few lines below this table already leaves
+        ; an unused role out of the block, which is exactly the raw-rows
+        ; case, so it needs no special handling here.
+        .spec$ = "2=rowCol 3=colCol 4=countCol"
+    elsif .proc$ = "emlRunProportionAnalysis"
+        ; SIGNATURE FROZEN alongside the categorical doorway, same memo:
+        ; .tableId, .col$, .successValue$, .countCol$, .confidence. Argument
+        ; 3, .successValue$, is a LEVEL the user typed (which category counts
+        ; as success), not a column name, and is deliberately left out of the
+        ; map for the same reason a violin's axis label is left out: it is
+        ; not a column reference. .countCol$ (argument 4) follows the
+        ; categorical doorway's own convention above. Role name categoryCol,
+        ; not the parameter's own .col$ -- the spec's role identity is what
+        ; the column IS, and it already has a gloss below from the drawn
+        ; grouped figures' own category axis.
+        .spec$ = "2=categoryCol 4=countCol"
     elsif .proc$ = "emlRunRepeatedMeasuresAnalysis"
         .spec$ = "2=subjectCol 3=conditionCols"
     elsif .proc$ = "emlRunFriedmanAnalysis"
@@ -3641,6 +3664,12 @@ procedure emlRecordColumnGloss: .base$
         .gloss$ = "the sub-group column"
     elsif .base$ = "errorCol"
         .gloss$ = "the error-bar column"
+    elsif .base$ = "rowCol"
+        .gloss$ = "the row-category column"
+    elsif .base$ = "colCol"
+        .gloss$ = "the column-category column"
+    elsif .base$ = "countCol"
+        .gloss$ = "the count column (pre-aggregated data only)"
     elsif .base$ = "seriesCols"
         ; PLURAL, AND IT SAYS WHAT EDITING IT DOES. This one string is the
         ; whole of the melt's input -- untype a name and that series leaves
@@ -3662,6 +3691,14 @@ procedure emlRecordColumnGloss: .base$
         ; lines is drawn, from the same table and without touching anything
         ; else.
         .gloss$ = "the measurements drawn as series, in order"
+    elsif left$ (.base$, 8) = "itemCols" and length (.base$) > 8
+        ; ONE OF THESE PER MEMBER OF THE RELIABILITY ITEM VECTOR --
+        ; RULING_VECTOR_EMISSION_2026-09-03. .base$ here is a manufactured
+        ; per-member role ("itemCols1", "itemCols2", ...), not a role a call
+        ; site names directly, so it is matched by prefix and the trailing
+        ; digits are read back out for the gloss rather than listed one at a
+        ; time the way every named role above is.
+        .gloss$ = "item column " + mid$ (.base$, 9, 100)
     endif
 endproc
 
@@ -3676,6 +3713,15 @@ endproc
 # slot. Quote depth is tracked instead. Praat has no regex and no split, so
 # this is a character walk, and the strings are one call long.
 #
+# BRACE DEPTH IS TRACKED THE SAME WAY, for the same reason one layer up.
+# `@emlRunReliabilityAnalysis: data, {"item1", "item2"}, 0.95, 1` has a vector
+# literal for argument 2, and its internal comma is not a fourth argument
+# starting -- splitting on it would shift .confidence into the item slot and
+# .doInfluence off the end. RULING_VECTOR_EMISSION_2026-09-03: a
+# string-vector argument is kept whole here so its members can be hoisted
+# individually one layer up, in @emlRecordColumnManifest, rather than being
+# torn across argument slots that do not belong to it.
+#
 # Outputs: .n         how many arguments
 #          .arg$[k]   argument k, WITH its surrounding whitespace, so that
 #                     rejoining on "," reproduces the line byte for byte
@@ -3684,12 +3730,19 @@ procedure emlRecordSplitArgs: .text$
     .n = 1
     .arg$[1] = ""
     .inQuote = 0
+    .braceDepth = 0
     for .i from 1 to length (.text$)
         .c$ = mid$ (.text$, .i, 1)
         if .c$ = """"
             .inQuote = 1 - .inQuote
             .arg$[.n] = .arg$[.n] + .c$
-        elsif .c$ = "," and .inQuote = 0
+        elsif .c$ = "{" and .inQuote = 0
+            .braceDepth = .braceDepth + 1
+            .arg$[.n] = .arg$[.n] + .c$
+        elsif .c$ = "}" and .inQuote = 0 and .braceDepth > 0
+            .braceDepth = .braceDepth - 1
+            .arg$[.n] = .arg$[.n] + .c$
+        elsif .c$ = "," and .inQuote = 0 and .braceDepth = 0
             .n = .n + 1
             .arg$[.n] = ""
         else
@@ -3779,6 +3832,77 @@ procedure emlRecordQuotedLiteral: .arg$
         if .bad = 0 and .digits > 0 and .dots < 2
             .isNum = 1
             .num$ = .t$
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRecordQuotedVectorLiteral: .arg$
+# Is this argument a plain vector literal of quoted string members, and if so
+# what are they? RULING_VECTOR_EMISSION_2026-09-03: a frozen `$#` parameter
+# such as @emlRunReliabilityAnalysis's item-column list reproduces as
+# `{"item1", "item2", "item3"}` -- real names, already in the file -- and the
+# retarget block's promise, an editable token per column, extends to each one
+# of them rather than to the vector as a whole.
+#
+# THE SAME GUARD AS THE SCALAR PATH, ONE LAYER UP. A vector argument is only
+# rewritten when it is unambiguously `{ "a", "b", ... }` -- braces first and
+# last, and EVERY member between them a plain quoted string by
+# @emlRecordQuotedLiteral's own rule. One member that fails that test (an
+# expression, an already-lifted variable, an escaped quote) makes the whole
+# vector ambiguous, and the honest response is the scalar path's: a literal
+# left un-lifted is a blemish; a mangled call is a broken script.
+#
+# THE EMPTY VECTOR NEVER REACHES HERE. `{ }` does not parse as an empty
+# vector literal in Praat, so @emlRunReliabilityAnalysis reproduces zero
+# items as the call `empty$# (0)` -- it does not start with "{" and .ok stays
+# 0 on it by construction, the same as any other un-lifted literal.
+#
+# Outputs: .ok       1 when the argument is one plain vector literal of
+#                    plain quoted-string members
+#          .n        how many members
+#          .member$[m]  member m, without its quotes
+#          .lead$    the whitespace in front of the opening brace, kept so
+#                    the rewritten call lines up the way the recorder wrote it
+# ----------------------------------------------------------------------------
+procedure emlRecordQuotedVectorLiteral: .arg$
+    .ok = 0
+    .n = 0
+    .lead$ = ""
+    .t$ = .arg$
+    while left$ (.t$, 1) = " "
+        .lead$ = .lead$ + " "
+        .t$ = mid$ (.t$, 2, 1000000)
+    endwhile
+    while .t$ <> "" and right$ (.t$, 1) = " "
+        .t$ = left$ (.t$, length (.t$) - 1)
+    endwhile
+    if length (.t$) >= 2
+        if left$ (.t$, 1) = "{" and right$ (.t$, 1) = "}"
+            .inner$ = mid$ (.t$, 2, length (.t$) - 2)
+            @emlRecordSplitArgs: .inner$
+            .cand = emlRecordSplitArgs.n
+            .allLit = 1
+            if .cand = 1 and emlRecordSplitArgs.arg$[1] = ""
+                ; AN EMPTY BRACE PAIR WITH NOTHING (OR ONLY WHITESPACE)
+                ; INSIDE. Not a shape the emitter produces -- see header --
+                ; but a hand-edited file could carry `{ }`; refuse rather
+                ; than declare a one-member vector that is really zero.
+                .allLit = 0
+            endif
+            for .m from 1 to .cand
+                @emlRecordQuotedLiteral: emlRecordSplitArgs.arg$[.m]
+                if emlRecordQuotedLiteral.ok = 0
+                    .allLit = 0
+                else
+                    .member$[.m] = emlRecordQuotedLiteral.value$
+                endif
+            endfor
+            if .allLit = 1
+                .ok = 1
+                .n = .cand
+            endif
         endif
     endif
 endproc
@@ -4098,6 +4222,98 @@ procedure emlRecordColumnManifest
                                 endif
                                 .newArg$[.pos] = emlRecordQuotedLiteral.lead$
                                 ... + .varName$[.slot]
+                            else
+                                ; NOT A PLAIN SCALAR LITERAL -- TRY A VECTOR.
+                                ; RULING_VECTOR_EMISSION_2026-09-03: a frozen
+                                ; `$#` parameter -- @emlRunReliabilityAnalysis's
+                                ; item-column argument is the live case -- is
+                                ; NOT covered by the scalar branch above; it
+                                ; reproduces as `{"a", "b", "c"}`, and the
+                                ; block's promise, an editable token per
+                                ; column, extends to each member rather than
+                                ; to the vector as a whole.
+                                @emlRecordQuotedVectorLiteral: .newArg$[.pos]
+                                if emlRecordQuotedVectorLiteral.ok = 1
+                                    .vn = emlRecordQuotedVectorLiteral.n
+                                    .built$ = "{"
+                                    for .j from 1 to .vn
+                                        ; MEMBER j OF ROLE .b$ IS ITS OWN
+                                        ; ROLE FOR MATCHING PURPOSES --
+                                        ; itemCols1 and itemCols2 are two
+                                        ; slots, exactly as groupCol and
+                                        ; valueCol are two slots -- so the
+                                        ; same run reusing the same j-th name
+                                        ; gets one variable and a different
+                                        ; name at j gets another. Same slot
+                                        ; rule as the scalar path, one
+                                        ; position down.
+                                        .mBase$ = .b$ + string$ (.j)
+                                        .mLit$ = emlRecordQuotedVectorLiteral.member$[.j]
+                                        .mSlot = 0
+                                        .mSameRun = 0
+                                        for .k from 1 to .n
+                                            if .varBase$[.k] = .mBase$
+                                                if .varRun[.k] = .run
+                                                    .mSameRun = .mSameRun + 1
+                                                    if .varLit$[.k] = .mLit$
+                                                        .mSlot = .k
+                                                    endif
+                                                endif
+                                            endif
+                                        endfor
+                                        if .mSlot = 0
+                                            .n = .n + 1
+                                            .mSlot = .n
+                                            .varBase$[.n] = .mBase$
+                                            .varLit$[.n] = .mLit$
+                                            .varRun[.n] = .run
+                                            @emlRecordRunSuffix: .run,
+                                            ... .mSameRun
+                                            ; RUN 1's FIRST USE IS BARE --
+                                            ; itemCols1$, itemCols2$ -- which
+                                            ; matches the scalar naming law
+                                            ; exactly, because run 1's suffix
+                                            ; is "". A later run's suffix is
+                                            ; joined with "_" rather than
+                                            ; concatenated directly, because
+                                            ; two variable-length numbers
+                                            ; (member index, run number)
+                                            ; concatenated with no separator
+                                            ; cannot be told apart --
+                                            ; itemCols12$ would be member 1 of
+                                            ; run 2 or member 12 of run 1, and
+                                            ; a reader cannot know which.
+                                            .mSuffix$ = ""
+                                            if emlRecordRunSuffix.suffix$ <> ""
+                                                .mSuffix$ = "_"
+                                                ... + emlRecordRunSuffix.suffix$
+                                            endif
+                                            .varName$[.n] = .mBase$
+                                            ... + .mSuffix$ + "$"
+                                            .varSteps$[.n] = ""
+                                            .varLast$[.n] = ""
+                                        endif
+                                        .note$ = string$ (.stepN) + " ("
+                                        ... + .stepKind$ + ")"
+                                        if .varLast$[.mSlot] <> .note$
+                                            if .varSteps$[.mSlot] <> ""
+                                                .varSteps$[.mSlot] =
+                                                ... .varSteps$[.mSlot] + ", "
+                                            endif
+                                            .varSteps$[.mSlot] =
+                                            ... .varSteps$[.mSlot] + .note$
+                                            .varLast$[.mSlot] = .note$
+                                        endif
+                                        if .j > 1
+                                            .built$ = .built$ + ", "
+                                        endif
+                                        .built$ = .built$ + .varName$[.mSlot]
+                                    endfor
+                                    .built$ = .built$ + "}"
+                                    .newArg$[.pos] =
+                                    ... emlRecordQuotedVectorLiteral.lead$
+                                    ... + .built$
+                                endif
                             endif
                         endif
                     endwhile

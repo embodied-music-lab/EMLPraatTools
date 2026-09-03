@@ -358,8 +358,6 @@ EXEMPT_SITES <- c(
     "eml-analysis.praat|emlRMPostHoc|emlBenjaminiHochberg|@emlBenjaminiHochberg: .rawP#",
     "eml-analysis.praat|emlRMPostHoc|emlBonferroni|@emlBonferroni: .rawP#",
     "eml-analysis.praat|emlRMPostHoc|emlHolm|@emlHolm: .rawP#",
-    "eml-analysis.praat|emlReportPairwiseDescriptives|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
-    "eml-analysis.praat|emlRunAnovaAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
     # REMOVED 2026-09-03, RULING_EXEMPT_LEAK: this site was pinned here and
     # the census calls it UNSAFE. eml-analysis.praat:3567 reads
     # emlCountGroups.nGroups straight into .pgTotal and reads .error$ nowhere,
@@ -369,11 +367,23 @@ EXEMPT_SITES <- c(
     # skew/kurtosis), so a countGroups site was never eligible for this list at
     # all. It does not shrink to a corrected reason; it leaves and joins the fix
     # population. The pin was made on the cluster name against the wrong list.
-    "eml-analysis.praat|emlRunKruskalWallisAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    #
+    # REMOVED 2026-09-03, re-audit ordered by the same ruling: the other five
+    # emlCountGroups pins here (emlReportPairwiseDescriptives, emlRunAnova
+    # Analysis, emlRunKruskalWallisAnalysis, emlRunPairwiseAnalysis,
+    # emlRunTwoGroupAnalysis -- error_site_triage.tsv rows for eml-analysis.
+    # praat:120,534,957,1268,1826) each carry a SAFE disposition IN THE TABLE
+    # ("the real gate on emlCountGroups.error$ follows on the very next
+    # non-comment line"), but the ruling's removal test is stated as an OR:
+    # a site comes out if the census/triage calls it UNSAFE, OR if it belongs
+    # to a cluster the ruling names for the FIX list, and emlCountGroups is
+    # named there regardless of any individual site's local SAFE reasoning.
+    # A per-site proxy-safety argument does not survive the whole cluster
+    # being fixed out from under it. All five leave and join the fix
+    # population; their ERROR-READ EXEMPT markers are removed from
+    # stats/eml-analysis.praat at the same lines.
     "eml-analysis.praat|emlRunNormalityAnalysis|emlShapiroWilk|@emlShapiroWilk: .data#",
-    "eml-analysis.praat|emlRunPairwiseAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
     "eml-analysis.praat|emlRunRepeatedMeasuresAnalysis|emlRMAnovaTest|@emlRMAnovaTest: .data##, .n, .k",
-    "eml-analysis.praat|emlRunTwoGroupAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
     "eml-anova-kernel.praat|emlAnovaKernelTwoWayPostHoc|emlBenjaminiHochberg|@emlBenjaminiHochberg: .rawP#",
     "eml-anova-kernel.praat|emlAnovaKernelTwoWayPostHoc|emlBonferroni|@emlBonferroni: .rawP#",
     "eml-anova-kernel.praat|emlAnovaKernelTwoWayPostHoc|emlHolm|@emlHolm: .rawP#",
@@ -397,10 +407,13 @@ EXEMPT_SITES <- c(
     "eml-wizard.praat|<top-level>|emlDrawQQPlot|@emlDrawQQPlot: wizNormQQData#, wizNormQQLabel$, 6, 4.5, \"color\", 1",
     "eml-wizard.praat|<top-level>|emlShapiroWilk|@emlShapiroWilk: wizNormGData#"
 )
-# 34 -> 33 on 2026-09-03 with the countGroups leak's removal. The ceiling
-# FOLLOWS the list down, always: a ceiling left above the list is room for the
-# next wrong pin to fit without tripping anything.
-KNOWN_EXEMPT_CEILING <- 33L
+# 34 -> 33 on 2026-09-03 with the countGroups leak's removal, then 33 -> 28 the
+# same day with the re-audit ordered by the same ruling (the other five
+# emlCountGroups pins, individually triage-SAFE, still belong to a named FIX
+# cluster and come out). The ceiling FOLLOWS the list down, always: a ceiling
+# left above the list is room for the next wrong pin to fit without tripping
+# anything.
+KNOWN_EXEMPT_CEILING <- 28L
 
 has_exempt_marker <- function(s, code) {
     lo <- max(1L, s$line - 20L)
