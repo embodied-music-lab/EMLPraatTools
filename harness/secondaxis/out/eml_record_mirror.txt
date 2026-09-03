@@ -13,6 +13,9 @@ emlSecondAxisMin = 0
 emlSecondAxisMax = 0
 emlSecondAxisLabel$ = "Contact quotient"
 emlSecondAxisStyle = 3
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawTimeSeries: data, "Second axis", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, "t", "f0", "", 0, 0, 0, 0
 --- discarded 1 step(s): a pass that was measured and then thrown away. The steps above this line are NOT in the recording.
 --- step 1 (draw), run 1
@@ -28,4 +31,7 @@ emlSecondAxisMin = 0
 emlSecondAxisMax = 0
 emlSecondAxisLabel$ = "Contact quotient"
 emlSecondAxisStyle = 3
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawTimeSeries: data, "Second axis", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, "t", "f0", "", 0, 0, 190, 280.5590785557137

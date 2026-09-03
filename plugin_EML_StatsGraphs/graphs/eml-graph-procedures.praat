@@ -459,6 +459,22 @@ procedure emlInitializeDrawingDefaults
     ; regression requested, which is the value the form itself initialises
     ; to.
     scatterAnalysisType = 0
+    ; scatterCorrScope, seeded 3 September 2026 for exactly the reason above,
+    ; which the seed beside it did not cover. @emlDrawScatterPlot reads it at
+    ; eml-draw-procedures.praat:5039 --
+    ;
+    ;     if (.annotate = 1 or scatterRegressionLine = 1) and scatterCorrScope <> 2
+    ;
+    ; -- and nothing outside graphs/eml-graphs-form.praat has ever set it, so
+    ; the ONLY caller that survived that line was one that had opened the
+    ; dialog. A recorded script does not: the recorder emits
+    ; @emlInitializeDrawingDefaults and its own settings block, and
+    ; scatterCorrScope is in neither. Replaying a recording of an annotated
+    ; scatter, or one with a regression line, aborted the figure at "Unknown
+    ; variable: scatterCorrScope". Found by harness/secondaxis, which drives
+    ; the draw the way a script does.
+    ; 1 = Per group, the value the form itself initialises to.
+    scatterCorrScope = 1
     # Annotation
     annotCorrType$ = "pearson"
     annotStyle$ = "stars"

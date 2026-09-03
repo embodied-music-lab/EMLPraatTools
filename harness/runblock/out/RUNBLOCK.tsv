@@ -7,7 +7,13 @@ twotables	step2_kind	draw
 twotables	step2_replay	IDENTICAL
 twotables	replay_aborts	0
 twotables	record_aborts	0
-onlyrun2	recorded	0
+onlyrun2	recorded	1
+onlyrun2	step1_kind	draw
+onlyrun2	step1_replay	IDENTICAL
+onlyrun2	step2_kind	draw
+onlyrun2	step2_replay	IDENTICAL
+onlyrun2	replay_aborts	0
+onlyrun2	record_aborts	0
 three	recorded	1
 three	step1_kind	draw
 three	step1_replay	IDENTICAL

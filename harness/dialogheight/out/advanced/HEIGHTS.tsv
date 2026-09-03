@@ -1,28 +1,28 @@
 type	mode	dialog	width	height	screen_h	clamped
-8	advanced	EML Graphs	524	288	2000	no
-8	advanced	Scatter Plot -- Column Mapping	568	999	2000	no
-9	advanced	EML Graphs	524	288	2000	no
-9	advanced	Box Plot -- Column Mapping	568	918	2000	no
-11	advanced	EML Graphs	524	288	2000	no
-11	advanced	Grouped Violin -- Column Mapping	568	992	2000	no
-12	advanced	EML Graphs	524	288	2000	no
-12	advanced	Grouped Box Plot -- Column Mapping	568	992	2000	no
-13	advanced	EML Graphs	524	288	2000	no
-13	advanced	Spaghetti Plot -- Column Mapping	568	785	2000	no
-1	advanced	EML Graphs	524	288	2000	no
-1	advanced	Pitch Contour Settings	524	753	2000	no
-2	advanced	EML Graphs	524	288	2000	no
-2	advanced	Waveform Settings	524	588	2000	no
-3	advanced	EML Graphs	524	288	2000	no
-3	advanced	Spectrum Settings	524	588	2000	no
-4	advanced	EML Graphs	524	288	2000	no
-4	advanced	LTAS Settings	524	738	2000	no
-5	advanced	EML Graphs	524	288	2000	no
-5	advanced	Line Chart -- Data Format	524	152	2000	no
-5	advanced	Line Chart -- Column Mapping	599	881	2000	no
-6	advanced	EML Graphs	524	288	2000	no
-6	advanced	Bar Chart -- Column Mapping	568	918	2000	no
-7	advanced	EML Graphs	524	288	2000	no
-7	advanced	Violin Plot -- Column Mapping	568	918	2000	no
-10	advanced	EML Graphs	524	288	2000	no
-10	advanced	Histogram -- Column Mapping	568	1110	2000	no
+1	advanced	EML Graphs	560	401	2000	no
+1	advanced	Pitch Contour Settings	560	637	2000	no
+2	advanced	EML Graphs	560	401	2000	no
+2	advanced	Waveform Settings	560	509	2000	no
+3	advanced	EML Graphs	560	401	2000	no
+3	advanced	Spectrum Settings	560	509	2000	no
+4	advanced	EML Graphs	560	401	2000	no
+4	advanced	LTAS Settings	560	659	2000	no
+5	advanced	EML Graphs	560	401	2000	no
+5	advanced	Line Chart -- What the lines are	673	204	2000	no
+5	advanced	Line Chart -- Column Mapping	715	787	2000	no
+6	advanced	EML Graphs	560	401	2000	no
+6	advanced	Bar Chart -- Column Mapping	658	856	2000	no
+7	advanced	EML Graphs	560	401	2000	no
+7	advanced	Violin Plot -- Column Mapping	658	856	2000	no
+8	advanced	EML Graphs	560	401	2000	no
+8	advanced	Scatter Plot -- Column Mapping	689	957	2000	no
+9	advanced	EML Graphs	560	401	2000	no
+9	advanced	Box Plot -- Column Mapping	658	856	2000	no
+10	advanced	EML Graphs	560	401	2000	no
+10	advanced	Histogram -- Column Mapping	689	1021	2000	no
+11	advanced	EML Graphs	560	401	2000	no
+11	advanced	Grouped Violin -- Column Mapping	689	925	2000	no
+12	advanced	EML Graphs	560	401	2000	no
+12	advanced	Grouped Box Plot -- Column Mapping	689	925	2000	no
+13	advanced	EML Graphs	560	401	2000	no
+13	advanced	Spaghetti Plot -- Column Mapping	689	802	2000	no

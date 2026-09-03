@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Wed Aug 19 17:31:12 2026  --  recorded on Praat 6.6.30
+# Thu Sep  3 05:02:47 2026  --  recorded on Praat 6.6.30
 # Input: Table secondaxis -- 24 rows, 5 columns
 # ============================================================
 
@@ -37,16 +37,30 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
 # THE OBJECT
 # Recorded against: Table secondaxis -- 24 rows, 5 columns.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# Table secondaxis was already open when this recording started.
+# Nothing in the session made it, so nothing below can remake it.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
@@ -87,6 +101,9 @@ emlSecondAxisMin = secondAxisMin
 emlSecondAxisMax = secondAxisMax
 emlSecondAxisLabel$ = secondAxisLabel$
 emlSecondAxisStyle = secondAxisStyle
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawTimeSeries: data, "Second axis", "Time (s)", "F0 (Hz)", 6, 4, "color", 1, timeCol$, valueCol$, "", 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:

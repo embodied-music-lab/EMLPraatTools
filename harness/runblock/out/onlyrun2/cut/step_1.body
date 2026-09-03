@@ -1,0 +1,20 @@
+# --- Step 1 (draw) ---
+selectObject: data1$
+data = selected ()
+# Box plot: Box
+# Whisker convention and outlier rule are stated in the figure, not assumed.
+
+emlEraseFirst = eraseFirst
+emlPanelOriginX = panelOriginX
+emlPanelOriginY = panelOriginY
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = lineStyle
+emlSecondAxisOn = secondAxisOn
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
+@emlDrawBoxPlot: data, "Box", "Group", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
+
+# The same step through the menu:
+# In the GUI: New > EML Stats & Graphs > EML Graphs...
+
