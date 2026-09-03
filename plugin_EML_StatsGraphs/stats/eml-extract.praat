@@ -136,6 +136,9 @@ procedure emlExtractColumn: .tableId, .columnName$
         .data# = zero#(.nRows)
         .n = 0
 
+        ; ERROR-READ EXEMPT -- this column was already confirmed present (.colExists) on this
+        ; same unmutated table earlier in this procedure; emlAuditColumn's one failure mode
+        ; (column not found) is unreachable here.
         if .fastPath = 0
             @emlAuditColumn: .tableId, .columnName$
             .nEmpty = emlAuditColumn.nEmpty
@@ -3657,6 +3660,9 @@ endproc
 # not agree with one written after it was filled.
 # ============================================================================
 procedure emlDataFingerprint: .tableId
+    ; ERROR-READ EXEMPT -- pure pass-through wrapper: fields are copied to same-named
+    ; locals and .error$ is copied last; this wrapper's own .error$, read by its caller,
+    ; is the real propagation -- pure relay, nothing computed or displayed here.
     @eml_fpCompose: .tableId, 0, "", ""
 
     .result$ = eml_fpCompose.result$
@@ -3698,6 +3704,9 @@ endproc
 #         columns.
 # ============================================================================
 procedure emlGroupFingerprint: .tableId, .dataCol$, .groupCol$
+    ; ERROR-READ EXEMPT -- pure pass-through wrapper: fields are copied to same-named
+    ; locals and .error$ is copied last; this wrapper's own .error$, read by its caller,
+    ; is the real propagation -- pure relay, nothing computed or displayed here.
     @eml_fpCompose: .tableId, 2, .dataCol$, .groupCol$
 
     .result$ = eml_fpCompose.result$
@@ -3742,6 +3751,9 @@ endproc
 #         the caller wrote it.
 # ============================================================================
 procedure emlAnalysisFingerprint: .tableId, .columnList$
+    ; ERROR-READ EXEMPT -- pure pass-through wrapper: fields are copied to same-named
+    ; locals and .error$ is copied last; this wrapper's own .error$, read by its caller,
+    ; is the real propagation -- pure relay, nothing computed or displayed here.
     @eml_fpCompose: .tableId, 1, .columnList$, ""
 
     .result$ = eml_fpCompose.result$

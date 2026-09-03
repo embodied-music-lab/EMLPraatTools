@@ -1,0 +1,47 @@
+# unseeded_form_globals.tsv -- globals a non-form caller reads that only the
+# dialog sets. Ordered by RULING_SETTLEMENT_QUESTIONS_2026-09-03 as the census
+# step; the failing check and its exemptions follow.
+#
+# THE TEST. A name assigned ONLY in graphs/eml-graphs-form.praat and read
+# somewhere outside it. Praat's `include` is a parse-time paste, so a global
+# assigned in one file and read in another is ordinary and fine -- the defect
+# is narrower: the only assignment lives behind the dialog, so a caller that
+# never opened the dialog reads a variable that does not exist and Praat aborts
+# the whole figure at "Unknown variable: <name>". That is what
+# @emlInitializeDrawingDefaults exists to prevent, and the seeded column says
+# whether it does.
+#
+# CALIBRATED, because a census nobody tested is a list. Run against the tree at
+# 84449958^ -- the commit before scatterCorrScope was seeded -- this test finds
+# scatterCorrScope, unseeded, with 5 reads outside the form, and does NOT find
+# scatterAnalysisType, which was already seeded there. One known positive
+# caught, one known negative not raised.
+#
+# NOT ADJUDICATED. Every row is a candidate. Several are read in
+# stats/eml-record.praat, which is the recorder -- the same path on which
+# scatterCorrScope was making recorded scatter figures record nothing at all.
+# read_sites lists up to 12.
+name	assigned_only_in	seeded_by_initializer	n_reads_outside_form	read_sites
+annotCorrectionMethod$	graphs/eml-graphs-form.praat	no	9	graphs/eml-annotation-procedures.praat:3454;graphs/eml-annotation-procedures.praat:3455;graphs/eml-annotation-procedures.praat:3456;graphs/eml-annotation-procedures.praat:3458;graphs/eml-annotation-procedures.praat:3459;graphs/eml-annotation-procedures.praat:3461;stats/eml-record.praat:2132;stats/eml-record.praat:2133;stats/eml-record.praat:2134
+annotate	graphs/eml-graphs-form.praat	no	8	graphs/eml-draw-procedures.praat:176;graphs/eml-draw-procedures.praat:177;graphs/eml-draw-procedures.praat:391;graphs/eml-draw-procedures.praat:392;stats/eml-record.praat:1910;stats/eml-record.praat:1911;stats/eml-record.praat:2194;stats/eml-record.praat:2197
+graph_type	graphs/eml-graphs-form.praat	no	6	stats/eml-record.praat:2223;stats/eml-record.praat:2224;stats/eml-record.praat:2226;stats/eml-record.praat:2228;stats/eml-record.praat:2230;stats/eml-record.praat:2232
+prev_boxShowJitter	graphs/eml-graphs-form.praat	no	5	graphs/eml-draw-procedures.praat:5715;graphs/eml-draw-procedures.praat:5716;stats/eml-record.praat:1895;stats/eml-record.praat:1896;stats/eml-record.praat:1897
+prev_gbShowJitter	graphs/eml-graphs-form.praat	no	5	graphs/eml-draw-procedures.praat:7043;graphs/eml-draw-procedures.praat:7044;stats/eml-record.praat:1903;stats/eml-record.praat:1904;stats/eml-record.praat:1905
+prev_gvShowJitter	graphs/eml-graphs-form.praat	no	5	graphs/eml-draw-procedures.praat:6714;graphs/eml-draw-procedures.praat:6715;stats/eml-record.praat:1899;stats/eml-record.praat:1900;stats/eml-record.praat:1901
+prev_violinShowJitter	graphs/eml-graphs-form.praat	no	5	graphs/eml-draw-procedures.praat:4081;graphs/eml-draw-procedures.praat:4082;stats/eml-record.praat:1891;stats/eml-record.praat:1892;stats/eml-record.praat:1893
+annotYMax	graphs/eml-graphs-form.praat	no	4	stats/eml-record.praat:2272;stats/eml-record.praat:2273;stats/eml-record.praat:2288;stats/eml-record.praat:2297
+annotYMin	graphs/eml-graphs-form.praat	no	4	stats/eml-record.praat:2271;stats/eml-record.praat:2273;stats/eml-record.praat:2288;stats/eml-record.praat:2297
+totalCanvasHeight	graphs/eml-graphs-form.praat	no	4	graphs/eml-graph-procedures.praat:6044;graphs/eml-graph-procedures.praat:6045;graphs/eml-graph-procedures.praat:6046;graphs/eml-graph-procedures.praat:6047
+annotXMax	graphs/eml-graphs-form.praat	no	3	stats/eml-record.praat:2270;stats/eml-record.praat:2286;stats/eml-record.praat:2297
+annotXMin	graphs/eml-graphs-form.praat	no	3	stats/eml-record.praat:2269;stats/eml-record.praat:2286;stats/eml-record.praat:2296
+config_lastPNGFolder$	graphs/eml-graphs-form.praat	no	3	scripts/eml-record-save.praat:97;scripts/eml-record-save.praat:98;scripts/eml-record-save.praat:99
+omnibusCorner$	graphs/eml-graphs-form.praat	no	3	stats/eml-record.praat:2292;stats/eml-record.praat:2294;stats/eml-record.praat:2296
+annotPostHoc	graphs/eml-graphs-form.praat	no	2	graphs/eml-annotation-procedures.praat:3502;graphs/eml-annotation-procedures.praat:3503
+annotYRange	graphs/eml-graphs-form.praat	no	2	stats/eml-record.praat:2273;stats/eml-record.praat:2287
+config_showAxisNames	graphs/eml-graphs-form.praat	no	2	graphs/eml-graph-procedures.praat:2605;graphs/eml-graph-procedures.praat:2606
+config_showAxisValues	graphs/eml-graphs-form.praat	no	2	graphs/eml-graph-procedures.praat:2609;graphs/eml-graph-procedures.praat:2610
+config_showTicks	graphs/eml-graphs-form.praat	no	2	graphs/eml-graph-procedures.praat:2607;graphs/eml-graph-procedures.praat:2608
+dataYMax_forAnnotation	graphs/eml-graphs-form.praat	no	2	stats/eml-record.praat:2259;stats/eml-record.praat:2260
+emlGraphsAxisYReqMax	graphs/eml-graphs-form.praat	no	2	stats/eml-record.praat:2937;stats/eml-record.praat:2939
+emlGraphsAxisYReqMin	graphs/eml-graphs-form.praat	no	2	stats/eml-record.praat:2936;stats/eml-record.praat:2938
+output_DPI	graphs/eml-graphs-form.praat	no	2	stats/eml-output.praat:3932;stats/eml-output.praat:3933

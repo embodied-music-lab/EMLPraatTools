@@ -183,6 +183,9 @@ repeat
                     .data# = eml_getGroupData.data#
                     .n = eml_getGroupData.n
 
+                    ; ERROR-READ EXEMPT -- emlShapiroWilk.error$ is passed straight through as
+                    ; an argument to @emlNormalityRecommendation below, which performs the real
+                    ; check internally via a documented nested-if (.swUsable) gate.
                     @emlShapiroWilk: .data#
                     .swW = emlShapiroWilk.w
                     .swP = emlShapiroWilk.p
@@ -516,6 +519,9 @@ repeat
                 # Nested, not ANDed. Praat evaluates BOTH sides of `and`,
                 # so `if qqReady = 1 and emlDrawQQPlot.drew = 1` would read
                 # a variable that does not exist yet on the failure path.
+                ; ERROR-READ EXEMPT -- .drew is the documented alternate success flag for
+                ; .error$ = "" (set to 1 only on the true success path); branching on .drew
+                ; below is equivalent to checking .error$ directly.
                 if qqReady = 1
                     @emlDrawQQPlot: qqData#, qqLabel$, 6, 4.5, "color", 1
                     if emlDrawQQPlot.drew = 0

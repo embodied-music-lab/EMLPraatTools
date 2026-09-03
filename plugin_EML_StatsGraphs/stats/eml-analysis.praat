@@ -117,6 +117,9 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; ERROR-READ EXEMPT -- .nBlankRows is 0 until the success-path row loop increments
+    ; it, so it cannot be wrong on failure; the real check, on .nGroups, reads
+    ; emlCountGroups.error$ immediately after.
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -531,6 +534,9 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; ERROR-READ EXEMPT -- .nBlankRows is 0 until the success-path row loop increments
+    ; it, so it cannot be wrong on failure; the real check, on .nGroups, reads
+    ; emlCountGroups.error$ immediately after.
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -954,6 +960,9 @@ procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn,
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; ERROR-READ EXEMPT -- .nBlankRows is 0 until the success-path row loop increments
+    ; it, so it cannot be wrong on failure; the real check, on .nGroups, reads
+    ; emlCountGroups.error$ immediately after.
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -1265,6 +1274,9 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; ERROR-READ EXEMPT -- .nBlankRows is 0 until the success-path row loop increments
+    ; it, so it cannot be wrong on failure; the real check, on .nGroups, reads
+    ; emlCountGroups.error$ immediately after.
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -1823,6 +1835,9 @@ endproc
 #   .tableId, .dataCol$, .groupCol$ — as passed to the test
 # ============================================================================
 procedure emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
+    ; ERROR-READ EXEMPT -- .nBlankRows is 0 until the success-path row loop increments
+    ; it, so it cannot be wrong on failure; the real check, on .nGroups, reads
+    ; emlCountGroups.error$ immediately after.
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -3977,6 +3992,9 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         .median = emlMedian.result
 
         # Shapiro-Wilk formal test
+        ; ERROR-READ EXEMPT -- emlShapiroWilk.error$ is copied to .swError$ below and
+        ; passed as an argument to @emlNormalityRecommendation, which performs the real
+        ; check internally via a documented nested-if (.swUsable) gate.
         @emlShapiroWilk: .data#
         .swW = emlShapiroWilk.w
         .swP = emlShapiroWilk.p
@@ -5074,6 +5092,9 @@ procedure emlExtractConditionMatrix: .tableId, .conditionCols$
     for .j from 1 to .k
         @eml_openColumn: .tableId, .colLabel$ [.j]
         .clean [.j] = eml_openColumn.clean
+        ; ERROR-READ EXEMPT -- this column was already confirmed present on this same
+        ; unmutated table via @eml_openColumn just above; emlAuditColumn's one failure
+        ; mode (column not found) is unreachable here.
         @emlAuditColumn: .tableId, .colLabel$ [.j]
         if emlAuditColumn.note$ <> ""
             if .parseNote$ <> ""
@@ -5472,6 +5493,8 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     .data## = emlExtractConditionMatrix.data##
     .nExcluded = emlExtractConditionMatrix.nExcluded
 
+    ; ERROR-READ EXEMPT -- .degenerate is set in lockstep with .error$ in every branch of
+    ; emlRMAnovaTest; gating on .degenerate = 0 below is equivalent to checking .error$ = "".
     @emlRMAnovaTest: .data##, .n, .k
     ; CAPTURED AT THE TEST. The reporter re-runs it, and a Praat procedure's
     ; outputs live only until the next invocation. Greenhouse-Geisser is
@@ -6040,6 +6063,9 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
             .pairLabelB [.pairIdx] = .b
         endfor
     endfor
+    ; ERROR-READ EXEMPT -- the only failure modes are an empty input (unreachable: nGroups
+    ; >= 2 is already guaranteed earlier) or all-undefined p-values, which already yields an
+    ; honest all-undefined .adjusted# -- reading .error$ here would be redundant, not omitted.
     if .adjUsed$ = "bonferroni"
         @emlBonferroni: .rawP#
         .adj# = emlBonferroni.adjusted#

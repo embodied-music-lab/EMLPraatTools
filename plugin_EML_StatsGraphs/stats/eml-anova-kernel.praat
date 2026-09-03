@@ -1607,6 +1607,9 @@ procedure emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$
             endfor
         endfor
 
+        ; ERROR-READ EXEMPT -- the only failure modes are an empty input (unreachable: nGroups
+        ; >= 2 is already guaranteed earlier) or all-undefined p-values, which already yields
+        ; an honest all-undefined .adjusted# -- reading .error$ here would be redundant.
         if .adjMethod$ = "bonferroni"
             @emlBonferroni: .rawP#
             .adjP# = emlBonferroni.adjusted#

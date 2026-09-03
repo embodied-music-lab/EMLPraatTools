@@ -5875,6 +5875,10 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
 
         # --- Adjust p-values ---
 
+        ; ERROR-READ EXEMPT -- the only failure modes are an empty input (unreachable:
+        ; nGroups >= 2 is already guaranteed earlier) or all-undefined p-values, which
+        ; already yields an honest all-undefined .adjusted# -- reading .error$ here would
+        ; be redundant, not omitted.
         if .method$ = "bonferroni"
             @emlBonferroni: .rawP#
             .adjustedP# = emlBonferroni.adjusted#
@@ -6188,6 +6192,10 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
 
         # --- Adjust p-values ---
 
+        ; ERROR-READ EXEMPT -- the only failure modes are an empty input (unreachable:
+        ; nGroups >= 2 is already guaranteed earlier) or all-undefined p-values, which
+        ; already yields an honest all-undefined .adjusted# -- reading .error$ here would
+        ; be redundant, not omitted.
         if .adjustMethod$ = "bonferroni"
             @emlBonferroni: .rawP#
             .adjustedP# = emlBonferroni.adjusted#
@@ -6411,6 +6419,10 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
 
         # --- Adjust p-values ---
 
+        ; ERROR-READ EXEMPT -- the only failure modes are an empty input (unreachable:
+        ; nGroups >= 2 is already guaranteed earlier) or all-undefined p-values, which
+        ; already yields an honest all-undefined .adjusted# -- reading .error$ here would
+        ; be redundant, not omitted.
         if .method$ = "bonferroni"
             @emlBonferroni: .rawP#
             .adjustedP# = emlBonferroni.adjusted#

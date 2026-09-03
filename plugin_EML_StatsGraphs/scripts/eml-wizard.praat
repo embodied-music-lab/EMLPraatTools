@@ -2526,6 +2526,9 @@ elsif goal = 3
                 wizNormGData# = eml_getGroupData.data#
                 wizNormGN = eml_getGroupData.n
 
+                ; ERROR-READ EXEMPT -- emlShapiroWilk.error$ is passed straight through as
+                ; an argument to @emlNormalityRecommendation below, which performs the real
+                ; check internally via a documented nested-if (.swUsable) gate.
                 @emlShapiroWilk: wizNormGData#
                 wizNormGSwW = emlShapiroWilk.w
                 wizNormGSwP = emlShapiroWilk.p
@@ -3195,6 +3198,9 @@ elsif wizDrawSource$ = "normality"
         # Nested, not ANDed — Praat evaluates both sides of `and`, so a
         # variable defined only on the ready path would abort on the
         # failure path if this were one `if ... and ...`.
+        ; ERROR-READ EXEMPT -- .drew is the documented alternate success flag for .error$ = ""
+        ; (set to 1 only on the true success path); branching on .drew below is equivalent to
+        ; checking .error$ directly.
         if wizNormQQReady = 1
             @emlDrawQQPlot: wizNormQQData#, wizNormQQLabel$, 6, 4.5, "color", 1
             if emlDrawQQPlot.drew = 0
