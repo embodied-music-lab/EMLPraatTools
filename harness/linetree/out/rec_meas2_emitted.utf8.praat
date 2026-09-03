@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Tue Aug 25 22:59:28 2026  --  recorded on Praat 6.6.30
+# Thu Sep  3 04:51:39 2026  --  recorded on Praat 6.6.30
 # Input: Table lt_meas2 -- 24 rows, 3 columns
 # ============================================================
 
@@ -39,7 +39,7 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------

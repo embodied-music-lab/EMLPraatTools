@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Tue Aug 25 22:58:44 2026  --  recorded on Praat 6.6.30
+# Thu Sep  3 04:50:59 2026  --  recorded on Praat 6.6.30
 # Input: Table lt_subjects4 -- 12 rows, 5 columns
 # ============================================================
 
@@ -39,7 +39,7 @@ include /home/claude/repo/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praa
 include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 # ---------------------------------------------------------------------------
 # harness/linetree/data_subjects4.praat
@@ -119,8 +119,8 @@ prev_boxShowJitter = 0
 prev_gvShowJitter = 0
 prev_gbShowJitter = 0
 annotate = 0
-@emlGraphsMeltSeries: data, timeCol$, seriesCols$
-data = emlGraphsMeltSeries.tableId
+@emlReshapeSeriesLong: data, timeCol$, seriesCols$
+data = emlReshapeSeriesLong.tableId
 selectObject: data
 
 # The same step through the menu:

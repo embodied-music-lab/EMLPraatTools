@@ -2,10 +2,10 @@
 --run--	source_tree	/home/claude/repo
 --run--	host	vm
 --run--	legs_requested	subjects4 timeswitch subjects_ci meas2 meas2_rep meas3_refuse none_refuse seven script_refuse long_meas2 long_meas3_refuse long_titled wide_titled rec_subjects4 rec_meas2 rec_long_meas2
---run--	code_sha256_eml-graphs-form	1b746010ffa9e52738ee415339d2a32b34bc636c5bc4fe3d2b626ded714fa1df
---run--	code_sha256_eml-graph-procedures	314a1a25d82d49376e12187e945ae4350ec01973b8c1fcba21aba458a17304a6
---run--	code_sha256_eml-draw-procedures	8a32e7b6d0198fa1d478db39d124c197417f348eb0932e98ae1e775ec2bf2540
---run--	code_sha256_eml-record	96cba56cbfb507ee2232bc48bb036f4602148e78794ab78574897ff78c288d9c
+--run--	code_sha256_eml-graphs-form	a752716ca95d3f78d1a6161bb04cfb993b0cffa8d4608343095e193126f80a77
+--run--	code_sha256_eml-graph-procedures	0c8d133f887e35c0f0659078456d070ba6bbcc2939f9c7f8bc72d39b5ea23aaf
+--run--	code_sha256_eml-draw-procedures	0bffa6ce7fca6de62b589a0dad27ea77e5b598480a4b13eb065d1c1ef09c768b
+--run--	code_sha256_eml-record	a7f6cb8cf6ebf8e71a8870666ab922c7960cc0c79f3f90a5e25ee7e5094a9e41
 --run--	compositor	running
 subjects4	leg_started	1
 subjects4	ink_empty	0.000704286
@@ -1798,7 +1798,7 @@ rec_long_meas2	info	NOTE: on-figure box backgrounds are drawn as a stipple scree
 rec_long_meas2	info	NOTE: The legend needs y-axis room, so the figure is drawn again on the widened axis. Any notes above this line describe the first, discarded pass and are repeated below.
 rec_long_meas2	info_lines	2
 rec_long_meas2	display_clear	yes
-rec_subjects4	emitted_bytes	12432
+rec_subjects4	emitted_bytes	12448
 rec_subjects4	emitted_encoding	utf16
 rec_subjects4	emitted_step	# --- Step 1 (convert) ---
 rec_subjects4	emitted_step	# --- Step 2 (draw) ---
@@ -1821,7 +1821,7 @@ rec_subjects4	block_prev_boxShowJitter	0
 rec_subjects4	block_prev_gvShowJitter	0
 rec_subjects4	block_prev_gbShowJitter	0
 rec_subjects4	block_annotate	0
-rec_subjects4	block_data	emlGraphsMeltSeries.tableId
+rec_subjects4	block_data	emlReshapeSeriesLong.tableId
 rec_subjects4	block_prev_violinShowJitter	0
 rec_subjects4	block_prev_boxShowJitter	0
 rec_subjects4	block_prev_gvShowJitter	0
@@ -1837,9 +1837,9 @@ rec_subjects4	block_annotCorrectionMethod$	"holm"
 rec_subjects4	block_annotAlpha	0.05
 rec_subjects4	block_emlGroupSortAlphabetical	0
 rec_subjects4	block_emlShowExplanations	1
-rec_subjects4	emitted_call	@emlInitDrawingDefaults
+rec_subjects4	emitted_call	@emlInitializeDrawingDefaults
 rec_subjects4	emitted_call	@emlClearAnnotations
-rec_subjects4	emitted_call	@emlGraphsMeltSeries: data, timeCol$, seriesCols$
+rec_subjects4	emitted_call	@emlReshapeSeriesLong: data, timeCol$, seriesCols$
 rec_subjects4	emitted_call	@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 rec_subjects4	emitted_call	@emlDrawTimeSeries: data, "Line Chart (±CI): lt subjects4", "Time", "", 6, 4, "color", 1, timeCol$, valueCol$, groupCol$, 0, 0, axisYMin, axisYMax
 rec_subjects4	replay_include_rewritten	14
@@ -1854,7 +1854,7 @@ rec_subjects4	tuned_verdict	OK
 rec_subjects4	tuned_png_md5	33ca5bf44244beae6075eb4b5eb14900
 rec_subjects4	tuned_png_px	1800x1200
 rec_subjects4	tuned_error	
-rec_meas2	emitted_bytes	6172
+rec_meas2	emitted_bytes	6178
 rec_meas2	emitted_encoding	ascii
 rec_meas2	emitted_step	# --- Step 1 (draw) ---
 rec_meas2	block_data1$	"Table lt_meas2"
@@ -1894,7 +1894,7 @@ rec_meas2	block_annotCorrectionMethod$	"holm"
 rec_meas2	block_annotAlpha	0.05
 rec_meas2	block_emlGroupSortAlphabetical	0
 rec_meas2	block_emlShowExplanations	1
-rec_meas2	emitted_call	@emlInitDrawingDefaults
+rec_meas2	emitted_call	@emlInitializeDrawingDefaults
 rec_meas2	emitted_call	@emlClearAnnotations
 rec_meas2	emitted_call	@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 rec_meas2	emitted_call	@emlDrawTimeSeries: data, "F0 over time (lt meas2)", "Time", "F0", 6, 4, "color", 1, timeCol$, valueCol$, "", 0, 0, axisYMin, axisYMax
@@ -1910,7 +1910,7 @@ rec_meas2	tuned_verdict	OK
 rec_meas2	tuned_png_md5	deab345dd1b4aa7bf411efeb1588f427
 rec_meas2	tuned_png_px	1800x1200
 rec_meas2	tuned_error	
-rec_long_meas2	emitted_bytes	7202
+rec_long_meas2	emitted_bytes	7208
 rec_long_meas2	emitted_encoding	ascii
 rec_long_meas2	emitted_step	# --- Step 1 (convert) ---
 rec_long_meas2	emitted_step	# --- Step 2 (draw) ---
@@ -1939,7 +1939,7 @@ rec_long_meas2	block_prev_boxShowJitter	0
 rec_long_meas2	block_prev_gvShowJitter	0
 rec_long_meas2	block_prev_gbShowJitter	0
 rec_long_meas2	block_annotate	0
-rec_long_meas2	block_data	emlGraphsPivotSeries.tableId
+rec_long_meas2	block_data	emlReshapeSeriesWide.tableId
 rec_long_meas2	block_prev_violinShowJitter	0
 rec_long_meas2	block_prev_boxShowJitter	0
 rec_long_meas2	block_prev_gvShowJitter	0
@@ -1960,9 +1960,9 @@ rec_long_meas2	block_annotCorrectionMethod$	"holm"
 rec_long_meas2	block_annotAlpha	0.05
 rec_long_meas2	block_emlGroupSortAlphabetical	0
 rec_long_meas2	block_emlShowExplanations	1
-rec_long_meas2	emitted_call	@emlInitDrawingDefaults
+rec_long_meas2	emitted_call	@emlInitializeDrawingDefaults
 rec_long_meas2	emitted_call	@emlClearAnnotations
-rec_long_meas2	emitted_call	@emlGraphsPivotSeries: data, timeCol$, longValueCol$, seriesNameCol$, seriesLevels$
+rec_long_meas2	emitted_call	@emlReshapeSeriesWide: data, timeCol$, longValueCol$, seriesNameCol$, seriesLevels$
 rec_long_meas2	emitted_call	@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 rec_long_meas2	emitted_call	@emlDrawTimeSeries: data, "F0 over time (lt longmeas2)", "Time", "F0", 6, 4, "color", 1, timeCol$, valueCol$, "", 0, 0, axisYMin, axisYMax
 rec_long_meas2	replay_include_rewritten	14

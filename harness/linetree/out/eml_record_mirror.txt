@@ -3,8 +3,8 @@
 --- step 1 (convert), run 1
 Converted Table lt_longmeas2 to Table eml_pivot.
 This table stores its measurements stacked in one column, so they are spread back out into a column each: the time column, then one column per measurement. That is the shape a two-axis line chart is drawn from.
-@emlGraphsPivotSeries: data, "time", "value", "measure", "f0,cq"
-data = emlGraphsPivotSeries.tableId
+@emlReshapeSeriesWide: data, "time", "value", "measure", "f0,cq"
+data = emlReshapeSeriesWide.tableId
 selectObject: data
 --- step 2 (draw), run 1
 Line chart: F0 over time (lt longmeas2)
