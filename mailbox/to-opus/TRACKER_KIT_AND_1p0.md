@@ -20,18 +20,21 @@ reported, not assumed).
    whose solved q does not reach the stated target must be re-solved
    or relabeled with a NAMED grid floor. [RULING_WAVE_THREE Q1;
    MEMO_ORACLE_POLICY p5b; RULING_PORT_ACCEPTANCE]
-2. Port re-accepted against the regenerated grid — IN-FLIGHT, Opus,
-   under RULING_PORT_ACCEPTANCE: the grid is the ONLY oracle in both
-   directions (R/scipy demoted to documented comparison columns);
-   cells with true p < 1e-12 leave the pass/fail tally and become
-   labeled characterization cells (measured envelope, worded into the
-   paper); the two k=10, df=3 misses get one diagnostic resolution
-   pass, then fix-or-NAMED-bound; the domain flag gets one committed
-   definition with a recorded==recomputed assertion. Arbitration
-   already measured: port 106/108 forward + 22/22 quantile vs the
-   grid; all nine v154 "failures" are PORT_CLOSER. k=2 exact branch
-   and Illinois false position landed. [MEMO_ORACLE_POLICY;
-   RULING_WAVE_THREE Q2, Q3]
+2. Port re-accepted — CLOSED 2 Sep night (re-verified at the gate
+   inspection like everything else): mesh-width fix (0.005→0.0005)
+   converged both k=10, df=3 cells to ~2.7e-10 at no measurable
+   cost; v154 grid-only reads 121/121 acceptance cells + 9 labeled
+   characterization cells, ZERO failures. Grid forward-row finding
+   ruled (RULING_GRID_RELABEL_AND_V150): forward q's were SEEDED
+   from scipy's inverse, never solved — every (q,p) pair is TRUE,
+   the labels lied → RELABEL all forward rows to actual p +
+   provenance header + tier coverage recomputed from actual p +
+   root-solve (full-evaluation verified) only where a tier is empty;
+   generator's false-convergence self-check replaced as standard.
+   v150 → R-CHARACTERIZATION file (option 3): 449 measurements kept
+   as the paper's R map, out of the pass/fail tally, header citing
+   RULING_PORT_ACCEPTANCE. [MEMO_GRID_ROWS_NEVER_SOLVED;
+   MEMO_V150_SUPERSEDED]
 3. invTukeyQ replaced by the port's inverse; 144 interval rows
    revalidate. [RULING_PROVENANCE_AND_CANCELLATION]
 4. Class A far-tail cancellation-signature sweep, two-reference gate —
@@ -45,7 +48,40 @@ reported, not assumed).
    - straight renames to the ACCEPTED canonical set (6 renames + 37
      unchanged; no wrappers) [NOTE_NAMES_ACCEPTED; MEMO_NO_WRAPPERS]
    - uniform outcome contract (.ok / .error$ / .warning$) across the
-     42 public rows — DECIDED-NOT-STARTED
+     45 public rows — DECIDED-NOT-STARTED
+   - survey rows JOIN HERE (RULING_SURVEY_ROWS_ACCEPTED, 3 Sep; Ian
+     accepted line-by-line): three FROZEN signatures —
+     emlRunReliabilityAnalysis (.tableId, .itemCols$#, .confidence,
+     .doInfluence; no measure selector — siblings later, Praat
+     positional args), emlRunCategoricalAnalysis (.tableId, .rowCol$,
+     .colCol$, .countCol$, .correction), emlRunProportionAnalysis
+     (.tableId, .col$, .successValue$, .countCol$, .confidence;
+     Wilson option 2). .countCol$ convention: empty = raw rows,
+     named = pre-aggregated counts (weight-cases/xtabs analog).
+     Kernel cells (22/8/8/27) stay; each row gains doorway kit cells
+     pre-freeze (missing-data listwise case; low-expected-count +
+     pre-aggregated cases; raw + pre-aggregated cases). Old stub
+     skeleton kept, .raterCols$/pipe signature dies.
+     STATUS 3 Sep midday: ALL THREE DOORWAYS BUILT to the frozen
+     signatures; registry AT 45 committed as the one settlement
+     change; doorway cells c0676-c0689 green vs independent scipy
+     oracle; settlement gate 118/118, door-chain check 10/10
+     (computed exemption now EMPTY — psychometrics + categorical
+     each lost theirs by gaining a door); record_e2e 38/38 PASS
+     incl. twoway. RULING_SETTLEMENT_QUESTIONS (3 Sep) added:
+     influence vector exported onto reliability doorway namespace
+     (not printed) + k=2 doorway fixture with properly-worded
+     when-clause; LMM dead block in eml-wizard.praat:2865 = 4c
+     documented exemption for the freeze (expiry: navigation
+     returns or block removed; fate decided post-1.0);
+     .countCol$ lives in matrix.tsv col_c (accepted); absd prints
+     UNSIGNED under any sort order (settings/probe +7.07 accepted,
+     old −7.07 was display defect). Task 4: 24/28 live dirs
+     regenerated (snapshots + break outputs correctly keep retired
+     names — three-populations reading accepted); open: linetree,
+     secondaxis, replay.sh retarget diagnosis. NEW 1.0-round item:
+     unseeded-form-globals sweep as a CHECK (scatterCorrScope
+     class), error-sweep pattern, not blocking freeze.
    - annotation bridge unified onto the Family A dispatch,
      equivalence probes before/after + red demo
      [RULING_REGISTRY_VERDICTS §4]
@@ -59,7 +95,8 @@ reported, not assumed).
      emlRunReliabilityAnalysis with the census §2 proof). Generation
      from the registry filed post-1.0. [RULING_RECORDER_AND_WIRING]
    - LMM exclusion entry (implemented, doors withdrawn, public
-     post-1.0); registry at 42 rows [RULING_REGISTRY_VERDICTS §1]
+     post-1.0); registry at 45 rows (42 + three survey rows)
+     [RULING_REGISTRY_VERDICTS §1; RULING_SURVEY_ROWS_ACCEPTED]
    - registry wiring: docs, barrel, Table S2 GENERATED from the
      registry (currently honest attestations say not wired)
      [RULING_PUBLIC_SURFACE mechanism 3]
@@ -146,7 +183,8 @@ reported, not assumed).
 - D-clause table: all retire with the builds except D-WORDING
   (re-measures); R-side findings taxonomy (2 errors, 1 non-error,
   + the k=2 approximation note).
-- Table S2 = the 42 canonical rows, generated from the registry.
+- Table S2 = the 45 canonical rows (42 + survey), generated from
+  the registry.
 - Version assertion described as provenance, in those words.
 - Census bright line: methods ours; host may supply special
   functions only under continuous kit measurement incl. far tail.
@@ -157,7 +195,7 @@ reported, not assumed).
 - The 27 Aug certification record: 17 analysis procedures
   contract-complete, 624 cells, 10,841 comparisons on Ian's machine
   at 98729af. That number is the last CERTIFIED count.
-- The public surface for 1.0 is 42 registry rows — but the kit
+- The public surface for 1.0 is 45 registry rows — but the kit
   numerically validates the ANALYSIS subset, not the 15 drawing
   rows or the utility rows. Table S2 documents the surface; the
   kit's coverage claim must name its subset, not imply 42.
@@ -174,8 +212,25 @@ reported, not assumed).
   round, except intersections folded per A.5.
 - Language batch items 1-21: approval-ready, awaiting Ian en bloc.
 - Wizard/door parity round (WIZARD_HARDCODE_REVIEW).
-- Survey module lane (own gates; Stage 2 go, Stage 3 language
-  approved; separate from the 1.0 tag).
+- Survey module — CLOSED by Ian, 3 Sep, single authority =
+  RULING_SURVEY_FINAL ("Kit includes survey api. Plugin includes
+  survey doorways"; supersedes all four earlier survey files):
+  (1) KIT API INCLUDES THE SURVEY API — survey rows join the
+  registry IN THE SETTLEMENT WAVE; registry leaves 42; S2 / gate
+  row-count / docs generation / coverage map move with it; the four
+  kernels are already among the kit's 17 validated procedures, any
+  survey entry procedure's coverage stated per-row by the map.
+  (2) PLUGIN 1.0 INCLUDES THE SURVEY DOORWAYS — built post-freeze in
+  the doorway-reconciliation round (lane's wizard work reused, its
+  gates binding); freeze-time state = rows public/callable, doors
+  not yet. (3) Kit resolves first: freeze → doorway round → 1.0.
+  (4) ONLY LMM defers past 1.0. The blocker RESOLVED 3 Sep:
+  PROPOSAL_SURVEY_ROWS ruled via RULING_SURVEY_ROWS_ACCEPTED (Ian
+  accepted line-by-line; three frozen signatures — see §A settlement
+  wave; registry 42 → 45). Merge status closed by the proposal
+  itself (survey code already in the plugin tree, module table
+  indices 7/8); stub skeleton kept, signature rebuilt. Settlement
+  registry work UNBLOCKED.
 - Error-propagation sweep: IN the 1.0 round pre-tag by Ian's
   emphatic ruling — MEASURED, NOT DONE (REPORT_ERROR_PROPAGATION,
   2 Sep): 135 raw violations / 121 unique, EXEMPT_SITES empty, v134
@@ -218,8 +273,37 @@ IAN RULED 2 Sep (evening): melt approach APPROVED → RULING_RM_FORMATS
 (both shapes; .subjectCol$ wired); 82/53 triage APPROVED →
 RULING_ERROR_TRIAGE_APPROVED (fix 82 by priority; 6 unsure run named
 checks first; 53 filed to EXEMPT_SITES with reasons; v134 green
-before tag). WITH IAN still: the settlement-bundle push; the
-upstream R bug report (standing).
+before tag). WITH IAN still: the settlement-bundle push (pre-merge
+`git add mailbox && git commit` now required — mailbox is tracked);
+the upstream R bug report (draft delivered, filing = his call).
+
+RM SIGNATURE ACCEPTED (RULING_RM_SIGNATURE_ACCEPTED, 2 Sep late):
+.tableId, .format$("wide"/"long"), .subjectCol$, .conditionCols$#,
+.conditionCol$, .valueCol$, .doPostHoc, .adjMethod$ — frozen; and
+the reshape pair ALSO moves to string vectors (comma form dies with
+the pipe form; one list convention on the public surface;
+equivalence probes + red demo for the reshape pair).
+
+PROTOCOL ARTIFACTS (RULING_PROTOCOL_ARTIFACTS): claims ledger EXISTS
+(planning/CLAIMS_EVIDENCE_LEDGER_2026-09-02; keys to section B now,
+re-keys to Sol's draft later; v160 + package_run.sh COMMITTED same
+day; ledger's two defects — half-fixed row 9, unescaped pipes —
+were Fable's, fixed and redelivered). Port work (grid-only
+re-point, df=3 diagnostic, domain flag) IN-FLIGHT at Opus.
+
+DELEGATE RAN AND STOPPED CORRECTLY 2 Sep night (out/REPORT.md;
+RULING_SETTLEMENT_STOP): sync gate met its own stop condition —
+local/origin diverged (same 14-file delivery committed twice;
+local ⊇ origin). Nothing touched; read-only baselines taken.
+Findings adjudicated: baseline docs update to 117/72/45 + stale §E
+docstring (Opus); 13 E3 empty-filename rows = census's elided
+":<line>" references taken literally in the TSV extraction — fill
+with graphs/eml-draw-procedures.praat (Opus); run_all.R manifest
+gains v158–v160 + RUN_ALL_SUMMARY.tsv in one edit (Opus); 222→227
+touches = likely Fable's delivered historical docs — classify, and
+extend the historical exclusion to dated planning/ records with
+list_sites.sh and v159 sharing ONE scope (Opus). RELAUNCH after:
+Ian's merge+push → Opus's four small fixes → same work order.
 
 ## F. The existing registers this tracker indexes
 
