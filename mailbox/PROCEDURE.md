@@ -93,6 +93,27 @@ This applies to every session. Your container, your clone and Ian's
 disk are three different places, and only the third is where the
 other sessions read.
 
+IT APPLIES TO MAIL FIRST OF ALL, which the rule's author then failed
+to apply to mail. On 3 September Opus wrote six memos into its own
+container's `_mailbox_live/to-fable/`, ran `sync_mailbox.sh`, committed
+the archive copy, and reported them sent. Fable's inbox on Ian's disk
+had seen nothing since the day before. Two of the six were
+`Needs: fable` and named as blocking.
+
+`sync_mailbox.sh` copies the live drop into the committed archive. That
+is bookkeeping, not delivery. A memo has been SENT when it appears in a
+listing of the recipient's inbox ON IAN'S DISK:
+
+    /Users/ianhowell/EMLPraatTools/_mailbox_live/to-<recipient>/
+
+For a session with the device bridge that is `device_commit_files`
+followed by `device_list_dir` on the destination folder. `_mailbox_live/`
+is gitignored there — that is what it is FOR, and writing into it cannot
+recreate the untracked-file merge blocker of 2 September. For a session
+without the bridge, the memo travels in a bundle and is not delivered
+until Ian applies it. Say which of those two happened. Never say a memo
+was sent because a file exists where you wrote it.
+
 ## Record what you did
 
 After reading a file, append one line to your log. This is what stops
