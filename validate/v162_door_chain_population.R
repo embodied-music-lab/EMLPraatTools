@@ -256,16 +256,59 @@ accounted <- union(in_barrel, sanctioned)
 # Method: collect the door scripts the menu block registers, take every
 # procedure they call, follow each into whichever module defines it, and keep
 # going. A module none of that reaches is one no menu needs.
+#
+# THE CALL GRAPH IS BUILT FROM CODE, NOT FROM PROSE. A first version of this
+# walk harvested `@name` from every line of every file, comments included, and
+# one comment was enough to poison the result: eml-psychometrics.praat:93 names
+# `@emlWilsonInterval` inside a sentence about a sibling procedure's default.
+# The moment the reliability doorway made psychometrics genuinely menu-reachable,
+# that sentence became an edge, eml-categorical.praat inherited a menu it has no
+# door to, and the check failed on a module nothing calls. A comment cannot make
+# a procedure reachable, so comments are stripped before any name is read --
+# whole-line `#`/`;` comments the way the include walk already strips them, plus
+# a trailing `;` comment outside string quotes. Mid-line `#` is left alone on
+# purpose: in Praat it is the vector and matrix suffix (`.itemCols$#`, `t##`),
+# not a comment marker.
+#
+# THE UNIVERSE IS THE SHIPPED TREE. dev/ is excluded. Nothing a menu registers
+# includes a dev test, so a test can never make a module reachable; and because
+# ownership here is one name to one file, a test that happens to define a name a
+# production module also defines would silently reassign that name's owner and
+# move the exemption. Three names are already defined twice inside dev/tests/.
 menu_doors <- unique(sub('.*"(scripts/[^"]+\\.praat)".*', "\\1",
                   grep('Add menu command:.*"scripts/[^"]+\\.praat"',
                        src, value = TRUE)))
 check_true("v162", "the menu block registers door scripts to trace from",
            length(menu_doors) > 0)
 
+# Whole-line comments go first; then, on the lines that could still hide a call
+# behind a trailing `;`, cut at the first `;` that follows whitespace outside a
+# double-quoted string.
+eml_code_lines <- function(ln) {
+    ln <- ln[!grepl("^\\s*[#;]", ln)]
+    hit <- grepl(";", ln, fixed = TRUE) & grepl("@", ln, fixed = TRUE)
+    for (i in which(hit)) {
+        ch <- strsplit(ln[i], "", fixed = TRUE)[[1]]
+        q  <- FALSE
+        for (j in seq_along(ch)) {
+            if (ch[j] == '"') {
+                q <- !q
+            } else if (!q && ch[j] == ";" && j > 1L && grepl("\\s", ch[j - 1L])) {
+                ln[i] <- substr(ln[i], 1L, j - 1L)
+                break
+            }
+        }
+    }
+    ln
+}
+
 proc_defs <- list(); file_calls <- list()
-for (f in list.files(plug, pattern = "\\.praat$", recursive = TRUE)) {
+tree_files <- list.files(plug, pattern = "\\.praat$", recursive = TRUE)
+tree_files <- tree_files[!grepl("^dev/", tree_files)]
+for (f in tree_files) {
     ln  <- tryCatch(readLines(file.path(plug, f), warn = FALSE),
                     error = function(e) character(0))
+    ln  <- eml_code_lines(ln)
     dfs <- sub("^\\s*procedure\\s+([A-Za-z_][A-Za-z0-9_]*).*$", "\\1",
                grep("^\\s*procedure\\s+", ln, value = TRUE))
     if (length(dfs)) proc_defs[[f]] <- unique(dfs)
