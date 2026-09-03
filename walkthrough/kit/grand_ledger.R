@@ -346,7 +346,15 @@ addRow("kit_verdict", verdictLine, "GREEN | NOT GREEN",
 # ---------------------------------------------------------------------------
 validatorSummaryPath <- file.path(validateDir, "RUN_ALL_SUMMARY.tsv")
 if (file.exists(validatorSummaryPath)) {
-    vs <- read.delim(validatorSummaryPath, sep = "\t", colClasses = "character", quote = "")
+    # comment.char = "#", because RUN_ALL_SUMMARY.tsv opens with three comment
+    # lines describing itself. Without it read.delim takes the first of those
+    # as the header -- one field, no tabs -- and dies on the first real row
+    # with "more columns than column names", which is what it had been doing:
+    # this branch could not run at all, and the ledger it feeds could not be
+    # regenerated. Every other read in this file already passes comment.char
+    # or strips the comments by hand; this one was missed.
+    vs <- read.delim(validatorSummaryPath, sep = "\t", colClasses = "character",
+                     quote = "", comment.char = "#")
     nPass <- sum(vs$status == "PASS", na.rm = TRUE)
     addRow("n_validators_passing", nPass, "scripts",
            "validate/RUN_ALL_SUMMARY.tsv: count of rows with status == \"PASS\".",
