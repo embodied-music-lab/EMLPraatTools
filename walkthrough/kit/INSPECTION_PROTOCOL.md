@@ -35,8 +35,9 @@ send-back, not a workaround.
    clause — any other surviving declared row is a finding);
    D-WORDING re-measured, not carried.
 5. Registry surface: docs/barrel/Table S2 regenerated from
-   REGISTRY.tsv and byte-compared; exactly 42 rows; the exclusion
-   entries (LMM, reliability) present and staleness-checked; the
+   REGISTRY.tsv and byte-compared; exactly 45 rows; the exclusion
+   entry (LMM) present and staleness-checked -- reliability's was
+   deleted on 3 September when the stub became a working doorway; the
    erosion check demonstrated red on a scratch door registration.
 6. Studentized range: v154 re-run grid-only per RULING_PORT_ACCEPTANCE
    — characterization cells labeled and outside the pass tally; the

@@ -22,7 +22,7 @@
 # Checks A through D carry a Fable ruling and FAIL the file when they fail:
 #   A  the six old names appear nowhere
 #   B  the six new names are defined and registered
-#   C  the registry holds 42 rows and the mixed-model row is excluded by an
+#   C  the registry holds 45 rows and the mixed-model row is excluded by an
 #      explicit entry rather than by deletion
 #   D  the two ordered recorder hooks exist
 #
@@ -199,8 +199,8 @@ for (p in RENAMES) {
 }
 
 # ---- C. registry shape ----------------------------------------------------
-cat("\n  ---- C. registry at 42 rows, mixed model excluded by entry ----\n")
-check_true(V, "registry holds exactly 42 data rows", length(regRows) == 42)
+cat("\n  ---- C. registry at 45 rows, mixed model excluded by entry ----\n")
+check_true(V, "registry holds exactly 45 data rows", length(regRows) == 45)
 cat(sprintf("      registry data rows now: %d\n", length(regRows)))
 check_true(V, "emlRunLMMAnalysis absent from registry",
            sum(regNames == "emlRunLMMAnalysis") == 0)

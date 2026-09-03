@@ -335,17 +335,15 @@ run_pattern_procs <- grep("^emlRun[A-Z]", all_procs, value = TRUE)
 # accountable rather than trusting it blind: an excluded name that is no
 # longer an emlRun* procedure at all, or that no longer needs excluding
 # because a row now covers it, is flagged rather than left to go stale.
+# emlRunReliabilityAnalysis was here until 3 September 2026, excluded as an
+# "unimplemented stub ... unconditionally sets .error$ and computes nothing."
+# RULING_SURVEY_ROWS_ACCEPTED_2026-09-03 had it rebuilt as a working doorway
+# on a frozen signature, and the exclusion's own words stopped being true of
+# the tree that day. It is deleted rather than reworded: an exclusion is a
+# standing claim about a procedure, and a working public procedure sitting
+# outside the erosion check on a false claim is the exact failure this check
+# exists to catch. Its REGISTRY.tsv row returned in the same change.
 RUN_EXCLUSIONS <- c(
-    emlRunReliabilityAnalysis = paste(
-        "Unimplemented stub (v1.2 item 7), stats/eml-analysis.praat:",
-        "unconditionally sets .error$ and computes nothing; has no real",
-        "call site anywhere in the plugin (the two other hits for this",
-        "name are the recorder assembling call TEXT into a generated",
-        "script, and a comment -- not calls). Excluded from",
-        "REGISTRY.tsv by ruling (Fable, 2026-09-01: 'an unconditional-",
-        "error stub is not surface') and excluded here from the erosion",
-        "check for the same reason -- unimplemented; excluded until it",
-        "works."),
     emlRunLMMAnalysis = paste(
         "Implemented and validated (stats/eml-lmm.praat), but its menu",
         "entry and the wizard's mixed-model page are both withdrawn -- no",

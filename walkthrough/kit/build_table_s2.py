@@ -29,18 +29,13 @@ also not addressed here.
 
 ROW COUNT IS NOT HARDCODED
 ---------------------------
-NOTE_NAMES_ACCEPTED_2026-09-01.md: "42 public rows for 1.0 after the LMM
-exclusion, and Table S2's row set is fixed." That exclusion is ORDERED
-(RULING_REGISTRY_VERDICTS_2026-09-01.md #1) but has not yet EXECUTED in
-REGISTRY.tsv: the mixed-model row (emlRunLMMAnalysis) still carries a row
-there today, pending the pre-run settlement wave (see REGISTRY.tsv's own
-header comment, and TRACKER_KIT_AND_1p0.md's "registry at 42 rows
-[RULING_REGISTRY_VERDICTS #1]" line, which describes the ordered target,
-not today's file). This script does not special-case that row, or any
-other, and does not assert 42 or 43 anywhere: it emits one Table S2 row
-per row REGISTRY.tsv actually holds when it runs. Today that is 43; once
-the settlement wave's LMM exclusion lands in REGISTRY.tsv, the next run
-of this script emits 42 without this file changing at all.
+This script does not special-case any row and asserts no count
+anywhere: it emits one Table S2 row per row REGISTRY.tsv actually holds
+when it runs. The count has moved three times while this sentence stayed
+true -- 43 before the mixed-model row's ordered exclusion, 42 after it,
+45 once the three survey doorways were built and joined the surface
+(RULING_SURVEY_ROWS_ACCEPTED_2026-09-03.md). None of those moves needed
+an edit here, which is the point of writing it this way.
 
 COLUMNS
 -------
@@ -102,9 +97,7 @@ def main():
         "# The paper's procedure table (manuscript Table S2), one row per"
         " plugin_EML_StatsGraphs/REGISTRY.tsv row. The row count is"
         " whatever the registry currently holds -- not asserted here; see"
-        " this script's own docstring (43 rows while the mixed-model row"
-        " awaits the settlement wave's ordered exclusion, 42 once that"
-        " exclusion executes in REGISTRY.tsv)."
+        " this script's own docstring."
     )
     out.append("registry_name\tkind\tdescription")
 

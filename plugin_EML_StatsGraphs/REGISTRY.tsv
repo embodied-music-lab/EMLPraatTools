@@ -1,13 +1,23 @@
 # ==========================================================================
 # REGISTRY — EML Stats & Graphs public procedure surface
-# Compiled: 2026-09-01  |  42 rows (2026-09-02: emlRunLMMAnalysis's row
-# removed for 1.0 -- see the correction below)
+# Compiled: 2026-09-01  |  45 rows (2026-09-02: emlRunLMMAnalysis's row
+# removed for 1.0; 2026-09-03: the three survey rows added -- see the
+# corrections below)
 # Ruling: mailbox/to-opus/RULING_PUBLIC_SURFACE_2026-09-01.md
 # Correction (2026-09-01, Fable): emlRunReliabilityAnalysis's row removed --
 # "Table S2 documents working public surface; an unconditional-error stub is
 # not surface." It matches the emlRun* name pattern, so removing it moved it
 # onto validate/v155_public_registry.R's erosion-check exclusion list rather
 # than off the boundary silently -- see that file's RUN_EXCLUSIONS.
+# Reversed (2026-09-03, RULING_SURVEY_ROWS_ACCEPTED_2026-09-03.md): the stub
+# was rebuilt as a working doorway on a frozen signature, so the reason for
+# its removal expired. Its row returns, and its RUN_EXCLUSIONS entry is
+# deleted rather than left standing on a reason the tree now contradicts.
+# emlRunCategoricalAnalysis and emlRunProportionAnalysis join it: the survey
+# lane's kernels were public and its doorways were not, which is the gap that
+# ruling closed. All three carry source 3 as well as source 1 -- each one's
+# recorder step emits a literal replayable call, which the stub could never
+# do.
 # Correction (2026-09-02, Ian, RULING_REGISTRY_VERDICTS_2026-09-01.md section
 # 1): emlRunLMMAnalysis's row removed for the same mechanism -- implemented
 # and validated, but its menu entry and the wizard's mixed-model page are
@@ -90,6 +100,9 @@ emlRunGroupedRegressionAnalysis	stats/eml-analysis.praat	procedure emlRunGrouped
 emlRunNormalityAnalysis	stats/eml-analysis.praat	procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$	Normality test for one numeric column — Shapiro-Wilk and/or skewness/kurtosis — with a plain-language recommendation.	1,3
 emlRunRepeatedMeasuresAnalysis	stats/eml-analysis.praat	procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$	Parametric repeated-measures ANOVA (wide format) with Greenhouse-Geisser correction and an optional post-hoc. .subjectCol$ is reserved and currently unread.	1,3
 emlRunFriedmanAnalysis	stats/eml-analysis.praat	procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$	Friedman test — nonparametric repeated measures, wide format — with an optional post-hoc.	1,3
+emlRunReliabilityAnalysis	stats/eml-analysis.praat	procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfluence	Cronbach's alpha over a set of item columns, with a confidence interval, alpha-if-item-deleted, and an optional respondent-influence check. Rows with missing items are dropped and the count is disclosed.	1,3
+emlRunCategoricalAnalysis	stats/eml-analysis.praat	procedure emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$, .countCol$, .correction	Chi-square test of independence over two category columns, with Cramer's V and an optional Yates correction. An empty .countCol$ tallies raw rows; a named one reads pre-aggregated counts.	1,3
+emlRunProportionAnalysis	stats/eml-analysis.praat	procedure emlRunProportionAnalysis: .tableId, .col$, .successValue$, .countCol$, .confidence	One proportion with a Wilson score interval. An empty .countCol$ tallies raw rows; a named one reads pre-aggregated counts, which is how summary data such as "37 yes, 83 no" enters.	1,3
 emlDrawF0Contour	graphs/eml-draw-procedures.praat	procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .tMin, .tMax, .fMin, .fMax, .yUnit	F0 contour figure (EML Graphs type 1) for a Pitch object.	2,3
 emlDrawWaveform	graphs/eml-draw-procedures.praat	procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .tMin, .tMax, .aMin, .aMax	Waveform figure (EML Graphs type 2) for a Sound object.	2,3
 emlDrawSpectrum	graphs/eml-draw-procedures.praat	procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .fMin, .fMax, .pMin, .pMax	Spectrum figure (EML Graphs type 3) for a Spectrum object.	2,3
