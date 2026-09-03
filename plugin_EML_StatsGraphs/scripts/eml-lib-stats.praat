@@ -78,6 +78,25 @@ include ../stats/eml-psychometrics.praat
 ; paste and the caller must find the procedure already defined.
 include ../stats/eml-anova-kernel.praat
 include ../stats/eml-inferential.praat
+
+; The categorical kernel (@emlChiSquareIndependence, @emlWilsonInterval),
+; which emlRunCategoricalAnalysis calls now that doorway exists (3 September
+; 2026). Same defect as the two-way kernel and the psychometrics kernel
+; above, found the same way: the module has sat in setup.praat's manifest
+; table since 17 August with nothing in the hand-maintained chain naming it,
+; so it loaded only in the dev test that includes it directly
+; (dev/tests/phase2/test-categorical.praat) and in the reproduction-script
+; generator (eml-record.praat), never through scripts/eml-lib.praat. A probe
+; through the real chain would have hit
+;
+;     Error: Procedure "emlChiSquareIndependence" not found.
+;
+; the moment the new doorway called it. It goes before eml-analysis.praat
+; (included next, by eml-lib.praat) for the same reason the two lines above
+; do: an include is a parse-time paste and the caller must find the
+; procedure already defined.
+include ../stats/eml-categorical.praat
+
 include ../stats/eml-result-writer.praat
 ; The recorder defines procedures and touches nothing at include time --
 ; @emlRecordInit is idempotent and every entry point returns immediately

@@ -4285,6 +4285,672 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
     selectObject: .tableId
 endproc
 
+# Categorical doorway, signature FROZEN by
+# mailbox/to-opus/RULING_CATEGORICAL_DOORWAY_2026-09-03.md -- changes only
+# on Ian's word, the way the reliability and RM signatures are frozen.
+#
+# The kernel, @emlChiSquareIndependence (eml-categorical.praat), takes one
+# matrix of counts; this doorway's whole job is building that matrix from
+# the two shapes a user actually has. .countCol$ = "" means raw data, one
+# row per observation (SPSS crosstabs style) -- every row contributes a
+# weight of 1 to its (row category, column category) cell. .countCol$
+# naming a column means the table is already aggregated (SPSS weight-cases
+# / R xtabs style) -- every row contributes THAT row's count to its cell.
+# Both paths tally into the same .observed## and everything downstream
+# -- chi-square, df, p, Cramer's V, the low-expected-count warning -- is
+# identical.
+#
+# Category levels are read as plain strings via `Get value:`, the same
+# direct read @emlTwoWayAnova's own two-factor cell scan uses
+# (eml-inferential.praat, ~line 5318) -- category labels are not
+# measurements, so this does NOT go through @eml_openColumn /
+# @eml_readCell's numeric classifier the way a data column would. Levels
+# are matched on the LITERAL string, with no case-fold or whitespace-trim
+# merge: unlike @emlCountGroups's one-way group column, nothing here
+# collapses "Male" and " Male" into one level, because nothing in this
+# doorway's ruling asked for it and the two-factor ANOVA gather this
+# is modelled on does not do it either.
+#
+# THE KERNEL ALREADY RAISES THE LOW-EXPECTED-COUNT WARNING. This doorway
+# surfaces emlChiSquareIndependence.warning$ verbatim into .warning$; it
+# does not recompute expected counts or re-derive the disclosure.
+procedure emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$,
+... .countCol$, .correction
+    .recResult$ = ""
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set.
+    @emlCSVInit
+    .error$ = ""
+    .warning$ = ""
+    .ok = 0
+    # Menu item that WOULD work on this table, when one exists.
+    .remedy$ = ""
+    ; INITIALISED AT ENTRY, NOT WHERE IT IS DECIDED. The recorder block
+    ; below the end label reads .usingCounts to say whether the run was
+    ; weighted, and every guard above the count-column branch reaches that
+    ; block by `goto`. Assigned only at the branch, the variable is unset on
+    ; those paths -- and because a procedure local is a namespaced global
+    ; that outlives the call, a refusal either dies with "Unknown variable:
+    ; .usingCounts" on the first run of a session or silently inherits the
+    ; PREVIOUS run's value on every run after. Found by a refusal; the
+    ; happy-path probes all passed.
+    .usingCounts = 0
+
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+    .nRows = Get number of rows
+
+    ; THE RECORDER'S REPRODUCTION STRING, BUILT BEFORE ANY GUARD CAN JUMP
+    ; OUT, because a REFUSAL is recorded as a step too -- see
+    ; @emlRecordAnalysisStep below. An empty .countCol$ reproduces as a
+    ; plain `""`, which is exactly what a caller would type to ask for the
+    ; raw-data tally.
+    .countRepro$ = """" + .countCol$ + """"
+    .recCode$ = "@emlRunCategoricalAnalysis: data, """ + .rowCol$ + """, """
+    ... + .colCol$ + """, " + .countRepro$ + ", " + string$ (.correction)
+
+    @emlRequireColumnPresent: .tableId, "Row category column", .rowCol$
+    .error$ = emlRequireColumnPresent.error$
+    if .error$ <> ""
+        goto END_CATEGORICAL
+    endif
+
+    @emlRequireColumnPresent: .tableId, "Column category column", .colCol$
+    .error$ = emlRequireColumnPresent.error$
+    if .error$ <> ""
+        goto END_CATEGORICAL
+    endif
+
+    if .rowCol$ = .colCol$
+        .error$ = "Row and column categories must be different columns; "
+        ... + "both are """ + .rowCol$ + """."
+        goto END_CATEGORICAL
+    endif
+
+    if .correction <> 0 and .correction <> 1
+        .error$ = "correction must be 0 or 1 (got " + string$ (.correction)
+        ... + ")."
+        goto END_CATEGORICAL
+    endif
+
+    if .nRows < 1
+        .error$ = "The table has no rows."
+        goto END_CATEGORICAL
+    endif
+
+    ; PRE-AGGREGATED COUNTS ARE A MEASUREMENT COLUMN, SO IT GETS THE SAME
+    ; GATE EVERY OTHER NUMERIC COLUMN IN THIS FILE GETS. strict = 1: a
+    ; weight-cases column is read as a whole to build the tally below, so
+    ; one unusable cell would silently replace every count with its
+    ; alphabetical rank exactly as @emlRequireNumericColumn's own header
+    ; warns -- there is no per-row listwise deletion to fall back on here,
+    ; because the offending row IS one cell of the contingency table, not
+    ; one respondent among many.
+    if .countCol$ <> ""
+        .usingCounts = 1
+        @emlRequireColumnPresent: .tableId, "Count column", .countCol$
+        .error$ = emlRequireColumnPresent.error$
+        if .error$ <> ""
+            goto END_CATEGORICAL
+        endif
+        @emlRequireNumericColumn: .tableId, "Count column", .countCol$, 1
+        .error$ = emlRequireNumericColumn.error$
+        if .error$ <> ""
+            goto END_CATEGORICAL
+        endif
+        @eml_openColumn: .tableId, .countCol$
+        .countClean = eml_openColumn.clean
+    endif
+
+    ; PASS 1: discover distinct levels of each category column, in
+    ; first-seen order, and -- when counts are pre-aggregated -- validate
+    ; every count in the same pass. A non-integer or negative count is a
+    ; refusal, not a silent round: rounding it would print a contingency
+    ; table that does not match the number the user typed in.
+    .nRowLevels = 0
+    .nColLevels = 0
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .rv$ = Get value: .r, .rowCol$
+        .cv$ = Get value: .r, .colCol$
+
+        .found = 0
+        for .i from 1 to .nRowLevels
+            if .rowLevel'.i'$ = .rv$
+                .found = 1
+            endif
+        endfor
+        if .found = 0
+            .nRowLevels = .nRowLevels + 1
+            .rowLevel'.nRowLevels'$ = .rv$
+        endif
+
+        .found = 0
+        for .j from 1 to .nColLevels
+            if .colLevel'.j'$ = .cv$
+                .found = 1
+            endif
+        endfor
+        if .found = 0
+            .nColLevels = .nColLevels + 1
+            .colLevel'.nColLevels'$ = .cv$
+        endif
+
+        if .usingCounts = 1 and .error$ = ""
+            @eml_readCell: .tableId, .r, .countCol$, .countClean
+            .wt = eml_readCell.value
+            if .wt = undefined or .wt < 0 or .wt <> round (.wt)
+                .error$ = "Count column """ + .countCol$ + """ must hold "
+                ... + "non-negative whole numbers; row " + string$ (.r)
+                ... + " is " + string$ (.wt) + "."
+            endif
+        endif
+    endfor
+    if .error$ <> ""
+        goto END_CATEGORICAL
+    endif
+
+    ; SORT BOTH LEVEL LISTS ALPHABETICALLY so the matrix -- and the printed
+    ; table -- come out in the same order every run, the same bubble sort
+    ; over an interpolated-name array @emlGetUniqueLevels uses
+    ; (eml-lmm.praat, ~line 660; levels are typically a handful, so an
+    ; O(n^2) sort is not worth a second procedure).
+    for .a from 1 to .nRowLevels - 1
+        for .b from 1 to .nRowLevels - .a
+            .bp = .b + 1
+            if .rowLevel'.b'$ > .rowLevel'.bp'$
+                .tmp$ = .rowLevel'.b'$
+                .rowLevel'.b'$ = .rowLevel'.bp'$
+                .rowLevel'.bp'$ = .tmp$
+            endif
+        endfor
+    endfor
+    for .a from 1 to .nColLevels - 1
+        for .b from 1 to .nColLevels - .a
+            .bp = .b + 1
+            if .colLevel'.b'$ > .colLevel'.bp'$
+                .tmp$ = .colLevel'.b'$
+                .colLevel'.b'$ = .colLevel'.bp'$
+                .colLevel'.bp'$ = .tmp$
+            endif
+        endfor
+    endfor
+
+    if .nRowLevels < 2 or .nColLevels < 2
+        .error$ = "After tallying, """ + .rowCol$ + """ has "
+        ... + string$ (.nRowLevels) + " distinct categor"
+        if .nRowLevels = 1
+            .error$ = .error$ + "y"
+        else
+            .error$ = .error$ + "ies"
+        endif
+        .error$ = .error$ + " and """ + .colCol$ + """ has "
+        ... + string$ (.nColLevels) + "; the chi-square test of "
+        ... + "independence needs at least 2 x 2."
+        goto END_CATEGORICAL
+    endif
+
+    ; PASS 2: tally into the observed matrix, rows = sorted levels of
+    ; .rowCol$, columns = sorted levels of .colCol$. Cells with no
+    ; observations stay at the zero## fill -- 0, not missing.
+    .observed## = zero## (.nRowLevels, .nColLevels)
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .rv$ = Get value: .r, .rowCol$
+        .cv$ = Get value: .r, .colCol$
+
+        .ri = 0
+        for .i from 1 to .nRowLevels
+            if .rowLevel'.i'$ = .rv$
+                .ri = .i
+            endif
+        endfor
+        .ci = 0
+        for .j from 1 to .nColLevels
+            if .colLevel'.j'$ = .cv$
+                .ci = .j
+            endif
+        endfor
+
+        if .usingCounts = 1
+            @eml_readCell: .tableId, .r, .countCol$, .countClean
+            .wt = eml_readCell.value
+        else
+            .wt = 1
+        endif
+        .observed## [.ri, .ci] = .observed## [.ri, .ci] + .wt
+    endfor
+
+    @emlChiSquareIndependence: .observed##, .correction
+    .error$ = emlChiSquareIndependence.error$
+    if .error$ <> ""
+        goto END_CATEGORICAL
+    endif
+
+    ; THE RESULTS COME BACK ONTO THIS PROCEDURE'S OWN NAMESPACE, which is
+    ; what every other orchestrator in this file does -- @emlRunNormality-
+    ; Analysis copies emlShapiroWilk.w, @emlRunCorrelationAnalysis copies
+    ; emlPearsonCorrelation.r, @emlRunReliabilityAnalysis copies
+    ; emlCronbachAlpha.alpha. It is not tidiness. A kernel's locals are
+    ; namespaced globals shared by every caller and outliving every call,
+    ; so after a REFUSAL here emlChiSquareIndependence.p still holds the
+    ; p-value of whatever ran before -- a plausible number, from another
+    ; analysis, sitting where a caller would look for this one's. Reading
+    ; results off the kernel is only safe for a caller that also checks
+    ; .ok; reading them off the doorway is safe because a refusal never
+    ; reaches this line.
+    .chiSq        = emlChiSquareIndependence.chiSq
+    .df           = emlChiSquareIndependence.df
+    .p            = emlChiSquareIndependence.p
+    .cramersV     = emlChiSquareIndependence.cramersV
+    .n            = emlChiSquareIndependence.n
+    .minExpected  = emlChiSquareIndependence.minExpected
+    .nCellsBelow5 = emlChiSquareIndependence.nCellsBelow5
+    ; SURFACED, NOT RE-DERIVED. The kernel already decided whether any
+    ; expected count fell below 5; this doorway only carries that verdict
+    ; through to .warning$.
+    .warning$ = emlChiSquareIndependence.warning$
+
+    @emlCSVInit
+    .h$ = "Chi-square test of independence -- " + .tableName$
+    appendInfoLine: .h$
+    appendInfoLine: "  " + .rowCol$ + " (rows) x " + .colCol$
+    ... + " (columns), n = " + string$ (emlChiSquareIndependence.n)
+    appendInfoLine: ""
+
+    @emlPadCell: .rowCol$, 20
+    .hdr$ = "  " + emlPadCell.result$
+    for .j from 1 to .nColLevels
+        @emlPadCell: .colLevel'.j'$, 12
+        .hdr$ = .hdr$ + emlPadCell.result$
+    endfor
+    appendInfoLine: .hdr$
+
+    for .i from 1 to .nRowLevels
+        @emlPadCell: .rowLevel'.i'$, 20
+        .line$ = "  " + emlPadCell.result$
+        for .j from 1 to .nColLevels
+            @emlPadCell: string$ (.observed## [.i, .j]), 12
+            .line$ = .line$ + emlPadCell.result$
+        endfor
+        appendInfoLine: .line$
+    endfor
+    appendInfoLine: ""
+
+    @eml_fixed: emlChiSquareIndependence.chiSq, 4
+    .chiTxt$ = eml_fixed.result$
+    @eml_fixed: emlChiSquareIndependence.p, 4
+    .pTxt$ = eml_fixed.result$
+    @eml_fixed: emlChiSquareIndependence.cramersV, 4
+    .vTxt$ = eml_fixed.result$
+    appendInfoLine: "  Chi-square(" + string$ (emlChiSquareIndependence.df)
+    ... + ") = " + .chiTxt$ + ", p = " + .pTxt$
+    appendInfoLine: "  Cramer's V = " + .vTxt$ + ", n = "
+    ... + string$ (emlChiSquareIndependence.n)
+    if .warning$ <> ""
+        @emlWrapText: "Note: " + .warning$, 68
+        for .wl from 1 to emlWrapText.nLines
+            appendInfoLine: "  ", emlWrapText.line$ [.wl]
+        endfor
+    endif
+
+    @emlResultClearExtras
+    @emlDeclareCategoricalResult: .tableName$, .rowCol$, .colCol$, .warning$
+    .ok = 1
+
+    .recResult$ = "chi-square(" + string$ (emlChiSquareIndependence.df)
+    ... + ") = " + .chiTxt$ + ", p = " + .pTxt$ + newline$
+    ... + "  Cramer's V = " + .vTxt$ + ", n = "
+    ... + string$ (emlChiSquareIndependence.n)
+    if .warning$ <> ""
+        .recResult$ = .recResult$ + newline$ + "  " + .warning$
+    endif
+
+    label END_CATEGORICAL
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep. PRESENT, INITIALISED,
+    ; RECORDING -- the same three-part guard every draw hook and every
+    ; other orchestrator in this file uses.
+    if variableExists ("emlRecordLoaded")
+        .detail$ = .rowCol$ + " by " + .colCol$
+        if .usingCounts = 1
+            .detail$ = .detail$ + ", weighted by " + .countCol$
+        endif
+        @emlRecordAnalysisStep: .tableId, "Chi-square test of independence",
+        ... .detail$,
+        ... "Association is not causation, and a significant chi-square "
+        ... + "with a small Cramer's V may not be practically meaningful.",
+        ... .recCode$,
+        ... "Not in the GUI: there is no menu entry for this yet.",
+        ... .recResult$, .error$
+    endif
+
+    selectObject: .tableId
+endproc
+
+# Proportion doorway, signature FROZEN by whatever supersedes
+# RULING_CATEGORICAL_DOORWAY_2026-09-03.md for this procedure -- do not
+# alter .tableId, .col$, .successValue$, .countCol$, .confidence.
+#
+# The kernel, @emlWilsonInterval (eml-categorical.praat, ~line 236), takes
+# one pair of counts (.successes, .n); this doorway's whole job is counting
+# those two numbers from the two shapes a user actually has -- the SAME
+# .countCol$ convention @emlRunCategoricalAnalysis settles above.
+# .countCol$ = "" means raw data, one row per observation: n is the number
+# of USABLE rows (a blank .col$ cell is missing, not a category, the same
+# distinction @emlCountGroups's .nBlankRows draws for a one-way group
+# column) and successes are the usable rows whose .col$ value equals
+# .successValue$. .countCol$ naming a column means the table already
+# arrived pre-aggregated -- "37 yes, 83 no" as a two-row table -- and every
+# row's count, blank .col$ cells included, contributes to n; a category
+# match still requires the LITERAL string, same as raw mode.
+#
+# .col$ is read as a plain string via `Get value:`, never through
+# @eml_openColumn / @eml_readCell's numeric classifier -- category labels
+# are not measurements, matching @emlRunCategoricalAnalysis's own
+# .rowCol$/.colCol$ reads immediately above, and matching plainly why a
+# numeric 0/1 column classifies the same way as a text Yes/No column once
+# .successValue$ names the value being counted. No case-fold or
+# whitespace-trim merge, for the same reason categorical declines it.
+#
+# A .successValue$ that matches no level actually present is a REFUSAL
+# naming the values that ARE present -- a typo is not a proportion of
+# zero. .countCol$, when named, gets the same non-negative-whole-number
+# guard categorical's own count column gets, for the same reason: this
+# doorway reads it as a whole to build n and successes, and one bad cell
+# would silently substitute alphabetical rank for count.
+procedure emlRunProportionAnalysis: .tableId, .col$, .successValue$,
+... .countCol$, .confidence
+    .recResult$ = ""
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto
+    ; END_*` without ever calling @emlCSVInit, and the flag from the
+    ; PREVIOUS analysis would then still be set.
+    @emlCSVInit
+    .error$ = ""
+    .warning$ = ""
+    .ok = 0
+    # Menu item that WOULD work on this table, when one exists.
+    .remedy$ = ""
+    ; INITIALISED AT ENTRY, NOT WHERE IT IS DECIDED. The recorder block
+    ; below the end label reads .usingCounts to say whether the run was
+    ; weighted, and every guard above the count-column branch reaches that
+    ; block by `goto`. Assigned only at the branch, the variable is unset on
+    ; those paths -- and because a procedure local is a namespaced global
+    ; that outlives the call, a refusal either dies with "Unknown variable:
+    ; .usingCounts" on the first run of a session or silently inherits the
+    ; PREVIOUS run's value on every run after. Found by a refusal; the
+    ; happy-path probes all passed.
+    .usingCounts = 0
+
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+    .nRows = Get number of rows
+
+    ; THE RECORDER'S REPRODUCTION STRING, BUILT BEFORE ANY GUARD CAN JUMP
+    ; OUT, because a REFUSAL is recorded as a step too -- see
+    ; @emlRecordAnalysisStep below.
+    .recCode$ = "@emlRunProportionAnalysis: data, """ + .col$ + """, """
+    ... + .successValue$ + """, """ + .countCol$ + """, "
+    ... + string$ (.confidence)
+
+    @emlRequireColumnPresent: .tableId, "Category column", .col$
+    .error$ = emlRequireColumnPresent.error$
+    if .error$ <> ""
+        goto END_PROPORTION
+    endif
+
+    if .successValue$ = ""
+        .error$ = "successValue must not be empty."
+        goto END_PROPORTION
+    endif
+
+    if .confidence = undefined or .confidence <= 0 or .confidence >= 1
+        .error$ = "Confidence must be strictly between 0 and 1, e.g. 0.95 "
+        ... + "(got " + string$ (.confidence) + ")."
+        goto END_PROPORTION
+    endif
+
+    if .nRows < 1
+        .error$ = "The table has no rows."
+        goto END_PROPORTION
+    endif
+
+    ; PRE-AGGREGATED COUNTS ARE A MEASUREMENT COLUMN, SO IT GETS THE SAME
+    ; GATE @emlRunCategoricalAnalysis's own count column gets. strict = 1:
+    ; this doorway reads the column as a whole to build n and successes,
+    ; so one unusable cell would silently replace every count with its
+    ; alphabetical rank, and there is no per-row listwise deletion to fall
+    ; back on -- the offending row IS one count, not one respondent among
+    ; many.
+    if .countCol$ <> ""
+        .usingCounts = 1
+        @emlRequireColumnPresent: .tableId, "Count column", .countCol$
+        .error$ = emlRequireColumnPresent.error$
+        if .error$ <> ""
+            goto END_PROPORTION
+        endif
+        @emlRequireNumericColumn: .tableId, "Count column", .countCol$, 1
+        .error$ = emlRequireNumericColumn.error$
+        if .error$ <> ""
+            goto END_PROPORTION
+        endif
+        @eml_openColumn: .tableId, .countCol$
+        .countClean = eml_openColumn.clean
+    endif
+
+    ; PASS 1: discover distinct levels of .col$, in first-seen order, so a
+    ; refusal on a mistyped .successValue$ can name what IS there, and --
+    ; when counts are pre-aggregated -- validate every count in the same
+    ; pass. A non-integer or negative count is a refusal, not a silent
+    ; round, the same convention @emlRunCategoricalAnalysis's own count
+    ; column follows. In raw mode a blank .col$ cell is missing, not a
+    ; category: it is tallied into .nExcluded and skipped here, exactly as
+    ; @emlCountGroups skips a blank group cell into its own .nBlankRows.
+    .nLevels = 0
+    .nExcluded = 0
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .cv$ = Get value: .r, .col$
+
+        .isBlank = 0
+        if .usingCounts = 0 and .cv$ = ""
+            .isBlank = 1
+            .nExcluded = .nExcluded + 1
+        endif
+
+        if .isBlank = 0
+            .found = 0
+            for .i from 1 to .nLevels
+                if .level'.i'$ = .cv$
+                    .found = 1
+                endif
+            endfor
+            if .found = 0
+                .nLevels = .nLevels + 1
+                .level'.nLevels'$ = .cv$
+            endif
+        endif
+
+        if .usingCounts = 1 and .error$ = ""
+            @eml_readCell: .tableId, .r, .countCol$, .countClean
+            .wt = eml_readCell.value
+            if .wt = undefined or .wt < 0 or .wt <> round (.wt)
+                .error$ = "Count column """ + .countCol$ + """ must hold "
+                ... + "non-negative whole numbers; row " + string$ (.r)
+                ... + " is " + string$ (.wt) + "."
+            endif
+        endif
+    endfor
+    if .error$ <> ""
+        goto END_PROPORTION
+    endif
+
+    ; SORT THE LEVEL LIST ALPHABETICALLY so a refusal's "values present"
+    ; list reads the same way on every run -- the same bubble sort over an
+    ; interpolated-name array @emlRunCategoricalAnalysis's own level lists
+    ; use immediately above.
+    for .a from 1 to .nLevels - 1
+        for .b from 1 to .nLevels - .a
+            .bp = .b + 1
+            if .level'.b'$ > .level'.bp'$
+                .tmp$ = .level'.b'$
+                .level'.b'$ = .level'.bp'$
+                .level'.bp'$ = .tmp$
+            endif
+        endfor
+    endfor
+
+    ; NO USABLE VALUES AT ALL is a different refusal from a typo'd
+    ; successValue -- in raw mode every row can be blank, and .nLevels
+    ; stays 0 with nothing to name. Caught here, separately, so the
+    ; message says "no usable data" rather than a "values present" list
+    ; with nothing in it.
+    if .nLevels = 0
+        .error$ = "Category column """ + .col$ + """ has no usable "
+        ... + "values -- every row is blank."
+        goto END_PROPORTION
+    endif
+
+    ; A SUCCESSVALUE THAT MATCHES NO ROW IS A TYPO, NOT A PROPORTION OF
+    ; ZERO. Named here, before any counting, so the message can name every
+    ; value actually present.
+    .successValuePresent = 0
+    for .i from 1 to .nLevels
+        if .level'.i'$ = .successValue$
+            .successValuePresent = 1
+        endif
+    endfor
+    if .successValuePresent = 0
+        .valuesList$ = ""
+        for .i from 1 to .nLevels
+            if .i > 1
+                .valuesList$ = .valuesList$ + ", "
+            endif
+            .valuesList$ = .valuesList$ + """" + .level'.i'$ + """"
+        endfor
+        .error$ = "successValue """ + .successValue$ + """ does not match "
+        ... + "any value in """ + .col$ + """. Values present: "
+        ... + .valuesList$ + "."
+        goto END_PROPORTION
+    endif
+
+    ; PASS 2: tally successes and n. Raw mode weights every usable row 1
+    ; and a blank cell 0, so blanks fall out of both n and successes
+    ; exactly as .nExcluded already counted them above; aggregated mode
+    ; weights every row by its (already-validated) count.
+    .successes = 0
+    .n = 0
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .cv$ = Get value: .r, .col$
+        if .usingCounts = 1
+            @eml_readCell: .tableId, .r, .countCol$, .countClean
+            .wt = eml_readCell.value
+        else
+            .wt = 1
+            if .cv$ = ""
+                .wt = 0
+            endif
+        endif
+        .n = .n + .wt
+        if .cv$ = .successValue$
+            .successes = .successes + .wt
+        endif
+    endfor
+
+    if .n < 1
+        .error$ = "After excluding blank values, n = 0; a proportion needs "
+        ... + "at least 1 usable observation."
+        goto END_PROPORTION
+    endif
+
+    @emlWilsonInterval: .successes, .n, .confidence
+    .error$ = emlWilsonInterval.error$
+    if .error$ <> ""
+        goto END_PROPORTION
+    endif
+    .propHat = emlWilsonInterval.propHat
+    .ciLow = emlWilsonInterval.ciLow
+    .ciHigh = emlWilsonInterval.ciHigh
+
+    ; EXCLUDED ROWS ARE A WARNING, NOT AN ERROR -- the same disclosure the
+    ; reliability and repeated-measures paths print for their own listwise
+    ; deletion.
+    if .nExcluded > 0
+        .warning$ = string$ (.nExcluded) + " row(s) excluded for missing "
+        ... + "data (assessed n = " + string$ (.n) + " of " + string$ (.nRows)
+        ... + " rows)."
+    endif
+
+    @emlCSVInit
+    @emlCILevelLabel: 1 - .confidence
+    .ciPercent$ = emlCILevelLabel.percent$
+    .catWord$ = "categories"
+    if .nLevels = 1
+        .catWord$ = "category"
+    endif
+    .h$ = "Proportion -- " + .tableName$
+    appendInfoLine: .h$
+    appendInfoLine: "  " + .col$ + ": success = """ + .successValue$
+    ... + """ (" + string$ (.nLevels) + " " + .catWord$ + " seen)"
+    @eml_fixed: .propHat, 4
+    .pVal$ = eml_fixed.result$
+    @eml_fixed: .ciLow, 4
+    .loVal$ = eml_fixed.result$
+    @eml_fixed: .ciHigh, 4
+    .hiVal$ = eml_fixed.result$
+    appendInfoLine: "  Proportion = " + .pVal$ + ", " + .ciPercent$
+    ... + "% Wilson CI [" + .loVal$ + ", " + .hiVal$ + "]"
+    appendInfoLine: "  successes = " + string$ (.successes) + ", n = "
+    ... + string$ (.n)
+    if .warning$ <> ""
+        @emlWrapText: "Note: " + .warning$, 68
+        for .wl from 1 to emlWrapText.nLines
+            appendInfoLine: "  ", emlWrapText.line$ [.wl]
+        endfor
+    endif
+
+    @emlResultClearExtras
+    @emlDeclareProportionResult: .tableName$, .col$, .successValue$,
+    ... .n, .nExcluded, .warning$
+    .ok = 1
+
+    .recResult$ = "p = " + .pVal$ + ", " + .ciPercent$ + "% Wilson CI ["
+    ... + .loVal$ + ", " + .hiVal$ + "]" + newline$
+    ... + "  successes = " + string$ (.successes) + ", n = " + string$ (.n)
+    if .warning$ <> ""
+        .recResult$ = .recResult$ + newline$ + "  " + .warning$
+    endif
+
+    label END_PROPORTION
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep. PRESENT, INITIALISED,
+    ; RECORDING -- the same three-part guard every other orchestrator in
+    ; this file uses.
+    if variableExists ("emlRecordLoaded")
+        .detail$ = .col$ + " = """ + .successValue$ + """"
+        if .usingCounts = 1
+            .detail$ = .detail$ + ", weighted by " + .countCol$
+        endif
+        @emlRecordAnalysisStep: .tableId, "Proportion", .detail$,
+        ... "A confidence interval describes sampling uncertainty in THIS "
+        ... + "sample; it is not evidence the true proportion differs from "
+        ... + "any particular value someone had in mind before looking.",
+        ... .recCode$,
+        ... "Not in the GUI: there is no menu entry for this yet.",
+        ... .recResult$, .error$
+    endif
+
+    selectObject: .tableId
+endproc
+
 # ============================================================================
 # @eml_completeCaseDisclosure: .nRows, .n, .nExcluded, .parseNote$  -> .note$
 #
@@ -6583,6 +7249,50 @@ procedure emlDeclareReliabilityResult: .tableName$, .itemCols$#, .k, .n,
     @emlGlanceNum: "nobs",       .n
     @emlGlanceNum: "n.excluded", .nExcluded
     @emlGlanceStr: "method",     "Cronbach's alpha (Feldt confidence interval)"
+    if .warning$ <> ""
+        @emlGlanceStr: "warning", .warning$
+    endif
+endproc
+
+
+procedure emlDeclareCategoricalResult: .tableName$, .rowCol$, .colCol$,
+... .warning$
+    @emlResultBegin: .tableName$, "Chi-square test of independence"
+
+    ; broom::tidy(chisq.test()) has exactly these four columns.
+    @emlTidyRow: .rowCol$ + " x " + .colCol$
+    @emlTidyNum: "statistic", emlChiSquareIndependence.chiSq
+    @emlTidyNum: "parameter", emlChiSquareIndependence.df
+    @emlTidyNum: "p.value",   emlChiSquareIndependence.p
+    @emlTidyNum: "estimate",  emlChiSquareIndependence.cramersV
+    @emlTidyStr: "method",    "Pearson's Chi-squared test"
+
+    @emlGlanceNum: "statistic", emlChiSquareIndependence.chiSq
+    @emlGlanceNum: "df",        emlChiSquareIndependence.df
+    @emlGlanceNum: "p.value",   emlChiSquareIndependence.p
+    @emlGlanceNum: "estimate",  emlChiSquareIndependence.cramersV
+    @emlGlanceNum: "nobs",      emlChiSquareIndependence.n
+    @emlGlanceStr: "method",    "Pearson's Chi-squared test"
+    if .warning$ <> ""
+        @emlGlanceStr: "warning", .warning$
+    endif
+endproc
+
+
+procedure emlDeclareProportionResult: .tableName$, .col$, .successValue$,
+... .n, .nExcluded, .warning$
+    @emlResultBegin: .tableName$, "Proportion (Wilson score interval)"
+
+    @emlTidyRow: .col$ + " = " + .successValue$
+    @emlTidyNum: "estimate",  emlWilsonInterval.propHat
+    @emlTidyNum: "conf.low",  emlWilsonInterval.ciLow
+    @emlTidyNum: "conf.high", emlWilsonInterval.ciHigh
+    @emlTidyStr: "method",    "Wilson score confidence interval"
+
+    @emlGlanceNum: "estimate",   emlWilsonInterval.propHat
+    @emlGlanceNum: "nobs",       .n
+    @emlGlanceNum: "n.excluded", .nExcluded
+    @emlGlanceStr: "method",     "Wilson score confidence interval"
     if .warning$ <> ""
         @emlGlanceStr: "warning", .warning$
     endif
