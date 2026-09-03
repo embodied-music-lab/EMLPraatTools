@@ -20,12 +20,12 @@ emit_include_root	~/repo/plugin
 emit_claims_home_relative	1
 emit_states_absolute	0
 save_files	4
-save_names	vt_two-group_20260825_232952_effectsize_tidy.csv vt_two-group_20260825_232952_glance.csv vt_two-group_20260825_232952_report.txt vt_two-group_20260825_232952_tidy.csv 
+save_names	vt_two-group_20260903_120952_effectsize_tidy.csv vt_two-group_20260903_120952_glance.csv vt_two-group_20260903_120952_report.txt vt_two-group_20260903_120952_tidy.csv 
 save_max_stamps	1
 save_distinct_stems	1
 save_stat_lines	3
 save_stats_identical	1
-save_report_bytes	1995
+save_report_bytes	1576
 save_emit_savepanel	0
 save_emit_replaysave	1
 save_emit_beginpause	0
@@ -37,14 +37,14 @@ meta_emitted_has_dead_stamp	0
 meta_emitted_has_live_stamp	1
 meta_emitted_names_dead_table	0
 meta_emit_include_root	~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs
-meta_emit_root_is_home_relative	14
-meta_emit_include_lines	14
+meta_emit_root_is_home_relative	15
+meta_emit_include_lines	15
 meta_emit_claims_home_relative	1
 meta_emit_states_absolute	0
 meta2_has_dead_stamp	0
 meta2_names_dead_table	0
 meta2_stamp_recovered_note	1
-meta2_stamp_line	# Tue Aug 25 23:29:52 2026  --  recorded on Praat 6.6.30
+meta2_stamp_line	# Thu Sep  3 12:09:53 2026  --  recorded on Praat 6.6.30
 folder_files	4
 folder_created	1
 folder_praat_abort	0
@@ -56,7 +56,7 @@ retarget_praat_abort	0
 retarget_report_new_cols	3
 retarget_report_old_cols	0
 retarget_matches_reference	1
-retarget_report_lines	57
+retarget_report_lines	58
 retarget_seeded_diff_caught	1
 retarget_anova_rows	6
 retarget_numbers_unchanged	1

@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Tue Aug 25 23:29:52 2026  --  recorded on Praat 6.6.30
+# Thu Sep  3 12:09:53 2026  --  recorded on Praat 6.6.30
 # (The session's start time was lost -- its record table was
 # removed from the Objects window -- so the time above is when
 # the recorder noticed, not when recording began.)
@@ -31,6 +31,7 @@ include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-core-utilities
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-extract.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-anova-kernel.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-inferential.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-categorical.praat
@@ -42,7 +43,7 @@ include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/graphs/eml-draw-procedur
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -77,9 +78,9 @@ selectObject: data1$
 data = selected ()
 # a recorded step
 
-@emlReportContext: "recorded script (recorded Tue Aug 25 23:29:52 2026, originally analysis dialog)", ""
+@emlReportContext: "recorded script (recorded Thu Sep  3 12:09:53 2026, originally analysis dialog)", ""
 emlGroupSortAlphabetical = 0
-emlShowExplanations = 1
+emlShowExplanations = 0
 ; nothing
 
 
@@ -88,9 +89,9 @@ selectObject: data2$
 data = selected ()
 # a recorded step
 
-@emlReportContext: "recorded script (recorded Tue Aug 25 23:29:52 2026, originally analysis dialog)", ""
+@emlReportContext: "recorded script (recorded Thu Sep  3 12:09:53 2026, originally analysis dialog)", ""
 emlGroupSortAlphabetical = 0
-emlShowExplanations = 1
+emlShowExplanations = 0
 ; nothing
 
 

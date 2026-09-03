@@ -6,6 +6,7 @@ include /home/claude/repo/plugin/stats/eml-core-utilities.praat
 include /home/claude/repo/plugin/stats/eml-core-descriptive.praat
 include /home/claude/repo/plugin/stats/eml-extract.praat
 include /home/claude/repo/plugin/stats/eml-output.praat
+include /home/claude/repo/plugin/stats/eml-anova-kernel.praat
 include /home/claude/repo/plugin/stats/eml-inferential.praat
 include /home/claude/repo/plugin/stats/eml-result-writer.praat
 include /home/claude/repo/plugin/stats/eml-record.praat

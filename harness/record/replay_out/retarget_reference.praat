@@ -2,6 +2,7 @@ include /home/claude/repo/plugin/stats/eml-core-utilities.praat
 include /home/claude/repo/plugin/stats/eml-core-descriptive.praat
 include /home/claude/repo/plugin/stats/eml-extract.praat
 include /home/claude/repo/plugin/stats/eml-output.praat
+include /home/claude/repo/plugin/stats/eml-anova-kernel.praat
 include /home/claude/repo/plugin/stats/eml-inferential.praat
 include /home/claude/repo/plugin/stats/eml-result-writer.praat
 include /home/claude/repo/plugin/stats/eml-record.praat
@@ -9,7 +10,7 @@ include /home/claude/repo/plugin/graphs/eml-graph-procedures.praat
 include /home/claude/repo/plugin/graphs/eml-annotation-procedures.praat
 include /home/claude/repo/plugin/graphs/eml-draw-procedures.praat
 include /home/claude/repo/plugin/stats/eml-analysis.praat
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 Create Table with column names: "rt", 0, "cohort room dB"
 rngState = 20260814
 row = 0

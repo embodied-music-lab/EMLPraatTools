@@ -1836,6 +1836,21 @@ procedure emlKitDispatchSurvey: .cellId$, .proc$, .tableId, .colA$, .colB$,
                 ... emlRunReliabilityAnalysis.deltaMax
                 @emlKitNum: .cellId$, "delta_max_row",
                 ... emlRunReliabilityAnalysis.deltaMaxRow
+                ; mailbox/to-opus/RULING_SETTLEMENT_QUESTIONS_2026-09-03.md
+                ; (QUESTION_INFLUENCE_SURFACE): the doorway now copies
+                ; @emlAlphaInfluence's .delta#/.rowIndex# onto its OWN
+                ; namespace (eml-analysis.praat, @emlRunReliabilityAnalysis),
+                ; so this reads emlRunReliabilityAnalysis.delta#/.rowIndex#
+                ; -- not the kernel directly -- the same doorway-namespace
+                ; convention the alpha_if_deleted_<ITEM> loop above breaks
+                ; only because that quantity is NOT re-exported (its own
+                ; comment says so).
+                for .j from 1 to emlRunReliabilityAnalysis.n
+                    @emlKitNum: .cellId$,
+                    ... "delta_row_"
+                    ... + string$ (emlRunReliabilityAnalysis.rowIndex# [.j]),
+                    ... emlRunReliabilityAnalysis.delta# [.j]
+                endfor
             endif
         endif
 

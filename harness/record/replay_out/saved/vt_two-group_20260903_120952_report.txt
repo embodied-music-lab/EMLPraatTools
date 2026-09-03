@@ -1,7 +1,8 @@
 
 ==============================================
   EML Stats : Two-Group Comparison
-  Thu Sep  3 04:11:41 2026
+  Thu Sep  3 12:09:52 2026
+  from: recorded script (recorded 14 August 2026, originally analysis dialog)
 ==============================================
 
   Table               vt

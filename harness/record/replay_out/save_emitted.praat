@@ -28,6 +28,7 @@ include ~/repo/plugin/stats/eml-core-utilities.praat
 include ~/repo/plugin/stats/eml-core-descriptive.praat
 include ~/repo/plugin/stats/eml-extract.praat
 include ~/repo/plugin/stats/eml-output.praat
+include ~/repo/plugin/stats/eml-anova-kernel.praat
 include ~/repo/plugin/stats/eml-inferential.praat
 include ~/repo/plugin/stats/eml-psychometrics.praat
 include ~/repo/plugin/stats/eml-categorical.praat
@@ -39,7 +40,7 @@ include ~/repo/plugin/graphs/eml-draw-procedures.praat
 include ~/repo/plugin/stats/eml-analysis.praat
 include ~/repo/plugin/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -81,7 +82,7 @@ data = selected ()
 @emlReportContext: "recorded script (recorded 14 August 2026, originally analysis dialog)", ""
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
-emlShowExplanations = 1
+emlShowExplanations = 0
 @emlRunTwoGroupAnalysis: data, valueCol$, groupCol$, "parametric", 0
 
 # Cohort 1: n = 20, mean = 2.2104, SD = 0.3165

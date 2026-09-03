@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Two-Way ANOVA
-  Tue Aug 25 23:29:53 2026
+  Thu Sep  3 12:09:53 2026
 ══════════════════════════════════════════════
 
   Table               wt
@@ -15,7 +15,6 @@
 
 
   ── ANOVA Table ─────────────────────────────
-  Why: Tests main effects of two factors and their interaction.
 
 Source              SS              df    MS              F           p
 grp                 12.05           1     12.05           71.0945     < .001
@@ -32,9 +31,9 @@ Total               20.80           39
 
 
   ── Effect Sizes (partial eta-squared) ──────
-  grp                 0.6638  (large effect)		Effect size: large by Cohen's convention (partial eta-squared >= 0.14 = large). Accounts for 66% of the variance left once the other effects are removed -- each effect has its own denominator, so these are not shares of one total and do not sum to 100%
-  site                0.3025  (large effect)		Effect size: large by Cohen's convention (partial eta-squared >= 0.14 = large). Accounts for 30% of the variance left once the other effects are removed -- each effect has its own denominator, so these are not shares of one total and do not sum to 100%
-  grp x site          0.0000  (negligible effect)		Effect size: negligible by Cohen's convention (partial eta-squared >= 0.14 = large). Accounts for 0% of the variance left once the other effects are removed -- each effect has its own denominator, so these are not shares of one total and do not sum to 100%
+  grp                 0.6638  (large effect)
+  site                0.3025  (large effect)
+  grp x site          0.0000  (negligible effect)
 
 
   ── Cell Means ──────────────────────────────
@@ -56,4 +55,6 @@ site: Room 2                  20      3.6166
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════

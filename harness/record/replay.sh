@@ -108,6 +108,7 @@ include $PLUG/stats/eml-core-utilities.praat
 include $PLUG/stats/eml-core-descriptive.praat
 include $PLUG/stats/eml-extract.praat
 include $PLUG/stats/eml-output.praat
+include $PLUG/stats/eml-anova-kernel.praat
 include $PLUG/stats/eml-inferential.praat
 include $PLUG/stats/eml-result-writer.praat
 include $PLUG/stats/eml-record.praat

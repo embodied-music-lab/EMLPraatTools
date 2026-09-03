@@ -1953,11 +1953,11 @@ process_wilson <- function(row) {
 # emlRunReliabilityAnalysis: same psych::alpha / psych::alpha.ci oracle as
 # process_cronbach, restricted to the col_a item list, plus the same
 # leave-one-out composition as process_alpha_influence when the row's
-# posthoc (doInfluence) = "1". The doorway itself (eml-analysis.praat) does
-# NOT surface per-respondent delta_row_<ROW> -- only delta_max/delta_max_row
-# reach its own reporter and its own namespace -- so this oracle does not
-# emit delta_row_<ROW> either, matching quantities.tsv's contract for this
-# procedure exactly.
+# posthoc (doInfluence) = "1". mailbox/to-opus/RULING_SETTLEMENT_QUESTIONS_
+# 2026-09-03.md (QUESTION_INFLUENCE_SURFACE): the doorway now copies
+# @emlAlphaInfluence's .delta#/.rowIndex# onto its own namespace
+# (eml-analysis.praat), so this oracle emits delta_row_<ROW> here too,
+# matching quantities.tsv's contract for this procedure.
 process_reliability_analysis <- function(row) {
     cid <- row$cell_id
     d <- readDataset(row$dataset)
@@ -2009,6 +2009,13 @@ process_reliability_analysis <- function(row) {
             emit(cid, "delta_max", dmax, "psych::alpha")
             emit(cid, "delta_max_row", origIdx[whichMax], "psych::alpha")
             lines <- c(lines, sprintf("largest |delta| (leave-one-out) = %.4f at original row %d", dmax, origIdx[whichMax]))
+        }
+        # Per-respondent vector, same convention as process_alpha_influence
+        # above (quantities.tsv: emlRunReliabilityAnalysis delta_row_<ROW>,
+        # posthoc=1).
+        for (j in seq_len(n)) {
+            emit(cid, paste0("delta_row_", origIdx[j]), deltas[j], "psych::alpha")
+            lines <- c(lines, sprintf("  row %d removed: delta=%s", origIdx[j], if (is.na(deltas[j])) "NA" else sprintf("%.4f", deltas[j])))
         }
     }
     writeReport(cid, lines)

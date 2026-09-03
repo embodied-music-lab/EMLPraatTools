@@ -2,6 +2,7 @@ include /home/claude/repo/plugin/stats/eml-core-utilities.praat
 include /home/claude/repo/plugin/stats/eml-core-descriptive.praat
 include /home/claude/repo/plugin/stats/eml-extract.praat
 include /home/claude/repo/plugin/stats/eml-output.praat
+include /home/claude/repo/plugin/stats/eml-anova-kernel.praat
 include /home/claude/repo/plugin/stats/eml-inferential.praat
 include /home/claude/repo/plugin/stats/eml-result-writer.praat
 include /home/claude/repo/plugin/stats/eml-record.praat
@@ -9,7 +10,7 @@ include /home/claude/repo/plugin/graphs/eml-graph-procedures.praat
 include /home/claude/repo/plugin/graphs/eml-annotation-procedures.praat
 include /home/claude/repo/plugin/graphs/eml-draw-procedures.praat
 include /home/claude/repo/plugin/stats/eml-analysis.praat
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 @emlRecordBegin: ""
 emlRecordPluginRoot$ = "/home/claude/repo/plugin"
@@ -43,7 +44,7 @@ graph_type = 7
 prev_violinShowJitter = 1
 @emlClearAnnotations
 @emlSetAdaptiveTheme: 6, 4
-@emlBridgeGroupComparison: table, "val", "grp", annotAlpha, annotStyle$,
+@emlRunAnnotationComparison: table, "val", "grp", annotAlpha, annotStyle$,
 ... annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
 selectObject: table
 dMax = Get maximum: "val"

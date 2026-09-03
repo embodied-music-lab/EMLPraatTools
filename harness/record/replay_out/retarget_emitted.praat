@@ -28,6 +28,7 @@ include ~/repo/plugin/stats/eml-core-utilities.praat
 include ~/repo/plugin/stats/eml-core-descriptive.praat
 include ~/repo/plugin/stats/eml-extract.praat
 include ~/repo/plugin/stats/eml-output.praat
+include ~/repo/plugin/stats/eml-anova-kernel.praat
 include ~/repo/plugin/stats/eml-inferential.praat
 include ~/repo/plugin/stats/eml-psychometrics.praat
 include ~/repo/plugin/stats/eml-categorical.praat
@@ -39,7 +40,7 @@ include ~/repo/plugin/graphs/eml-draw-procedures.praat
 include ~/repo/plugin/stats/eml-analysis.praat
 include ~/repo/plugin/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -90,7 +91,7 @@ data = selected ()
 @emlReportContext: "recorded script (recorded 14 August 2026, originally analysis dialog)", ""
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
-emlShowExplanations = 1
+emlShowExplanations = 0
 @emlRunTwoWayAnalysis: data, valueCol$, factorACol$, factorBCol$
 
 # grp: F(1, 36) = 71.0945, p = 0.0000000005
@@ -114,7 +115,7 @@ emlLineStyle = lineStyle
 emlSecondAxisOn = secondAxisOn
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
-emlShowExplanations = 1
+emlShowExplanations = 0
 @emlDrawViolinPlot: data, "retarget violin", "Cohort", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # Axis resolved to 2.0769 .. 4.7542 over 2 groups.

@@ -28,6 +28,7 @@ include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-core-utilities
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-extract.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-output.praat
+include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-anova-kernel.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-inferential.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-categorical.praat
@@ -39,7 +40,7 @@ include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/graphs/eml-draw-procedur
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 include ~/.eml_replay_meta_prefs/plugin_EML_StatsGraphs/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -75,7 +76,7 @@ data = selected ()
 
 @emlReportContext: "recorded script (recorded SESSION_B, originally analysis dialog)", ""
 emlGroupSortAlphabetical = 0
-emlShowExplanations = 1
+emlShowExplanations = 0
 ; nothing
 
 

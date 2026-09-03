@@ -791,6 +791,8 @@ c0676	survey	emlRunReliabilityAnalysis	lane_survey_alpha_clean	item1|item2|item3
 c0677	survey	emlRunReliabilityAnalysis	lane_survey_alpha_clean	item1|item2|item3|item4|item5				1				0.95			ok	doorway; doInfluence=1 in posthoc also runs leave-one-out (emlAlphaInfluence)	options
 c0678	survey	emlRunReliabilityAnalysis	lane_survey_alpha_missing	item1|item2|item3|item4|item5				0				0.95			ok	listwise deletion disclosure (3 of 24 rows have an NA item); doInfluence=0	options
 c0679	survey	emlRunReliabilityAnalysis	lane_survey_alpha_missing	item1|item2|item3|item4|item5				1				0.95			ok	listwise deletion disclosure; doInfluence=1 also runs leave-one-out on the 21 complete rows	options
+c0690	survey	emlRunReliabilityAnalysis	lane_survey_alpha_2item	item1|item2				0				0.95			ok	k = 2: alpha-if-deleted is undefined for every item (see quantities.tsv); doInfluence=0	options
+c0691	survey	emlRunReliabilityAnalysis	lane_survey_alpha_2item	item1|item2				1				0.95			ok	k = 2: doInfluence=1 also runs leave-one-out (emlAlphaInfluence) -- the alpha_if_deleted_<ITEM> gap does not touch the influence vector	options
 c0680	survey	emlRunCategoricalAnalysis	lane_survey_crosstab_raw	group	response								0		ok	raw one-row-per-observation (70 rows); countCol empty in col_c; pairs bit-for-bit with crosstab_counts	options
 c0681	survey	emlRunCategoricalAnalysis	lane_survey_crosstab_raw	group	response								1		ok	raw one-row-per-observation; Yates correction on	options
 c0682	survey	emlRunCategoricalAnalysis	lane_survey_crosstab_counts	group	response	n							0		ok	pre-aggregated (group,response,n); count column in col_c; same table as crosstab_raw	options

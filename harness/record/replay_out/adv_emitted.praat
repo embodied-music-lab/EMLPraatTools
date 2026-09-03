@@ -28,6 +28,7 @@ include ~/repo/plugin/stats/eml-core-utilities.praat
 include ~/repo/plugin/stats/eml-core-descriptive.praat
 include ~/repo/plugin/stats/eml-extract.praat
 include ~/repo/plugin/stats/eml-output.praat
+include ~/repo/plugin/stats/eml-anova-kernel.praat
 include ~/repo/plugin/stats/eml-inferential.praat
 include ~/repo/plugin/stats/eml-psychometrics.praat
 include ~/repo/plugin/stats/eml-categorical.praat
@@ -39,7 +40,7 @@ include ~/repo/plugin/graphs/eml-draw-procedures.praat
 include ~/repo/plugin/stats/eml-analysis.praat
 include ~/repo/plugin/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -91,8 +92,8 @@ annotate = 1
 annotCorrectionMethod$ = "holm"
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
-emlShowExplanations = 1
-@emlBridgeGroupComparison: data, valueCol$, groupCol$, 0.05, "p-value", 0, 1, "parametric", 1
+emlShowExplanations = 0
+@emlRunAnnotationComparison: data, valueCol$, groupCol$, 0.05, "p-value", 0, 1, "parametric", 1
 
 # Welch t: t(33.0) = -8.57, p < .001, d = -2.71
 #   2 groups, alpha = 0.050
@@ -116,7 +117,7 @@ emlSecondAxisOn = secondAxisOn
 annotCorrectionMethod$ = "holm"
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
-emlShowExplanations = 1
+emlShowExplanations = 0
 @emlDrawViolinPlot: data, "advanced violin", "Cohort", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 # The figure's statistical annotation. In the GUI the graphs form
 # draws this after the figure returns; a recorded script has no

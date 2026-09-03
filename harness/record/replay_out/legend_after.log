@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Tue Aug 25 23:30:11 2026
+  Thu Sep  3 12:10:07 2026
 ══════════════════════════════════════════════
 
   Table               lg
@@ -13,17 +13,15 @@
 
 
   ── ANOVA Table ─────────────────────────────
-  Why: Tests whether group means differ when normality and equal variances hold.
 
 Source              SS              df    MS              F           p
 Between             2513.16         3     837.72          151.3899    < .001
 Within              287.74          52    5.53            
 Total               2800.90         55    
 
-  F                   151.3899		Ratio of mean squares: the between-group mean square is 151.4 times the within-group mean square. With no real effect, this ratio tends to be near 1
-  p                   < .001  (1.12e-25)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
-  Effect size         eta-squared = 0.8973		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 90% of the total variance
-  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  F                   151.3899
+  p                   < .001  (1.12e-25)
+  Effect size         eta-squared = 0.8973
   Equal spread        Brown-Forsythe F(3, 52) = 0.3362
   Equal-spread p      p = .799
 
@@ -38,7 +36,6 @@ Total               2800.90         55
 
   ── Pairwise Effect Sizes (Cohen's d) ───────
   No pairwise significance tests were run.
-  Effect sizes estimate the size of each pairwise difference.
 
               Cohort 1    Cohort 2    Cohort 3    Cohort 4    
 Cohort 1      ---         -2.988      -4.349      -8.180      
@@ -50,6 +47,8 @@ Cohort 4      8.180       5.418       3.066       ---
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 NOTE: The legend asked for 2.65 in of y-axis room on a 3.11 in panel and was granted 1.55 in; the rest of the panel is kept for the data, so the legend may still overlap it. Set Legend placement to Right of plot or Below plot to keep the plot clear, or reduce the number of legend entries.
