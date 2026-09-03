@@ -4057,11 +4057,23 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
     selectObject: .tableId
 endproc
 
-# v1.2 item 7: unimplemented stub. It has no call sites anywhere in the
-# plugin; it exists so the Phase 4 API surface is declared. It returns a
-# non-empty .error$ and computes nothing — callers must check .error$ before
-# reading any other output, because no other output is set.
-procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measure$, .scale$
+# v1.2 item 7: Reliability doorway, survey-row signature frozen by
+# mailbox/to-opus/RULING_SURVEY_ROWS_ACCEPTED_2026-09-03.md -- changes only
+# on Ian's word, the way the RM signature is frozen. The family name stays
+# emlRunReliabilityAnalysis for every future reliability measure; there is
+# no `.measure$` selector, because Praat calls are positional with no
+# default arguments and a selector added now would break every sibling
+# procedure's call the day a second measure arrives. A model-choice
+# dropdown belongs at the wizard, in a later round.
+#
+# Builds a respondent x item matrix from .itemCols$# and hands it whole,
+# undefined cells included, to @emlCronbachAlpha and, when asked,
+# @emlAlphaInfluence. Both kernels do their own listwise deletion and
+# report it in .nExcluded; this orchestrator propagates their .error$
+# rather than repeating their checks, and reports the exclusion as a
+# WARNING on the success path -- the analysis is valid on the complete
+# cases, and the reader is told how many rows were set aside.
+procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfluence
     .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
@@ -4070,15 +4082,182 @@ procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measu
     ; least 2 condition columns" would export the previous analysis's tidy and
     ; glance under the RM name.
     @emlCSVInit
-    ; ASCII HYPHENS, NOT AN EM DASH, and the reason is Praat's file writer.
-    ; Praat writes a text file as UTF-16 the moment its content contains one
-    ; non-ASCII character. This string reaches a RECORDED SCRIPT verbatim as
-    ; the refusal note for the step, so a session that touched the LMM path
-    ; produced a UTF-16 .praat file -- runnable, but undiffable in git and
-    ; unreadable by anything that assumes bytes. One em dash, one encoding.
-    .error$ = "Not yet implemented -- scheduled for Phase 4."
+    .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
+
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+    .nRows = Get number of rows
+
+    .k = size (.itemCols$#)
+
+    ; The item list and the recorder's reproduction snippet are built BEFORE
+    ; any guard can jump out, because a refusal is recorded as a step too --
+    ; see @emlRecordAnalysisStep below -- and it needs something to show for
+    ; .itemCols$#. `{ }` does not parse as an empty vector literal, so a
+    ; refusal with zero items reproduces as `empty$# (0)` instead.
+    .itemsList$ = ""
+    .itemsRepro$ = "empty$# (0)"
+    if .k > 0
+        .itemsRepro$ = "{"
+        for .j from 1 to .k
+            if .j > 1
+                .itemsList$ = .itemsList$ + ", "
+                .itemsRepro$ = .itemsRepro$ + ", "
+            endif
+            .itemsList$ = .itemsList$ + .itemCols$# [.j]
+            .itemsRepro$ = .itemsRepro$ + """" + .itemCols$# [.j] + """"
+        endfor
+        .itemsRepro$ = .itemsRepro$ + "}"
+    endif
+
+    if .k < 2
+        .error$ = "Need at least 2 item columns (found " + string$ (.k) + ")."
+        goto END_RELIABILITY
+    endif
+
+    if .confidence = undefined or .confidence <= 0 or .confidence >= 1
+        .error$ = "Confidence must be strictly between 0 and 1, e.g. 0.95 (got "
+        ... + string$ (.confidence) + ")."
+        goto END_RELIABILITY
+    endif
+
+    ; Every item column must exist and hold numbers. strict = 0: a column
+    ; with SOME unusable cells is not refused here -- @emlCronbachAlpha does
+    ; its own listwise deletion over the matrix built below and discloses it,
+    ; the same complete-case convention every other orchestrator in this file
+    ; follows. See @emlRequireNumericColumn in eml-inferential.praat.
+    for .j from 1 to .k
+        if .error$ = ""
+            @emlRequireNumericColumn: .tableId, "Item column " + string$ (.j),
+            ... .itemCols$# [.j], 0
+            .error$ = emlRequireNumericColumn.error$
+        endif
+    endfor
+    if .error$ <> ""
+        goto END_RELIABILITY
+    endif
+
+    ; THE FULL MATRIX, undefined cells included -- unlike
+    ; @emlExtractConditionMatrix, which drops an incomplete row before its
+    ; caller ever sees it. @emlCronbachAlpha does its OWN listwise deletion
+    ; and reports .nExcluded; deleting rows here first would make this
+    ; orchestrator's count disagree with the kernel's. Reads go through
+    ; @eml_openColumn / @eml_readCell, the same classifier every other
+    ; extraction path in this file uses, so a European "1,5" is undefined
+    ; here exactly as it would be anywhere else.
+    for .j from 1 to .k
+        @eml_openColumn: .tableId, .itemCols$# [.j]
+        .clean [.j] = eml_openColumn.clean
+    endfor
+    .data## = zero## (.nRows, .k)
+    for .row from 1 to .nRows
+        for .j from 1 to .k
+            @eml_readCell: .tableId, .row, .itemCols$# [.j], .clean [.j]
+            .data## [.row, .j] = eml_readCell.value
+        endfor
+    endfor
+
+    @emlCronbachAlpha: .data##, .confidence
+    .error$ = emlCronbachAlpha.error$
+    if .error$ <> ""
+        goto END_RELIABILITY
+    endif
+    .alpha = emlCronbachAlpha.alpha
+    .ciLow = emlCronbachAlpha.ciLow
+    .ciHigh = emlCronbachAlpha.ciHigh
+    .n = emlCronbachAlpha.n
+    .nExcluded = emlCronbachAlpha.nExcluded
+
+    ; EXCLUDED ROWS ARE A WARNING, NOT AN ERROR. The analysis succeeded on
+    ; the complete cases; the reader is told how many were set aside, the
+    ; same disclosure the paired-comparison success path prints for its own
+    ; listwise deletion.
+    if .nExcluded > 0
+        .warning$ = string$ (.nExcluded) + " row(s) excluded for missing "
+        ... + "data (assessed n = " + string$ (.n) + " of " + string$ (.nRows)
+        ... + " respondents)."
+    endif
+
+    .doInf = 0
+    .infError$ = ""
+    .deltaMax = undefined
+    .deltaMaxRow = 0
+    if .doInfluence = 1
+        @emlAlphaInfluence: .data##
+        .infError$ = emlAlphaInfluence.error$
+        if .infError$ = ""
+            .doInf = 1
+            .deltaMax = emlAlphaInfluence.deltaMax
+            .deltaMaxRow = emlAlphaInfluence.deltaMaxRow
+        else
+            ; INFLUENCE IS AN ADD-ON, NOT THE ANALYSIS. Alpha already
+            ; succeeded on this same matrix, so a refusal here is reported
+            ; and skipped rather than taking the whole result down with it.
+            if .warning$ <> ""
+                .warning$ = .warning$ + " "
+            endif
+            .warning$ = .warning$ + "Respondent-influence check not "
+            ... + "computed: " + .infError$
+        endif
+    endif
+
+    @emlCSVInit
+    @emlCILevelLabel: 1 - .confidence
+    .ciPercent$ = emlCILevelLabel.percent$
+    .h$ = "Reliability (Cronbach's alpha) -- " + .tableName$
+    appendInfoLine: .h$
+    appendInfoLine: "  Items (k) = " + string$ (.k) + ", respondents (n) = "
+    ... + string$ (.n)
+    @eml_fixed: .alpha, 4
+    .aVal$ = eml_fixed.result$
+    @eml_fixed: .ciLow, 4
+    .loVal$ = eml_fixed.result$
+    @eml_fixed: .ciHigh, 4
+    .hiVal$ = eml_fixed.result$
+    appendInfoLine: "  Cronbach's alpha = " + .aVal$ + ", " + .ciPercent$
+    ... + "% CI [" + .loVal$ + ", " + .hiVal$ + "]"
+    if .warning$ <> ""
+        @emlWrapText: "Note: " + .warning$, 68
+        for .wl from 1 to emlWrapText.nLines
+            appendInfoLine: "  ", emlWrapText.line$ [.wl]
+        endfor
+    endif
+    if .k >= 3
+        appendInfoLine: "  Alpha if item deleted:"
+        for .j from 1 to .k
+            .aid = emlCronbachAlpha.alphaIfDeleted# [.j]
+            if .aid <> undefined
+                @eml_fixed: .aid, 4
+                appendInfoLine: "    " + .itemCols$# [.j] + " = "
+                ... + eml_fixed.result$
+            endif
+        endfor
+    endif
+    if .doInf = 1
+        @eml_fixed: .deltaMax, 4
+        appendInfoLine: "  Most influential respondent: row "
+        ... + string$ (.deltaMaxRow) + " (removing it changes alpha by "
+        ... + eml_fixed.result$ + ")"
+    endif
+
+    @emlResultClearExtras
+    @emlDeclareReliabilityResult: .tableName$, .itemCols$#, .k, .n,
+    ... .nExcluded, .warning$
+    .ok = 1
+
+    .recResult$ = "alpha = " + .aVal$ + ", " + .ciPercent$ + "% CI ["
+    ... + .loVal$ + ", " + .hiVal$ + "]" + newline$
+    ... + "  n = " + string$ (.n) + " respondents, k = " + string$ (.k)
+    ... + " items"
+    if .warning$ <> ""
+        .recResult$ = .recResult$ + newline$ + "  " + .warning$
+    endif
+
+    label END_RELIABILITY
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -4092,9 +4271,13 @@ procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measu
     ; loaded the recorder executes nothing here.
     if variableExists ("emlRecordLoaded")
         @emlRecordAnalysisStep: .tableId, "Reliability",
-        ... .measure$ + " over " + .raterCols$ + ", subject " + .subjectCol$,
-        ... "The ICC form and the scale of interest are choices; both are stated in the report.",
-        ... "@emlRunReliabilityAnalysis: data, """ + .subjectCol$ + """, """ + .raterCols$ + """, """ + .measure$ + """, """ + .scale$ + """",
+        ... "Cronbach's alpha over " + string$ (.k) + " item(s) ("
+        ... + .itemsList$ + ")",
+        ... "Alpha describes internal consistency of THIS scale on THIS "
+        ... + "sample; it is not evidence the items measure one trait, and "
+        ... + "it is not a licence for any later test.",
+        ... "@emlRunReliabilityAnalysis: data, " + .itemsRepro$ + ", "
+        ... + string$ (.confidence) + ", " + string$ (.doInfluence),
         ... "Not in the GUI: there is no menu entry for this yet.",
         ... .recResult$, .error$
     endif
@@ -6368,4 +6551,39 @@ procedure emlDeclareFriedmanPostHoc
         @emlTidyStr: "method", "Wilcoxon signed rank ("
         ... + emlRMPostHoc.adjUsed$ + ")"
     endfor
+endproc
+
+
+# --- 12. Reliability (Cronbach's alpha) — a survey row ---------------------
+# Reads emlCronbachAlpha.* directly, the way @emlDeclareRMResult reads
+# emlRMAnovaTest.* -- the kernel's outputs live only until it runs again,
+# and this is called before anything else can re-enter it.
+procedure emlDeclareReliabilityResult: .tableName$, .itemCols$#, .k, .n,
+    ... .nExcluded, .warning$
+    @emlResultBegin: .tableName$, "Reliability (Cronbach's alpha)"
+
+    @emlTidyRow: "Scale"
+    @emlTidyNum: "estimate",  emlCronbachAlpha.alpha
+    @emlTidyNum: "conf.low",  emlCronbachAlpha.ciLow
+    @emlTidyNum: "conf.high", emlCronbachAlpha.ciHigh
+    @emlTidyStr: "method",    "Cronbach's alpha (Feldt confidence interval)"
+
+    ; ALPHA IF ITEM DELETED, one row per item, in the order given -- undefined
+    ; for k = 2 (@emlCronbachAlpha's own note: a one-item reduced scale has no
+    ; alpha), and @emlTidyNum writes nothing for an undefined value, so those
+    ; cells stay empty and R reads NA, the same convention @emlDeclareNormalityResult
+    ; follows for skewness and kurtosis below their own minimum n.
+    for .j from 1 to .k
+        @emlTidyRow: .itemCols$# [.j]
+        @emlTidyNum: "estimate", emlCronbachAlpha.alphaIfDeleted# [.j]
+        @emlTidyStr: "method",   "Alpha if item deleted"
+    endfor
+
+    @emlGlanceNum: "estimate",   emlCronbachAlpha.alpha
+    @emlGlanceNum: "nobs",       .n
+    @emlGlanceNum: "n.excluded", .nExcluded
+    @emlGlanceStr: "method",     "Cronbach's alpha (Feldt confidence interval)"
+    if .warning$ <> ""
+        @emlGlanceStr: "warning", .warning$
+    endif
 endproc

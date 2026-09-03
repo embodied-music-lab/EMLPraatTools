@@ -45,6 +45,21 @@ include ../stats/eml-core-utilities.praat
 include ../stats/eml-core-descriptive.praat
 include ../stats/eml-extract.praat
 include ../stats/eml-output.praat
+; The psychometrics kernels, which emlRunReliabilityAnalysis calls once that
+; doorway exists. Added 3 September 2026 with the doorway itself. Before this,
+; the module sat in setup.praat's table -- so a user's own script could load it
+; from the generated barrel -- while the hand-maintained chain the doors follow
+; never named it. The reliability doorway therefore worked in a scratch harness
+; and failed through the real chain with:
+;
+;     Error: Procedure "emlCronbachAlpha" not found.
+;
+; That is the same defect as the two-way kernel below, found the same way, one
+; day later. The door probes of 2 September classified this module NO_DOOR and
+; were right at the time: nothing reached it. Building the doorway is what made
+; it reachable, so the classification expired the moment the doorway landed.
+include ../stats/eml-psychometrics.praat
+
 ; The two-way kernel, which eml-inferential.praat calls at its line 5259 and
 ; which nothing included. Added 2 September 2026 under
 ; RULING_RECORDER_AND_WIRING_2026-09-02.md after a probe drove the real menu

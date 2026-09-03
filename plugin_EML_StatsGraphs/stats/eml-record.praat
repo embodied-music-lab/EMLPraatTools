@@ -3263,12 +3263,18 @@ procedure emlRecordColumnSpec: .proc$
     elsif .proc$ = "emlRunNormalityAnalysis"
         .spec$ = "2=valueCol"
     elsif .proc$ = "emlRunReliabilityAnalysis"
-        ; A LIST OF COLUMNS IS STILL A COLUMN REFERENCE. The rater and
-        ; condition arguments carry several names in one string, and a user
-        ; retargeting the workflow has to edit all of them; leaving the list
-        ; buried in the step would defeat the block for exactly the analyses
-        ; that name the most columns.
-        .spec$ = "2=subjectCol 3=raterCols"
+        ; A LIST OF COLUMNS IS STILL A COLUMN REFERENCE. The item argument
+        ; carries several names, and a user retargeting the workflow has to
+        ; edit all of them; leaving the list buried in the step would defeat
+        ; the block for exactly the analyses that name the most columns.
+        ;
+        ; REWRITTEN 3 September 2026 for the frozen signature. This read
+        ; "2=subjectCol 3=raterCols", which described the retired five-argument
+        ; form. Under the accepted signature argument 2 is the item-column
+        ; vector and argument 3 is the confidence level, so the old spec
+        ; retargeted the wrong positions and would have offered the user a
+        ; confidence level to edit as though it were a column name.
+        .spec$ = "2=itemCols"
     elsif .proc$ = "emlRunRepeatedMeasuresAnalysis"
         .spec$ = "2=subjectCol 3=conditionCols"
     elsif .proc$ = "emlRunFriedmanAnalysis"
