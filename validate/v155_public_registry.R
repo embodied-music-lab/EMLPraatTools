@@ -473,7 +473,76 @@ for (ds in door_scripts) {
     }
 }
 door_names <- names(door_hit_locs)
-missing_door <- setdiff(door_names, reg_names)
+
+# ---------------------------------------------------------------------------
+# 4c's ONE EXEMPTION, WITH A MACHINE-CHECKED EXPIRY.
+# RULING_SETTLEMENT_QUESTIONS_2026-09-03: option 2 for the freeze, option 1
+# when LMM returns.
+#
+# scripts/eml-wizard.praat IS an active door -- setup.praat registers it as
+# "Stats Wizard..." -- and it still contains a live call to
+# @emlRunLMMAnalysis, whose registry row was withdrawn for 1.0. 4c is right
+# to see it: 4c scans a door script's TEXT, one level, and says so in this
+# file's header; it cannot judge reachability inside a script.
+#
+# The block is dead. Its own comment at eml-wizard.praat:2855 says so --
+# "Was D_MODEL_TYPE, which was removed when mixed models were disconnected.
+# Q1_GOAL is where a user would now have come from" -- and the branch falls
+# through to `goto Q1_GOAL`. Nothing navigates into it.
+#
+# WHY EXEMPT RATHER THAN DELETE. Editing a shipping wizard's goto flow during
+# a freeze to satisfy a check is the riskier of the two acts, and the block is
+# scheduled to return with LMM post-1.0, so removing it now is churn. The
+# ruling files the block's fate -- reconnect or remove -- in the post-1.0 LMM
+# round.
+#
+# WHAT THIS EXEMPTION DOES NOT SAY. It does not say a registered door may name
+# an unregistered procedure. It says THIS door names one inside a block with
+# no path into it, and it stops applying the moment that stops being true.
+#
+# THE EXPIRY IS CHECKED, NOT PROMISED. A stated expiry condition nobody
+# evaluates is a comment. `label D_MODEL_TYPE` is the navigation target that
+# was removed when mixed models were disconnected; both surviving mentions of
+# it in the wizard are prose inside comments. Restoring the mixed-model page
+# means restoring that label as CODE. So the exemption holds only while no
+# active `label D_MODEL_TYPE` exists in the door script -- and the day someone
+# reconnects the page, this exemption withdraws itself and 4c reddens on
+# emlRunLMMAnalysis again, before anyone remembers this paragraph.
+# ---------------------------------------------------------------------------
+DOOR_CALL_EXEMPTIONS <- list(
+    list(name   = "emlRunLMMAnalysis",
+         script = "scripts/eml-wizard.praat",
+         # The exemption is live only while this returns TRUE.
+         still_dead = function(lines)
+             !any(grepl("^\\s*label\\s+D_MODEL_TYPE\\b", lines)),
+         why    = paste(
+             "dead block: the mixed-model page's navigation was removed with",
+             "the LMM disconnect (the branch falls through to Q1_GOAL and the",
+             "block's own comment at :2855 says so), so the call text is",
+             "present with no path into it. Expires when `label D_MODEL_TYPE`",
+             "returns as code, or when the block is removed --",
+             "post-1.0 LMM round."))
+)
+
+door_exempt <- character(0)
+for (ex in DOOR_CALL_EXEMPTIONS) {
+    sp    <- file.path(plug, ex$script)
+    dl    <- if (file.exists(sp)) readLines(sp, warn = FALSE) else character(0)
+    sited <- ex$name %in% door_names &&
+             any(startsWith(door_hit_locs[[ex$name]], paste0(ex$script, ":")))
+    alive <- length(dl) > 0 && ex$still_dead(dl)
+    check_true(V,
+               sprintf("4c exemption for %s is still earned (block still unreachable in %s)",
+                       ex$name, ex$script),
+               alive)
+    if (sited && alive) {
+        door_exempt <- c(door_exempt, ex$name)
+        cat(sprintf("      4c EXEMPT %s at %s -- %s\n", ex$name,
+                    paste(door_hit_locs[[ex$name]], collapse = "; "), ex$why))
+    }
+}
+
+missing_door <- setdiff(setdiff(door_names, reg_names), door_exempt)
 check_true(V,
            sprintf("every active door's directly-called emlRun*/emlDraw* procedure has a registry row (%d door scripts scanned, %d names found)%s",
                    length(door_scripts), length(door_names),
@@ -494,6 +563,23 @@ attest(V,
 attest(V,
        "erosion check demonstrated (4a): temporarily deleting a registry row made this exact check fail, restoring the row made it pass again, and the restored file was confirmed byte-identical to the original (sha256)",
        "Demonstrated by hand during authoring, 2026-09-01: emlRunPairedAnalysis's row removed, `Rscript validate/v155_public_registry.R` run and observed to FAIL check 4a naming it, the row restored verbatim, re-run observed to PASS, and `sha256sum` before/after matched. Not re-run automatically on every suite pass because doing so would mean this file mutating REGISTRY.tsv on disk as a side effect of validation, which is worse than the property it would be proving.")
+
+attest(V,
+       "4c's LMM exemption demonstrated to WITHDRAW ITSELF: restoring `label D_MODEL_TYPE` as code in a scratch copy turned the exemption red AND reddened 4c on emlRunLMMAnalysis, and the real repository was never edited",
+       paste(
+         "Demonstrated 2026-09-03, entirely in /tmp. validate/ and",
+         "plugin_EML_StatsGraphs/ were copied to /tmp/v155bt, the copy",
+         "reproduced 60/60 green, then one line -- `    label D_MODEL_TYPE`",
+         "-- was inserted above the scratch wizard's own 'Was D_MODEL_TYPE,",
+         "which was removed' comment, which is what reconnecting the",
+         "mixed-model page means. The scratch run went 60 checks, 58 passed,",
+         "2 FAILED: '4c exemption for emlRunLMMAnalysis is still earned'",
+         "went red first, and 4c then reported 'MISSING: emlRunLMMAnalysis'",
+         "because a withdrawn exemption exempts nothing. The scratch copy was",
+         "discarded; `grep -c` for an active label in the real",
+         "scripts/eml-wizard.praat returned 0 before and after. This is the",
+         "point of a checked expiry rather than a promised one: nobody has to",
+         "remember to come back and delete the exemption."))
 
 attest(V,
        "erosion check demonstrated (4c, door registration): a scratch copy of the plugin tree with emlDrawLMMForest's withdrawn menu entry restored made this exact check FAIL naming emlDrawLMMForest, and the real repository's setup.praat was never touched",
