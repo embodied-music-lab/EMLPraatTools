@@ -232,7 +232,89 @@ check_true("v162",
 accounted <- union(in_barrel, sanctioned)
 
 # ---------------------------------------------------------------------------
+# 3b. MODULES NO MENU NEEDS, COMPUTED FROM THE MENU BLOCK ITSELF.
+# ---------------------------------------------------------------------------
+# RULING_V162_INVARIANT_2026-09-02.md. setup.praat's module table and the door
+# chain are DELIBERATELY different populations, which the table says in its own
+# capitals at the site:
+#
+#   THEY ARE IN THE BARREL AND ON NO MENU. This list decides what a user's own
+#   script can `include`; a menu entry is a separate registration above ...
+#   What is listed here is loadable, not clickable.
+#
+# So a module with no menu behind it is not a defect, and the first draft of
+# this file failed on two of them. Three door probes established the same thing
+# independently: two-way ANOVA CRASHED, psychometrics and categorical had no
+# door at all.
+#
+# THE EXEMPTION IS COMPUTED, NEVER LISTED. The ruling pins this: it is sourced
+# from setup.praat's own menu-registration block, so a module that gains a menu
+# entry loses its exemption in the same edit, by construction. A hand-kept list
+# would be a second copy of the menus, free to drift from them -- the defect
+# this whole wave exists to remove.
+#
+# Method: collect the door scripts the menu block registers, take every
+# procedure they call, follow each into whichever module defines it, and keep
+# going. A module none of that reaches is one no menu needs.
+menu_doors <- unique(sub('.*"(scripts/[^"]+\\.praat)".*', "\\1",
+                  grep('Add menu command:.*"scripts/[^"]+\\.praat"',
+                       src, value = TRUE)))
+check_true("v162", "the menu block registers door scripts to trace from",
+           length(menu_doors) > 0)
+
+proc_defs <- list(); file_calls <- list()
+for (f in list.files(plug, pattern = "\\.praat$", recursive = TRUE)) {
+    ln  <- tryCatch(readLines(file.path(plug, f), warn = FALSE),
+                    error = function(e) character(0))
+    dfs <- sub("^\\s*procedure\\s+([A-Za-z_][A-Za-z0-9_]*).*$", "\\1",
+               grep("^\\s*procedure\\s+", ln, value = TRUE))
+    if (length(dfs)) proc_defs[[f]] <- unique(dfs)
+    cl <- unlist(regmatches(ln, gregexpr("@[A-Za-z_][A-Za-z0-9_]*", ln)))
+    file_calls[[f]] <- unique(sub("^@", "", cl))
+}
+owner <- character(0)
+for (f in names(proc_defs)) for (p in proc_defs[[f]]) owner[p] <- f
+
+frontier <- unique(unlist(file_calls[intersect(menu_doors, names(file_calls))]))
+seen <- character(0)
+while (length(frontier)) {
+    p <- frontier[1]; frontier <- frontier[-1]
+    if (p %in% seen) next
+    seen <- c(seen, p)
+    # A called name with no definition in the tree is a Praat builtin or a
+    # procedure defined in a file this walk does not index. Either way there
+    # is nothing further to follow, so skip rather than subscript past the end.
+    if (p %in% names(owner)) {
+        m <- owner[[p]]
+        if (!is.na(m) && m %in% names(file_calls))
+            frontier <- c(frontier, file_calls[[m]])
+    }
+}
+menu_needs <- unique(unname(owner[intersect(seen, names(owner))]))
+no_menu    <- setdiff(accounted, menu_needs)
+
+cat(sprintf("\n      modules no menu needs (computed from the menu block): %d\n",
+            length(no_menu)))
+for (m in no_menu) cat(sprintf("        %s\n", m))
+
+accounted <- setdiff(accounted, no_menu)
+
+# ---------------------------------------------------------------------------
 # 4. THE TWO LISTS AGREE, ASSERTED AS A SET -- NAMED, NOT COUNTED.
+#
+# WHAT THIS FILE ACTUALLY CHECKS, AND WHAT IT DOES NOT.
+#
+# Checked here: every module setup.praat's table claims, MINUS the ones no menu
+# needs, is reachable through the door chain.
+#
+# The true invariant, ruled as the target in RULING_V162_INVARIANT and filed as
+# a post-1.0 refactor beside the recorder-generation one: every module a
+# registered menu item transitively needs is reachable through the door chain.
+# This file approximates it from the module-table side rather than walking the
+# procedure graph as the acceptance test. The approximation catches the two-way
+# defect exactly, which is what it was written for. A future reader should not
+# re-derive today's confusion: the list comparison is the cheap stand-in, not
+# the invariant.
 # ---------------------------------------------------------------------------
 # present   = what the door chain ACTUALLY resolves to, off disk -- ground
 #             truth for what a click on a menu door can reach.
