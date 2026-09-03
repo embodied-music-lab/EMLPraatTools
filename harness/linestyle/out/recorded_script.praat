@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Tue Aug 18 22:32:43 2026  --  recorded on Praat 6.6.30
+# Thu Sep  3 04:26:41 2026  --  recorded on Praat 6.6.30
 # Input: Sound tone
 # ============================================================
 
@@ -37,16 +37,30 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
+include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
 # THE OBJECT
 # Recorded against: Sound tone.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# Sound tone was already open when this recording started.
+# Nothing in the session made it, so nothing below can remake it.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
@@ -54,7 +68,7 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 # range or a figure format.
 data1$ = "Sound tone"   ; run 1, step 1 (draw)
 axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax     = 0.0   ; on the recorded data it resolved to -0.7000 .. 0.7000
+axisYMax     = 0.0   ; on the recorded data this resolved to -0.7000 .. 0.7000; auto adapts to other data
 eraseFirst   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
 panelOriginX = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
 panelOriginY = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)
@@ -75,6 +89,9 @@ emlPanelOriginY = panelOriginY
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 emlLineStyle = lineStyle
 emlSecondAxisOn = secondAxisOn
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawWaveform: data, "Line style", "Time (s)", "Value", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:

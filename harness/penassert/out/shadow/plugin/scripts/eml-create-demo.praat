@@ -4,13 +4,8 @@
 # Purpose: Generate synthetic voice-science Tables for testing EML Stats & Graphs
 #          and tutorials. Creates realistic data with known properties.
 #          One demo table per wizard analysis path.
-# Date: 11 May 2026
-# Version: 2.1
-# V2.1: every "Try:" line now quotes the Stats Wizard's own option
-#        labels rather than paraphrasing them, and names the direct
-#        EML Stats & Graphs menu entry as a second route. Types 1-5 carry a
-#        "Note:" line stating the effect the generator builds in, matching
-#        what types 6 and 7 already did.
+# Date: 21 August 2026
+# Version: 3.0
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -30,7 +25,17 @@
 #
 # The script author assumes responsibility for the correctness and
 # appropriate application of this code.
+#
+# WHAT THIS FILE HOLDS: the dialog, the seed, and the record. The seven
+# builders live in stats/eml-demo-tables.praat as @emlDemoTable, so that a
+# recorded workflow can rebuild the table it was recorded on by calling the
+# same procedure this dialog calls. A `beginPause:` script refuses arguments
+# — measured, Praat 6.6.30: `runScript: "child.praat", 5` on one answers
+# "Found 1 arguments but expected only 0" — so a recorded script cannot
+# replay this file, and one procedure called from both places is the only
+# arrangement in which the dialog and the replay cannot drift apart.
 # ============================================================================
+include eml-lib.praat
 
 beginPause: "Create Demo Table"
     comment: "Select the type of demo data to generate."
@@ -49,259 +54,61 @@ if clicked = 1
     exitScript: ""
 endif
 
-# ============================================================================
-# 1. Two independent groups: patients vs controls
-# ============================================================================
+# ────────────────────────────────────────────────────────────────────────────
+# THE SEED IS MINTED HERE AND APPLIED THERE.
+#
+# Every builder draws from randomGauss or randomUniform, so two presses of
+# Create give two different tables — which is what a user wants and what makes
+# a recording of one press unreproducible unless the seed is written down.
+#
+# So the seed is drawn once, passed in, and handed to the recorder alongside
+# the call. A recorded script carries it as a literal and rebuilds the table
+# this press produced; a user who wants fresh data presses Create again and
+# gets a fresh seed.
+#
+# IT IS DRAWN FROM PRAAT'S OWN STREAM rather than from the clock, so a test
+# rig that seeded the stream before invoking this file gets the same demo
+# table every run — the property harness/roundtrip depends on, and the only
+# way to have it without this file knowing a rig exists.
+# ────────────────────────────────────────────────────────────────────────────
+demoSeed = randomInteger (100000, 2147483647)
 
-if demo_type = 1
-    tableId = Create Table with column names: "demo_2groups", 40,
-        ... "subject group F0_Hz jitter_pct"
-    for i from 1 to 20
-        Set string value: i, "subject", "S" + string$ (i)
-        Set string value: i, "group", "Control"
-        Set numeric value: i, "F0_Hz", randomGauss (120, 15)
-        Set numeric value: i, "jitter_pct",
-            ... max (0.1, randomGauss (0.8, 0.3))
-    endfor
-    for i from 21 to 40
-        Set string value: i, "subject", "S" + string$ (i)
-        Set string value: i, "group", "Patient"
-        Set numeric value: i, "F0_Hz", randomGauss (140, 25)
-        Set numeric value: i, "jitter_pct",
-            ... max (0.1, randomGauss (2.1, 0.8))
-    endfor
-    description$ = "Two-group comparison (Control vs Patient)."
-        ... + newline$ + "  Data column: jitter_pct or F0_Hz"
-        ... + newline$ + "  Group column: group"
-        ... + newline$ + "  Note: both measures carry a real built-in"
-        ... + newline$ + "        difference — Patients average 2.1% jitter"
-        ... + newline$ + "        against 0.8%, and 140 Hz against 120 Hz."
-        ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
-        ... + newline$ + "       → No — different groups (independent)"
-        ... + newline$ + "       → Two groups"
-        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
-        ... + newline$ + "       Compare two groups..."
+@emlDemoTable: demo_type, demoSeed
 
-# ============================================================================
-# 2. Three independent groups: soprano / mezzo / alto
-# ============================================================================
+if emlDemoTable.tableId = 0
+    writeInfoLine: emlDemoTable.description$
+    exitScript: ""
+endif
 
-elsif demo_type = 2
-    tableId = Create Table with column names: "demo_3groups", 45,
-        ... "singer voice_type SPL_dB vibrato_rate_Hz"
-    for i from 1 to 15
-        Set string value: i, "singer", "Singer_" + string$ (i)
-        Set string value: i, "voice_type", "Soprano"
-        Set numeric value: i, "SPL_dB", randomGauss (92, 4)
-        Set numeric value: i, "vibrato_rate_Hz",
-            ... max (3, randomGauss (5.8, 0.6))
-    endfor
-    for i from 16 to 30
-        Set string value: i, "singer", "Singer_" + string$ (i)
-        Set string value: i, "voice_type", "Mezzo"
-        Set numeric value: i, "SPL_dB", randomGauss (88, 5)
-        Set numeric value: i, "vibrato_rate_Hz",
-            ... max (3, randomGauss (5.5, 0.7))
-    endfor
-    for i from 31 to 45
-        Set string value: i, "singer", "Singer_" + string$ (i)
-        Set string value: i, "voice_type", "Alto"
-        Set numeric value: i, "SPL_dB", randomGauss (85, 4)
-        Set numeric value: i, "vibrato_rate_Hz",
-            ... max (3, randomGauss (5.2, 0.5))
-    endfor
-    description$ = "Three-group comparison (Soprano / Mezzo / Alto)."
-        ... + newline$ + "  Data column: SPL_dB or vibrato_rate_Hz"
-        ... + newline$ + "  Group column: voice_type"
-        ... + newline$ + "  Note: both measures decline across the three"
-        ... + newline$ + "        voice types — SPL_dB at 92 / 88 / 85 dB,"
-        ... + newline$ + "        vibrato_rate_Hz at 5.8 / 5.5 / 5.2 Hz."
-        ... + newline$ + "        The SPL gap is the larger of the two."
-        ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
-        ... + newline$ + "       → No — different groups (independent)"
-        ... + newline$ + "       → Three or more groups"
-        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
-        ... + newline$ + "       Compare k groups (ANOVA)... or"
-        ... + newline$ + "       Compare k groups (Kruskal-Wallis)..."
+tableId = emlDemoTable.tableId
+description$ = emlDemoTable.description$
 
-# ============================================================================
-# 3. Paired: same subjects measured pre and post therapy
-# ============================================================================
-
-elsif demo_type = 3
-    tableId = Create Table with column names: "demo_paired", 20,
-        ... "subject jitter_pre jitter_post HNR_pre HNR_post"
-    for i from 1 to 20
-        Set string value: i, "subject", "P" + string$ (i)
-        preJitter = max (0.1, randomGauss (2.5, 0.8))
-        Set numeric value: i, "jitter_pre", preJitter
-        Set numeric value: i, "jitter_post",
-            ... max (0.1, preJitter - randomGauss (0.8, 0.4))
-        preHNR = randomGauss (18, 4)
-        Set numeric value: i, "HNR_pre", preHNR
-        Set numeric value: i, "HNR_post", preHNR + randomGauss (3, 1.5)
-    endfor
-    description$ = "Paired pre/post therapy comparison."
-        ... + newline$ + "  Column 1: jitter_pre (or HNR_pre)"
-        ... + newline$ + "  Column 2: jitter_post (or HNR_post)"
-        ... + newline$ + "  Note: therapy is built in — jitter drops by"
-        ... + newline$ + "        about 0.8% and HNR rises by about 3 dB"
-        ... + newline$ + "        for every subject, so both tests should"
-        ... + newline$ + "        come out significant."
-        ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
-        ... + newline$ + "       → Yes — same people, measured more"
-        ... + newline$ + "         than once (within-subject)"
-        ... + newline$ + "       → Two (paired t-test / Wilcoxon)"
-        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
-        ... + newline$ + "       Compare paired..."
-
-# ============================================================================
-# 4. Correlation: speaking F0 vs singing F0
-# ============================================================================
-
-elsif demo_type = 4
-    tableId = Create Table with column names: "demo_correlation", 30,
-        ... "speaker speaking_F0_Hz singing_F0_Hz age_years"
-    for i from 1 to 30
-        Set string value: i, "speaker", "Spk" + string$ (i)
-        speakF0 = max (80, randomGauss (160, 40))
-        Set numeric value: i, "speaking_F0_Hz", speakF0
-        Set numeric value: i, "singing_F0_Hz",
-            ... max (150, speakF0 * 2.1 + randomGauss (0, 30))
-        Set numeric value: i, "age_years",
-            ... round (randomUniform (22, 65))
-    endfor
-    description$ = "Bivariate relationship (speaking F0 vs singing F0)."
-        ... + newline$ + "  Column X: speaking_F0_Hz"
-        ... + newline$ + "  Column Y: singing_F0_Hz"
-        ... + newline$ + "  Note: singing F0 is built as 2.1 × speaking F0"
-        ... + newline$ + "        plus noise, so expect a strong positive r."
-        ... + newline$ + "        age_years is drawn independently and should"
-        ... + newline$ + "        show no relationship — a useful contrast."
-        ... + newline$ + "  Try: Stats Wizard → Examine a relationship"
-        ... + newline$ + "       → Correlation (both continuous)"
-        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
-        ... + newline$ + "       Correlate two columns..."
-
-# ============================================================================
-# 5. Regression: practice hours predicting vibrato regularity
-# ============================================================================
-
-elsif demo_type = 5
-    tableId = Create Table with column names: "demo_regression", 25,
-        ... "singer practice_hrs_wk vibrato_regularity_pct experience_yrs"
-    for i from 1 to 25
-        Set string value: i, "singer", "S" + string$ (i)
-        practiceHrs = max (1, randomGauss (12, 5))
-        Set numeric value: i, "practice_hrs_wk", practiceHrs
-        # Clear linear relationship: more practice → more regular vibrato
-        regularity = 40 + 3.2 * practiceHrs + randomGauss (0, 8)
-        Set numeric value: i, "vibrato_regularity_pct",
-            ... min (100, max (10, regularity))
-        # Covariate: correlated with practice but adds independent info
-        Set numeric value: i, "experience_yrs",
-            ... max (1, round (practiceHrs * 0.8 + randomGauss (0, 3)))
-    endfor
-    description$ = "Predictor → outcome relationship."
-        ... + newline$ + "  Predictor (X): practice_hrs_wk"
-        ... + newline$ + "  Response (Y): vibrato_regularity_pct"
-        ... + newline$ + "  Note: the generator uses regularity = 40 +"
-        ... + newline$ + "        3.2 × practice + noise, so the fitted slope"
-        ... + newline$ + "        should land near 3.2 and the intercept near"
-        ... + newline$ + "        40. Values are clipped at 100%, which flattens"
-        ... + newline$ + "        the slope a little at the top of the range."
-        ... + newline$ + "  Try: Stats Wizard → Predict an outcome"
-        ... + newline$ + "       (or Examine a relationship → Regression)"
-        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
-        ... + newline$ + "       Linear regression..."
-
-# ============================================================================
-# 6. Two-way ANOVA: voice type × task
-# ============================================================================
-
-elsif demo_type = 6
-    tableId = Create Table with column names: "demo_twoway", 48,
-        ... "subject voice_type task SPL_dB"
-    row = 0
-    for iVoice from 1 to 2
-        if iVoice = 1
-            voiceType$ = "Soprano"
-            baseSPL = 90
-        else
-            voiceType$ = "Alto"
-            baseSPL = 85
-        endif
-        for iTask from 1 to 2
-            if iTask = 1
-                task$ = "Speech"
-                taskEffect = 0
-            else
-                task$ = "Singing"
-                taskEffect = 8
-            endif
-            for iSubj from 1 to 12
-                row = row + 1
-                Set string value: row, "subject",
-                    ... voiceType$ + "_" + string$ (iSubj)
-                Set string value: row, "voice_type", voiceType$
-                Set string value: row, "task", task$
-                # Main effects + interaction: sopranos gain more SPL in singing
-                interaction = 0
-                if iVoice = 1 and iTask = 2
-                    interaction = 3
-                endif
-                Set numeric value: row, "SPL_dB",
-                    ... baseSPL + taskEffect + interaction
-                    ... + randomGauss (0, 3)
-            endfor
-        endfor
-    endfor
-    description$ = "Two-factor design (voice_type × task)."
-        ... + newline$ + "  Data column: SPL_dB"
-        ... + newline$ + "  Factor 1: voice_type"
-        ... + newline$ + "  Factor 2: task"
-        ... + newline$ + "  Note: contains two main effects (singing +8 dB,"
-        ... + newline$ + "        Soprano +5 dB) and an interaction —"
-        ... + newline$ + "        Sopranos gain a further 3 dB when singing."
-        ... + newline$ + "  Try: Stats Wizard → Compare groups or conditions"
-        ... + newline$ + "       → No — different groups (independent)"
-        ... + newline$ + "       → Two-factor design (two grouping variables)"
-        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
-        ... + newline$ + "       Compare two-way (ANOVA)..."
-
-# ============================================================================
-# 7. Normality check: normal vs skewed columns
-# ============================================================================
-
-elsif demo_type = 7
-    tableId = Create Table with column names: "demo_normality", 40,
-        ... "subject F0_Hz shimmer_pct jitter_pct"
-    for i from 1 to 40
-        Set string value: i, "subject", "S" + string$ (i)
-        # F0: approximately normal
-        Set numeric value: i, "F0_Hz", randomGauss (180, 30)
-        # Shimmer: right-skewed (lognormal-ish)
-        # exp(randomGauss) produces lognormal distribution
-        Set numeric value: i, "shimmer_pct",
-            ... exp (randomGauss (0.7, 0.5))
-        # Jitter: mildly skewed (Gaussian with floor)
-        Set numeric value: i, "jitter_pct",
-            ... max (0.05, randomGauss (1.2, 0.6))
-    endfor
-    description$ = "Data with different distributional shapes."
-        ... + newline$ + "  F0_Hz: approximately normal"
-        ... + newline$ + "  shimmer_pct: right-skewed (try nonparametric)"
-        ... + newline$ + "  jitter_pct: mildly skewed"
-        ... + newline$ + "  Try: Stats Wizard → Describe or summarize"
-        ... + newline$ + "       → Check normality"
-        ... + newline$ + "  Or go straight there: New → EML Stats & Graphs →"
-        ... + newline$ + "       Check normality (all columns)..."
-
+# ────────────────────────────────────────────────────────────────────────────
+# THE RECORD. A table coming into existence is a step like any other, and it
+# is the step that lets an emitted script say where its data came from instead
+# of instructing the reader to have it open already. Guarded on the recorder
+# being loaded for the reason every other hook in the plugin is: a companion
+# script that includes only part of the library must not die on a procedure
+# that is not there.
+#
+# THE CODE IT RECORDS IS THE CALL THIS SCRIPT JUST MADE, seed and all, so the
+# replay builds the same table rather than a differently-random one.
+# ────────────────────────────────────────────────────────────────────────────
+if variableExists ("emlRecordLoaded")
+    @emlPhrase: "create.seeded", string$ (demoSeed), "", "", "", "", ""
+    @emlRecordCreateStep: tableId, emlDemoTable.name$,
+        ... emlDemoTable.summary$, emlPhrase.result$,
+        ... "@emlDemoTable: " + string$ (demo_type) + ", "
+        ... + string$ (demoSeed),
+        ... "In the GUI: New > EML Stats & Graphs > Create demo table..., "
+        ... + "Demo type option " + string$ (demo_type) + "."
 endif
 
 selectObject: tableId
 writeInfoLine: "Created demo Table: ", selected$ ("Table")
 appendInfoLine: ""
 appendInfoLine: description$
+appendInfoLine: ""
+appendInfoLine: "Seed: ", demoSeed, " — the same seed rebuilds this table."
 appendInfoLine: ""
 appendInfoLine: "Select the Table and use the EML Stats & Graphs menu or Wizard."

@@ -5,9 +5,11 @@
 #          click-to-navigate cell editing with auto-advance, plus
 #          structural operations (add/insert/delete rows and columns,
 #          rename columns). Compensates for the read-only TableEditor.
+#          Every change it commits is offered to the workflow recorder as a
+#          step that replays it.
 #
-# Date: 15 August 2026
-# Version: 2.2
+# Date: 21 August 2026
+# Version: 2.3
 #
 # COLUMN ADDRESSING — READ THIS BEFORE CHANGING A COLUMN OPERATION.
 #
@@ -49,6 +51,32 @@
 # Anything that reads or writes a cell, or removes a column, must go through
 # those three procedures. Adding a bare `Get value:`/`Set string value:`/
 # `Remove column:` back into a menu path reopens the defect.
+#
+# EVERY COMMITTED CHANGE IS OFFERED TO THE RECORDER — READ THIS BEFORE
+# ADDING AN OPERATION.
+#
+# This editor is plugin code, so an edit made here can be captured; an edit
+# typed into Praat's own TableEditor cannot be, by any code (Praat's command
+# history is unreachable from a script, and a TableEditor action never enters
+# the interpreter — both measured, harness/GUI_HARNESS_RECIPE.md §12.3 and
+# §12.4). A recording that misses the edits made through this door produces a
+# script that replays an analysis against data the analysis never saw and
+# prints different numbers from the ones written inside it.
+#
+# So every path below that CHANGES the table ends in one call to @recordEdit,
+# passing a phrase key, its values, and the Praat that re-performs the change.
+# The code passed is what this script actually ran, @colLock's private-name
+# rename included, so a replay lands on the column the user pointed at even
+# in a table with duplicate labels. @cellWrite and @columnRemove hand their
+# own commands back in `.code$` for exactly that reason — a caller does not
+# reconstruct what the addressing layer did, it is given it.
+#
+# @recordEdit COSTS NOTHING WHEN NOBODY IS RECORDING, and that is why this
+# file still includes nothing. It tests the recording's own state — the
+# Table named emlRecording_DO_NOT_REMOVE, whose existence IS the recording —
+# and only then hands the step to scripts/eml-record-edit-step.praat through
+# `runScript:`. See that file's header for the four measured facts about
+# `runScript:` that make the arrangement work.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -142,6 +170,9 @@ while running
             if clicked2 = 2
                 selectObject: tableId
                 Append column: column_name$
+                @quoted: column_name$
+                @recordEdit: "edit.coladd", column_name$, "", "", "",
+                ... "Append column: " + quoted.out$
             endif
         endif
 
@@ -245,7 +276,14 @@ while running
                 prevCol = column
                 prevRow = row
             else
+                # THE OLD VALUE IS READ BEFORE THE WRITE, because the phrase
+                # the recorder writes names both ends of the change and
+                # afterwards there is only one end left to read.
+                @cellRead: row, column
+                wasValue$ = cellRead.value$
                 @cellWrite: row, column, value$
+                @recordEdit: "edit.set", colName$[column], string$ (row),
+                ... wasValue$, value$, cellWrite.code$
                 prevCol = column
                 prevRow = min (row + 1, nRows)
             endif
@@ -452,6 +490,9 @@ procedure findReplaceDialog
                             .newVal$ = replace_with$
                         endif
                         @cellWrite: prevRow, prevCol, .newVal$
+                        @recordEdit: "edit.set", colName$[prevCol],
+                        ... string$ (prevRow), .cellVal$, .newVal$,
+                        ... cellWrite.code$
                         beginPause: "Rep Nxt"
                             comment: "Replaced at column """ + .displayCol$ + """, row " + string$ (prevRow) + "."
                             comment: "New value: " + .newVal$
@@ -468,6 +509,13 @@ procedure findReplaceDialog
 
             elsif .clicked = 5
                 .count = 0
+                # ONE PRESS OF Rep All IS ONE RECORDED STEP, carrying one
+                # `Set string value:` per cell it changed. The count is in
+                # the sentence; the lines are what re-performs it, and they
+                # are the literal writes rather than a loop, so a replay
+                # reproduces this table's cells and not whatever a re-run
+                # search would find in a table that has moved on.
+                .codeAll$ = ""
 
                 if scope = 1
                     .colStart = 1
@@ -486,15 +534,33 @@ procedure findReplaceDialog
                                 .newVal$ = replace$ (.cellVal$, find_text$, replace_with$, 0)
                                 @cellWrite: .iRow, .iCol, .newVal$
                                 .count = .count + 1
+                                if .codeAll$ <> ""
+                                    .codeAll$ = .codeAll$ + newline$
+                                endif
+                                .codeAll$ = .codeAll$ + cellWrite.code$
                             endif
                         else
                             if .cellVal$ = find_text$
                                 @cellWrite: .iRow, .iCol, replace_with$
                                 .count = .count + 1
+                                if .codeAll$ <> ""
+                                    .codeAll$ = .codeAll$ + newline$
+                                endif
+                                .codeAll$ = .codeAll$ + cellWrite.code$
                             endif
                         endif
                     endfor
                 endfor
+
+                if .count > 0
+                    if scope = 1
+                        .said$ = "across all columns"
+                    else
+                        .said$ = "in column " + colName$[scope - 1]
+                    endif
+                    @recordEdit: "edit.replaceall", find_text$, replace_with$,
+                    ... string$ (.count), .said$, .codeAll$
+                endif
 
                 beginPause: "Rep All"
                     comment: "Replaced " + string$ (.count) + " cell(s)."
@@ -537,6 +603,8 @@ procedure structureDialog
             Append row
             nRows = nRows + 1
             prevRow = nRows
+            @recordEdit: "edit.rowadd", string$ (nRows), "", "", "",
+            ... "Append row"
 
         elsif action = 2
             # Insert row after position
@@ -550,6 +618,8 @@ procedure structureDialog
                 Insert row: .pos + 1
                 nRows = nRows + 1
                 prevRow = .pos + 1
+                @recordEdit: "edit.rowinsert", string$ (.pos + 1), "", "",
+                ... "", "Insert row: " + string$ (.pos + 1)
             endif
 
         elsif action = 3
@@ -567,6 +637,8 @@ procedure structureDialog
                     .target = min (row_number, .nRows)
                     selectObject: tableId
                     Remove row: .target
+                    @recordEdit: "edit.rowdelete", string$ (.target), "", "",
+                    ... "", "Remove row: " + string$ (.target)
                     nRows = nRows - 1
                     if prevRow > nRows and nRows > 0
                         prevRow = nRows
@@ -599,6 +671,9 @@ procedure structureDialog
                     else
                         selectObject: tableId
                         Append column: column_name$
+                        @quoted: column_name$
+                        @recordEdit: "edit.coladd", column_name$, "", "", "",
+                        ... "Append column: " + quoted.out$
                         nCols = nCols + 1
                     endif
                 endif
@@ -629,6 +704,11 @@ procedure structureDialog
                     else
                         selectObject: tableId
                         Insert column: .pos, column_name$
+                        @quoted: column_name$
+                        @recordEdit: "edit.colinsert", column_name$,
+                        ... string$ (.pos), "", "",
+                        ... "Insert column: " + string$ (.pos) + ", "
+                        ... + quoted.out$
                         nCols = nCols + 1
                         prevCol = .pos
                     endif
@@ -663,7 +743,11 @@ procedure structureDialog
                     # BY INDEX. The optionmenu's numeric variable is the entry
                     # the user clicked; column_to_delete$ is only its label,
                     # and a label is not an address.
+                    .gone$ = .colLabel$[column_to_delete]
                     @columnRemove: column_to_delete
+                    @recordEdit: "edit.coldelete", .gone$,
+                    ... string$ (column_to_delete), string$ (.nCols), "",
+                    ... columnRemove.code$
                     nCols = nCols - 1
                     if prevCol > nCols and nCols > 0
                         prevCol = nCols
@@ -713,9 +797,16 @@ procedure structureDialog
                             ... labelInUse.at, labelInUse.total
                             .again = refuseColumnName.back
                         else
+                            .was$ = .colLabel$[column_to_rename]
                             selectObject: tableId
                             Rename column (by number): column_to_rename,
                             ... new_name$
+                            @quoted: new_name$
+                            @recordEdit: "edit.colrename", .was$, new_name$,
+                            ... "", "",
+                            ... "Rename column (by number): "
+                            ... + string$ (column_to_rename) + ", "
+                            ... + quoted.out$
                         endif
                     endif
                 endwhile
@@ -795,6 +886,14 @@ procedure autoLabel: .idx
         .name$ = .try$
         selectObject: tableId
         Rename column (by number): .idx, .name$
+        # A NAME INVENTED HERE IS A CHANGE TO THE TABLE, so it is recorded
+        # like any other. Every step below addresses that column by the name
+        # this line gave it, and a replay against the file the table was read
+        # from meets an unnamed column unless this rename is in front of them.
+        @quoted: .name$
+        @recordEdit: "edit.colautoname", string$ (.idx), .name$, "", "",
+        ... "Rename column (by number): " + string$ (.idx) + ", "
+        ... + quoted.out$
     endif
 endproc
 
@@ -878,6 +977,24 @@ procedure cellWrite: .row, .idx, .value$
     @colLock: .idx
     selectObject: tableId
     Set string value: .row, colLock.name$, .value$
+    # WHAT RAN, HANDED BACK, so a caller that records the change emits the
+    # commands this procedure issued rather than a reconstruction of them.
+    # On a duplicate-labelled table those commands include @colLock's rename
+    # to a private name and the rename back, and a replay that omitted them
+    # would write into the FIRST column carrying the label — the defect this
+    # whole section exists to prevent, arriving by way of the recording.
+    @quoted: colLock.name$
+    .heldAs$ = quoted.out$
+    @quoted: .value$
+    .code$ = "Set string value: " + string$ (.row) + ", " + .heldAs$
+    ... + ", " + quoted.out$
+    if colLock.engaged
+        @quoted: colLock.orig$
+        .code$ = "Rename column (by number): " + string$ (.idx) + ", "
+        ... + .heldAs$ + newline$ + .code$ + newline$
+        ... + "Rename column (by number): " + string$ (.idx) + ", "
+        ... + quoted.out$
+    endif
     @colUnlock
 endproc
 
@@ -885,7 +1002,98 @@ procedure columnRemove: .idx
     @colLock: .idx
     selectObject: tableId
     Remove column: colLock.name$
+    # WHAT RAN, HANDED BACK — see @cellWrite. There is no rename back here
+    # because there is no column left to rename, so a locked removal emits
+    # two lines and an ordinary one emits one.
+    @quoted: colLock.name$
+    .code$ = "Remove column: " + quoted.out$
+    if colLock.engaged
+        .code$ = "Rename column (by number): " + string$ (.idx) + ", "
+        ... + quoted.out$ + newline$ + .code$
+    endif
     colLock.engaged = 0
+endproc
+
+
+# ============================================================================
+# PROCEDURES: recording
+# ============================================================================
+# The whole of this editor's connection to the workflow recorder. Two
+# procedures and no include: see the RECORDING note in the file header for
+# why the connection is a `runScript:` and not an `include`, and
+# scripts/eml-record-edit-step.praat for the measurements it rests on.
+# ============================================================================
+
+# ────────────────────────────────────────────────────────────────────────────
+# @quoted: .s$
+#
+# .s$ as a Praat string LITERAL: wrapped in double quotes, with every double
+# quote inside it doubled, which is how Praat's own parser reads one back.
+#
+# Every column name and every cell value this editor records goes through
+# here. A user who types a quotation mark into a cell — a transcription, a
+# gloss, an annotation — is entirely ordinary, and pasting that character
+# unescaped into a recorded script produces a file that will not parse: the
+# recording of their session becomes unrunnable because of what was in their
+# data. Measured on 6.6.30: `x$ = "he said ""hi"" ok"` yields  he said "hi" ok.
+#
+# Returns:
+#   .out$ — the literal, quotes included, ready to concatenate into code.
+# ────────────────────────────────────────────────────────────────────────────
+procedure quoted: .s$
+    .out$ = """" + replace$ (.s$, """", """""", 0) + """"
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# @recordEdit: .key$, .a1$, .a2$, .a3$, .a4$, .code$
+#
+# Offer one committed change to the recorder. Silent and cheap when no
+# recording is running, which is the ordinary case.
+#
+# THE TEST IS THE RECORDING'S OWN. A Table named emlRecording_DO_NOT_REMOVE
+# in the Objects window IS the recording — that is the recorder's design, not
+# an inference about it, and @emlRecordInit re-attaches on exactly this test.
+# So the question is answerable here without loading a line of the recorder,
+# which is what keeps this file's include list empty. `nocheck selectObject:`
+# on an absent name raises nothing and leaves nothing selected (measured,
+# 6.6.30), so the count that follows is the whole test.
+#
+# .key$ NAMES A PHRASE, IT IS NOT A SENTENCE. The wording lives in
+# data/eml-record-phrases.csv with every other sentence the recorder writes
+# into a generated script, and the sidecar looks it up; a cell editor has no
+# business holding the prose of a lab notebook. .a1$..$.a4$ fill {1}..{4}.
+#
+# .code$ IS THE PRAAT THAT RE-PERFORMS THE CHANGE, one or more lines, and it
+# is passed through to the emitted file unaltered.
+#
+# THE SELECTION IS PUT BACK. This is called from the middle of the editing
+# loop and from inside @autoLabel, where the caller's selection is live, and
+# both the test above and the sidecar move it.
+# ────────────────────────────────────────────────────────────────────────────
+procedure recordEdit: .key$, .a1$, .a2$, .a3$, .a4$, .code$
+    .nSel = numberOfSelected ()
+    for .i from 1 to .nSel
+        .sel[.i] = selected (.i)
+    endfor
+
+    nocheck selectObject: "Table emlRecording_DO_NOT_REMOVE"
+    if numberOfSelected () = 1
+        runScript: "eml-record-edit-step.praat", string$ (tableId), .key$,
+        ... .a1$, .a2$, .a3$, .a4$, .code$
+    endif
+
+    if .nSel > 0
+        nocheck selectObject: .sel[1]
+        for .i from 2 to .nSel
+            nocheck plusObject: .sel[.i]
+        endfor
+    else
+        # Nothing was selected on entry, so nothing is selected on exit.
+        # `nocheck selectObject:` on a name no object carries is the
+        # documented way to deselect everything.
+        nocheck selectObject: "Table emlEditorSelectedNothing"
+    endif
 endproc
 
 

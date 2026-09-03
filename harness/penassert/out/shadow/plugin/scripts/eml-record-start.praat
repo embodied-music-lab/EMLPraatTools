@@ -1,11 +1,13 @@
 # ============================================================================
 # EML Stats & Graphs — Start recording a script
 # ============================================================================
-# Purpose: begin a recording session. Every EML analysis and figure run after
-#          this, until the session is saved, is captured as one runnable
-#          Praat script.
-# Date: 12 August 2026
-# Version: 1.0
+# Purpose: begin a recording session. Every EML analysis, figure and table
+#          edit run after this, until the session is saved, is captured as one
+#          runnable Praat script. The message it prints states at the outset
+#          what the recorder can and cannot capture, and how to recover the
+#          one kind of change it cannot.
+# Date: 21 August 2026
+# Version: 1.1
 #
 # HOW THE SESSION SURVIVES BETWEEN MENU COMMANDS, which is the only
 # interesting thing about this file. A script run from a menu ends and takes
@@ -83,9 +85,51 @@ nocheck selectObject ( )
 
 writeInfoLine: "EML: recording started."
 appendInfoLine: ""
-appendInfoLine: "Every EML analysis and figure from now on is added to one"
-appendInfoLine: "script. Finish with 'Stop recording and open' to read it in"
-appendInfoLine: "an editor, or 'Stop recording and save' to file it directly."
+appendInfoLine: "Every EML analysis, figure and table edit from now on is"
+appendInfoLine: "added to one script. Finish with 'Stop recording and open'"
+appendInfoLine: "to read it in an editor, or 'Stop recording and save' to"
+appendInfoLine: "file it directly."
+appendInfoLine: ""
+# WHAT THIS RECORDER CAN AND CANNOT SEE, SAID AT THE START.
+#
+# A recorder that only reports its limits when the session ends has told the
+# user too late to act on it: by then the work is done and the gap between
+# the script and what happened is already in the file. Said here, it is a
+# choice the user can still make -- edit through EML's own editor rather than
+# Praat's, keep a stray script out of the session -- which is the whole
+# reason it is at the start rather than at the flush.
+#
+# THE THREE CASES ARE MEASURED, not assumed, and the measurements are in
+# harness/GUI_HARNESS_RECIPE.md §12.3 to §12.5. An action taken through this
+# plugin's own dialogs is captured. A hand edit committed in Praat's native
+# TableEditor is not -- it never enters the interpreter, and no script can
+# read Praat's command history -- but it DOES enter that history in
+# replayable syntax, so it is recoverable by hand and the way to recover it
+# is named. Work done by a foreign script is in neither place.
+#
+# THE ONE RECOVERABLE CASE GETS THE INSTRUCTION, and the other does not,
+# because there is nothing to instruct: naming a remedy that does not exist
+# would be worse than saying plainly that there is none.
+appendInfoLine: "WHAT GOES INTO IT, AND WHAT DOES NOT:"
+appendInfoLine: ""
+appendInfoLine: "    Recorded — anything you do through an EML command:"
+appendInfoLine: "        analyses, figures, saves, and changes you make"
+appendInfoLine: "        in EML's own 'EML: Edit Table...' window."
+appendInfoLine: ""
+appendInfoLine: "    Not recorded — a cell you type into Praat's own"
+appendInfoLine: "        table window, and anything a script of your own"
+appendInfoLine: "        does to your data."
+appendInfoLine: ""
+appendInfoLine: "An edit made in Praat's own table window can still be"
+appendInfoLine: "got back by hand: open a script window and choose"
+appendInfoLine: "Edit > Paste history. Praat writes out what you did in a"
+appendInfoLine: "form that runs, and you can paste it into the recorded"
+appendInfoLine: "script where it belongs. Work done by a script of your"
+appendInfoLine: "own leaves no trace in either place."
+appendInfoLine: ""
+appendInfoLine: "To keep the whole session reproducible, edit your tables"
+appendInfoLine: "through 'EML: Edit Table...' and they are recorded with"
+appendInfoLine: "everything else."
 appendInfoLine: ""
 # BOTH TABLES ARE NAMED, because both are visible.
 #

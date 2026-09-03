@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Tue Aug 25 20:36:16 2026
+  Thu Sep  3 04:08:10 2026
   from: analysis dialog
 ══════════════════════════════════════════════
 
@@ -46,5 +46,7 @@ mu            4.993       -5.024      ---
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 == END anova_only_off ==

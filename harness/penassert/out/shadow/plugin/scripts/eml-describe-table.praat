@@ -116,33 +116,28 @@ displayTable$ = replace$ (tableName$, "_", " ", 0)
 
 # ── Filter to numeric columns ──────────────────────────────────────────────
 #
-# Unchanged in substance: a column counts as numeric if its first non-empty
-# cell in the first five rows reads as a number. It is also what keeps the
-# converted row-label column out of the menu — "r1" is not a number in any
-# locale, so the labels this wrapper's own coercion writes classify as
-# labels, which is the whole reason they are written as r1..rn rather than
-# as bare row numbers.
+# SAMPLING IS NOT ENOUGH — @emlCheckNumericColumn's own header says so, and
+# until 25 August this wrapper was exactly the violation that header warns
+# against: it judged a column by its FIRST non-missing cell among the first
+# five rows only, so a column whose first five rows happened to be missing
+# was never offered, no matter how much numeric data followed, and a column
+# whose first non-missing cell was a stray label but whose remaining
+# thousand cells were numeric was offered anyway. Every row is scanned now,
+# through the plugin's one reader of what "numeric" means — the same one
+# the draw layer and the refusals already use — and the column is analysed
+# complete-case, missing cells excluded rather than mistaken for evidence
+# either way.
+#
+# THE ROW-LABEL COLUMN STAYS OUT OF THE MENU FOR THE SAME REASON AS BEFORE:
+# "r1".."rn", written by this wrapper's own coercion, are not numeric in any
+# locale, so @emlCheckNumericColumn still classifies them as non-numeric.
 
 selectObject: tableId
 nRows = Get number of rows
-nNumericCols = 0
-for iCol from 1 to nCols
-    .colName$ = emlTableColumnNames.name$ [iCol]
-    .isNumeric = 0
-    for iRow from 1 to min (nRows, 5)
-        selectObject: tableId
-        .val$ = Get value: iRow, .colName$
-        if .val$ <> "" and .val$ <> "--undefined--"
-            if number (.val$) <> undefined
-                .isNumeric = 1
-            endif
-            iRow = nRows + 1
-        endif
-    endfor
-    if .isNumeric
-        nNumericCols = nNumericCols + 1
-        numericCol$ [nNumericCols] = .colName$
-    endif
+@emlDescribeFilterNumericColumns: tableId
+nNumericCols = emlDescribeFilterNumericColumns.nNumericCols
+for iCol from 1 to nNumericCols
+    numericCol$ [iCol] = emlDescribeFilterNumericColumns.numericCol'iCol'$
 endfor
 
 if nNumericCols = 0

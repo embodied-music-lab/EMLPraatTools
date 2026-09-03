@@ -83,6 +83,8 @@
 # Outputs: .tableId       the new Table, left selected
 #          .name$         its full "Table <name>", for the recorder
 #          .description$  the wrapper's on-screen guide to the table
+#          .summary$      the guide's first line, one phrase naming what was
+#                         built, for the recorder's comment
 # ----------------------------------------------------------------------------
 procedure emlDemoTable: .demoType, .seed
     ; THE SEED FIRST, BEFORE ANY BRANCH DRAWS. Applied unconditionally: type 6
@@ -92,6 +94,7 @@ procedure emlDemoTable: .demoType, .seed
 
     .tableId = 0
     .description$ = ""
+    .summary$ = ""
 
     # ============================================================================
     # 1. Two independent groups: patients vs controls
@@ -357,6 +360,24 @@ procedure emlDemoTable: .demoType, .seed
 
     selectObject: .tableId
     .name$ = selected$ ()
+
+    ; ONE LINE NAMING WHAT WAS BUILT, TAKEN FROM THE GUIDE RATHER THAN
+    ; WRITTEN A SECOND TIME. The recorder needs a short phrase for the create
+    ; step's comment and the dialog needs the whole guide; a second list of
+    ; seven labels would be a list to keep in step with this one. The first
+    ; line of .description$ is already that phrase -- "Three-group comparison
+    ; (Soprano / Mezzo / Alto)." -- so it is read off rather than repeated.
+    .summary$ = .description$
+    .nl = index (.summary$, newline$)
+    if .nl > 0
+        .summary$ = left$ (.summary$, .nl - 1)
+    endif
+    ; THE FULL STOP COMES OFF. The guide's first line ends one; the phrase
+    ; this is dropped into ends its own, and two of them read as a typo in a
+    ; file a user is meant to publish.
+    if endsWith (.summary$, ".")
+        .summary$ = left$ (.summary$, length (.summary$) - 1)
+    endif
 
     label END_EML_DEMO_TABLE
 endproc

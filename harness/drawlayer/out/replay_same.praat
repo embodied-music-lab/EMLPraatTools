@@ -12,10 +12,10 @@ for g from 1 to 3
     endfor
 endfor
 Erase all
-include /home/claude/EMLPraatTools/harness/drawlayer/out/emitted.praat
+include /home/claude/repo/harness/drawlayer/out/emitted.praat
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/drawlayer/out/pic_replay_same.png"
-appendFileLine: "/home/claude/EMLPraatTools/harness/drawlayer/out/DRAWLAYER.tsv", "replay_same_min", tab$,
+Save as 300-dpi PNG file: "/home/claude/repo/harness/drawlayer/out/pic_replay_same.png"
+appendFileLine: "/home/claude/repo/harness/drawlayer/out/DRAWLAYER.tsv", "replay_same_min", tab$,
 ... fixed$ (emlDrawViolinPlot.yMin, 4)
-appendFileLine: "/home/claude/EMLPraatTools/harness/drawlayer/out/DRAWLAYER.tsv", "replay_same_max", tab$,
+appendFileLine: "/home/claude/repo/harness/drawlayer/out/DRAWLAYER.tsv", "replay_same_max", tab$,
 ... fixed$ (emlDrawViolinPlot.yMax, 4)

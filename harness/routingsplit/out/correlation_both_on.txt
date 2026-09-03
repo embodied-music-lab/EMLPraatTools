@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Tue Aug 25 20:36:18 2026
+  Thu Sep  3 04:08:12 2026
   from: analysis dialog
 ══════════════════════════════════════════════
 
@@ -19,6 +19,7 @@
   t                   57.503		The observed difference is 57.5 standard errors from zero
   df                  13		Observations (15) minus 2. Two parameters (slope, intercept) estimated.
   p                   < .001  (4.91e-17)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  p method            t distribution
   95% CI for r        [0.9939, 0.9994]
   Magnitude           large effect
 
@@ -29,9 +30,12 @@
   t                   --undefined--		The observed difference is --undefined-- standard errors from zero
   df                  13		Observations (15) minus 2. Two parameters (slope, intercept) estimated.
   p                   < .001  (0)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  p method            exact
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 == END correlation_both_on ==

@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Wed Aug 26 03:35:19 2026
+  Thu Sep  3 03:49:16 2026
 ══════════════════════════════════════════════
 
   Table               corrscope -- A
@@ -11,22 +11,24 @@
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   0.9994		Very strong positive relationship (range: -1 to 1)
-  R-squared           0.9989		The fitted model accounts for 100% of the variance in Y in this sample
-  t                   73.252		The observed difference is 73.3 standard errors from zero
-  df                  6		Observations (8) minus 2. Two parameters (slope, intercept) estimated.
-  p                   < .001  (4.36e-10)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  r                   0.9994
+  R-squared           0.9989
+  t                   73.252
+  df                  6
+  p                   < .001  (4.36e-10)
+  p method            t distribution
   95% CI for r        [0.9968, 0.9999]
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Wed Aug 26 03:35:19 2026
+  Thu Sep  3 03:49:16 2026
 ══════════════════════════════════════════════
 
   Table               corrscope -- B
@@ -36,23 +38,25 @@
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   0.9994		Very strong positive relationship (range: -1 to 1)
-  R-squared           0.9989		The fitted model accounts for 100% of the variance in Y in this sample
-  t                   73.252		The observed difference is 73.3 standard errors from zero
-  df                  6		Observations (8) minus 2. Two parameters (slope, intercept) estimated.
-  p                   < .001  (4.36e-10)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  r                   0.9994
+  R-squared           0.9989
+  t                   73.252
+  df                  6
+  p                   < .001  (4.36e-10)
+  p method            t distribution
   95% CI for r        [0.9968, 0.9999]
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Wed Aug 26 03:35:19 2026
+  Thu Sep  3 03:49:16 2026
 ══════════════════════════════════════════════
 
   Table               corrscope -- Overall
@@ -62,22 +66,24 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform �
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   -0.5611		Strong negative relationship (range: -1 to 1)
-  R-squared           0.3148		The fitted model accounts for 31% of the variance in Y in this sample
-  t                   -2.536		The observed difference is 2.5 standard errors from zero
-  df                  14		Observations (16) minus 2. Two parameters (slope, intercept) estimated.
-  p                   .024		Statistically significant at the 5% level: if there were truly no effect, results at least this extreme would occur less than 5% of the time
+  r                   -0.5611
+  R-squared           0.3148
+  t                   -2.536
+  df                  14
+  p                   .024
+  p method            t distribution
   95% CI for r        [-0.8268, -0.0906]
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Wed Aug 26 03:35:19 2026
+  Thu Sep  3 03:49:16 2026
 ══════════════════════════════════════════════
 
   Table               corrscope -- A
@@ -87,22 +93,24 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform �
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   0.9994		Very strong positive relationship (range: -1 to 1)
-  R-squared           0.9989		The fitted model accounts for 100% of the variance in Y in this sample
-  t                   73.252		The observed difference is 73.3 standard errors from zero
-  df                  6		Observations (8) minus 2. Two parameters (slope, intercept) estimated.
-  p                   < .001  (4.36e-10)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  r                   0.9994
+  R-squared           0.9989
+  t                   73.252
+  df                  6
+  p                   < .001  (4.36e-10)
+  p method            t distribution
   95% CI for r        [0.9968, 0.9999]
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Wed Aug 26 03:35:19 2026
+  Thu Sep  3 03:49:16 2026
 ══════════════════════════════════════════════
 
   Table               corrscope -- B
@@ -112,22 +120,24 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform �
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   0.9994		Very strong positive relationship (range: -1 to 1)
-  R-squared           0.9989		The fitted model accounts for 100% of the variance in Y in this sample
-  t                   73.252		The observed difference is 73.3 standard errors from zero
-  df                  6		Observations (8) minus 2. Two parameters (slope, intercept) estimated.
-  p                   < .001  (4.36e-10)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  r                   0.9994
+  R-squared           0.9989
+  t                   73.252
+  df                  6
+  p                   < .001  (4.36e-10)
+  p method            t distribution
   95% CI for r        [0.9968, 0.9999]
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Wed Aug 26 03:35:19 2026
+  Thu Sep  3 03:49:16 2026
 ══════════════════════════════════════════════
 
   Table               corrscope -- Overall
@@ -137,16 +147,18 @@ NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform �
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   -0.5611		Strong negative relationship (range: -1 to 1)
-  R-squared           0.3148		The fitted model accounts for 31% of the variance in Y in this sample
-  t                   -2.536		The observed difference is 2.5 standard errors from zero
-  df                  14		Observations (16) minus 2. Two parameters (slope, intercept) estimated.
-  p                   .024		Statistically significant at the 5% level: if there were truly no effect, results at least this extreme would occur less than 5% of the time
+  r                   -0.5611
+  R-squared           0.3148
+  t                   -2.536
+  df                  14
+  p                   .024
+  p method            t distribution
   95% CI for r        [-0.8268, -0.0906]
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 CORRSCOPE wrote /home/claude/repo/harness/corrscope/out/CORRSCOPE.tsv

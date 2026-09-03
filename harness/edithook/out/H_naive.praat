@@ -39,7 +39,7 @@ include /home/claude/repo/harness/edithook/out/stage/graphs/eml-draw-procedures.
 include /home/claude/repo/harness/edithook/out/stage/stats/eml-analysis.praat
 include /home/claude/repo/harness/edithook/out/stage/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -100,6 +100,8 @@ data = selected ()
 # Normality was NOT tested on this path.
 
 @emlReportContext: "recorded script (recorded 21 August 2026, originally analysis dialog)", ""
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlRunAnovaAnalysis: data, valueCol2$, groupCol2$, 0
 
 # F(2, 9) = 0.8730, p = 0.4503, eta-squared = 0.1625

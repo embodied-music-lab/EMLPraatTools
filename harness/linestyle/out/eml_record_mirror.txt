@@ -8,4 +8,7 @@ emlPanelOriginY = 0
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 emlLineStyle = 3
 emlSecondAxisOn = 0
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawWaveform: data, "Line style", "Time (s)", "Value", 6, 4, "color", 1, 0, 0, 0, 0

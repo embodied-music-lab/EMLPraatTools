@@ -2,7 +2,7 @@ REPLAY opened|Table H_input
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Fri Aug 21 05:09:32 2026
+  Thu Sep  3 03:56:11 2026
   from: recorded script (recorded 21 August 2026, originally analysis dialog)
 ══════════════════════════════════════════════
 
@@ -10,20 +10,19 @@ REPLAY opened|Table H_input
   Data column         f0 Hz
   Group column        group
   Groups              3
+  Group order: table order (A, B, C).
 
 
   ── ANOVA Table ─────────────────────────────
-  Why: Tests whether group means differ when normality and equal variances hold.
 
 Source              SS              df    MS              F           p
 Between             27488.00        2     13744.00        847.2329    < .001
 Within              146.00          9     16.22           
 Total               27634.00        11    
 
-  F                   847.2329		Ratio of mean squares: the between-group mean square is 847.2 times the within-group mean square. With no real effect, this ratio tends to be near 1
-  p                   < .001  (5.66e-11)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
-  Effect size         eta-squared = 0.9947		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 99% of the total variance
-  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  F                   847.2329
+  p                   < .001  (5.66e-11)
+  Effect size         eta-squared = 0.9947
   Equal spread        Brown-Forsythe F(2, 9) = 0.2000
   Equal-spread p      p = .822
 
@@ -36,13 +35,18 @@ Total               27634.00        11
 
 
   ── Pairwise Effect Sizes (Cohen's d) ───────
+  No pairwise significance tests were run.
 
               A           B           C           
 A             ---         -6.369      -26.399     
 B             6.369       ---         -22.984     
 C             26.399      22.984      ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 REPLAY groupA mean|94.0000

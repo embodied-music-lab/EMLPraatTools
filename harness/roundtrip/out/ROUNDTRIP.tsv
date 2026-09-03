@@ -2,42 +2,42 @@ praat_version	Praat 6.6.30 (June 30 2026)
 plugin_root	/home/claude/repo/plugin
 harness_root	/home/claude/repo/harness/roundtrip
 record_stamp	21 August 2026, 00:00:00
-recorder_source	/home/claude/repo/plugin/stats/eml-record.praat
-recorder_source_sha	83d6fc0e29d1e4da2b20b74fdd374a56e02ece8cf68d1a780612ff35fa42e057
-recorder_is_shipped	1
+stage_overrides	<none>
+stage_is_shipped	1
+recorder_files	eml-record.praat:43a17c2c46d4,eml-record-edit-step.praat:1c33e7a360bc,eml-record-open.praat:c04362d1c025,eml-record-save.praat:11427437e37d,eml-record-start.praat:5f749f75b314
 stage_scripts_linked	30
-stage_stats_linked	14
-savepanel_range	3170-3820
+stage_stats_linked	17
+savepanel_range	3822-4472
 stanza_dmo_1	40-52|Create Demo Table
-stanza_edt_1	158-160|EML Table Editor — 
-stanza_edt_2	165-167|Add Column
-stanza_edt_3	185-188|EML Table Editor — 
-stanza_edt_4	221-234|EML Table Editor — 
-stanza_edt_5	265-273|Nothing was written
-stanza_edt_6	385-396|Find / Replace
-stanza_edt_7	477-479|Find
-stanza_edt_8	494-497|Rep Nxt
-stanza_edt_9	501-504|Found
-stanza_edt_10	563-565|Rep All
-stanza_edt_11	581-593|Table Structure
-stanza_edt_12	609-612|Insert Row
-stanza_edt_13	626-628|Cannot Delete
-stanza_edt_14	630-633|Delete Row
-stanza_edt_15	656-658|Add Column
-stanza_edt_16	686-690|Insert Column
-stanza_edt_17	734-739|Delete Column
-stanza_edt_18	759-761|Cannot Rename
-stanza_edt_19	777-783|Rename Column
-stanza_edt_20	1134-1152|Cannot Open the Table Editor
-stanza_edt_21	1185-1211|Cannot Use That Column Name
-stanza_edt_22	1242-1263|Cannot Delete Column
+stanza_edt_1	160-162|EML Table Editor — 
+stanza_edt_2	167-169|Add Column
+stanza_edt_3	187-190|EML Table Editor — 
+stanza_edt_4	223-236|EML Table Editor — 
+stanza_edt_5	267-275|Nothing was written
+stanza_edt_6	387-398|Find / Replace
+stanza_edt_7	479-481|Find
+stanza_edt_8	496-499|Rep Nxt
+stanza_edt_9	503-506|Found
+stanza_edt_10	565-567|Rep All
+stanza_edt_11	583-595|Table Structure
+stanza_edt_12	611-614|Insert Row
+stanza_edt_13	628-630|Cannot Delete
+stanza_edt_14	632-635|Delete Row
+stanza_edt_15	658-660|Add Column
+stanza_edt_16	688-692|Insert Column
+stanza_edt_17	736-741|Delete Column
+stanza_edt_18	761-763|Cannot Rename
+stanza_edt_19	779-785|Rename Column
+stanza_edt_20	1136-1154|Cannot Open the Table Editor
+stanza_edt_21	1187-1213|Cannot Use That Column Name
+stanza_edt_22	1244-1265|Cannot Delete Column
 stanza_anv_1	47-63|Compare k Groups (ANOVA)
 stanza_anv_2	100-102|Analysis complete
-stanza_out_1	3340-3444|
-stanza_out_2	3485-3502|Cannot save there
-stanza_out_3	3714-3718|Figure format not available
-stanza_out_4	3807-3812|Saved
-stanza_out_5	3814-3816|Nothing saved
+stanza_out_1	3992-4096|
+stanza_out_2	4137-4154|Cannot save there
+stanza_out_3	4366-4370|Figure format not available
+stanza_out_4	4459-4464|Saved
+stanza_out_5	4466-4468|Nothing saved
 input_csv	/home/claude/repo/harness/roundtrip/out/data/rt_input.csv
 input_csv_sha	c6ffb44c86c0f3afbcfe7dcc68af13522883ce794a240b0edd113bc9b8d925cd
 input_csv_rows	24
@@ -55,10 +55,10 @@ twin_dmo_body_sha_shipped	08ea585d9f2f3aefcb5cebbd6323716b0c860e9ae3c0ba4010a812
 twin_dmo_body_sha_twin	08ea585d9f2f3aefcb5cebbd6323716b0c860e9ae3c0ba4010a812dd87f26d7b
 twin_dmo_body_identical	1
 twin_edt_source	eml-edit-table.praat
-twin_edt_source_sha	6aa4dac0cbb8247a6e42b2c4f3556627ed566f15a6e6fbd896b2e729508dde31
+twin_edt_source_sha	6258f980089c44954718044110ea9e2055fa6e82c7fe80b2867f8670ccea242e
 twin_edt_stanzas	22
-twin_edt_body_sha_shipped	ffd665c1f2e8a8dbd36f532782c1edf8af82da5d68e3018f4512e9e4f7bf4856
-twin_edt_body_sha_twin	ffd665c1f2e8a8dbd36f532782c1edf8af82da5d68e3018f4512e9e4f7bf4856
+twin_edt_body_sha_shipped	846f941a6aabf9340106d58fc51e410f24a18bfa927db1c2cfa49fa1e2e330e4
+twin_edt_body_sha_twin	846f941a6aabf9340106d58fc51e410f24a18bfa927db1c2cfa49fa1e2e330e4
 twin_edt_body_identical	1
 twin_anv_source	eml-compare-k-groups.praat
 twin_anv_source_sha	7bce3e0ca6929eee7d86af1d3a3c7957aed0c9a5d7244b2b1b2dea544a2edd19
@@ -67,10 +67,10 @@ twin_anv_body_sha_shipped	b19fb75fdf581335a7b43decb9ed97e752848ddcbee52e9b1bd71e
 twin_anv_body_sha_twin	b19fb75fdf581335a7b43decb9ed97e752848ddcbee52e9b1bd71e4024c20395
 twin_anv_body_identical	1
 twin_out_source	eml-output.praat
-twin_out_source_sha	f92770533bd0a5e88c4f5dcb9ebb70f63b4c10e6442dc6665f021c23d430a39c
+twin_out_source_sha	705c0125d152f0f272aef6357d9dea179c894f7941de8a0484a8d176d689a64d
 twin_out_stanzas	5
-twin_out_body_sha_shipped	65dc73f3bd76d855d9f35d29318759d4dbbe4b60a577f91cc172bd7ea03fd784
-twin_out_body_sha_twin	65dc73f3bd76d855d9f35d29318759d4dbbe4b60a577f91cc172bd7ea03fd784
+twin_out_body_sha_shipped	12651fac83642de046f8073f5c307a6e5d656b4dbd9914455217db31c7cfa0a1
+twin_out_body_sha_twin	12651fac83642de046f8073f5c307a6e5d656b4dbd9914455217db31c7cfa0a1
 twin_out_body_identical	1
 drive_exit	0
 record_started	1
@@ -107,7 +107,7 @@ action5_axis_request_max	0
 action5_drawn_extent	0|6.0000|0|4.0000
 action6_files_written	7
 action6_file_list	rt_roundtrip.png,rt_roundtrip_augment.csv,rt_roundtrip_effectsize_tidy.csv,rt_roundtrip_glance.csv,rt_roundtrip_posthoc_tidy.csv,rt_roundtrip_report.txt,rt_roundtrip_tidy.csv
-action6_png_bytes	62639
+action6_png_bytes	63160
 action6_steps_in_buffer_after	7
 action8_convert_ran	1
 action8_convert_source	Sound rt_tone
@@ -117,9 +117,9 @@ action8_steps_in_buffer_after	8
 flush_written	1
 discard	1|0
 emitted_exists	1
-emitted_bytes	8886
-emitted_lines	200
-emitted_sha	64e29e10318b1c3cddeb01062a7d6c78e57816d7629163a2b4f33204e37bd986
+emitted_bytes	9016
+emitted_lines	205
+emitted_sha	7899aee174d87c798c30a0a43c30617237fdc3a0007417cb96a4cb2e1de49b41
 emitted_step_headings	8
 emitted_step_kinds	create,read,edit,refusal,analysis,draw,save,convert
 emitted_missing_phrases	0
@@ -135,7 +135,7 @@ emitted_has_save	1
 emitted_analysis_line	@emlRunAnovaAnalysis: data, valueCol4$, groupCol4$, 1
 emitted_draw_line	@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol4$, valueCol4$, axisYMin4, axisYMax4
 emitted_save_line	@emlRecordReplaySave: 1, "rt_roundtrip", outputFolder$, figureFormat4$
-emitted_block_vars	31
+emitted_block_vars	36
 emitted_data_decl	data1$ = "Table demo_3groups"   ; run 1, step 1 (create)
 emitted_axis_note	-2000.0000 .. 6000.0000 over 3 groups on the recorded data; auto adapts to other data.
 emitted_axis_block	axisYMax4      = 0.0   ; on the recorded data this resolved to -2000.0000 .. 6000.0000; auto adapts to other data
@@ -154,7 +154,7 @@ recorder_kinds_n	8
 emitted_kinds_sorted	analysis,convert,create,draw,edit,read,refusal,save
 kinds_missing_from_emitted	
 kinds_not_in_vocabulary	
-hostile_settings	Palatino;Font size: 60 Line width: 5;Colour: "red" Select outer viewport: 1, 5, 1, 4;Axes: -3, 17, -9, 42 Draw inner box;Draw line: -3, -9, 17, 42 Text: 7, "centre", 16, "half", "a drawing that was already on the page"
+hostile_settings	Palatino; Font size: 60; Line width: 5; Colour: "red"; Select outer viewport: 1, 5, 1, 4; Axes: -3, 17, -9, 42; Draw inner box; Draw line: -3, -9, 17, 42; Text: 7, "centre", 16, "half", "a drawing that was already on the page"
 hostile_lines	9
 leg_colleague_edited_lines	2
 leg_colleague_input_line	inputFile$     = "/home/claude/repo/harness/roundtrip/out/data/rt_input.csv"   ; the data file read from disk -- step 2 (read)
@@ -165,16 +165,16 @@ leg_colleague_anova_between	Between 1441680.33 2 720840.17 1.0103 .381
 leg_colleague_F	1.0103
 leg_colleague_files_written	7
 leg_colleague_file_list	rt_roundtrip.png,rt_roundtrip_augment.csv,rt_roundtrip_effectsize_tidy.csv,rt_roundtrip_glance.csv,rt_roundtrip_posthoc_tidy.csv,rt_roundtrip_report.txt,rt_roundtrip_tidy.csv
-leg_colleague_png_bytes	62639
-leg_colleague_png_md5	6b59375983743203edb3377751306662
+leg_colleague_png_bytes	63160
+leg_colleague_png_md5	76e6db55e1bd1a25201c44b61ee5486e
 leg_colleague_png_identical	1
 leg_colleague_png_pixels_differing	0
 leg_colleague_png_max_delta	0
 leg_colleague_result_csvs_identical	5
 leg_colleague_result_csvs_total	5
-leg_colleague_report_body_lines	63
+leg_colleague_report_body_lines	66
 leg_colleague_report_body_difflines	4
-leg_colleague_report_body_diff	< Fri Aug 21 05:05:36 2026~< from: analysis dialog~> Fri Aug 21 05:05:38 2026~> from: recorded script (recorded 21 August 2026, originally analysis dialog)
+leg_colleague_report_body_diff	< Thu Sep 3 04:07:50 2026~< from: analysis dialog~> Thu Sep 3 04:07:52 2026~> from: recorded script (recorded 21 August 2026, originally analysis dialog)
 leg_hostile_edited_lines	2
 leg_hostile_input_line	inputFile$     = "/home/claude/repo/harness/roundtrip/out/data/rt_input.csv"   ; the data file read from disk -- step 2 (read)
 leg_hostile_exit	0
@@ -184,16 +184,16 @@ leg_hostile_anova_between	Between 1441680.33 2 720840.17 1.0103 .381
 leg_hostile_F	1.0103
 leg_hostile_files_written	7
 leg_hostile_file_list	rt_roundtrip.png,rt_roundtrip_augment.csv,rt_roundtrip_effectsize_tidy.csv,rt_roundtrip_glance.csv,rt_roundtrip_posthoc_tidy.csv,rt_roundtrip_report.txt,rt_roundtrip_tidy.csv
-leg_hostile_png_bytes	62639
-leg_hostile_png_md5	6b59375983743203edb3377751306662
+leg_hostile_png_bytes	63160
+leg_hostile_png_md5	76e6db55e1bd1a25201c44b61ee5486e
 leg_hostile_png_identical	1
 leg_hostile_png_pixels_differing	0
 leg_hostile_png_max_delta	0
 leg_hostile_result_csvs_identical	5
 leg_hostile_result_csvs_total	5
-leg_hostile_report_body_lines	63
+leg_hostile_report_body_lines	66
 leg_hostile_report_body_difflines	4
-leg_hostile_report_body_diff	< Fri Aug 21 05:05:36 2026~< from: analysis dialog~> Fri Aug 21 05:05:41 2026~> from: recorded script (recorded 21 August 2026, originally analysis dialog)
+leg_hostile_report_body_diff	< Thu Sep 3 04:07:50 2026~< from: analysis dialog~> Thu Sep 3 04:07:55 2026~> from: recorded script (recorded 21 August 2026, originally analysis dialog)
 leg_retarget_edited_lines	4
 leg_retarget_input_line	inputFile$     = "/home/claude/repo/harness/roundtrip/out/data/rt_other.csv"   ; the data file read from disk -- step 2 (read)
 leg_retarget_exit	0
@@ -203,26 +203,26 @@ leg_retarget_anova_between	Between 1282240.33 2 641120.17 0.9437 .405
 leg_retarget_F	0.9437
 leg_retarget_files_written	7
 leg_retarget_file_list	rt_roundtrip.png,rt_roundtrip_augment.csv,rt_roundtrip_effectsize_tidy.csv,rt_roundtrip_glance.csv,rt_roundtrip_posthoc_tidy.csv,rt_roundtrip_report.txt,rt_roundtrip_tidy.csv
-leg_retarget_png_bytes	62012
-leg_retarget_png_md5	74c05b1cb6dcab4faced9f4b5041b292
+leg_retarget_png_bytes	62493
+leg_retarget_png_md5	f3a799408f1b9faa67e1a12ba9045613
 leg_retarget_png_identical	0
 leg_retarget_png_pixels_differing	14218
 leg_retarget_png_max_delta	255
 leg_retarget_result_csvs_identical	0
 leg_retarget_result_csvs_total	5
-leg_retarget_report_body_lines	63
+leg_retarget_report_body_lines	66
 leg_retarget_report_body_difflines	44
-leg_retarget_report_body_diff	< Fri Aug 21 05:05:36 2026~< from: analysis dialog~> Fri Aug 21 05:05:45 2026~> from: recorded script (recorded 21 August 2026, originally analysis dialog)~< Between 1441680.33 2 720840.17 1.0103 .381~< Within 14982775.5
+leg_retarget_report_body_diff	< Thu Sep 3 04:07:50 2026~< from: analysis dialog~> Thu Sep 3 04:07:57 2026~> from: recorded script (recorded 21 August 2026, originally analysis dialog)~< Between 1441680.33 2 720840.17 1.0103 .381~< Within 14982775.50 
 session_F	1.0103
-session_png_md5	6b59375983743203edb3377751306662
-session_png_bytes	62639
-control_base_png_bytes	88186
-control_base_png_md5	5078990ad87132f490ae1a85a76374c5
+session_png_md5	76e6db55e1bd1a25201c44b61ee5486e
+session_png_bytes	63160
+control_base_png_bytes	88254
+control_base_png_md5	b55db26e0b93c436f68361ee6b3da333
 control_typeface_setting	Palatino
-control_typeface_pixels_differing	10206
+control_typeface_pixels_differing	10380
 control_fontsize_setting	Font size: 60
-control_fontsize_pixels_differing	196601
+control_fontsize_pixels_differing	196590
 control_linewidth_setting	Line width: 5
 control_linewidth_pixels_differing	94290
 control_ink_setting	Colour: "red"
-control_ink_pixels_differing	20132
+control_ink_pixels_differing	20135

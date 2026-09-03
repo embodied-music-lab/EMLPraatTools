@@ -9,7 +9,7 @@ include /home/claude/repo/plugin/graphs/eml-graph-procedures.praat
 include /home/claude/repo/plugin/graphs/eml-annotation-procedures.praat
 include /home/claude/repo/plugin/graphs/eml-draw-procedures.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
 emlRecordPluginRoot$ = "/home/claude/repo/plugin"
 @emlRecordBegin: "/home/claude/repo/harness/record/graph_out"

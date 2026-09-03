@@ -6,4 +6,5 @@ Equal-variance assumption: Welch.
 annotCorrectionMethod$ = "holm"
 annotAlpha = 0.01
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlRunTwoGroupAnalysis: data, "val", "grp", "parametric", 0

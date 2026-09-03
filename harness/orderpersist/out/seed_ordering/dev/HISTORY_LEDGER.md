@@ -42,7 +42,7 @@ Lines 8-88 of plugin/graphs/eml-annotation-procedures.praat at b4ca5e6.
    22  #        and ggstatsplot carries the pairwise test AND the adjustment method
    23  #        in a caption on every figure. The caption is the closest precedent
    24  #        and it is what this is.
-   25  #        [1] Two new globals, @emlBridgeGroupComparison writes both:
+   25  #        [1] Two new globals, @emlRunAnnotationComparison writes both:
    26  #            annotBracketPosthoc$ names the pairwise test, annotBracketAdjust$
    27  #            says what was done about multiplicity. THEY ARE STORED AS TWO
    28  #            HALVES, not as one sentence, and that is not tidiness — it is
@@ -186,7 +186,7 @@ Lines 91-376 of plugin/graphs/eml-annotation-procedures.praat at b4ca5e6.
   161  #        [1] @emlClearAnnotations now clears annotMatrixLabel$[] over the
   162  #            previous figure's annotMatrixN range — stale group labels no
   163  #            longer survive into the next figure.
-  164  #        [2] @emlBridgeGroupComparison no longer aborts when the global
+  164  #        [2] @emlRunAnnotationComparison no longer aborts when the global
   165  #            annotCorrectionMethod$ is unset: it defaults to "holm" and
   166  #            validates the value against what @emlDunnTest accepts.
   167  #        [3] Stale procedure-output reads eliminated. @emlCountGroups
@@ -196,7 +196,7 @@ Lines 91-376 of plugin/graphs/eml-annotation-procedures.praat at b4ca5e6.
   171  #            procedure can overwrite them. The bracket output paths read
   172  #            the captured labels instead of annotMatrixLabel$[], which is
   173  #            only ever written on the matrix path. @emlReportBridgeStats
-  174  #            reads emlBridgeGroupComparison.gLabel$[] for the same reason.
+  174  #            reads emlRunAnnotationComparison.gLabel$[] for the same reason.
   175  #        [4] @emlFormatStars now derives its thresholds from annotAlpha
   176  #            (alpha, alpha/5, alpha/50) instead of hardcoding
   177  #            0.05/0.01/0.001, exposes .legend$ describing the ladder in
@@ -259,7 +259,7 @@ Lines 91-376 of plugin/graphs/eml-annotation-procedures.praat at b4ca5e6.
   234  #        parameter to signature. Three callers updated.
   235  #
   236  # v3.10: 10-group limit removal — deleted .extractIdx mapping blocks
-  237  #        in @emlBridgeGroupComparison, updated 17 @eml_getGroupData
+  237  #        in @emlRunAnnotationComparison, updated 17 @eml_getGroupData
   238  #        calls to new 4-arg on-demand signature (eml-extract.praat),
   239  #        reporter label source changed from emlExtractMultipleGroups
   240  #        to emlOneWayAnova/emlTukeyHSD procedure outputs.
@@ -314,7 +314,7 @@ Lines 91-376 of plugin/graphs/eml-annotation-procedures.praat at b4ca5e6.
   289  # v2.8: Matrix subtitle fix — "Upper: adjusted p" added to subtitle when
   290  #        effect sizes shown. Previously only showed "Lower: [effect label]"
   291  #        with no description of what the upper triangle contains.
-  292  # v2.7: annotMatrixPosthoc$ global — set by @emlBridgeGroupComparison at
+  292  # v2.7: annotMatrixPosthoc$ global — set by @emlRunAnnotationComparison at
   293  #        all 4 test paths (Welch t-test, Mann-Whitney U, Tukey HSD,
   294  #        Dunn's test with configurable correction method) — the count read
   295  #        "6" against its own list of four, and four is also what the code
@@ -359,7 +359,7 @@ Lines 91-376 of plugin/graphs/eml-annotation-procedures.praat at b4ca5e6.
   334  # v1.9: @emlFormatAnnotLabel: new .effectLabel$ parameter — bracket labels
   335  #        now show context-appropriate symbol ("d" for Cohen's d, "r" for
   336  #        rank-biserial r) instead of hardcoded "d". All 9 callsites updated.
-  337  #        @emlBridgeGroupComparison: .forceMatrix replaced by .layoutMode
+  337  #        @emlRunAnnotationComparison: .forceMatrix replaced by .layoutMode
   338  #        (1=auto, 2=brackets, 3=matrix). Auto defaults to matrix at k>=3.
   339  #        KW omnibus string now includes epsilon-squared (e2 = H/(n-1)).
   340  #        New @emlReportBridgeStats procedure — writes full statistical
@@ -1435,7 +1435,7 @@ Lines 10-455 of plugin/graphs/eml-graph-procedures.praat at b4ca5e6.
    99  #        Tukey matrix the panel occupies 4.130 to 6.204 inches and the legend
   100  #        band starts at 6.344, one boxInsetInches below it.
   101  #
-  102  #        BUT totalCanvasHeight IS A FORM LOCAL. @emlInitDrawingDefaults, the
+  102  #        BUT totalCanvasHeight IS A FORM LOCAL. @emlInitializeDrawingDefaults, the
   103  #        documented entry point for "standalone scripts or PraatGen companion
   104  #        files", sets emlLegendPlacement and does NOT set totalCanvasHeight.
   105  #        A caller outside the form that laid out its own matrix and asked for
@@ -2791,7 +2791,7 @@ Lines 8-16 of plugin/scripts/eml-compare-kw.praat at b4ca5e6.
 ```
     8  # v3.1: D26 — the post-hoc is now under the user's control. "Run Dunn post
     9  #        hoc" and "Adjustment" fields replace the hardcoded 1, "holm"
-   10  #        arguments to @emlRunKWAnalysis, matching the ANOVA sibling's
+   10  #        arguments to @emlRunKruskalWallisAnalysis, matching the ANOVA sibling's
    11  #        "Tukey HSD post hoc" control. The chosen adjustment is also carried
    12  #        into the graph annotation so Draw cannot silently disagree with the
    13  #        report.
@@ -3987,7 +3987,7 @@ Lines 8-90 of plugin/graphs/eml-annotation-procedures.praat at 49ce40b.
    20  #        and ggstatsplot carries the pairwise test AND the adjustment method
    21  #        in a caption on every figure. The caption is the closest precedent
    22  #        and it is what this is.
-   23  #        [1] Two new globals, @emlBridgeGroupComparison writes both:
+   23  #        [1] Two new globals, @emlRunAnnotationComparison writes both:
    24  #            annotBracketPosthoc$ names the pairwise test, annotBracketAdjust$
    25  #            says what was done about multiplicity. THEY ARE STORED AS TWO
    26  #            HALVES, not as one sentence, and that is not tidiness — it is
@@ -4135,7 +4135,7 @@ Lines 93-378 of plugin/graphs/eml-annotation-procedures.praat at 49ce40b.
   163  #        [1] @emlClearAnnotations now clears annotMatrixLabel$[] over the
   164  #            previous figure's annotMatrixN range — stale group labels no
   165  #            longer survive into the next figure.
-  166  #        [2] @emlBridgeGroupComparison does not abort when the global
+  166  #        [2] @emlRunAnnotationComparison does not abort when the global
   167  #            annotCorrectionMethod$ is unset: it defaults to "holm" and
   168  #            validates the value against what @emlDunnTest accepts.
   169  #        [3] Stale procedure-output reads eliminated. @emlCountGroups
@@ -4145,7 +4145,7 @@ Lines 93-378 of plugin/graphs/eml-annotation-procedures.praat at 49ce40b.
   173  #            procedure can overwrite them. The bracket output paths read
   174  #            the captured labels instead of annotMatrixLabel$[], which is
   175  #            only ever written on the matrix path. @emlReportBridgeStats
-  176  #            reads emlBridgeGroupComparison.gLabel$[] for the same reason.
+  176  #            reads emlRunAnnotationComparison.gLabel$[] for the same reason.
   177  #        [4] @emlFormatStars now derives its thresholds from annotAlpha
   178  #            (alpha, alpha/5, alpha/50) instead of hardcoding
   179  #            0.05/0.01/0.001, exposes .legend$ describing the ladder in
@@ -4208,7 +4208,7 @@ Lines 93-378 of plugin/graphs/eml-annotation-procedures.praat at 49ce40b.
   236  #        parameter to signature. Three callers updated.
   237  #
   238  # v3.10: 10-group limit removal — deleted .extractIdx mapping blocks
-  239  #        in @emlBridgeGroupComparison, updated 17 @eml_getGroupData
+  239  #        in @emlRunAnnotationComparison, updated 17 @eml_getGroupData
   240  #        calls to new 4-arg on-demand signature (eml-extract.praat),
   241  #        reporter label source changed from emlExtractMultipleGroups
   242  #        to emlOneWayAnova/emlTukeyHSD procedure outputs.
@@ -4263,7 +4263,7 @@ Lines 93-378 of plugin/graphs/eml-annotation-procedures.praat at 49ce40b.
   291  # v2.8: Matrix subtitle fix — "Upper: adjusted p" added to subtitle when
   292  #        effect sizes shown. Previously only showed "Lower: [effect label]"
   293  #        with no description of what the upper triangle contains.
-  294  # v2.7: annotMatrixPosthoc$ global — set by @emlBridgeGroupComparison at
+  294  # v2.7: annotMatrixPosthoc$ global — set by @emlRunAnnotationComparison at
   295  #        all 4 test paths (Welch t-test, Mann-Whitney U, Tukey HSD,
   296  #        Dunn's test with configurable correction method) — the count read
   297  #        "6" against its own list of four, and four is also what the code
@@ -4308,7 +4308,7 @@ Lines 93-378 of plugin/graphs/eml-annotation-procedures.praat at 49ce40b.
   336  # v1.9: @emlFormatAnnotLabel: new .effectLabel$ parameter — bracket labels
   337  #        now show context-appropriate symbol ("d" for Cohen's d, "r" for
   338  #        rank-biserial r) instead of hardcoded "d". All 9 callsites updated.
-  339  #        @emlBridgeGroupComparison: .forceMatrix replaced by .layoutMode
+  339  #        @emlRunAnnotationComparison: .forceMatrix replaced by .layoutMode
   340  #        (1=auto, 2=brackets, 3=matrix). Auto defaults to matrix at k>=3.
   341  #        KW omnibus string now includes epsilon-squared (e2 = H/(n-1)).
   342  #        New @emlReportBridgeStats procedure — writes full statistical
@@ -5043,7 +5043,7 @@ Lines 10-401 of plugin/graphs/eml-graph-procedures.praat at 49ce40b.
    99  #        Tukey matrix the panel occupies 4.130 to 6.204 inches and the legend
   100  #        band starts at 6.344, one boxInsetInches below it.
   101  #
-  102  #        BUT totalCanvasHeight IS A FORM LOCAL. @emlInitDrawingDefaults, the
+  102  #        BUT totalCanvasHeight IS A FORM LOCAL. @emlInitializeDrawingDefaults, the
   103  #        documented entry point for "standalone scripts or PraatGen companion
   104  #        files", sets emlLegendPlacement and does NOT set totalCanvasHeight,
   105  #        so a caller outside the form that laid out its own matrix would get
@@ -6530,7 +6530,7 @@ Copied whole, before the move. 241 lines.
   138  call sites now derive their granularity from the data.** No literal remains.
   139  
   140  New global `emlYAxisMinStep`: 0 means unconstrained, a positive value is the
-  141  smallest step the y-axis may take. Declared in `@emlInitDrawingDefaults`,
+  141  smallest step the y-axis may take. Declared in `@emlInitializeDrawingDefaults`,
   142  guarded in `@emlSetAdaptiveTheme`, honoured by the four procedures that turn
   143  a range into a step — `@emlDrawGridlines` (y only),
   144  `@emlDrawHorizontalGridlines`, `@emlDrawAlignedMarksLeft` and
@@ -6551,7 +6551,7 @@ Copied whole, before the move. 241 lines.
   159    unconditional reset clears the constraint immediately before the ticks are
   160    drawn. The figure then comes out unchanged with no clue why.
   161  - The global must be guarded with `variableExists`. A draw procedure can be
-  162    entered without `@emlInitDrawingDefaults` having run, and Praat aborts the
+  162    entered without `@emlInitializeDrawingDefaults` having run, and Praat aborts the
   163    whole figure at the first comparison against an undefined global.
   164  
   165  Both were caught by driving, not by reading the diff.

@@ -21,7 +21,7 @@ DLG|17|regression_select_columns#1|visit=1|clicked=3
 
 ══════════════════════════════════════════════
   EML Stats : Simple Linear Regression
-  Wed Aug 26 04:11:56 2026
+  Thu Sep  3 04:06:58 2026
 ══════════════════════════════════════════════
 
   Table               leg5
@@ -57,11 +57,13 @@ DLG|17|regression_select_columns#1|visit=1|clicked=3
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 ══════════════════════════════════════════════
   EML Stats : Regression by group
-  Wed Aug 26 04:11:56 2026
+  Thu Sep  3 04:06:58 2026
 ══════════════════════════════════════════════
 
   Grouping column     group
@@ -70,7 +72,7 @@ DLG|17|regression_select_columns#1|visit=1|clicked=3
 
 ══════════════════════════════════════════════
   EML Stats : Simple Linear Regression
-  Wed Aug 26 04:11:56 2026
+  Thu Sep  3 04:06:58 2026
 ══════════════════════════════════════════════
 
   Table               leg5 -- group = A
@@ -106,11 +108,13 @@ DLG|17|regression_select_columns#1|visit=1|clicked=3
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 ══════════════════════════════════════════════
   EML Stats : Simple Linear Regression
-  Wed Aug 26 04:11:56 2026
+  Thu Sep  3 04:06:58 2026
 ══════════════════════════════════════════════
 
   Table               leg5 -- group = B
@@ -146,6 +150,8 @@ DLG|17|regression_select_columns#1|visit=1|clicked=3
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 ══════════════════════════════════════════════
 DLG|29|analysis_complete#1|visit=1|clicked=1

@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Fri Aug 21 05:05:45 2026
+  Thu Sep  3 04:07:57 2026
   from: recorded script (recorded 21 August 2026, originally analysis dialog)
 ══════════════════════════════════════════════
 
@@ -9,20 +9,19 @@
   Data column         f0 Hz
   Group column        cohort
   Groups              3
+  Group order: table order (alpha, bravo, charlie).
 
 
   ── ANOVA Table ─────────────────────────────
-  Why: Tests whether group means differ when normality and equal variances hold.
 
 Source              SS              df    MS              F           p
 Between             1282240.33      2     641120.17       0.9437      .405
 Within              14267375.50     21    679398.83       
 Total               15549615.83     23    
 
-  F                   0.9437		Ratio of mean squares: the between-group mean square is 0.9 times the within-group mean square. With no real effect, this ratio tends to be near 1
-  p                   .405		Not statistically significant at the 5% level
-  Effect size         eta-squared = 0.0825		Effect size: medium by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 8% of the total variance
-  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  F                   0.9437
+  p                   .405
+  Effect size         eta-squared = 0.0825
   Equal spread        Brown-Forsythe F(2, 21) = 0.9991
   Equal-spread p      p = .385
 
@@ -56,13 +55,17 @@ bravo − charlie           -10.0000      [-1048.7982, 1028.7982]
 alpha         ---         0.491       0.481       
 bravo         -0.491      ---         -4.082      
 charlie       -0.481      4.082       ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 EML: replayed save -- wrote 7 file(s) to
 /home/claude/repo/harness/roundtrip/out/replay_retarget/saved
-base name rt_roundtrip_20260821_050546
+base name rt_roundtrip_20260903_040757
 RP|cell|4242
 RP|done|1

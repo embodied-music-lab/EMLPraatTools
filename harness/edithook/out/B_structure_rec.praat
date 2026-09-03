@@ -39,7 +39,7 @@ include ~/.praat-dir/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 include ~/.praat-dir/plugin_EML_StatsGraphs/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------

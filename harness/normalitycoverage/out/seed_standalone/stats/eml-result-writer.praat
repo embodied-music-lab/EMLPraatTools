@@ -172,7 +172,12 @@ emlVocabGlance$ = "r.squared adj.r.squared sigma statistic p.value df"
 emlVocabAugment$ = ".fitted .se.fit .resid .std.resid .hat .cooksd .rank"
 
 emlResult_MAXCOL = 40
-emlResult_MAXROW = 4000
+# RAISED FROM 4000 ON 31 AUGUST 2026. The NIST StRD datasets SmLs03, SmLs06
+# and SmLs09 export 18,009 rows, so the old cap aborted them before the
+# result store could write anything -- the failure looked like a missing
+# export rather than a refused one. 25000 clears the largest certified
+# dataset with room, and the cap still exists to catch a runaway table.
+emlResult_MAXROW = 25000
 
 
 # ----------------------------------------------------------------------------
@@ -497,7 +502,33 @@ endproc
 #   .skipped$ — newline-separated "verb: reason", so an absent file is
 #               explained rather than looking like a failure
 # ----------------------------------------------------------------------------
-# ----------------------------------------------------------------------------
+
+# ============================================================================
+# @emlResultClearAll
+# Clears all three collectors: tidy, glance, augment. Call at the start of
+# an analysis to ensure a clean slate. This is distinct from @emlCSVInit,
+# which clears the declaration flag and legacy buffer only.
+#
+# Does NOT clear the extra-frame slots (post-hoc, effect sizes). Those are
+# managed by @emlResultClearExtras when needed.
+# ============================================================================
+procedure emlResultClearAll
+    emlTidy_nRows = 0
+    emlTidy_nCols = 0
+    emlGlance_nCols = 0
+    emlAugment_nRows = 0
+    emlAugment_nCols = 0
+    emlAugment_nCarried = 0
+
+    for .c from 1 to emlResult_MAXCOL
+        emlTidy_col$ [.c] = ""
+        emlGlance_col$ [.c] = ""
+        emlGlance_val$ [.c] = ""
+        emlAugment_col$ [.c] = ""
+    endfor
+endproc
+
+# ============================================================================
 # @emlTidyClear
 # Empties the tidy collector without touching glance or augment.
 #

@@ -1,5 +1,5 @@
 praat_version	Praat 6.6.30 (June 30 2026)
-plugin_root	/home/claude/EMLPraatTools/plugin
+plugin_root	/home/claude/repo/plugin
 leg1_axis_lo	180.000000
 leg1_axis_hi	270.000000
 leg1_data_lo	194.529251

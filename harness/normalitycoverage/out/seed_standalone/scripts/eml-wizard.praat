@@ -35,6 +35,10 @@
 # ============================================================================
 
 include eml-lib-lmm.praat
+# Q-Q draw for the normality page (punch list 4.6). Not part of
+# eml-lib-graphs.praat yet, so pulled in here directly — same reason and
+# same relative path eml-check-normality.praat's own header gives.
+include ../graphs/eml-draw-qq.praat
 
 # ── Wizard mode: enable third-column explanations ────────────────────────
 emlShowExplanations = 1
@@ -164,12 +168,35 @@ wizDrawSource$ = ""
 wizTestType$ = "parametric"
 wizPairedCol1$ = ""
 wizPairedCol2$ = ""
+wizPairedHasSubjectCol = 0
+wizPairedSubjectCol$ = ""
+wizPairedHasGroupCol = 0
+wizPairedGroupCol$ = ""
 wizTwoWayFactor1$ = ""
 wizTwoWayFactor2$ = ""
 dataCol$ = ""
 groupCol$ = ""
 corrCol1$ = ""
 corrCol2$ = ""
+# Correlation group column (punch list 4.4) — seeded by NAME, not index:
+# the filtered candidate list is rebuilt every time B_TEST_PAGE is
+# rendered and its indices are not stable (same reasoning as the menu
+# door's selGroupName$, eml-correlate.praat).
+wizCorrGrpSelName$ = ""
+# Regression group column (punch list 4.5) — same seeded-by-name idiom.
+# Shared by both wizard regression entry points (B_REG_COLUMNS under
+# "Relationship > Regression" and D_PREDICT_COLUMNS under "Predict an
+# outcome"): only one of the two runs per wizard session, so one seed
+# variable is enough, exactly as wizDrawSource$ above is shared across
+# every branch that can draw.
+wizRegGrpSelName$ = ""
+wizRegDrawGroupCol$ = ""
+# Group order (punch list 4.7): the menu door's own "Table order /
+# Alphabetical" dropdown, added to the group-based wizard pages. Reset to
+# the default once per wizard launch — the session-persistence rule does
+# not apply here, since the wizard runs fresh per launch (A9 in the
+# hardcode review).
+wizGroupOrderDefault = 1
 
 # ── Refresh column names on each loop iteration ───────────────────────────
 
@@ -415,6 +442,9 @@ if goal = 1
                 @emlWizard2GroupTestToMenu: normDefault, prevVarAssume
                 optionmenu: "Test", emlWizard2GroupTestToMenu.row
                     @emlWizard2GroupTestRows
+                optionmenu: "Group order", wizGroupOrderDefault
+                    option: "Table order"
+                    option: "Alphabetical"
                 boolean: "Clear Info window", 0
                 comment: ""
             clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -423,6 +453,10 @@ if goal = 1
             elsif clicked = 2
                 goto A2A_NORM_PAGE
             endif
+
+            # BEFORE the header guard below, not after — its own
+            # `goto A2A_TEST_PAGE` must not skip this preserve step (v128).
+            wizGroupOrderDefault = group_order
 
             # A CATEGORY HEADER IS NOT A CHOICE. Same guard the graph-type
             # menu uses (graphs/eml-graphs-form.praat), reused rather than
@@ -456,6 +490,14 @@ if goal = 1
             wizEqualVar = prevVarAssume - 1
             wizTName$ = emlWizard2GroupTestFromMenu.reportName$
 
+            # Group order (punch list 4.7) — same single flag every menu
+            # door funnels the user's choice through (stats/eml-output.praat).
+            if group_order = 2
+                emlGroupSortAlphabetical = 1
+            else
+                emlGroupSortAlphabetical = 0
+            endif
+
             @wizardNormLabel: normChecked, normSummary$, test_approach
 
             if test_approach = 1
@@ -475,7 +517,7 @@ if goal = 1
                     endif
                     exitScript: ""
                 endif
-            else
+            elsif test_approach = 2
                 wizTestType$ = "nonparametric"
                 @wizardReportPlan: "Two independent groups",
                 ... wizardNormLabel.result$,
@@ -483,6 +525,31 @@ if goal = 1
                 ... "n/a", dataCol$, groupCol$, "", displayTable$
                 @emlRunTwoGroupAnalysis: tableId, dataCol$,
                 ... groupCol$, "nonparametric", wizEqualVar
+                if emlRunTwoGroupAnalysis.error$ <> ""
+                    # An analysis error must not tear down the wizard. Return
+                    # the user into the back-chain with every answer intact.
+                    @emlErrorDialog: emlRunTwoGroupAnalysis.error$, emlRunTwoGroupAnalysis.remedy$, "wizard"
+                    if emlErrorDialog.back
+                        goto A2A_NORM_PAGE
+                    endif
+                    exitScript: ""
+                endif
+            else
+                # "Both" — dispatched the way the menu door's "Both parametric
+                # and nonparametric" row is (eml-compare-groups.praat): one
+                # call, testType$ = "both", straight into
+                # @emlRunTwoGroupAnalysis. The draw preset that follows
+                # (WIZ_DRAW_FIGURE) reads wizTestType$, and the menu door's own
+                # Draw preset on this row is "parametric" (its dispatch falls
+                # into the same `else` that testChoice = 1/2 use) — matched
+                # here rather than invented.
+                wizTestType$ = "parametric"
+                @wizardReportPlan: "Two independent groups",
+                ... wizardNormLabel.result$,
+                ... wizTName$,
+                ... "n/a", dataCol$, groupCol$, "", displayTable$
+                @emlRunTwoGroupAnalysis: tableId, dataCol$,
+                ... groupCol$, "both", wizEqualVar
                 if emlRunTwoGroupAnalysis.error$ <> ""
                     # An analysis error must not tear down the wizard. Return
                     # the user into the back-chain with every answer intact.
@@ -612,19 +679,28 @@ if goal = 1
                 # groups", which was true of two of the six rows below and is
                 # true of none of them now: a post-hoc the user chooses always
                 # runs (punch list 2026-08-25, lane 3.1/3.2). The replacement
-                # is the approved wording, language batch item 4, verbatim, and
-                # it is dialog text -- always visible, since the explanations
-                # toggle does not reach a dialog page.
+                # is the approved wording, language batch item 4 revision 6,
+                # verbatim, and it is dialog text -- always visible, since the
+                # explanations toggle does not reach a dialog page. The Dunn/
+                # pairwise-Wilcoxon sentence is the revision-6 addition that
+                # explains why the grid needed the three Wilcoxon rows (4.3):
+                # Dunn is not a substitute for pairwise Wilcoxon, and vice
+                # versa -- they rank differently.
                 comment: "Pairwise comparisons run when you choose them, and every pairwise"
                 comment: "option adjusts for multiple comparisons. Tukey, Scheffe, Holm, and"
                 comment: "Bonferroni keep the chance of any false positive at or below the"
                 comment: "stated level; Benjamini-Hochberg instead limits the expected share"
-                comment: "of false positives, which is less strict. The overall test and the"
-                comment: "pairwise results are reported together."
+                comment: "of false positives, which is less strict. Dunn compares groups on"
+                comment: "the shared ranking from the overall test; pairwise Wilcoxon re-ranks"
+                comment: "each pair on its own. The overall test and the pairwise results are"
+                comment: "reported together."
                 comment: ""
-                @emlWizard3GroupTestToMenu: normDefault, 1
+                @emlWizard3GroupTestToMenu: normDefault
                 optionmenu: "Test", emlWizard3GroupTestToMenu.row
                     @emlWizard3GroupTestRows
+                optionmenu: "Group order", wizGroupOrderDefault
+                    option: "Table order"
+                    option: "Alphabetical"
                 boolean: "Clear Info window", 0
                 comment: ""
             clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -633,6 +709,10 @@ if goal = 1
             elsif clicked = 2
                 goto A2B_NORM_PAGE
             endif
+
+            # BEFORE the header guard below, not after — its own
+            # `goto A2B_TEST_PAGE` must not skip this preserve step (v128).
+            wizGroupOrderDefault = group_order
 
             # A CATEGORY HEADER IS NOT A CHOICE. Same guard as the two-group
             # test page above and the graph-type menu it was reused from: a
@@ -653,13 +733,26 @@ if goal = 1
                 @emlClearInfo
             endif
 
-            # ── Map correction approach ────────────────────────────────────
-            # test_approach and corrApproach both decode off the ONE row the
-            # user picked, so the pairing dispatched below is always the
-            # pairing the row named — never a leftover from a different row.
+            # ── Map the row ────────────────────────────────────────────────
+            # test_approach, phTest$, phAdj$ and phLabel$ all decode off the
+            # ONE row the user picked, so the pairing dispatched below is
+            # always the pairing the row named — never a leftover from a
+            # different row. phTest$ = "" means the row's own "only, no
+            # pairwise tests" choice — punch list 4.2 — and is the row's
+            # choice now, not a hardcoded doDunn/doTukey.
 
             test_approach = emlWizard3GroupTestFromMenu.testApproach
-            corrApproach = emlWizard3GroupTestFromMenu.corrApproach
+            phTest$ = emlWizard3GroupTestFromMenu.phTest$
+            phAdj$ = emlWizard3GroupTestFromMenu.phAdj$
+            phLabel$ = emlWizard3GroupTestFromMenu.phLabel$
+
+            # Group order (punch list 4.7) — same single flag every menu
+            # door funnels the user's choice through (stats/eml-output.praat).
+            if group_order = 2
+                emlGroupSortAlphabetical = 1
+            else
+                emlGroupSortAlphabetical = 0
+            endif
 
             # ── Dispatch: ANOVA or KW ──────────────────────────────────────
 
@@ -668,21 +761,14 @@ if goal = 1
             if test_approach = 1
                 wizTestType$ = "parametric"
 
-                # Map correction to post-hoc method name. The name must
-                # match the test actually dispatched below -- and all three
-                # are now dispatched the same way, unconditionally, so no
-                # value here carries a condition. The two that did
-                # ("Scheffe if ANOVA significant", "Pairwise Welch t, BH
-                # adjusted, if ANOVA significant") named a gate that the
-                # 25 Aug punch list removed; their replacements are language
-                # batch item 14, which rules that a plan value states what
-                # runs and never why.
-                if corrApproach = 1
-                    phMethod$ = "Tukey HSD (all pairs)"
-                elsif corrApproach = 2
-                    phMethod$ = "Scheffe, all pairs"
+                # A row value states what runs and never why -- language
+                # batch item 14. "n/a" for the no-pairwise row hides the
+                # Post-hoc line in @wizardReportPlan the same way every other
+                # "n/a" posthoc value in this file does.
+                if phTest$ = ""
+                    phMethod$ = "n/a"
                 else
-                    phMethod$ = "Pairwise Welch t, Benjamini-Hochberg"
+                    phMethod$ = phLabel$
                 endif
 
                 @wizardReportPlan: "Three or more independent groups",
@@ -692,23 +778,24 @@ if goal = 1
                 ... dataCol$, groupCol$, "", displayTable$
 
                 doTukey = 0
-                if corrApproach = 1
+                if phTest$ = "tukey"
                     doTukey = 1
                 endif
 
-                # THE OMNIBUS IS NOT THE WHOLE RUN ON TWO OF THESE ROWS, and
-                # the ANOVA report has no way of knowing that by itself. With
+                # THE OMNIBUS IS NOT THE WHOLE RUN ON EVERY ROW, and the
+                # ANOVA report has no way of knowing that by itself. With
                 # Tukey off it prints the pairwise effect-size matrix under a
                 # caption saying no pairwise significance test was run -- true
-                # of that report, false of this run, and contradicted a few
-                # lines later by the Scheffe or pairwise-Welch table the user
-                # chose. RAISED FOR THIS CALL AND LOWERED IMMEDIATELY AFTER,
-                # the way @emlGraphsWorkflow brackets emlShowExplanations: a
-                # flag left raised would silence the caption on the next
-                # analysis in the session, which is the failure mode every
-                # scoped global in this tree has had at least once.
+                # of that report, false of a run whose row named a pairwise
+                # test, and contradicted a few lines later by the table the
+                # user chose. RAISED FOR THIS CALL AND LOWERED IMMEDIATELY
+                # AFTER, the way @emlGraphsWorkflow brackets
+                # emlShowExplanations: a flag left raised would silence the
+                # caption on the next analysis in the session, which is the
+                # failure mode every scoped global in this tree has had at
+                # least once.
                 emlPairwiseFollows = 0
-                if corrApproach = 2 or corrApproach = 3
+                if phTest$ = "scheffe" or phTest$ = "welch" or phTest$ = "student"
                     emlPairwiseFollows = 1
                 endif
                 @emlRunAnovaAnalysis: tableId, dataCol$, groupCol$, doTukey
@@ -723,34 +810,20 @@ if goal = 1
                     exitScript: ""
                 endif
 
-                # THE POST-HOC THE USER CHOSE, RUN. This block was wrapped
-                # in `if emlOneWayAnova.p < 0.05 and emlOneWayAnova.nGroups
-                # >= 3`, and that wrapper is the defect the 25 Aug punch list
-                # ruled on (lane 3.1). A user picked the Scheffe row, the
-                # ANOVA came back at p = .12, and the wizard printed the plan
-                # saying Scheffe was coming and then printed no Scheffe --
-                # no table, no note, nothing to distinguish it from a run
-                # where nothing had been asked for. Driven before the removal:
-                # harness/posthocgate/out/wizard_scheffe.info.txt.
-                #
-                # THE HARDCODED .05 WENT WITH IT, which was the second half of
-                # the same defect: it was a significance level in a file that
-                # asks the user for none, and it disagreed with the alpha in
-                # force everywhere else.
-                #
-                # THE GROUP-COUNT CONJUNCT WENT TOO, and deliberately. It was
-                # not a floor the engine needs -- @emlRunPairwiseAnalysis
-                # refuses a table it cannot pair up, and the wizard prints
-                # that refusal on the next line -- so as a silent condition it
-                # could only ever do what the p-value conjunct did: swallow a
-                # post-hoc the user asked for and say nothing. A refusal the
-                # user can read is the whole of the difference.
-                #
-                # corrApproach = 1 (Tukey) is reported by the ANOVA
-                # orchestrator itself and needs no call here.
-                if corrApproach = 2
+                # THE POST-HOC THE USER CHOSE, RUN — every parametric
+                # pairwise row, unconditionally (punch list lane 3.1/3.2; no
+                # p-value gate, no hardcoded alpha). @emlRunPairwiseAnalysis
+                # takes the SAME test$/adjMethod$ vocabulary the standalone
+                # pairwise dialog uses (eml-pairwise.praat) — welch, student
+                # or scheffe, with holm, bonferroni or bh — decoded above off
+                # the row rather than invented here, so the grid this row
+                # picks from is the SAME complete grid the standalone dialog
+                # offers (punch list 4.3). Tukey (phTest$ = "tukey") is
+                # reported by the ANOVA orchestrator itself and needs no call
+                # here; phTest$ = "" (no pairwise tests) needs none either.
+                if phTest$ = "scheffe" or phTest$ = "welch" or phTest$ = "student"
                     @emlRunPairwiseAnalysis: tableId, dataCol$,
-                    ... groupCol$, "scheffe", "none"
+                    ... groupCol$, phTest$, phAdj$
                     if emlRunPairwiseAnalysis.error$ <> ""
                         appendInfoLine: "NOTE: Post-hoc error — "
                         ... + emlRunPairwiseAnalysis.error$
@@ -765,31 +838,27 @@ if goal = 1
                         # the two reporters that carry it themselves.
                         @emlPostHocCaution: emlOneWayAnova.p
                     endif
-                elsif corrApproach = 3
-                    @emlRunPairwiseAnalysis: tableId, dataCol$,
-                    ... groupCol$, "welch", "bh"
-                    if emlRunPairwiseAnalysis.error$ <> ""
-                        appendInfoLine: "NOTE: Post-hoc error — "
-                        ... + emlRunPairwiseAnalysis.error$
-                    else
-                        @emlPostHocCaution: emlOneWayAnova.p
-                    endif
                 endif
 
             else
                 wizTestType$ = "nonparametric"
 
-                # @emlRunKWAnalysis is called with doDunn = 1 below, so
-                # Dunn runs on all pairs regardless of the KW p-value.
-                if corrApproach = 1
-                    phMethod$ = "Dunn (Holm), all pairs"
-                    adjMethod$ = "holm"
-                elsif corrApproach = 2
-                    phMethod$ = "Dunn (Bonferroni), all pairs"
-                    adjMethod$ = "bonferroni"
+                # doDunn is the row's own choice now (punch list 4.2) — the
+                # "Kruskal-Wallis only" row passes doDunn = 0 to
+                # @emlRunKruskalWallisAnalysis the way the menu KW wrapper's own
+                # "Kruskal-Wallis" row does (eml-compare-kw.praat), instead of
+                # the old doDunn = 1 literal.
+                doDunn = 0
+                adjMethod$ = "holm"
+                if phTest$ = "dunn"
+                    doDunn = 1
+                    adjMethod$ = phAdj$
+                endif
+
+                if phTest$ = ""
+                    phMethod$ = "n/a"
                 else
-                    phMethod$ = "Dunn (BH), all pairs"
-                    adjMethod$ = "bh"
+                    phMethod$ = phLabel$
                 endif
 
                 @wizardReportPlan: "Three or more independent groups",
@@ -798,16 +867,46 @@ if goal = 1
                 ... phMethod$,
                 ... dataCol$, groupCol$, "", displayTable$
 
-                @emlRunKWAnalysis: tableId, dataCol$, groupCol$, 1,
+                # SAME BRACKET AS THE ANOVA BRANCH ABOVE, and for the same
+                # reason: with Dunn off, @emlReportKWComparison's own
+                # effect-size caption (@emlEffectMatrixCaption) would say "no
+                # pairwise significance tests were run" even on the row that
+                # is about to run pairwise Wilcoxon a few lines down. Raised
+                # around the KW call, lowered immediately after.
+                emlPairwiseFollows = 0
+                if phTest$ = "wilcoxon"
+                    emlPairwiseFollows = 1
+                endif
+                @emlRunKruskalWallisAnalysis: tableId, dataCol$, groupCol$, doDunn,
                 ... adjMethod$
-                if emlRunKWAnalysis.error$ <> ""
+                emlPairwiseFollows = 0
+                if emlRunKruskalWallisAnalysis.error$ <> ""
                     # An analysis error must not tear down the wizard. Return
                     # the user into the back-chain with every answer intact.
-                    @emlErrorDialog: emlRunKWAnalysis.error$, emlRunKWAnalysis.remedy$, "wizard"
+                    @emlErrorDialog: emlRunKruskalWallisAnalysis.error$, emlRunKruskalWallisAnalysis.remedy$, "wizard"
                     if emlErrorDialog.back
                         goto A2B_NORM_PAGE
                     endif
                     exitScript: ""
+                endif
+
+                # PAIRWISE WILCOXON, THE ROW THE USER CHOSE — punch list 4.3.
+                # Dunn is not a substitute: Dunn re-uses the KW omnibus's own
+                # ranking, while pairwise Wilcoxon re-ranks each pair on its
+                # own, so this is a second engine call, exactly the shape the
+                # Scheffe/Welch/Student rows already take above. Same
+                # @emlRunPairwiseAnalysis call the standalone pairwise
+                # dialog makes for this cell (test$ = "wilcoxon"), decoded
+                # off the row, not invented here.
+                if phTest$ = "wilcoxon"
+                    @emlRunPairwiseAnalysis: tableId, dataCol$,
+                    ... groupCol$, phTest$, phAdj$
+                    if emlRunPairwiseAnalysis.error$ <> ""
+                        appendInfoLine: "NOTE: Post-hoc error — "
+                        ... + emlRunPairwiseAnalysis.error$
+                    else
+                        @emlPostHocCaution: emlKruskalWallis.p
+                    endif
                 endif
             endif
 
@@ -960,6 +1059,15 @@ if goal = 1
         normDefault = 1
         normSummary$ = ""
 
+        # Paired figure columns (punch list 4.8) — seeded the way the menu
+        # door's paired wrapper seeds its own Subject column
+        # (eml-compare-paired.praat): the guessed subject column, +1 for
+        # the leading "(row number)" entry. Group column has no guess, so
+        # it opens on "(none)".
+        @emlGuessColumnRoles: tableId
+        wizSubjDefault = emlGuessColumnRoles.subjectIdx + 1
+        wizGroupColDefault = 1
+
         label A3_NORM_PAGE
 
         beginPause: "Paired — Select columns"
@@ -1048,9 +1156,21 @@ if goal = 1
             comment: "Works on any distribution. Fewer assumptions."
             comment: ""
             comment: "─────────────────────────────────────"
-            optionmenu: "Test approach", normDefault
-                option: "Parametric"
-                option: "Nonparametric"
+            @emlWizardPairedTestToMenu: normDefault
+            optionmenu: "Test", emlWizardPairedTestToMenu.row
+                @emlWizardPairedTestRows
+            comment: ""
+            comment: "For spaghetti plot (optional):"
+            optionmenu: "Subject column", wizSubjDefault
+                option: "(row number)"
+            for iCol from 1 to nCols
+                option: emlTableColumnNames.name$[iCol]
+            endfor
+            optionmenu: "Group column", wizGroupColDefault
+                option: "(none)"
+            for iCol from 1 to nCols
+                option: emlTableColumnNames.name$[iCol]
+            endfor
             boolean: "Clear Info window", 0
             comment: ""
         clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -1060,28 +1180,61 @@ if goal = 1
             goto A3_NORM_PAGE
         endif
 
+        # BEFORE the header guard below, not after — its own
+        # `goto A3_TEST_PAGE` must not skip this preserve step (v128).
+        wizSubjDefault = subject_column
+        wizGroupColDefault = group_column
+
+        # A CATEGORY HEADER IS NOT A CHOICE. Same guard as the two-group
+        # test page.
+        @emlWizardPairedTestFromMenu: test
+        if emlWizardPairedTestFromMenu.isHeader = 1
+            beginPause: "Please choose a test."
+                comment: "The item you selected is a category header."
+                comment: "Please choose a test from the list."
+            endPause: "OK", 1, 0
+            goto A3_TEST_PAGE
+        endif
+
         if clear_Info_window
             @emlClearInfo
         endif
+
+        test_approach = emlWizardPairedTestFromMenu.testApproach
+        wizTName$ = emlWizardPairedTestFromMenu.reportName$
 
         @wizardNormLabel: normChecked, normSummary$, test_approach
 
         if test_approach = 1
             @wizardReportPlan: "Two conditions (paired)",
             ... wizardNormLabel.result$,
-            ... "Paired t-test (Cohen's d)",
+            ... wizTName$,
             ... "n/a", column_1$, "", column_2$, displayTable$
             @emlRunPairedAnalysis: tableId, column_1$, column_2$,
             ... "parametric"
             wizTestType$ = "parametric"
-        else
+        elsif test_approach = 2
             @wizardReportPlan: "Two conditions (paired)",
             ... wizardNormLabel.result$,
-            ... "Wilcoxon signed-rank (r)",
+            ... wizTName$,
             ... "n/a", column_1$, "", column_2$, displayTable$
             @emlRunPairedAnalysis: tableId, column_1$, column_2$,
             ... "nonparametric"
             wizTestType$ = "nonparametric"
+        else
+            # "Both" — dispatched the way the menu door's paired wrapper
+            # dispatches its own "Both" row (eml-compare-paired.praat):
+            # testType$ = "both" straight into @emlRunPairedAnalysis. The
+            # draw preset that follows (WIZ_DRAW_FIGURE) has no paired-test
+            # dependence, so wizTestType$ = "parametric" here is only the
+            # report/preserve label, not a draw choice.
+            @wizardReportPlan: "Two conditions (paired)",
+            ... wizardNormLabel.result$,
+            ... wizTName$,
+            ... "n/a", column_1$, "", column_2$, displayTable$
+            @emlRunPairedAnalysis: tableId, column_1$, column_2$,
+            ... "both"
+            wizTestType$ = "parametric"
         endif
         if emlRunPairedAnalysis.error$ <> ""
             # An analysis error must not tear down the wizard. Return
@@ -1096,6 +1249,24 @@ if goal = 1
         # Paired path — enable spaghetti plot draw
         wizPairedCol1$ = column_1$
         wizPairedCol2$ = column_2$
+
+        # Subject / group columns for the spaghetti plot (punch list 4.8),
+        # decoded the way the menu door's paired wrapper decodes its own
+        # two menus (eml-compare-paired.praat): index 1 is the leading
+        # placeholder entry, 2+ is a real column.
+        wizPairedHasSubjectCol = 0
+        wizPairedSubjectCol$ = ""
+        if subject_column > 1
+            wizPairedHasSubjectCol = 1
+            wizPairedSubjectCol$ = emlTableColumnNames.name$ [subject_column - 1]
+        endif
+        wizPairedHasGroupCol = 0
+        wizPairedGroupCol$ = ""
+        if group_column > 1
+            wizPairedHasGroupCol = 1
+            wizPairedGroupCol$ = emlTableColumnNames.name$ [group_column - 1]
+        endif
+
         wizCanDraw = 1
         wizCanExport = 1
         wizDrawSource$ = "paired"
@@ -1377,6 +1548,21 @@ elsif goal = 2
 
         label B_REG_COLUMNS
 
+        # ── candidate grouping columns (punch list 4.5) ────────────────
+        # Rebuilt every time this label is reached -- @wizardRegGrpCandidates
+        # filters against the CURRENT col1Default/col2Default, so a
+        # predictor or response bound on the previous pass through this
+        # same page cannot still be offered as the grouping column.
+        wizRegPredName$ = emlTableColumnNames.name$ [col1Default]
+        wizRegRespName$ = emlTableColumnNames.name$ [col2Default]
+        @wizardRegGrpCandidates: wizRegPredName$, wizRegRespName$
+        wizRegGrpSelIdx = 1
+        for iG from 1 to wizRegGrpN
+            if wizRegGrpName$ [iG] = wizRegGrpSelName$
+                wizRegGrpSelIdx = iG + 1
+            endif
+        endfor
+
         beginPause: "Regression — Select columns"
             comment: "📋 Table: " + displayTable$
             comment: "─────────────────────────────────────"
@@ -1397,6 +1583,16 @@ elsif goal = 2
             for iCol from 1 to nCols
                 option: emlTableColumnNames.name$[iCol]
             endfor
+            comment: ""
+            optionmenu: "Group column", wizRegGrpSelIdx
+                option: "(none — overall only)"
+            for iCol from 1 to wizRegGrpN
+                option: wizRegGrpName$ [iCol]
+            endfor
+            if wizRegGrpN = 0
+                comment: "     (no column in this Table has a usable number"
+                comment: "     of groups — overall only)"
+            endif
             boolean: "Clear Info window", 0
             comment: ""
         clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -1412,9 +1608,42 @@ elsif goal = 2
         @wizardColIdx: response_column$
         col2Default = wizardColIdx.idx
 
+        # Leading "(none)" entry: a position in the FILTERED list, not a
+        # column index -- same idiom as the correlation page's group menu.
+        # Preserved BEFORE the error checks below (v128), so neither error's
+        # own `goto B_REG_COLUMNS` re-renders the page showing "(none)"
+        # instead of what was just chosen.
+        wizRegHasGroupCol = 0
+        wizRegGroupCol$ = ""
+        if group_column > 1
+            wizRegHasGroupCol = 1
+            wizRegGroupCol$ = wizRegGrpName$ [group_column - 1]
+        endif
+        wizRegGrpSelName$ = wizRegGroupCol$
+
         if predictor_column$ = response_column$
             # A correctable selection mistake must not end the wizard.
             @emlErrorDialog: "Please select two different columns.", "", "wizard"
+            if emlErrorDialog.back
+                goto B_REG_COLUMNS
+            endif
+            exitScript: ""
+        elsif wizRegHasGroupCol and (wizRegGroupCol$ = predictor_column$ or wizRegGroupCol$ = response_column$)
+            # THE STALE GROUP LIST -- same hazard as the menu door's own
+            # regression dialog and v102's correlate-dialog original: the
+            # candidate list is built from the PREVIOUS pass's predictor and
+            # response, so moving either onto the current grouping column
+            # is refused rather than silently run.
+            staleMsg$ = "The grouping column """ + wizRegGroupCol$ + """ is now"
+            staleMsg$ = staleMsg$ + " one of the two columns being"
+            staleMsg$ = staleMsg$ + " regressed, so it cannot also group"
+            staleMsg$ = staleMsg$ + " them. Nothing was run. The list of"
+            staleMsg$ = staleMsg$ + " grouping columns was built before you"
+            staleMsg$ = staleMsg$ + " changed the predictor or response"
+            staleMsg$ = staleMsg$ + " column; Back will rebuild it for the"
+            staleMsg$ = staleMsg$ + " columns you have now chosen."
+            @emlErrorDialog: staleMsg$, "", "wizard"
+            wizRegGrpSelName$ = ""
             if emlErrorDialog.back
                 goto B_REG_COLUMNS
             endif
@@ -1441,12 +1670,23 @@ elsif goal = 2
             exitScript: ""
         endif
 
+        # Per-group regression (punch list 4.5) -- @emlLinearRegression ran
+        # once above for the whole table and its globals still hold that
+        # overall fit; @emlRunGroupedRegressionAnalysis reads them before anything
+        # else runs.
+        if wizRegHasGroupCol
+            selectObject: tableId
+            @emlRunGroupedRegressionAnalysis: tableId, predictor_column$,
+            ... response_column$, wizRegGroupCol$
+        endif
+
         # Set draw presets for scatter plot with regression line
         corrCol1$ = predictor_column$
         corrCol2$ = response_column$
         wizCanDraw = 1
         wizCanExport = 1
         wizDrawSource$ = "regression"
+        wizRegDrawGroupCol$ = wizRegGroupCol$
 
         goto WIZ_WHAT_NEXT
 
@@ -1529,6 +1769,62 @@ elsif goal = 2
         normSummary$ = wizardNormCheck.summary$
     endif
 
+    # ── Group column candidates (punch list 4.4) ───────────────────────
+    #
+    # Same filter as the menu door's correlation dialog
+    # (eml-correlate.praat): a grouping column has to be able to grade the
+    # correlation, so corrCol1$/corrCol2$ themselves are excluded, as are
+    # single-valued columns and near-unique columns (one group per row).
+    # Ceiling is 12 levels or n/3, whichever is smaller — n/3 keeps every
+    # group above the n >= 3 the per-group loop below enforces, and past a
+    # dozen levels a grouped report stops being readable. Rebuilt every
+    # time this label is reached, because corrCol1$/corrCol2$ can change
+    # on a Back-and-return.
+    selectObject: tableId
+    wizCorrGrpNRows = Get number of rows
+    wizCorrGrpMaxLevels = min (12, max (2, floor (wizCorrGrpNRows / 3)))
+    wizCorrGrpN = 0
+    for wizCorrIcol from 1 to nCols
+        wizCorrCand$ = emlTableColumnNames.name$ [wizCorrIcol]
+        if wizCorrCand$ <> corrCol1$ and wizCorrCand$ <> corrCol2$
+            wizCorrLevels = 0
+            wizCorrOver = 0
+            for wizCorrIrow from 1 to wizCorrGrpNRows
+                if wizCorrOver = 0
+                    selectObject: tableId
+                    wizCorrCell$ = Get value: wizCorrIrow, wizCorrCand$
+                    @eml_normalizeLabel: wizCorrCell$
+                    wizCorrNorm$ = eml_normalizeLabel.result$
+                    wizCorrSeen = 0
+                    for wizCorrIlev from 1 to wizCorrLevels
+                        if wizCorrLevel$ [wizCorrIlev] = wizCorrNorm$
+                            wizCorrSeen = 1
+                        endif
+                    endfor
+                    if wizCorrSeen = 0
+                        wizCorrLevels = wizCorrLevels + 1
+                        wizCorrLevel$ [wizCorrLevels] = wizCorrNorm$
+                        if wizCorrLevels > wizCorrGrpMaxLevels
+                            wizCorrOver = 1
+                        endif
+                    endif
+                endif
+            endfor
+            if wizCorrOver = 0 and wizCorrLevels >= 2
+                wizCorrGrpN = wizCorrGrpN + 1
+                wizCorrGrpName$ [wizCorrGrpN] = wizCorrCand$
+            endif
+        endif
+    endfor
+
+    # Seed from the user's last choice by NAME.
+    wizCorrGrpSelIdx = 1
+    for wizCorrIg from 1 to wizCorrGrpN
+        if wizCorrGrpName$ [wizCorrIg] = wizCorrGrpSelName$
+            wizCorrGrpSelIdx = wizCorrIg + 1
+        endif
+    endfor
+
     # ── Test config page ──────────────────────────────────────────────
 
     label B_TEST_PAGE
@@ -1560,9 +1856,20 @@ elsif goal = 2
         comment: "Rank-based. No distributional assumptions."
         comment: ""
         comment: "─────────────────────────────────────"
-        optionmenu: "Test approach", normDefault
+        optionmenu: "Test", normDefault
             option: "Pearson r"
             option: "Spearman rho"
+            option: "Both Pearson and Spearman"
+        comment: ""
+        optionmenu: "Group column", wizCorrGrpSelIdx
+            option: "(none — overall only)"
+        for wizCorrIcol from 1 to wizCorrGrpN
+            option: wizCorrGrpName$ [wizCorrIcol]
+        endfor
+        if wizCorrGrpN = 0
+            comment: "     (no column in this Table has a usable number"
+            comment: "     of groups — overall only)"
+        endif
         boolean: "Clear Info window", 0
         comment: ""
     clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -1572,24 +1879,64 @@ elsif goal = 2
         goto B_NORM_PAGE
     endif
 
+    # Leading "(none)" entry: this is a position in the FILTERED list, not
+    # a column index — same idiom as the menu door.
+    wizCorrHasGroupCol = 0
+    wizCorrGroupCol$ = ""
+    if group_column > 1
+        wizCorrHasGroupCol = 1
+        wizCorrGroupCol$ = wizCorrGrpName$ [group_column - 1]
+    endif
+    wizCorrGrpSelName$ = wizCorrGroupCol$
+
+    # BEFORE the error check below, not after it (v128) — its own
+    # `goto B_TEST_PAGE` (the analysis-error Back path) must not skip these
+    # two preserve steps, or the redraw shows the normality guess and
+    # "(none — overall only)" instead of what was just chosen. Group column
+    # is a NAME saved above; @wizardCorrGrpIdx is its round-trip back to the
+    # FILTERED list's POSITION, the same idiom @wizardCondSlot uses for the
+    # repeated-measures condition slots. Test has no name to translate — the
+    # chosen row already IS its own seed — so it is the direct copy every
+    # other flat, non-column menu in this file uses (e.g. Group order).
+    @wizardCorrGrpIdx: wizCorrGrpSelName$
+    wizCorrGrpSelIdx = wizardCorrGrpIdx.idx
+    normDefault = test
+
     if clear_Info_window
         @emlClearInfo
     endif
 
+    # Field is named "Test" (language batch item 3), so Praat binds it to
+    # `test`, not `test_approach` — the flat three-row list needs no
+    # header-guard decode, so `test` is used directly as the approach index.
+    test_approach = test
+
     @wizardNormLabel: normChecked, normSummary$, test_approach
 
     if test_approach = 1
+        wizCorrTestType$ = "pearson"
         @wizardReportPlan: "Correlation",
         ... wizardNormLabel.result$, "Pearson r",
         ... "n/a", corrCol1$, "", corrCol2$, displayTable$
         @emlRunCorrelationAnalysis: tableId, corrCol1$,
         ... corrCol2$, "pearson"
-    else
+    elsif test_approach = 2
+        wizCorrTestType$ = "spearman"
         @wizardReportPlan: "Correlation",
         ... wizardNormLabel.result$, "Spearman ρ",
         ... "n/a", corrCol1$, "", corrCol2$, displayTable$
         @emlRunCorrelationAnalysis: tableId, corrCol1$,
         ... corrCol2$, "spearman"
+    else
+        # "Both" — dispatched the way the menu door's correlation wrapper
+        # dispatches its own "Both" row (eml-correlate.praat): testType$ =
+        # "both" straight into @emlRunCorrelationAnalysis.
+        wizCorrTestType$ = "both"
+        @wizardReportPlan: "Correlation",
+        ... wizardNormLabel.result$, "Both Pearson and Spearman",
+        ... "n/a", corrCol1$, "", corrCol2$, displayTable$
+        @emlRunCorrelationAnalysis: tableId, corrCol1$,
+        ... corrCol2$, "both"
     endif
     if emlRunCorrelationAnalysis.error$ <> ""
         # An analysis error must not tear down the wizard. Return
@@ -1599,6 +1946,167 @@ elsif goal = 2
             goto B_TEST_PAGE
         endif
         exitScript: ""
+    endif
+
+    # ── Per-group correlations (punch list 4.4) ─────────────────────────
+    #
+    # SAME PATTERN, SAME PROCEDURES as the menu door's per-group block
+    # (eml-correlate.praat) — two passes, the first only counting complete
+    # pairs per group so the block can be announced with its own header
+    # and counts before any group prints, and so the groups too small to
+    # analyse (n < 3) are named on one summary line. One export, with the
+    # grouping in a real column: tidy is rebuilt with every row labelled
+    # in `term` ("(overall)" / "<group column> = <level>"), the same
+    # convention the menu door's own grouped export uses.
+    if wizCorrHasGroupCol
+        selectObject: tableId
+        @emlCountGroups: tableId, wizCorrGroupCol$
+        wizPgTotal = emlCountGroups.nGroups
+        wizPgRun = 0
+        wizPgSkipped = 0
+        wizPgSkipList$ = ""
+        wizPgSkipMore = 0
+        for wizPgI from 1 to wizPgTotal
+            wizPgLabel$ [wizPgI] = emlCountGroups.groupLabel$ [wizPgI]
+            selectObject: tableId
+            @eml_getGroupPairedData: tableId, corrCol1$, corrCol2$,
+            ... wizCorrGroupCol$, wizPgLabel$ [wizPgI]
+            wizPgN [wizPgI] = eml_getGroupPairedData.n
+            if wizPgN [wizPgI] >= 3
+                wizPgRun = wizPgRun + 1
+            else
+                wizPgSkipped = wizPgSkipped + 1
+                if length (wizPgSkipList$) < 45
+                    if wizPgSkipList$ <> ""
+                        wizPgSkipList$ = wizPgSkipList$ + ", "
+                    endif
+                    wizPgSkipList$ = wizPgSkipList$
+                    ... + replace$ (wizPgLabel$ [wizPgI], "_", " ", 0)
+                else
+                    wizPgSkipMore = wizPgSkipMore + 1
+                endif
+            endif
+        endfor
+        if wizPgSkipMore > 0
+            wizPgSkipList$ = wizPgSkipList$ + ", and "
+            ... + string$ (wizPgSkipMore) + " more"
+        endif
+
+        @emlUnderscoreToSpace: wizCorrGroupCol$
+        wizPgColDisplay$ = emlUnderscoreToSpace.result$
+        @emlReportHeader: "Correlation by " + wizPgColDisplay$
+        @emlReportLineString: "Grouping column", wizPgColDisplay$
+        @emlReportLine: "Groups", wizPgTotal, 0
+        @emlReportLine: "Analysed", wizPgRun, 0
+
+        # Overall rows are re-emitted from the orchestrator's own captured
+        # values before the per-group rows, so the export is never left
+        # half-built and a grouped run does not silently drop its overall
+        # fit the way the pre-fix menu door once did.
+        wizPgCsvN = emlCSV_n
+        @emlTidyClear
+        if wizCorrTestType$ = "pearson" or wizCorrTestType$ = "both"
+            @emlTidyRow: "(overall)"
+            @emlTidyNum: "estimate", emlRunCorrelationAnalysis.pearR
+            @emlTidyNum: "statistic", emlRunCorrelationAnalysis.pearT
+            @emlTidyNum: "p.value", emlRunCorrelationAnalysis.pearP
+            @emlTidyNum: "parameter", emlRunCorrelationAnalysis.pearDf
+            @emlTidyStr: "method", "Pearson's product-moment correlation"
+            @emlTidyStr: "alternative", "two.sided"
+        endif
+        if wizCorrTestType$ = "spearman" or wizCorrTestType$ = "both"
+            @emlTidyRow: "(overall)"
+            @emlTidyNum: "estimate", emlRunCorrelationAnalysis.spearRho
+            @emlTidyNum: "statistic", emlRunCorrelationAnalysis.spearT
+            @emlTidyNum: "p.value", emlRunCorrelationAnalysis.spearP
+            @emlTidyNum: "parameter", emlRunCorrelationAnalysis.spearDf
+            @emlTidyStr: "method", "Spearman's rank correlation rho"
+            @emlTidyStr: "alternative", "two.sided"
+        endif
+
+        for wizPgI from 1 to wizPgTotal
+            if wizPgN [wizPgI] >= 3
+                wizPgDisplay$ = replace$ (wizPgLabel$ [wizPgI], "_", " ", 0)
+                selectObject: tableId
+                @eml_getGroupPairedData: tableId, corrCol1$, corrCol2$,
+                ... wizCorrGroupCol$, wizPgLabel$ [wizPgI]
+                wizPgX# = eml_getGroupPairedData.dataX#
+                wizPgY# = eml_getGroupPairedData.dataY#
+                wizPgThisN = eml_getGroupPairedData.n
+                wizPgExcluded = eml_getGroupPairedData.nExcluded
+                wizPgTerm$ = wizCorrGroupCol$ + " = " + wizPgLabel$ [wizPgI]
+                if wizCorrTestType$ = "pearson" or wizCorrTestType$ = "both"
+                    @emlPearsonCorrelation: wizPgX#, wizPgY#, 2
+                    wizPgPearR = emlPearsonCorrelation.r
+                    wizPgPearT = emlPearsonCorrelation.t
+                    wizPgPearDf = emlPearsonCorrelation.df
+                    wizPgPearP = emlPearsonCorrelation.p
+                    wizPgPearErr$ = emlPearsonCorrelation.error$
+                endif
+                if wizCorrTestType$ = "spearman" or wizCorrTestType$ = "both"
+                    @emlSpearmanCorrelationDispatch: wizPgX#, wizPgY#, 2
+                    wizPgSpearRho = emlSpearmanCorrelation.rho
+                    wizPgSpearT = emlSpearmanCorrelation.t
+                    wizPgSpearDf = emlSpearmanCorrelation.df
+                    wizPgSpearP = emlSpearmanCorrelation.p
+                    wizPgSpearErr$ = emlSpearmanCorrelation.error$
+                endif
+                @emlReportCorrelationAnalysis: tableName$
+                ... + " -- " + wizPgColDisplay$ + " = " + wizPgDisplay$,
+                ... corrCol1$, corrCol2$, wizPgThisN, wizCorrTestType$
+                if wizPgExcluded > 0
+                    wizPgExclNote$ = "  Note: " + string$ (wizPgExcluded)
+                    ... + " row(s) excluded for missing data"
+                    ... + " (analyzed n = " + string$ (wizPgThisN)
+                    ... + " complete pairs)."
+                    appendInfoLine: wizPgExclNote$
+                endif
+                if wizCorrTestType$ = "pearson" or wizCorrTestType$ = "both"
+                    if wizPgPearErr$ = ""
+                        @emlTidyRow: wizPgTerm$
+                        @emlTidyNum: "estimate", wizPgPearR
+                        @emlTidyNum: "statistic", wizPgPearT
+                        @emlTidyNum: "p.value", wizPgPearP
+                        @emlTidyNum: "parameter", wizPgPearDf
+                        @emlTidyStr: "method",
+                        ... "Pearson's product-moment correlation"
+                        @emlTidyStr: "alternative", "two.sided"
+                    endif
+                endif
+                if wizCorrTestType$ = "spearman" or wizCorrTestType$ = "both"
+                    if wizPgSpearErr$ = ""
+                        @emlTidyRow: wizPgTerm$
+                        @emlTidyNum: "estimate", wizPgSpearRho
+                        @emlTidyNum: "statistic", wizPgSpearT
+                        @emlTidyNum: "p.value", wizPgSpearP
+                        @emlTidyNum: "parameter", wizPgSpearDf
+                        @emlTidyStr: "method",
+                        ... "Spearman's rank correlation rho"
+                        @emlTidyStr: "alternative", "two.sided"
+                    endif
+                endif
+            endif
+        endfor
+
+        # The legacy rows the per-group reporter calls appended carry a
+        # fabricated table name and duplicate what tidy now holds properly
+        # labelled, so the buffer is truncated back to the overall analysis
+        # — same restore the menu door's own per-group block does.
+        emlCSV_n = wizPgCsvN
+        @emlGlanceNum: "n.groups", wizPgRun
+
+        if wizPgSkipped > 0
+            @emlReportBlank
+            @emlReportLineString: "Skipped (n < 3)",
+            ... string$ (wizPgSkipped) + " of " + string$ (wizPgTotal)
+            ... + ": " + wizPgSkipList$
+        endif
+        if wizPgRun = 0
+            appendInfoLine: "  No group has 3 or more complete "
+            ... + "pairs — a coarser grouping column would give"
+            appendInfoLine: "  correlations that can be computed."
+        endif
+        appendInfoLine: emlReportHeader.border$
     endif
 
     wizCanDraw = 1
@@ -1737,11 +2245,87 @@ elsif goal = 3
     else
 
         # ── Normality check ───────────────────────────────────────────────
+        #
+        # Punch list 4.6: the orchestrator's own modes -- single column,
+        # all numeric columns, one column by group -- language batch item 5,
+        # verbatim. The page offers all three; the other two are the menu
+        # door's own modes (eml-check-normality.praat), copied here with the
+        # same procedures so the two doors print the same reading for the
+        # same data.
 
         @wizardPrepareTable: "describe"
         dataDefault = wizardPrepareTable.dataDefault
+        @wizardPrepareTable: "kgroups"
+        groupDefault = wizardPrepareTable.groupDefault
+
+        # Numeric columns only, same filter the menu door applies before its
+        # own dialog opens -- a non-numeric column cannot go through
+        # Shapiro-Wilk. Computed once; the table does not change mid-branch.
+        selectObject: tableId
+        wizNormNNumeric = 0
+        for wizNormIcol from 1 to nCols
+            wizNormCand$ = emlTableColumnNames.name$ [wizNormIcol]
+            @emlCheckNumericColumn: tableId, wizNormCand$
+            if emlCheckNumericColumn.isNumeric
+                wizNormNNumeric = wizNormNNumeric + 1
+                wizNormNumericCol$ [wizNormNNumeric] = wizNormCand$
+            endif
+        endfor
+
+        wizNormModeDefault = 1
+        wizNormDataNumDefault = 1
 
         label C_NORMALITY
+
+        beginPause: "Normality check"
+            comment: "📋 Table: " + displayTable$
+            comment: "─────────────────────────────────────"
+            comment: ""
+            optionmenu: "Check", wizNormModeDefault
+                option: "One column"
+                option: "All numeric columns"
+                option: "One column, by group"
+            comment: ""
+        clicked = endPause: "Quit", "Back", "Continue", 3, 0
+        if clicked = 1
+            exitScript: ""
+        elsif clicked = 2
+            goto C1_DESCRIBE
+        endif
+
+        # BEFORE the branch below -- its own goto back to C_NORMALITY (the
+        # numeric-column guard, and every column page's Back) must not skip
+        # this preserve step (v128).
+        wizNormModeDefault = check
+
+        if check = 2 or check = 3
+            if wizNormNNumeric = 0
+                # ROUTED THROUGH THE PLUGIN'S ERROR SURFACE, same wording as
+                # the menu door's entry refusal (eml-check-normality.praat) --
+                # this page is reached mid-wizard rather than at entry, so it
+                # offers Back rather than the "entry" style's no-remedy exit.
+                @emlErrorDialog: "Normality is a property of a numeric "
+                ... + "variable, and none of the " + string$ (nCols)
+                ... + " column(s) in """ + displayTable$
+                ... + """ reads as numbers.", "", "wizard"
+                if emlErrorDialog.back
+                    goto C_NORMALITY
+                endif
+                exitScript: ""
+            endif
+        endif
+
+        if check = 1
+            goto C_NORM_SINGLE
+        elsif check = 2
+            goto C_NORM_ALL
+        else
+            goto C_NORM_GROUP
+        endif
+
+        # ── Mode 1: one column ───────────────────────────────────────────
+
+        label C_NORM_SINGLE
 
         beginPause: "Normality check — Select column"
             comment: "📋 Table: " + displayTable$
@@ -1757,8 +2341,12 @@ elsif goal = 3
         if clicked = 1
             exitScript: ""
         elsif clicked = 2
-            goto C1_DESCRIBE
+            goto C_NORMALITY
         endif
+
+        # BEFORE the goto below -- v128.
+        @wizardColIdx: data_column$
+        dataDefault = wizardColIdx.idx
 
         if clear_Info_window
             @emlClearInfo
@@ -1782,13 +2370,249 @@ elsif goal = 3
             @emlErrorDialog: emlRunNormalityAnalysis.error$,
             ... emlRunNormalityAnalysis.remedy$, "wizard"
             if emlErrorDialog.back
-                goto C1_DESCRIBE
+                goto C_NORM_SINGLE
             endif
             exitScript: ""
         endif
 
         # Normality must be able to save.
         wizCanExport = 1
+
+        # Q-Q draw (punch list 4.6) -- one column, no group.
+        wizNormQQGrouped = 0
+        wizNormQQN = 1
+        wizNormQQCol$ [1] = data_column$
+        wizNormQQLastCol = 1
+        wizNormQQLastGroup = 1
+        wizCanDraw = 1
+        wizDrawSource$ = "normality"
+
+        goto WIZ_WHAT_NEXT
+
+        # ── Mode 2: all numeric columns ──────────────────────────────────
+
+        label C_NORM_ALL
+
+        beginPause: "Normality check — All numeric columns"
+            comment: "📋 Table: " + displayTable$
+            comment: "─────────────────────────────────────"
+            comment: ""
+            comment: "Will test normality for all "
+            ... + string$ (wizNormNNumeric) + " numeric columns:"
+            for wizNormIcol from 1 to min (wizNormNNumeric, 8)
+                comment: "  " + wizNormNumericCol$ [wizNormIcol]
+            endfor
+            if wizNormNNumeric > 8
+                comment: "  ... and "
+                ... + string$ (wizNormNNumeric - 8) + " more"
+            endif
+            comment: ""
+            boolean: "Clear Info window", 0
+            comment: ""
+        clicked = endPause: "Quit", "Back", "Run", 3, 0
+        if clicked = 1
+            exitScript: ""
+        elsif clicked = 2
+            goto C_NORMALITY
+        endif
+
+        if clear_Info_window
+            @emlClearInfo
+        endif
+
+        # SAME ORCHESTRATOR, called once per column with "both" so the
+        # results accumulate into one export frame -- the same call, with
+        # the same third argument, the menu door's own all-columns branch
+        # makes (eml-check-normality.praat).
+        for wizNormIsel from 1 to wizNormNNumeric
+            selectObject: tableId
+            @emlRunNormalityAnalysis: tableId,
+            ... wizNormNumericCol$ [wizNormIsel], "both"
+            if emlRunNormalityAnalysis.error$ <> ""
+                appendInfoLine: "NOTE: ", wizNormNumericCol$ [wizNormIsel],
+                ... " -- ", emlRunNormalityAnalysis.error$
+            endif
+        endfor
+
+        wizCanExport = 1
+
+        # Q-Q draw (punch list 4.6) -- every numeric column, no group.
+        wizNormQQGrouped = 0
+        wizNormQQN = wizNormNNumeric
+        for wizNormIsel from 1 to wizNormNNumeric
+            wizNormQQCol$ [wizNormIsel] = wizNormNumericCol$ [wizNormIsel]
+        endfor
+        wizNormQQLastCol = 1
+        wizNormQQLastGroup = 1
+        wizCanDraw = 1
+        wizDrawSource$ = "normality"
+
+        goto WIZ_WHAT_NEXT
+
+        # ── Mode 3: one column, by group ──────────────────────────────────
+
+        label C_NORM_GROUP
+
+        beginPause: "Normality check — Select column and group"
+            comment: "📋 Table: " + displayTable$
+            comment: "─────────────────────────────────────"
+            comment: ""
+            optionmenu: "Data column", wizNormDataNumDefault
+            for wizNormIcol from 1 to wizNormNNumeric
+                option: wizNormNumericCol$ [wizNormIcol]
+            endfor
+            optionmenu: "Group column", groupDefault
+            for iCol from 1 to nCols
+                option: emlTableColumnNames.name$[iCol]
+            endfor
+            boolean: "Clear Info window", 0
+            comment: ""
+        clicked = endPause: "Quit", "Back", "Run", 3, 0
+        if clicked = 1
+            exitScript: ""
+        elsif clicked = 2
+            goto C_NORMALITY
+        endif
+
+        # BEFORE the goto below -- v128-style preserve, same idiom every
+        # page in this file uses.
+        wizNormDataNumDefault = data_column
+        @wizardColIdx: group_column$
+        groupDefault = wizardColIdx.idx
+
+        if clear_Info_window
+            @emlClearInfo
+        endif
+
+        wizNormGCol$ = wizNormNumericCol$ [data_column]
+        wizNormGGroupCol$ = group_column$
+
+        # SAME PER-GROUP DIAGNOSTIC, same procedures, as the menu door's
+        # grouped branch (eml-check-normality.praat) -- copied verbatim
+        # (for this one column, where the menu door loops it over every
+        # numeric column) so the two doors print the identical reading for
+        # the identical data. This branch declares nothing (same as the
+        # menu door's own grouped branch); Save is still offered, matching
+        # the menu door's panel, which is present regardless of mode.
+        appendInfoLine: "══════════════════════════════════════════════"
+        appendInfoLine: "  Normality Assessment"
+        appendInfoLine: "  Table: ", displayTable$
+        wizNormGDisplayGrp$ = replace$ (wizNormGGroupCol$, "_", " ", 0)
+        appendInfoLine: "  Grouped by: ", wizNormGDisplayGrp$
+        appendInfoLine: "══════════════════════════════════════════════"
+        appendInfoLine: ""
+
+        wizNormGDisplayCol$ = replace$ (wizNormGCol$, "_", " ", 0)
+        appendInfoLine: "── ", wizNormGDisplayCol$, " ──"
+        appendInfoLine: ""
+        selectObject: tableId
+        @emlCountGroups: tableId, wizNormGGroupCol$
+        wizNormGAllOK = 1
+        wizNormGNAssessed = 0
+        wizNormQQGroupN = emlCountGroups.nGroups
+        for wizNormGg from 1 to wizNormQQGroupN
+            wizNormQQGroupLabel$ [wizNormGg] = emlCountGroups.groupLabel$ [wizNormGg]
+        endfor
+
+        for wizNormGg from 1 to emlCountGroups.nGroups
+            wizNormGLabel$ = emlCountGroups.groupLabel$ [wizNormGg]
+            wizNormGGDisplay$ = replace$ (wizNormGLabel$, "_", " ", 0)
+            selectObject: tableId
+            @eml_getGroupData: tableId, wizNormGCol$, wizNormGGroupCol$,
+            ... wizNormGLabel$
+
+            if eml_getGroupData.n >= 3
+                wizNormGNAssessed = wizNormGNAssessed + 1
+                wizNormGData# = eml_getGroupData.data#
+                wizNormGN = eml_getGroupData.n
+
+                @emlShapiroWilk: wizNormGData#
+                wizNormGSwW = emlShapiroWilk.w
+                wizNormGSwP = emlShapiroWilk.p
+
+                @emlSkewness: wizNormGData#
+                wizNormGSkew = emlSkewness.result
+                @emlKurtosis: wizNormGData#
+                wizNormGKurt = emlKurtosis.result
+
+                @emlNormalityRecommendation: wizNormGSkew, wizNormGKurt,
+                ... wizNormGN, emlShapiroWilk.p, emlShapiroWilk.error$
+                wizNormGLargeNOverride = emlNormalityRecommendation.largeNOverride
+                wizNormGRec$ = emlNormalityRecommendation.recommendation$
+                wizNormGNonparam = 0
+                if wizNormGRec$ = "nonparametric"
+                    wizNormGNonparam = 1
+                endif
+
+                @eml_fixed: wizNormGSwW, 4
+                wizNormGWTxt$ = eml_fixed.result$
+                @eml_fixed: wizNormGSkew, 3
+                wizNormGSkewTxt$ = eml_fixed.result$
+                @eml_fixed: wizNormGKurt, 3
+                wizNormGKurtTxt$ = eml_fixed.result$
+                @emlFormatP: wizNormGSwP
+                appendInfoLine: "  ", wizNormGGDisplay$, " (n = ", wizNormGN, "):"
+                appendInfoLine: "    W = ", wizNormGWTxt$,
+                ... "  ", emlFormatP.formatted$
+                appendInfoLine: "    Skewness = ", wizNormGSkewTxt$,
+                ... "  Kurtosis (excess) = ", wizNormGKurtTxt$
+
+                @eml_fixed: emlSkewThreshold, 0
+                wizNormGSkewLimit$ = eml_fixed.result$
+                @eml_fixed: emlKurtosisThreshold, 0
+                wizNormGKurtLimit$ = eml_fixed.result$
+                wizNormGCriteria$ = "thresholds: Shapiro-Wilk p < .05, |skew| >= "
+                ... + wizNormGSkewLimit$ + ", |excess kurt| >= " + wizNormGKurtLimit$
+                if wizNormGLargeNOverride
+                    appendInfoLine: "    → Shapiro-Wilk rejects at the 5%"
+                    ... + " level; shape statistics are within the"
+                    ... + " thresholds at n = " + string$ (wizNormGN)
+                    ... + " (" + wizNormGCriteria$ + ")"
+                elsif wizNormGNonparam
+                    appendInfoLine: "    → Strong departure from normality"
+                    ... + " in this group's marginal distribution ("
+                    ... + wizNormGCriteria$ + ")"
+                    wizNormGAllOK = 0
+                else
+                    appendInfoLine: "    → No strong departure in this"
+                    ... + " group's marginal distribution ("
+                    ... + wizNormGCriteria$ + ")"
+                endif
+            else
+                appendInfoLine: "  ", wizNormGGDisplay$, " (n = ",
+                ... eml_getGroupData.n, "): skipped (n < 3)"
+            endif
+        endfor
+
+        appendInfoLine: ""
+        if wizNormGAllOK
+            if wizNormGNAssessed < emlCountGroups.nGroups
+                appendInfoLine: "  Summary: No strong departure in the"
+                ... + " groups large enough to test (",
+                ... wizNormGNAssessed, " of ", emlCountGroups.nGroups,
+                ... " assessed)."
+            else
+                appendInfoLine: "  Summary: no group in this column shows a"
+                ... + " strong departure"
+            endif
+        else
+            appendInfoLine: "  Summary: one or more groups in this column"
+            ... + " show a strong departure"
+        endif
+        appendInfoLine: ""
+        appendInfoLine: "══════════════════════════════════════════════"
+
+        wizCanExport = 1
+
+        # Q-Q draw (punch list 4.6) -- one column, by group.
+        wizNormQQGrouped = 1
+        wizNormQQN = 1
+        wizNormQQCol$ [1] = wizNormGCol$
+        wizNormQQGroupCol$ = wizNormGGroupCol$
+        wizNormQQLastCol = 1
+        wizNormQQLastGroup = 1
+        wizCanDraw = 1
+        wizDrawSource$ = "normality"
 
         goto WIZ_WHAT_NEXT
 
@@ -1853,6 +2677,21 @@ elsif goal = 4
 
     label D_PREDICT_COLUMNS
 
+    # ── candidate grouping columns (punch list 4.5) ────────────────────
+    # Same reasoning as B_REG_COLUMNS's own block above: rebuilt every time
+    # this label is reached, filtered against the CURRENT col1Default/
+    # col2Default so a predictor or outcome bound on the previous pass
+    # cannot still be offered as the grouping column.
+    wizRegPredName$ = emlTableColumnNames.name$ [col1Default]
+    wizRegRespName$ = emlTableColumnNames.name$ [col2Default]
+    @wizardRegGrpCandidates: wizRegPredName$, wizRegRespName$
+    wizRegGrpSelIdx = 1
+    for iG from 1 to wizRegGrpN
+        if wizRegGrpName$ [iG] = wizRegGrpSelName$
+            wizRegGrpSelIdx = iG + 1
+        endif
+    endfor
+
     beginPause: "Predict — Select columns"
         comment: "📋 Table: " + displayTable$
         comment: "─────────────────────────────────────"
@@ -1871,6 +2710,16 @@ elsif goal = 4
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$[iCol]
         endfor
+        comment: ""
+        optionmenu: "Group column", wizRegGrpSelIdx
+            option: "(none — overall only)"
+        for iCol from 1 to wizRegGrpN
+            option: wizRegGrpName$ [iCol]
+        endfor
+        if wizRegGrpN = 0
+            comment: "     (no column in this Table has a usable number"
+            comment: "     of groups — overall only)"
+        endif
         boolean: "Clear Info window", 0
         comment: ""
     clicked = endPause: "Quit", "Back", "Run", 3, 0
@@ -1886,9 +2735,37 @@ elsif goal = 4
     @wizardColIdx: outcome_column$
     col2Default = wizardColIdx.idx
 
+    # Leading "(none)" entry: a position in the FILTERED list, not a column
+    # index. Preserved BEFORE the error checks below (v128), so neither
+    # error's own `goto D_PREDICT_COLUMNS` re-renders the page showing
+    # "(none)" instead of what was just chosen.
+    wizRegHasGroupCol = 0
+    wizRegGroupCol$ = ""
+    if group_column > 1
+        wizRegHasGroupCol = 1
+        wizRegGroupCol$ = wizRegGrpName$ [group_column - 1]
+    endif
+    wizRegGrpSelName$ = wizRegGroupCol$
+
     if predictor_column$ = outcome_column$
         # A correctable selection mistake must not end the wizard.
         @emlErrorDialog: "Please select two different columns.", "", "wizard"
+        if emlErrorDialog.back
+            goto D_PREDICT_COLUMNS
+        endif
+        exitScript: ""
+    elsif wizRegHasGroupCol and (wizRegGroupCol$ = predictor_column$ or wizRegGroupCol$ = outcome_column$)
+        # THE STALE GROUP LIST -- see B_REG_COLUMNS's own comment above.
+        staleMsg$ = "The grouping column """ + wizRegGroupCol$ + """ is now"
+        staleMsg$ = staleMsg$ + " one of the two columns being"
+        staleMsg$ = staleMsg$ + " regressed, so it cannot also group"
+        staleMsg$ = staleMsg$ + " them. Nothing was run. The list of"
+        staleMsg$ = staleMsg$ + " grouping columns was built before you"
+        staleMsg$ = staleMsg$ + " changed the predictor or outcome"
+        staleMsg$ = staleMsg$ + " column; Back will rebuild it for the"
+        staleMsg$ = staleMsg$ + " columns you have now chosen."
+        @emlErrorDialog: staleMsg$, "", "wizard"
+        wizRegGrpSelName$ = ""
         if emlErrorDialog.back
             goto D_PREDICT_COLUMNS
         endif
@@ -1915,11 +2792,20 @@ elsif goal = 4
         exitScript: ""
     endif
 
+    # Per-group regression (punch list 4.5) -- see B_REG_COLUMNS's own
+    # comment above; the precondition is identical.
+    if wizRegHasGroupCol
+        selectObject: tableId
+        @emlRunGroupedRegressionAnalysis: tableId, predictor_column$,
+        ... outcome_column$, wizRegGroupCol$
+    endif
+
     corrCol1$ = predictor_column$
     corrCol2$ = outcome_column$
     wizCanDraw = 1
     wizCanExport = 1
     wizDrawSource$ = "regression"
+    wizRegDrawGroupCol$ = wizRegGroupCol$
 
     goto WIZ_WHAT_NEXT
 
@@ -2110,6 +2996,14 @@ elsif wizDrawSource$ = "regression"
     emlGraphsPresetYCol$ = corrCol2$
     emlGraphsPresetAnnotate = 1
     emlGraphsPresetRegressionLine = 1
+    # Punch list 4.5: the drawn lines match the report. Without this the
+    # scatter would fall back to its own default (overall only), so a
+    # grouped regression's Draw button would disagree with the per-group
+    # report just printed -- the exact shape the menu door's own Draw
+    # dispatch already avoids (eml-regress.praat's "if hasGroupCol").
+    if wizRegDrawGroupCol$ <> ""
+        emlGraphsPresetGroupCol$ = wizRegDrawGroupCol$
+    endif
     @emlGraphsWorkflow: tableId
 elsif wizDrawSource$ = "paired"
     # Reshape to long format for spaghetti plot.
@@ -2129,21 +3023,43 @@ elsif wizDrawSource$ = "paired"
     # The two Tables sit side by side in the object list for the length of
     # the draw, and two Tables sharing a name is exactly the ambiguity
     # @emlRecordSource counts and warns about.
-    plLongId = Create Table with column names: tableName$ + "_long",
-    ... plNRows * 2, { "Subject", "Condition", "Value" }
+    # Subject / group columns (punch list 4.8): the menu door's paired
+    # wrapper (eml-compare-paired.praat) reads the real subject label when
+    # one was chosen and adds a "Group" column to the long table when one
+    # was chosen; row number and no group were this branch's own invention,
+    # wrong whenever the rows are not one per subject in order.
+    if wizPairedHasGroupCol
+        plLongId = Create Table with column names: tableName$ + "_long",
+        ... plNRows * 2, { "Subject", "Condition", "Value", "Group" }
+    else
+        plLongId = Create Table with column names: tableName$ + "_long",
+        ... plNRows * 2, { "Subject", "Condition", "Value" }
+    endif
     for plIRow from 1 to plNRows
         selectObject: tableId
         plV1 = Get value: plIRow, wizPairedCol1$
         plV2 = Get value: plIRow, wizPairedCol2$
+        if wizPairedHasSubjectCol
+            plSubjLabel$ = Get value: plIRow, wizPairedSubjectCol$
+        else
+            plSubjLabel$ = string$ (plIRow)
+        endif
+        if wizPairedHasGroupCol
+            plGroupLabel$ = Get value: plIRow, wizPairedGroupCol$
+        endif
         plR1 = (plIRow - 1) * 2 + 1
         plR2 = (plIRow - 1) * 2 + 2
         selectObject: plLongId
-        Set string value: plR1, "Subject", string$ (plIRow)
+        Set string value: plR1, "Subject", plSubjLabel$
         Set string value: plR1, "Condition", wizPairedCol1$
         Set numeric value: plR1, "Value", plV1
-        Set string value: plR2, "Subject", string$ (plIRow)
+        Set string value: plR2, "Subject", plSubjLabel$
         Set string value: plR2, "Condition", wizPairedCol2$
         Set numeric value: plR2, "Value", plV2
+        if wizPairedHasGroupCol
+            Set string value: plR1, "Group", plGroupLabel$
+            Set string value: plR2, "Group", plGroupLabel$
+        endif
     endfor
     # ── axis labels that name the measure ──────────────────────────
     # "Subject", "Condition" and "Value" are the reshape's ROLE names, and
@@ -2214,6 +3130,134 @@ elsif wizDrawSource$ = "twoway"
     emlGraphsPresetDataCol$ = dataCol$
     emlGraphsPresetSubgroupCol$ = wizTwoWayFactor2$
     @emlGraphsWorkflow: tableId
+elsif wizDrawSource$ = "normality"
+    # Q-Q draw (punch list 4.6) — NOT through @emlGraphsWorkflow/presets:
+    # a Q-Q plot is drawn directly by @emlDrawQQPlot, the same procedure
+    # and the same picker the menu door's own Draw branch uses
+    # (eml-check-normality.praat), because a normality run may have tested
+    # more than one column (mode 2) or one column across groups (mode 3),
+    # and there is no single "the" column/group to assume.
+    beginPause: "Draw Q-Q plot"
+        comment: "📈 A normal Q-Q plot is drawn for one column at a time."
+        comment: "─────────────────────────────────────"
+        comment: "Points on the line mean the column matches a normal"
+        comment: "distribution; systematic curves away from it do not."
+        comment: ""
+        optionmenu: "Plot column", wizNormQQLastCol
+        for wizNormIcol from 1 to wizNormQQN
+            option: wizNormQQCol$ [wizNormIcol]
+        endfor
+        if wizNormQQGrouped
+            comment: ""
+            comment: "This run tested this column WITHIN a group, so the"
+            comment: "plot needs a group too."
+            optionmenu: "Plot group", wizNormQQLastGroup
+            for wizNormIg from 1 to wizNormQQGroupN
+                option: wizNormQQGroupLabel$ [wizNormIg]
+            endfor
+        endif
+    qqClicked = endPause: "Cancel", "Draw plot", 2, 0
+
+    if qqClicked = 2
+        wizNormQQLastCol = plot_column
+        wizNormQQPlotCol$ = wizNormQQCol$ [plot_column]
+        wizNormQQLabel$ = wizNormQQPlotCol$
+        wizNormQQReady = 0
+        wizNormQQFail$ = ""
+
+        if wizNormQQGrouped
+            wizNormQQLastGroup = plot_group
+            wizNormQQPlotGroup$ = wizNormQQGroupLabel$ [plot_group]
+            wizNormQQLabel$ = wizNormQQPlotCol$ + " — " + wizNormQQPlotGroup$
+            selectObject: tableId
+            @eml_getGroupData: tableId, wizNormQQPlotCol$,
+            ... wizNormQQGroupCol$, wizNormQQPlotGroup$
+            if eml_getGroupData.error$ <> ""
+                wizNormQQFail$ = eml_getGroupData.error$
+            else
+                wizNormQQData# = eml_getGroupData.data#
+                wizNormQQReady = 1
+            endif
+        else
+            # Every row, undefined cells included: @emlDrawQQPlot drops
+            # them itself and counts them onto the figure.
+            selectObject: tableId
+            wizNormQQNRows = Get number of rows
+            wizNormQQData# = zero# (wizNormQQNRows)
+            for wizNormIrow from 1 to wizNormQQNRows
+                selectObject: tableId
+                wizNormQQData# [wizNormIrow] = Get value: wizNormIrow,
+                ... wizNormQQPlotCol$
+            endfor
+            wizNormQQReady = 1
+        endif
+
+        # Nested, not ANDed — Praat evaluates both sides of `and`, so a
+        # variable defined only on the ready path would abort on the
+        # failure path if this were one `if ... and ...`.
+        if wizNormQQReady = 1
+            @emlDrawQQPlot: wizNormQQData#, wizNormQQLabel$, 6, 4.5, "color", 1
+            if emlDrawQQPlot.drew = 0
+                wizNormQQFail$ = emlDrawQQPlot.error$
+            else
+                appendInfoLine: ""
+                appendInfoLine: "Q-Q plot drawn: ", wizNormQQLabel$,
+                ... "  (n = ", emlDrawQQPlot.n, ")"
+                if emlDrawQQPlot.nDropped > 0
+                    appendInfoLine: "  ", emlDrawQQPlot.nDropped,
+                    ... " row(s) excluded as missing."
+                endif
+
+                ; RECORD WORKFLOW. Same hook as the standalone Check
+                ; normality wrapper's own Q-Q call (scripts/eml-check-
+                ; normality.praat) -- see that site for the full reasoning
+                ; on why this lives here rather than inside @emlDrawQQPlot,
+                ; why only the success branch records, and why .code$
+                ; rebuilds .data# rather than naming `data`.
+                if variableExists ("emlRecordLoaded")
+                    if wizNormQQGrouped
+                        .wizQqCode$ = "@eml_getGroupData: data, """
+                        ... + wizNormQQPlotCol$ + """, """
+                        ... + wizNormQQGroupCol$ + """, """
+                        ... + wizNormQQPlotGroup$ + """" + newline$
+                        ... + "data# = eml_getGroupData.data#"
+                    else
+                        .wizQqCode$ = "data# = zero# (Get number of rows)"
+                        ... + newline$ + "for iRow from 1 to size (data#)"
+                        ... + newline$ + "    data# [iRow] = Get value: iRow, """
+                        ... + wizNormQQPlotCol$ + """" + newline$ + "endfor"
+                    endif
+                    .wizQqCode$ = .wizQqCode$ + newline$
+                    ... + "@emlDrawQQPlot: data#, """ + wizNormQQLabel$
+                    ... + """, 6, 4.5, ""color"", 1"
+                    @emlRecordDrawStep: tableId, "Normal Q-Q plot",
+                    ... wizNormQQLabel$,
+                    ... "Points on the line mean the column matches a normal distribution; a systematic curve away from it does not.",
+                    ... .wizQqCode$,
+                    ... "In the GUI: the wizard's normality check, then Draw Q-Q plot for a tested column",
+                    ... ""
+                endif
+            endif
+        endif
+
+        if wizNormQQFail$ <> ""
+            beginPause: "Cannot draw this Q-Q plot"
+                comment: "⚠  No figure was drawn."
+                comment: "─────────────────────────────────────"
+                @emlWrapText: wizNormQQFail$, 62
+                for wizNormIwrap from 1 to emlWrapText.nLines
+                    comment: emlWrapText.line$ [wizNormIwrap]
+                endfor
+                comment: "─────────────────────────────────────"
+                comment: ""
+                comment: "Column: " + replace$ (wizNormQQLabel$, "_", " ", 0)
+                comment: "The results already in the Info window are"
+                comment: "unaffected. Choose another column and try again."
+            wizNormQQDismissed = endPause: "OK", 1, 0
+        endif
+
+        selectObject: tableId
+    endif
 endif
 
 goto WIZ_WHAT_NEXT
@@ -2257,12 +3301,17 @@ procedure emlWizard2GroupTestRows
     option: "Student t (pooled variances)"
     option: "-- Nonparametric --"
     option: "Mann-Whitney U"
+    option: "-- Both --"
+    option: "Welch t and Mann-Whitney U"
 endproc
 
 # ----------------------------------------------------------------------------
 # @emlWizard2GroupTestFromMenu: .row
 # Outputs: .isHeader     (1 = a category header, not a choice)
-#          .testApproach (1 = parametric, 2 = nonparametric)
+#          .testApproach (1 = parametric, 2 = nonparametric, 3 = both — the
+#                         dispatch passes "both" straight to
+#                         @emlRunTwoGroupAnalysis, the way the menu door's
+#                         "Both parametric and nonparametric" row does)
 #          .varAssume    (1 = Welch/unequal, 2 = pooled/Student — the same
 #                         1/2 encoding the old "Variance assumption" menu
 #                         used, so prevVarAssume needs no reshaping)
@@ -2275,7 +3324,7 @@ procedure emlWizard2GroupTestFromMenu: .row
     .testApproach = 1
     .varAssume = 1
     .reportName$ = "Welch t-test, unequal variances (Cohen's d)"
-    if .row = 1 or .row = 4
+    if .row = 1 or .row = 4 or .row = 6
         .isHeader = 1
     elsif .row = 3
         .varAssume = 2
@@ -2283,6 +3332,9 @@ procedure emlWizard2GroupTestFromMenu: .row
     elsif .row = 5
         .testApproach = 2
         .reportName$ = "Mann-Whitney U (rank-biserial r)"
+    elsif .row = 7
+        .testApproach = 3
+        .reportName$ = "Welch t and Mann-Whitney U"
     endif
 endproc
 
@@ -2302,72 +3354,212 @@ endproc
 
 
 # ============================================================================
-# THE THREE-OR-MORE-GROUP TEST MENU — same collapse, found by the sweep
+# THE PAIRED TEST MENU — same one-list collapse, language batch item 2
 # ============================================================================
-# "Test approach" (Parametric one-way ANOVA / Nonparametric Kruskal-Wallis)
-# sat beside "Correction approach" (Standard / Conservative / Liberal), and
-# the three correction labels named a DIFFERENT post-hoc procedure depending
-# on the test approach the same page's other field held — Standard meant
-# Tukey under Parametric and Dunn-Holm under Nonparametric, Conservative
-# meant Scheffe or Dunn-Bonferroni, Liberal meant pairwise Welch t (BH) or
-# Dunn-BH. Same shape as the two-group menu above — a sub-choice menu whose
-# meaning is conditioned by the menu beside it — collapsed the same way,
-# into six honest rows under two headers.
+# "Test approach" (Parametric / Nonparametric), two plain rows with no header
+# and no Both, collapsed into one list with the header-guard idiom the
+# two-group menu above already carries.
+# ----------------------------------------------------------------------------
+# @emlWizardPairedTestRows
+# ----------------------------------------------------------------------------
+procedure emlWizardPairedTestRows
+    option: "-- Parametric --"
+    option: "Paired t-test"
+    option: "-- Nonparametric --"
+    option: "Wilcoxon signed-rank"
+    option: "-- Both --"
+    option: "Paired t-test and Wilcoxon signed-rank"
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlWizardPairedTestFromMenu: .row
+# Outputs: .isHeader, .testApproach (1 = parametric, 2 = nonparametric,
+#          3 = both), .reportName$
+# ----------------------------------------------------------------------------
+procedure emlWizardPairedTestFromMenu: .row
+    .isHeader = 0
+    .testApproach = 1
+    .reportName$ = "Paired t-test (Cohen's d)"
+    if .row = 1 or .row = 3 or .row = 5
+        .isHeader = 1
+    elsif .row = 4
+        .testApproach = 2
+        .reportName$ = "Wilcoxon signed-rank (r)"
+    elsif .row = 6
+        .testApproach = 3
+        .reportName$ = "Paired t-test and Wilcoxon signed-rank"
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlWizardPairedTestToMenu: .testApproach
+# ----------------------------------------------------------------------------
+procedure emlWizardPairedTestToMenu: .testApproach
+    .row = 2
+    if .testApproach = 2
+        .row = 4
+    endif
+endproc
+
+
+# ============================================================================
+# THE THREE-OR-MORE-GROUP TEST MENU — grid unfrozen, punch list 4.2 / 4.3
+# ============================================================================
+# The three-row-per-family collapse (Tukey / Scheffe / pairwise-Welch-BH,
+# Dunn-Holm / Dunn-Bonferroni / Dunn-BH) is replaced by the SAME complete
+# choices the standalone pairwise dialog offers (eml-pairwise.praat: test x
+# adjustment x t-variant), plus the two "only, no pairwise tests" rows the
+# old grid never had (the ANOVA's and the Kruskal-Wallis's own "alone" row,
+# language batch item 4). One list, header-guard idiom, same shape as the
+# two-group and paired menus above.
+#
+# 4.3 CORRECTION: the first wording of 4.3 said "parametric post-hoc rows"
+# and the grid above shipped without the standalone dialog's rank-based
+# cells — pairwise Wilcoxon with Holm/Bonferroni/Benjamini-Hochberg. Dunn is
+# not a substitute: Dunn compares groups on the shared ranking from the
+# overall Kruskal-Wallis test, while pairwise Wilcoxon re-ranks each pair on
+# its own — a different engine call, not a relabelling of Dunn. The three
+# rows below close that gap; the grid is now the WHOLE standalone dialog.
 # ----------------------------------------------------------------------------
 # @emlWizard3GroupTestRows
 # ----------------------------------------------------------------------------
 procedure emlWizard3GroupTestRows
     option: "-- Parametric (one-way ANOVA) --"
+    ; NO ROW HERE CARRIES A GATING CLAUSE: no post-hoc is conditioned on the
+    ; ANOVA p (punch list lane 3.1/3.2), and the omnibus-only row is a row
+    ; the user can choose rather than a hardcoded doTukey/doDunn (4.2). Every
+    ; string below is language batch item 4, verbatim.
+    option: "ANOVA only, no pairwise tests"
     option: "Tukey HSD, all pairs (standard)"
-    ; THESE TWO ROWS CARRY NO GATING CLAUSE: neither post-hoc is
-    ; conditioned on the ANOVA p (punch list lane 3.1/3.2). A row names
-    ; its test and its adjustment and nothing else. Both strings are
-    ; language batch item 4, verbatim -- which is also where "(less
-    ; strict)" comes from on the Pairwise Welch t row, in place of
-    ; "(liberal)".
     option: "Scheffe, all pairs (conservative)"
+    option: "Pairwise Welch t, Holm (standard)"
+    option: "Pairwise Welch t, Bonferroni (conservative)"
     option: "Pairwise Welch t, Benjamini-Hochberg (less strict)"
+    option: "Pairwise Student t, Holm (standard)"
+    option: "Pairwise Student t, Bonferroni (conservative)"
+    option: "Pairwise Student t, Benjamini-Hochberg (less strict)"
     option: "-- Nonparametric (Kruskal-Wallis) --"
-    option: "Dunn, Holm, all pairs (standard)"
-    option: "Dunn, Bonferroni, all pairs (conservative)"
-    option: "Dunn, Benjamini-Hochberg, all pairs (liberal)"
+    option: "Kruskal-Wallis only, no pairwise tests"
+    option: "Dunn, Holm (standard)"
+    option: "Dunn, Bonferroni (conservative)"
+    option: "Dunn, Benjamini-Hochberg (less strict)"
+    ; PUNCH LIST 4.3 — the three rows the first wording of this item left
+    ; out. Dunn is not a substitute for these: Dunn compares groups on the
+    ; shared ranking from the overall test, while pairwise Wilcoxon re-ranks
+    ; each pair on its own. Decoded like the twelve rows above, into the
+    ; SAME @emlRunPairwiseAnalysis call the standalone pairwise dialog makes
+    ; (test$ = "wilcoxon"), not a parallel path.
+    option: "Pairwise Wilcoxon, Holm (standard)"
+    option: "Pairwise Wilcoxon, Bonferroni (conservative)"
+    option: "Pairwise Wilcoxon, Benjamini-Hochberg (less strict)"
 endproc
 
 # ----------------------------------------------------------------------------
 # @emlWizard3GroupTestFromMenu: .row
 # Outputs: .isHeader
 #          .testApproach (1 = parametric/ANOVA, 2 = nonparametric/KW)
-#          .corrApproach (1 = standard, 2 = conservative, 3 = liberal — the
-#                        index the dispatch code already branches on)
+#          .phTest$ ("" = no pairwise tests; else "tukey", "scheffe",
+#                    "welch", "student" under ANOVA, or "dunn"/"wilcoxon"
+#                    under KW — "tukey" and "dunn" are the wizard's own
+#                    decode, "welch"/"student"/"scheffe"/"wilcoxon" go
+#                    straight into @emlRunPairwiseAnalysis's .test$, unchanged)
+#          .phAdj$  (the adjustment for the row's pairwise test — "none" for
+#                    Scheffe, else "holm"/"bonferroni"/"bh", the SAME
+#                    .adjMethod$ vocabulary @emlRunPairwiseAnalysis and
+#                    @emlRunKruskalWallisAnalysis already take)
+#          .phLabel$ (the exact string @wizardReportPlan prints for this
+#                    row's post-hoc — the ONE source, so the plan can never
+#                    name a post-hoc other than the one the row describes)
 # ----------------------------------------------------------------------------
 procedure emlWizard3GroupTestFromMenu: .row
     .isHeader = 0
     .testApproach = 1
-    .corrApproach = 1
-    if .row = 1 or .row = 5
+    .phTest$ = ""
+    .phAdj$ = ""
+    .phLabel$ = "ANOVA only, no pairwise tests"
+    if .row = 1 or .row = 11
         .isHeader = 1
     elsif .row = 3
-        .corrApproach = 2
+        .phTest$ = "tukey"
+        .phLabel$ = "Tukey HSD, all pairs"
     elsif .row = 4
-        .corrApproach = 3
+        .phTest$ = "scheffe"
+        .phAdj$ = "none"
+        .phLabel$ = "Scheffe, all pairs"
+    elsif .row = 5
+        .phTest$ = "welch"
+        .phAdj$ = "holm"
+        .phLabel$ = "Pairwise Welch t, Holm"
     elsif .row = 6
-        .testApproach = 2
+        .phTest$ = "welch"
+        .phAdj$ = "bonferroni"
+        .phLabel$ = "Pairwise Welch t, Bonferroni"
     elsif .row = 7
-        .testApproach = 2
-        .corrApproach = 2
+        .phTest$ = "welch"
+        .phAdj$ = "bh"
+        .phLabel$ = "Pairwise Welch t, Benjamini-Hochberg"
     elsif .row = 8
+        .phTest$ = "student"
+        .phAdj$ = "holm"
+        .phLabel$ = "Pairwise Student t, Holm"
+    elsif .row = 9
+        .phTest$ = "student"
+        .phAdj$ = "bonferroni"
+        .phLabel$ = "Pairwise Student t, Bonferroni"
+    elsif .row = 10
+        .phTest$ = "student"
+        .phAdj$ = "bh"
+        .phLabel$ = "Pairwise Student t, Benjamini-Hochberg"
+    elsif .row = 12
         .testApproach = 2
-        .corrApproach = 3
+        .phLabel$ = "Kruskal-Wallis only, no pairwise tests"
+    elsif .row = 13
+        .testApproach = 2
+        .phTest$ = "dunn"
+        .phAdj$ = "holm"
+        .phLabel$ = "Dunn, Holm"
+    elsif .row = 14
+        .testApproach = 2
+        .phTest$ = "dunn"
+        .phAdj$ = "bonferroni"
+        .phLabel$ = "Dunn, Bonferroni"
+    elsif .row = 15
+        .testApproach = 2
+        .phTest$ = "dunn"
+        .phAdj$ = "bh"
+        .phLabel$ = "Dunn, Benjamini-Hochberg"
+    elsif .row = 16
+        .testApproach = 2
+        .phTest$ = "wilcoxon"
+        .phAdj$ = "holm"
+        .phLabel$ = "Pairwise Wilcoxon, Holm"
+    elsif .row = 17
+        .testApproach = 2
+        .phTest$ = "wilcoxon"
+        .phAdj$ = "bonferroni"
+        .phLabel$ = "Pairwise Wilcoxon, Bonferroni"
+    elsif .row = 18
+        .testApproach = 2
+        .phTest$ = "wilcoxon"
+        .phAdj$ = "bh"
+        .phLabel$ = "Pairwise Wilcoxon, Benjamini-Hochberg"
+    else
+        .testApproach = 2
+        .phLabel$ = "Kruskal-Wallis only, no pairwise tests"
     endif
 endproc
 
 # ----------------------------------------------------------------------------
-# @emlWizard3GroupTestToMenu: .testApproach, .corrApproach
+# @emlWizard3GroupTestToMenu: .testApproach
+# The inverse, for seeding the menu from the normality recommendation. Seeds
+# to the standard row in each family — Tukey under parametric, Dunn-Holm
+# under nonparametric — the same defaults the old three-row grid seeded to.
+# Never returns a header row.
 # ----------------------------------------------------------------------------
-procedure emlWizard3GroupTestToMenu: .testApproach, .corrApproach
-    .row = 1 + .corrApproach
+procedure emlWizard3GroupTestToMenu: .testApproach
+    .row = 3
     if .testApproach = 2
-        .row = 5 + .corrApproach
+        .row = 13
     endif
 endproc
 
@@ -2832,6 +4024,109 @@ procedure wizardCondSlot: .name$
     .idx = 1
     for .i from 1 to a3kN
         if a3kName$ [.i] = .name$
+            .idx = .i + 1
+        endif
+    endfor
+endproc
+
+
+# ============================================================================
+# @wizardCorrGrpIdx — Correlation group-column NAME back to its FILTERED
+#                      optionmenu POSITION
+# ============================================================================
+# Same shape as @wizardCondSlot above — a "(none)" leading entry over a
+# candidate list built at runtime rather than the full column list — but for
+# the correlation group column (punch list 4.4), whose candidates
+# (wizCorrGrpName$ / wizCorrGrpN) are a filtered subset of the columns, not
+# @wizardCondSlot's a3k condition slots. Reads wizCorrGrpName$/wizCorrGrpN
+# rather than taking them as arguments, exactly as @wizardCondSlot reads
+# a3kName$/a3kN — this page has exactly one such menu, so one hard-wired
+# reader is the same choice A3K_SELECT_PAGE already made for its six.
+#
+# Arguments:
+#   .name$ - a group column name as saved from group_column (empty string
+#            for "no group"), or a name absent from @wizCorrGrpName$'s
+#            current list (the columns re-filter every time B_NORM_PAGE
+#            recomputes them, so a column swap can drop a saved name)
+#
+# Output:
+#   .idx   - position in the "(none) + candidates" list; 1 (none) when
+#            .name$ is "" or is absent from the current candidates
+
+procedure wizardCorrGrpIdx: .name$
+    .idx = 1
+    for .i from 1 to wizCorrGrpN
+        if wizCorrGrpName$ [.i] = .name$
+            .idx = .i + 1
+        endif
+    endfor
+endproc
+
+
+# ============================================================================
+# @wizardRegGrpCandidates / @wizardRegGrpIdx -- regression group column
+# (punch list 4.5), shared by both wizard regression entry points
+# ============================================================================
+# Same filter as the correlate dialog's own candidate scan (v102's hazard,
+# and @wizardCorrGrpIdx's sibling above): a grouping column has to be able
+# to grade the regression, which rules out the predictor and response
+# columns themselves, single-valued columns, and near-unique columns. Ceiling
+# is 12 levels or n/3, whichever is smaller.
+#
+# ONE procedure for BOTH wizard regression pages (B_REG_COLUMNS and
+# D_PREDICT_COLUMNS) rather than two independent copies -- the DRY law in
+# CLAUDE.md ("state the canon once in a procedure"). Sets the UNDOTTED
+# globals wizRegGrpName$[] / wizRegGrpN, the same idiom @wizardCorrGrpIdx's
+# sibling reads.
+#
+# Arguments:
+#   .predCol$, .respCol$ -- the CURRENT predictor/response names (translated
+#                           from col1Default/col2Default by the caller), so
+#                           calling this fresh every time either page renders
+#                           cannot offer a column that is now bound to X or Y.
+procedure wizardRegGrpCandidates: .predCol$, .respCol$
+    selectObject: tableId
+    .nRows = Get number of rows
+    .maxLevels = min (12, max (2, floor (.nRows / 3)))
+    wizRegGrpN = 0
+    for .iCol from 1 to nCols
+        .cand$ = emlTableColumnNames.name$ [.iCol]
+        if .cand$ <> .predCol$ and .cand$ <> .respCol$
+            .levels = 0
+            .over = 0
+            for .iRow from 1 to .nRows
+                if .over = 0
+                    selectObject: tableId
+                    .cell$ = Get value: .iRow, .cand$
+                    @eml_normalizeLabel: .cell$
+                    .norm$ = eml_normalizeLabel.result$
+                    .seen = 0
+                    for .iLev from 1 to .levels
+                        if .level$ [.iLev] = .norm$
+                            .seen = 1
+                        endif
+                    endfor
+                    if .seen = 0
+                        .levels = .levels + 1
+                        .level$ [.levels] = .norm$
+                        if .levels > .maxLevels
+                            .over = 1
+                        endif
+                    endif
+                endif
+            endfor
+            if .over = 0 and .levels >= 2
+                wizRegGrpN = wizRegGrpN + 1
+                wizRegGrpName$ [wizRegGrpN] = .cand$
+            endif
+        endif
+    endfor
+endproc
+
+procedure wizardRegGrpIdx: .name$
+    .idx = 1
+    for .i from 1 to wizRegGrpN
+        if wizRegGrpName$ [.i] = .name$
             .idx = .i + 1
         endif
     endfor

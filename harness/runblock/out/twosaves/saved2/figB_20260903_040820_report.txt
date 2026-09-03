@@ -1,0 +1,5 @@
+
+EML: replayed save -- wrote 2 file(s) to
+/home/claude/repo/harness/runblock/out/twosaves/saved1
+base name figA_20260903_040820
+

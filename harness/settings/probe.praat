@@ -55,6 +55,15 @@ include ../../plugin/stats/eml-core-descriptive.praat
 include ../../plugin/stats/eml-extract.praat
 include ../../plugin/stats/eml-output.praat
 include ../../plugin/stats/eml-inferential.praat
+; eml-result-writer.praat, added 3 September 2026. This list is a THIRD
+; hand-maintained copy of the module set -- after setup.praat's barrel table
+; and scripts/eml-lib.praat's door chain -- and nothing checks it, so it went
+; stale the way the other two did. eml-annotation-procedures.praat below calls
+; @emlResultClearExtras in four places; the procedure lives in
+; eml-result-writer.praat, which this list never named. The harness died with
+; `Error: Procedure "emlResultClearExtras" not found.` before writing anything.
+include ../../plugin/stats/eml-result-writer.praat
+include ../../plugin/stats/eml-analysis.praat
 include ../../plugin/graphs/eml-annotation-procedures.praat
 include ../../plugin/graphs/eml-draw-procedures.praat
 

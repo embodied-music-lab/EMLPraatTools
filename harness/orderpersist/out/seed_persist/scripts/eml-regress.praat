@@ -47,9 +47,67 @@ endif
 # return to the form — after an error or after "New" — silently discarded
 # What the user had set.
 selGroupIdx = 1
+selGroupName$ = ""
 
 allDone = 0
 repeat
+    ; ── candidate grouping columns ──────────────────────────────────
+    ; SAME FILTER as the correlate dialog (eml-correlate.praat): a grouping
+    ; column has to be able to grade the regression, which rules out the
+    ; predictor and response columns themselves (a variable cannot group
+    ; itself), single-valued columns, and near-unique columns. Filtered by
+    ; INDEX (guessPredIdx/guessRespIdx), not by name -- predCol$/respCol$ are
+    ; not yet set on the loop's first pass, and filtering by the previous
+    ; pass's guessed indices is what creates (and what the stale-column
+    ; refusal below exists to catch) the same hazard v102 documents for the
+    ; correlate dialog: this list is necessarily built from the PREVIOUS
+    ; pass's predictor/response, not the one about to be chosen.
+    selectObject: tableId
+    grpNRows = Get number of rows
+    grpMaxLevels = min (12, max (2, floor (grpNRows / 3)))
+    grpN = 0
+    for iCol from 1 to nCols
+        if iCol <> guessPredIdx and iCol <> guessRespIdx
+            grpCand$ = emlTableColumnNames.name$ [iCol]
+            grpLevels = 0
+            grpOver = 0
+            for iRow from 1 to grpNRows
+                if grpOver = 0
+                    selectObject: tableId
+                    grpCell$ = Get value: iRow, grpCand$
+                    @eml_normalizeLabel: grpCell$
+                    grpNorm$ = eml_normalizeLabel.result$
+                    grpSeen = 0
+                    for iLev from 1 to grpLevels
+                        if grpLevel$ [iLev] = grpNorm$
+                            grpSeen = 1
+                        endif
+                    endfor
+                    if grpSeen = 0
+                        grpLevels = grpLevels + 1
+                        grpLevel$ [grpLevels] = grpNorm$
+                        if grpLevels > grpMaxLevels
+                            grpOver = 1
+                        endif
+                    endif
+                endif
+            endfor
+            if grpOver = 0 and grpLevels >= 2
+                grpN = grpN + 1
+                grpName$ [grpN] = grpCand$
+            endif
+        endif
+    endfor
+
+    # Seed the menu from the user's last choice by NAME: the filtered list
+    # is rebuilt each time round and its indices are not stable.
+    selGroupIdx = 1
+    for iG from 1 to grpN
+        if grpName$ [iG] = selGroupName$
+            selGroupIdx = iG + 1
+        endif
+    endfor
+
     beginPause: "Simple Linear Regression"
         comment: "📋 Table: " + tableName$
         comment: "─────────────────────────────────────"
@@ -68,9 +126,13 @@ repeat
         comment: ""
         optionmenu: "Group column", selGroupIdx
             option: "(none — overall only)"
-        for iCol from 1 to nCols
-            option: emlTableColumnNames.name$ [iCol]
+        for iCol from 1 to grpN
+            option: grpName$ [iCol]
         endfor
+        if grpN = 0
+            comment: "     (no column in this Table has a usable number"
+            comment: "     of groups — overall only)"
+        endif
         @emlWrapperCommonFields
     clicked = endPause: "Quit", "Run", 2, 0
     if clicked = 1
@@ -86,20 +148,41 @@ repeat
     guessPredIdx = emlKeepChoice.idx
     @emlKeepChoice: respCol$, guessRespIdx
     guessRespIdx = emlKeepChoice.idx
-    # Leading "(none)" entry: this is a menu position, not a column index.
-    selGroupIdx = group_column
-    @emlHandleCommonFields
 
+    # Leading "(none)" entry: this is a position in the FILTERED list, not
+    # a column index — same idiom as the menu door's correlate dialog.
     hasGroupCol = 0
     groupCol$ = ""
     if group_column > 1
         hasGroupCol = 1
-        groupCol$ = emlTableColumnNames.name$ [group_column - 1]
+        groupCol$ = grpName$ [group_column - 1]
     endif
+    selGroupName$ = groupCol$
+
+    @emlHandleCommonFields
 
     if predCol$ = respCol$
         # Uniform error surface; Quit must actually quit.
         @emlErrorDialog: "Please select two different columns.", "", "menu"
+        if not emlErrorDialog.back
+            allDone = 1
+        endif
+    elsif hasGroupCol and (groupCol$ = predCol$ or groupCol$ = respCol$)
+        # THE STALE GROUP LIST -- same hazard v102 covers for the correlate
+        # dialog: the candidate list is built from the PREVIOUS pass's
+        # predictor/response, before this page's own choices are read, so a
+        # user who moves the predictor or response onto a column that was
+        # offered as a grouping column can pick a column that groups itself.
+        # Refused, not silently run.
+        staleMsg$ = "The grouping column """ + groupCol$ + """ is now one of"
+        staleMsg$ = staleMsg$ + " the two columns being regressed, so it"
+        staleMsg$ = staleMsg$ + " cannot also group them. Nothing was run."
+        staleMsg$ = staleMsg$ + " The list of grouping columns was built"
+        staleMsg$ = staleMsg$ + " before you changed the predictor or"
+        staleMsg$ = staleMsg$ + " response column; click Back and it will be"
+        staleMsg$ = staleMsg$ + " rebuilt for the columns you have now chosen."
+        @emlErrorDialog: staleMsg$, "", "menu"
+        selGroupName$ = ""
         if not emlErrorDialog.back
             allDone = 1
         endif
@@ -114,6 +197,17 @@ repeat
                 allDone = 1
             endif
         else
+            # ── Per-group regression (punch list 4.5) ─────────────────
+            # Rides the port in stats/eml-analysis.praat: @emlLinearRegression
+            # ran once above, for the WHOLE table, and its globals still hold
+            # that overall fit -- nothing has run since. @emlRunGroupedRegressionAnalysis
+            # reads them before doing anything else.
+            if hasGroupCol
+                selectObject: tableId
+                @emlRunGroupedRegressionAnalysis: tableId, predCol$,
+                ... respCol$, groupCol$
+            endif
+
             runAgain = 0
             repeat
                 beginPause: "Analysis complete"

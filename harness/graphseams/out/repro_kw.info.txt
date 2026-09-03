@@ -3,7 +3,7 @@ bridge returned, error$ = ''
 
 ══════════════════════════════════════════════
   EML Stats : Kruskal-Wallis H Test
-  Mon Aug 17 18:30:49 2026
+  Thu Sep  3 04:18:48 2026
 ══════════════════════════════════════════════
 
   Table               demo 3groups
@@ -11,15 +11,16 @@ bridge returned, error$ = ''
   Group column        voice type
   Groups              3
   Total N             45
+  Group order: table order (Soprano, Mezzo, Alto).
 
 
   ── Omnibus Test ────────────────────────────
-  Why: Nonparametric comparison of three or more groups — no normality assumption needed.
-  H                   16.6245		Test statistic: measures rank dispersion across groups (chi-squared distributed)
+  Why: Nonparametric comparison of three or more groups. Every observation is ranked in one pooled ranking and the groups' mean ranks are compared, so no normal distribution is assumed. Observations must still be independent, and reading the result as a difference in MEDIANS additionally requires the groups to have similar distribution shapes.
+  H                   16.6245		Test statistic: how far the groups' mean ranks sit from the overall mean rank. Its p comes from a chi-squared approximation, which improves as the groups grow
   df                  2		Number of groups (3) minus 1. Controls the chi-squared reference distribution.
-  p                   < .001  (2.45e-04)		Statistically significant: <0.1% probability due to chance
-  Epsilon-squared     0.3778		Effect size: large (>0.14 = large). 38% of variance explained by group membership
-  Effect magnitude    large effect
+  p                   < .001  (2.45e-04)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  Epsilon-squared     0.3778		Effect size: large by Cohen's convention (epsilon-squared >= 0.14 = large). Group membership accounts for 38% of the variance in the RANKS, which is not the variance in the measured values
+  Effect magnitude    large by Cohen's convention
 
 
   ── Group Mean Ranks ────────────────────────
@@ -44,6 +45,9 @@ Alto          < .001      .090        ---
 Soprano       ---         2.363       4.059       
 Mezzo         -2.363      ---         1.696       
 Alto          -4.059      -1.696      ---         
+  Row minus column: a negative z means the ROW group's mean rank is
+  lower than the COLUMN group's. |z| is the size of the standardised
+  difference.
 
 
   ── Pairwise Effect Sizes (rank-biserial r) ───
@@ -52,9 +56,13 @@ Alto          -4.059      -1.696      ---
 Soprano       ---         0.582       0.787       
 Mezzo         -0.582      ---         0.440       
 Alto          -0.787      -0.440      ---         
+  Row minus column: a negative r means the ROW group ranks lower than
+  the COLUMN group. |r| is the effect size.
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 REPRO_REACHED_END

@@ -8,13 +8,16 @@
 # Part of the EML Stats library (EML Stats & Graphs).
 # License: GPL-3.0-or-later
 #
-# Provides: 60 procedures. THE COUNTING RULE, so the number can be checked
+# Provides: 87 procedures. THE COUNTING RULE, so the number can be checked
 # rather than believed:
 #     grep -c "^procedure " plugin/stats/eml-output.praat
-# Six of the 60 are private and are named with an underscore after the prefix
-# (@eml_csvQuote, @eml_csvAppend, @eml_auditLabelColumn,
-# @eml_saveSafeBaseName, @eml_saveFolderWritable, @eml_saveReceiptLines);
-# the other 54 are public.
+# Sixteen of the 87 are private and are named with an underscore after the
+# prefix, which is the rule rather than a list to keep current:
+#     grep -c "^procedure eml_" plugin/stats/eml-output.praat
+# the other 71 are public. THE HEADER STATED 60 AND SIX, AND BOTH NUMBERS
+# WERE WRONG BY THE TIME ANYBODY LOOKED: a hand-kept count of a growing file
+# is a fact with no check behind it, which is why the two grep lines above
+# are now the statement and the numbers are only their answer today.
 #
 # By family:
 #
@@ -41,8 +44,11 @@
 #     @eml_saveFolderWritable and its receipt builder @eml_saveReceiptLines
 #     (all three private; the panel owns the naming contract, so the panel
 #     owns the characters, the target check and the receipt's line breaks)
-#   Wizard glosses — @emlResetExplanations plus the 17 @emlWizardExplain*
+#   Wizard glosses — @emlResetExplanations plus the @emlWizardExplain*
 #     helpers (grep -c "^procedure emlWizardExplain")
+#   ITEM 1.2, the minimal renderer — @emlEmit (the one dual-mode emit
+#     helper), @emlEmitMode (its mode switch) and @emlExplainLine (the
+#     explain helper, which never buffers). See THE MINIMAL RENDERER below.
 #   Errors — @emlErrorDialog
 #
 # All procedures use the "eml" prefix (EML Stats).
@@ -76,17 +82,26 @@
 # emlWizardExplain$ is set before each @emlReportLine/@emlReportLineString
 # call and consumed (cleared) by the procedure.
 #
-# THE DEFAULT IS 1: a wrapper report explains itself without the user having
-# to know that a gate exists. At a default of 0 the glosses would be absent
-# from every wrapper report while the graph path (which sets the gate to 1)
-# had them — the same analysis narrated two different ways depending on
-# whether a figure had been drawn earlier in the session.
+# THE DEFAULT IS 0 (item 22 of the language batch, Fable's ruling 27 August
+# 2026, superseding the "default is 1" rationale this block used to state):
+# a report is terse by default and a reader who wants the plain-language
+# gloss beside a value turns the gate on for that session. @emlGraphsWorkflow
+# still raises the gate for the drawing path exactly as before -- this
+# change only retires the WRAPPER report's default, not the graph path's.
 #
 # THE DEFAULT IS DECLARED ONCE, HERE. @emlResetExplanations restores this
 # variable rather than a literal, so the initial value and the restored value
 # cannot drift apart.
 # ============================================================================
-emlShowExplanationsDefault = 1
+; ITEM 22 (language batch, Fable's ruling 27 August 2026): flipped to 0.
+; The wizard's own explanation toggle (this variable) is a separate
+; control from emlShowExplanations's original rationale above -- the
+; ruling holds that reports should be terse by default, wordy only where
+; the reader turns it on. Both this initial assignment and
+; @emlResetExplanations's fallback below carry the SAME literal; changing
+; only one leaves the fallback restoring 1 whenever the variable does not
+; yet exist, silently reviving explanations that this line just retired.
+emlShowExplanationsDefault = 0
 emlShowExplanations = emlShowExplanationsDefault
 
 # ----------------------------------------------------------------------------
@@ -105,7 +120,12 @@ emlShowExplanations = emlShowExplanationsDefault
 # ----------------------------------------------------------------------------
 procedure emlResetExplanations
     if not variableExists ("emlShowExplanationsDefault")
-        emlShowExplanationsDefault = 1
+        ; Same literal as the declaration above -- item 22's ruling, 27
+        ; August 2026. Left at 1 here while the declaration above reads 0,
+        ; this fallback would silently restore explanations for any script
+        ; whose first touch of the gate is a reset rather than the top-of-
+        ; file declaration.
+        emlShowExplanationsDefault = 0
     endif
     emlShowExplanations = emlShowExplanationsDefault
 endproc
@@ -134,6 +154,141 @@ endproc
 emlSkewThreshold = 2
 emlKurtosisThreshold = 7
 emlWizardExplain$ = ""
+
+
+# ============================================================================
+# ITEM 1.2 — THE MINIMAL RENDERER: ONE DUAL-MODE EMIT HELPER
+# ============================================================================
+# WHAT THIS IS, AND WHY IT IS NOT A CAPTURE. Fable's ruling of 26 August
+# amends punch item 1.2 to this shape and rejects the capture approach by
+# name: under capture the report text exists only BY PRINTING, so
+# "identical -> print nothing" is unreachable, and a strip list that
+# canonicalises printed text is fragile against lane 6, which is about to
+# change which lines print.
+#
+# THE SHAPE, IN HER WORDS: one dual-mode emit helper — print-and-buffer, or
+# buffer-only — carrying the FACTUAL and DISCLOSURE lines, on THE TWO
+# STORE-WIRED DOORS ONLY. Explanation lines keep going through the explain
+# helper, which never buffers. The canonical text IS the buffer. The
+# pre-print comparison runs buffer-only.
+#
+# WHAT THAT BUYS, AND IT IS THE WHOLE REASON FOR THE SHAPE: an explanation
+# never enters the buffer in the first place. Not the whole "Why:" lines,
+# which go through @emlExplainLine below; not @emlPostHocCaution's caution
+# or @emlEffectMatrixCaption's second sentence, which go through it too; and
+# not the two-tab gloss column, which @emlEmit appends AT PRINT TIME and
+# never at buffer time. So the explanations toggle cannot move one character
+# of the canonical text, and nothing downstream has to hold a list of which
+# lines an explanation is. A strip list would have had to be right about
+# every line lane 6 adds; this is right about lines nobody has written yet.
+#
+# THE TWO MODES.
+#   emlEmitPrint = 1   print and buffer. Every ordinary run.
+#   emlEmitPrint = 0   buffer only. NOTHING reaches the Info window —
+#                      explanation lines included — and the rendering exists
+#                      as text in emlEmitText$ and nowhere else.
+#
+# THE BUFFER IS CLEARED BY @emlReportHeader AND NOWHERE ELSE, because a
+# report starts at its header and one session holds many reports one after
+# another. A caller reads emlEmitText$ IMMEDIATELY after the reporter
+# returns; anything that renders in between overwrites it, exactly as a
+# Praat procedure's outputs are overwritten by the next call.
+#
+# WHAT IS DELIBERATELY NOT IN THE BUFFER, and a reader has to know this one:
+# the header's TIMESTAMP and its provenance line. date$() differs on every
+# run by construction, and the provenance names the DOOR — so either one in
+# the canonical text would make two identical reports compare as different
+# for ever, which is the same failure that sank the capture approach.
+#
+# THIS IS NOT THE STORE. The buffer is a rendering scratchpad; the store's
+# copy of the canonical text is emlStoreReport$, written once at
+# @emlPublishAnalysisResult (stats/eml-extract.praat) from the declared
+# hand-off emlPublishInReport$, the same way emlPublishInLabel$[] hands over
+# the level labels.
+# ============================================================================
+emlEmitText$ = ""
+emlEmitPrint = 1
+
+# ----------------------------------------------------------------------------
+# @emlEmitMode: .print
+# ----------------------------------------------------------------------------
+# ITEM 1.2. Switch the emit helper between its two modes. It does NOT touch
+# emlEmitText$: a caller that has just rendered buffer-only has to be able to
+# put the mode back and still read what it rendered.
+#
+# Arguments:
+#   .print — 1 print and buffer, 0 buffer only
+# ----------------------------------------------------------------------------
+procedure emlEmitMode: .print
+    emlEmitPrint = .print
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlEmit: .line$, .explain$
+# ----------------------------------------------------------------------------
+# ITEM 1.2. THE ONE DUAL-MODE EMIT HELPER. Every FACTUAL and DISCLOSURE line
+# of the two store-wired doors' reports comes through here and nowhere else.
+#
+# .line$ is the canonical line and the only thing that reaches the buffer.
+# .explain$ is the two-tab gloss column, "" on all but the statistic rows;
+# it is appended when PRINTING and is never buffered, which is what keeps the
+# canonical text free of the explanations toggle without a strip list.
+#
+# ASSIGNED UNDOTTED ON PURPOSE. Inside a procedure an undotted name is the
+# main-script global for read AND write, and emlEmitText$ IS the shared
+# rendering state — the same way emlWizardExplain$ is cleared from inside
+# @emlReportLine a few procedures below.
+# ----------------------------------------------------------------------------
+procedure emlEmit: .line$, .explain$
+    emlEmitText$ = emlEmitText$ + .line$ + newline$
+    if emlEmitPrint = 1
+        if .explain$ = ""
+            appendInfoLine: .line$
+        else
+            appendInfoLine: .line$ + tab$ + tab$ + .explain$
+        endif
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlExplainLine: .text$, .wrap
+# ----------------------------------------------------------------------------
+# ITEM 1.2. THE EXPLAIN HELPER, AND IT NEVER BUFFERS. Every whole line of
+# explanation prose — the "Why:" headers in the three shared comparison
+# reporters, @emlPostHocCaution's caution, @emlEffectMatrixCaption's second
+# sentence — comes through here, so none of them can reach emlEmitText$.
+#
+# IT IS SILENT IN BUFFER-ONLY MODE for the same reason every other line is:
+# buffer-only means nothing is printed at all. It is silent with the toggle
+# off for the reason it always was.
+#
+# THE WRAP IS A PARAMETER RATHER THAN A SECOND PROCEDURE, because the two
+# kinds of explanation line in this tree are printed differently and always
+# were: the "Why:" headers print verbatim on one long line, and the two
+# caption sentences print through @emlWrapText at the report's 68-column body
+# width. A second helper for the second shape would be a second thing to
+# keep in step, and Fable's ruling names ONE explain helper.
+#
+# Arguments:
+#   .text$ — the line, already carrying its own indent when .wrap is 0
+#   .wrap  — 0 print .text$ verbatim; > 0 wrap at that column and indent each
+#            resulting line by two spaces, which is @emlReportNote's shape
+# ----------------------------------------------------------------------------
+procedure emlExplainLine: .text$, .wrap
+    if emlShowExplanations
+        if emlEmitPrint = 1
+            if .wrap = 0
+                appendInfoLine: .text$
+            else
+                @emlWrapText: .text$, .wrap
+                for .el from 1 to emlWrapText.nLines
+                    appendInfoLine: "  " + emlWrapText.line$ [.el]
+                endfor
+            endif
+        endif
+    endif
+endproc
+
 
 
 # ============================================================================
@@ -262,17 +417,34 @@ procedure emlReportHeader: .title$
         endif
     endif
 
+    ; ITEM 1.2 — THE CANONICAL RENDERING STARTS HERE. A report starts at its
+    ; header, so this is the ONE place emlEmitText$ is cleared; see THE
+    ; MINIMAL RENDERER at the top of this file. A caller that wants the text
+    ; reads emlEmitText$ immediately after the reporter returns.
+    emlEmitText$ = ""
+
     .sep$ = ""
-    appendInfoLine: .sep$
-    appendInfoLine: .border$
-    appendInfoLine: .titleLine$
-    appendInfoLine: .timestamp$
-    if .context$ <> ""
-        appendInfoLine: .context$
+    @emlEmit: .sep$, ""
+    @emlEmit: .border$, ""
+    @emlEmit: .titleLine$, ""
+
+    ; ITEM 1.2 — THE TIMESTAMP AND THE PROVENANCE LINE ARE NOT CANONICAL.
+    ; date$ () differs on every run by construction and the provenance names
+    ; the DOOR, so either one inside the canonical text would make two
+    ; identical reports compare as different for ever — the exact failure
+    ; that sank the capture approach. They still print; they are silent in
+    ; buffer-only mode because in that mode nothing prints at all, which is
+    ; why the guard is here and not inside @emlEmit.
+    if emlEmitPrint = 1
+        appendInfoLine: .timestamp$
+        if .context$ <> ""
+            appendInfoLine: .context$
+        endif
     endif
-    appendInfoLine: .border$
+
+    @emlEmit: .border$, ""
     .sep2$ = ""
-    appendInfoLine: .sep2$
+    @emlEmit: .sep2$, ""
 
     ; Consumed. A context declared for this report must not leak onto the
     ; next one, or a stale adjustment appears on a report that has no
@@ -307,10 +479,21 @@ procedure emlReportFooter
     .border$ = "══════════════════════════════════════════════"
     .conv1$ = "  Conventions: quartiles R type 7 · SD & variance n-1"
     .conv2$ = "  · rank tests average tied ranks (tie-corrected)."
-    appendInfoLine: .empty$
-    appendInfoLine: .conv1$
-    appendInfoLine: .conv2$
-    appendInfoLine: .border$
+    ; ITEM 22 (language batch, Fable's ruling 27 August 2026): which exact
+    ; method backs each rank test's p, and the sample-size limit each one
+    ; is exact under -- the same facts the new "p method" row states per
+    ; result, stated once here for the whole report. ASCII only: this
+    ; string is also written to the plain-text report file.
+    .exact1$ = "  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank"
+    .exact2$ = "  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)"
+    ; ITEM 1.2 — factual: the estimator conventions the numbers above were
+    ; computed under. Canonical, so through the emit helper.
+    @emlEmit: .empty$, ""
+    @emlEmit: .conv1$, ""
+    @emlEmit: .conv2$, ""
+    @emlEmit: .exact1$, ""
+    @emlEmit: .exact2$, ""
+    @emlEmit: .border$, ""
 endproc
 
 
@@ -318,7 +501,8 @@ procedure emlReportSection: .title$
     # Print section divider with title
     # Format: ── [title] ──────────────────────────────
     .empty$ = ""
-    appendInfoLine: .empty$
+    ; ITEM 1.2 — the section frame is canonical; through the emit helper.
+    @emlEmit: .empty$, ""
     .indent$ = "  "
     .prefix$ = "── "
     .spacer$ = " "
@@ -336,7 +520,7 @@ procedure emlReportSection: .title$
         .i = .i + 1
     endwhile
     .line$ = .indent$ + .prefix$ + .title$ + .spacer$ + .dashes$
-    appendInfoLine: .line$
+    @emlEmit: .line$, ""
 endproc
 
 
@@ -626,13 +810,20 @@ procedure emlReportLine: .label$, .value, .decimals
     .paddedLabel$ = emlPadRight.result$
     @eml_fixed: .value, .decimals
     .formattedValue$ = eml_fixed.result$
+    ; ITEM 1.2 — THE ROW IS FACTUAL AND THE GLOSS IS NOT. The line built here
+    ; is the canonical one; the two-tab explanation column travels beside it
+    ; as @emlEmit's second argument and is appended at PRINT time only, so
+    ; the explanations toggle cannot move one character of the buffer. The
+    ; gloss is consumed on exactly the condition it was consumed on before —
+    ; shown and non-empty — so a caller that set it for a row that never
+    ; printed still finds it cleared, or still finds it standing, as before.
+    .line$ = .indent$ + .paddedLabel$ + .formattedValue$
+    .explain$ = ""
     if emlShowExplanations and emlWizardExplain$ <> ""
-        .line$ = .indent$ + .paddedLabel$ + .formattedValue$ + tab$ + tab$ + emlWizardExplain$
+        .explain$ = emlWizardExplain$
         emlWizardExplain$ = ""
-    else
-        .line$ = .indent$ + .paddedLabel$ + .formattedValue$
     endif
-    appendInfoLine: .line$
+    @emlEmit: .line$, .explain$
 endproc
 
 
@@ -642,13 +833,15 @@ procedure emlReportLineString: .label$, .value$
     .indent$ = "  "
     @emlPadRight: .label$, 20
     .paddedLabel$ = emlPadRight.result$
+    ; ITEM 1.2 — same split as @emlReportLine above: the row is canonical,
+    ; the two-tab gloss is printed beside it and never buffered.
+    .line$ = .indent$ + .paddedLabel$ + .value$
+    .explain$ = ""
     if emlShowExplanations and emlWizardExplain$ <> ""
-        .line$ = .indent$ + .paddedLabel$ + .value$ + tab$ + tab$ + emlWizardExplain$
+        .explain$ = emlWizardExplain$
         emlWizardExplain$ = ""
-    else
-        .line$ = .indent$ + .paddedLabel$ + .value$
     endif
-    appendInfoLine: .line$
+    @emlEmit: .line$, .explain$
 endproc
 
 # ----------------------------------------------------------------------------
@@ -671,19 +864,64 @@ endproc
 #   .groupList$ — comma-separated group names, in the order used
 # ----------------------------------------------------------------------------
 procedure emlReportGroupOrderLine: .groupList$
-    if emlGroupSortAlphabetical = 1
-        .orderLabel$ = "alphabetical"
+    @emlGroupOrderName: emlGroupSortAlphabetical
+    .orderLabel$ = emlGroupOrderName.result$
+    ; ITEM 1.2 — a DISCLOSURE line (punch item 2.2): it prints on every path
+    ; and it is canonical, so it goes through the emit helper.
+    @emlEmit: "  Group order: " + .orderLabel$ + " (" + .groupList$ + ").", ""
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlGroupOrderName: .alphabetical  ->  .result$
+# ----------------------------------------------------------------------------
+# THE TWO WORDS FOR THE GROUP ORDER, AND THE ONLY PLACE THEY ARE WRITTEN.
+#
+# emlGroupSortAlphabetical is a number and a reader needs a word for it. Two
+# surfaces need the SAME word: @emlReportGroupOrderLine above, which discloses
+# the order on every grouped comparison report, and @emlRenderResultSettings
+# below, whose canonical rendering is COMPARED AS TEXT to decide whether a
+# stored result still holds. If those two ever spelled the order differently
+# the report and the store would disagree about one setting, and the store's
+# disagreement is the silent one: a rendering that said "discovery order"
+# where the stored one said "table order" would read as a changed setting and
+# re-run the analysis for ever, printing a "Recomputed:" line naming a change
+# nobody made.
+#
+# So the canon is stated once, here, and validate/v142 asserts by text that no
+# other line in the plugin writes either word as an order name. That is the
+# DRY rule this repository works to: a procedure records the rule and a check
+# enforces that the copies agree, because a procedure cannot stop somebody
+# typing the word again somewhere else.
+#
+# THE WORDS THEMSELVES are LANGUAGE_BATCH_2026-08-25.md item 10's, taken from
+# the disclosure line they were approved for: "table order" and
+# "alphabetical". They are the user's vocabulary from the graphs form's own
+# Group order control, not the code's (`emlGroupSortAlphabetical = 0` is not a
+# thing to say to a reader).
+#
+# Arguments:
+#   .alphabetical - emlGroupSortAlphabetical as it stands (1 or 0)
+#
+# Output:
+#   .result$      - "alphabetical" or "table order"
+# ----------------------------------------------------------------------------
+procedure emlGroupOrderName: .alphabetical
+    if .alphabetical = 1
+        .result$ = "alphabetical"
     else
-        .orderLabel$ = "table order"
+        .result$ = "table order"
     endif
-    appendInfoLine: "  Group order: " + .orderLabel$ + " (" + .groupList$ + ")."
 endproc
 
 
 procedure emlReportBlank
     # Print empty line
+    ; ITEM 1.2 — canonical: a blank line is part of the report's shape, and a
+    ; blank that appeared on one door and not the other would make two
+    ; identical reports compare as different.
     .empty$ = ""
-    appendInfoLine: .empty$
+    @emlEmit: .empty$, ""
 endproc
 
 
@@ -737,6 +975,316 @@ endproc
 # ============================================================================
 # FORMATTING PROCEDURES (produce strings, do NOT write to Info window)
 # ============================================================================
+
+# ----------------------------------------------------------------------------
+# @emlRenderResultSettings
+# ----------------------------------------------------------------------------
+# THE CANONICAL RENDERING OF THE SETTINGS AN ANALYSIS RAN UNDER.
+#
+# WHAT IT IS FOR, AND WHAT IT IS NOT FOR. docs/RULING_RESULT_STORE.md section
+# (c): a figure that draws from a stored result must say, in ONE line, which
+# result-affecting setting changed when one has -- "Recomputed: adjustment
+# method holm -> bonferroni." -- rather than print a second full report. Two
+# jobs sit behind that sentence and they belong in different places:
+#
+#   THE DECISION is @emlStoreIdentityAgrees (stats/eml-extract.praat). It
+#   compares the store's identity fields against a candidate analysis's and
+#   names the first that differs, AS A FIELD KEY. It is the store's own
+#   comparison and there must not be a second one, or two doors could disagree
+#   about whether one analysis is the same as another.
+#
+#   THE WORDING is this procedure and @emlSettingsChangeNote below. The store
+#   speaks in field keys and internal tokens -- "groupSort", "table",
+#   "one-way anova + tukey" -- and a reader needs "group order", "table
+#   order", and the analysis named as the report names it. That vocabulary is
+#   declared HERE, once, and it is the same vocabulary the settings block of
+#   a disclosure uses, so the sentence a figure prints and the settings a
+#   report discloses cannot part company.
+#
+# ============================================================================
+# IT IS RENDERED FROM VALUES. IT IS NOT A FILTERED REPORT, AND IT CANNOT SEE
+# THE EXPLANATIONS GATE.
+# ============================================================================
+# THIS IS THE PART THAT IS EASY TO GET WRONG, AND IT WAS MEASURED BEFORE IT
+# WAS BUILT. The obvious construction is to let a report render as the user
+# has it set and then strip the explanation text out of the result. That
+# cannot be made to work here, and validate/v132_routing_split.R records the
+# measurement: on the permutation drive's expl1_sort0_alpha05 leg, cutting
+# every two-tab explanation suffix off the rendered text STILL leaves lines
+# the explanations-off rendering does not have, because half the explanations
+# are whole lines carrying no marker that separates them from a disclosure
+# line. A filter is therefore a guess about wording, and every re-wording of
+# an explanation is a chance for the guess to change and for a figure to
+# announce a settings change nobody made.
+#
+# So the canonical text is RENDERED, FROM THE SETTING VALUES THEMSELVES. It is
+# built here out of six names and six values; no report text is read, cut,
+# matched or parsed anywhere in it, and there is nothing for a re-wording to
+# break.
+#
+# THE GATE-INDEPENDENCE IS STRUCTURAL AND IT IS CHECKED, WHICH IS STRONGER
+# THAN LOWERING THE GATE FOR THE SCOPE. A save-and-restore around this
+# procedure would guarantee the text for the lines that exist today and say
+# nothing about a line somebody adds tomorrow through @emlReportLine, which
+# consults the gate and would be restored right after. What is guaranteed
+# instead is that this procedure NEVER CONSULTS THE GATE AT ALL: it names
+# emlShowExplanations nowhere, calls no reporter that reads it, and touches
+# emlWizardExplain$ nowhere -- and validate/v142 asserts all three by text
+# over this procedure's body and @emlSettingsChangeNote's. A line that would
+# make the rendering depend on a display toggle then goes red when it is
+# WRITTEN, not when a user toggles something and a figure re-runs for no
+# reason.
+#
+# THE GATE IS ALSO NOT WRITTEN HERE, and that is not incidental.
+# validate/v112_settings_census.R derives its population by asking which
+# globals the draw layer READS and does not itself write; a save/restore pair
+# inside the doors' call closure reads to that walk as the door's own scratch,
+# and emlShowExplanations -- a real display setting, classified as one --
+# would silently drop out of the census. A settings comparison that made the
+# settings census blind to a setting would be a poor trade for a guarantee it
+# does not need.
+#
+# ============================================================================
+# THE FIELDS, AND WHY THEY ARE THESE SIX IN THIS ORDER
+# ============================================================================
+# They are @emlStoreIdentityAgrees' identity fields, in its order, so that
+# .key$[i] can be matched against the field key it hands back and neither side
+# has to carry a translation table the other could drift from. The membership
+# question -- which settings are result-affecting at all -- is
+# validate/v112_settings_census.R's, derived from the code rather than typed;
+# this procedure is the authority on WORDING and on nothing else.
+#
+# Arguments -- the analysis's identity, in the STORE'S OWN VOCABULARY, so that
+# a caller can hand over either the published fields or the ones it is about
+# to publish without translating first:
+#   .kind$        - "group". The only kind rendered today; a second kind adds
+#                   a branch here with its own field list.
+#   .dataCol$     - the value column, as the analysis named it
+#   .groupCol$    - the grouping column, as the analysis named it
+#   .test$        - the store's test token: "welch t", "mann-whitney",
+#                   "one-way anova + tukey", "kruskal-wallis + dunn", ...
+#   .correction$  - the store's adjustment token, "" where nothing was applied
+#   .alpha        - the significance threshold, as a number
+#   .sort$        - the store's group-order token: "table" or "alphabetical"
+#
+# Outputs:
+#   .result$    - the whole rendering, header line first, newline-terminated
+#   .nFields    - how many settings the rendering carries
+#   .key$[i]    - field i's STORE field key ("correction")
+#   .name$[i]   - field i's reader-facing name ("adjustment method")
+#   .value$[i]  - field i's reader-facing value ("holm", "none")
+#   .error$     - "" on success; a diagnostic for an unknown .kind$, in which
+#                 case .result$ is "" and .nFields is 0
+#
+# ONE FIELD PER LINE, NEWLINE-TERMINATED, INCLUDING THE LAST, so that a value
+# can never run into the next field's name when the whole rendering is
+# compared or printed as one string. Nothing parses it: the comparison walks
+# the arrays.
+# ----------------------------------------------------------------------------
+procedure emlRenderResultSettings: .kind$, .dataCol$, .groupCol$, .test$, .correction$, .alpha, .sort$
+    .result$ = ""
+    .nFields = 0
+    .error$ = ""
+
+    if .kind$ <> "group"
+        .error$ = "@emlRenderResultSettings does not render '" + .kind$
+        ... + "'; the only kind it renders is 'group'."
+        goto END_RENDER_SETTINGS
+    endif
+
+    ; THE ORDER WORD COMES FROM @emlGroupOrderName AND FROM NOWHERE ELSE, so
+    ; the sentence a figure prints and the "Group order:" line a report
+    ; discloses use one vocabulary. The store's token is turned into the flag
+    ; that procedure takes rather than into the word directly -- writing the
+    ; word here would be the second copy the DRY rule exists to prevent.
+    .sortAlpha = 0
+    if .sort$ = "alphabetical"
+        .sortAlpha = 1
+    endif
+    @emlGroupOrderName: .sortAlpha
+    .orderWord$ = emlGroupOrderName.result$
+
+    ; NOTHING APPLIED IS A DISCLOSURE, NOT A BLANK. An empty adjustment token
+    ; means the analysis corrected nothing -- two groups is one comparison,
+    ; and Tukey's p is already family-wise -- and a settings line reading
+    ; "adjustment method:" with nothing after it cannot be told from a build
+    ; that lost the value.
+    .correctionWord$ = .correction$
+    if .correctionWord$ = ""
+        .correctionWord$ = "none"
+    endif
+
+    ; string$ and not fixed$ for alpha, for the reason @emlRecordCaptureStats
+    ; gives about the same number: fixed$ takes a width, and an alpha finer
+    ; than that width comes back as a different number -- which would make two
+    ; different alphas render alike.
+    .nFields = 6
+    .key$[1] = "dataColumn"
+    .name$[1] = "value column"
+    .value$[1] = .dataCol$
+    .key$[2] = "groupColumn"
+    .name$[2] = "group column"
+    .value$[2] = .groupCol$
+    .key$[3] = "testType"
+    .name$[3] = "analysis"
+    .value$[3] = .test$
+    .key$[4] = "correction"
+    .name$[4] = "adjustment method"
+    .value$[4] = .correctionWord$
+    .key$[5] = "alpha"
+    .name$[5] = "alpha"
+    .value$[5] = string$ (.alpha)
+    .key$[6] = "groupSort"
+    .name$[6] = "group order"
+    .value$[6] = .orderWord$
+
+    .result$ = "eRS1 settings: " + .kind$ + newline$
+    for .f from 1 to .nFields
+        .result$ = .result$ + .name$[.f] + ": " + .value$[.f] + newline$
+    endfor
+
+    label END_RENDER_SETTINGS
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlSettingsChangeNote: .field$, .was$, .now$
+# ----------------------------------------------------------------------------
+# THE ONE LINE, IN THE CONTRACT'S FORM. docs/RULING_RESULT_STORE.md section
+# (c), quoted: "One line, naming the change: 'Recomputed: adjustment method
+# holm -> bonferroni.' Never a second full report -- the duplicate report IS
+# the driven defect."
+#
+# TAKES @emlStoreIdentityAgrees' ANSWER AND SAYS IT IN THE READER'S WORDS.
+# That procedure hands back a field KEY, the stored value and the candidate's
+# value; it says so itself -- "THE SENTENCE IS NOT COMPOSED HERE ... whoever
+# prints owns the wording". This is that owner.
+#
+# THE NAMES AND THE VALUE WORDS COME FROM @emlRenderResultSettings, rendered
+# for the CANDIDATE analysis and then again for the stored one, so a change is
+# announced in exactly the words a settings disclosure would use for the same
+# two states. Nothing is written down twice: the vocabulary lives in one
+# procedure and this one looks the field key up in it.
+#
+# A FIELD KEY THE RENDERING DOES NOT CARRY still gets a line. "store" is what
+# @emlStoreIdentityAgrees returns when nothing has published at all, and a
+# future field added to the identity before it is added to the rendering must
+# not fall out of the sentence silently -- so the key itself is named, which
+# is ugly on purpose and impossible to miss.
+#
+# THE ARROW IS ASCII. The ruling's own text uses a typographic arrow; the
+# announcement is built with "->" because every string in this plugin that can
+# reach a file must be ASCII (one non-ASCII character makes Praat write the
+# whole file UTF-16BE), and an announcement is exactly the sort of line a user
+# copies into a log or a recorded script. The ruling is about the SHAPE of the
+# line and this is that shape.
+#
+# Arguments:
+#   .field$  - @emlStoreIdentityAgrees.field$
+#   .was$    - its .was$, the stored value as text
+#   .now$    - its .now$, the candidate's value as text
+#
+#   AND THE TWO RENDERINGS, from the caller, because Praat cannot pass an
+#   array and this procedure needs the vocabulary table:
+#   emlSettingsName$[1..emlSettingsN] / emlSettingsKey$[1..emlSettingsN]
+#       @emlRenderResultSettings' .name$[] and .key$[], copied out by
+#       @emlSettingsVocabulary before anything else runs the renderer.
+#
+# Output:
+#   .note$   - the announcement line
+# ----------------------------------------------------------------------------
+procedure emlSettingsChangeNote: .field$, .was$, .now$
+    .name$ = .field$
+    for .f from 1 to emlSettingsN
+        if emlSettingsKey$[.f] = .field$
+            .name$ = emlSettingsName$[.f]
+        endif
+    endfor
+
+    ; NOTHING PUBLISHED IS NOT A CHANGED SETTING, and it must not be announced
+    ; as one. @emlStoreIdentityAgrees returns "store" for it; a figure in that
+    ; state has nothing to compare against and simply computes.
+    if .field$ = "store"
+        .note$ = "Recomputed: no analysis result was published to compare "
+        ... + "against."
+        goto END_SETTINGS_NOTE
+    endif
+
+    ; THE VALUES ARE PUT INTO THE READER'S WORDS TOO, not just the field.
+    ; @emlStoreIdentityAgrees hands back the store's own tokens, and the store
+    ; says "table" where a reader says "table order" -- an announcement
+    ; reading "group order table -> alphabetical" is the store talking to
+    ; itself in front of the user. The word comes from @emlGroupOrderName, the
+    ; one place both order words are written, so the sentence and the
+    ; "Group order:" line of a report cannot disagree.
+    .wasWord$ = .was$
+    .nowWord$ = .now$
+    if .field$ = "groupSort"
+        .wasAlpha = 0
+        if .was$ = "alphabetical"
+            .wasAlpha = 1
+        endif
+        @emlGroupOrderName: .wasAlpha
+        .wasWord$ = emlGroupOrderName.result$
+        .nowAlpha = 0
+        if .now$ = "alphabetical"
+            .nowAlpha = 1
+        endif
+        @emlGroupOrderName: .nowAlpha
+        .nowWord$ = emlGroupOrderName.result$
+    endif
+
+    ; AN EMPTY VALUE IS A DISCLOSURE, NOT A BLANK. An empty adjustment token
+    ; means nothing was applied -- two groups is one comparison, and Tukey's
+    ; p is already family-wise -- and "adjustment method  -> bonferroni" reads
+    ; as a build that lost a word.
+    if .wasWord$ = ""
+        .wasWord$ = "none"
+    endif
+    if .nowWord$ = ""
+        .nowWord$ = "none"
+    endif
+
+    .note$ = "Recomputed: " + .name$ + " " + .wasWord$ + " -> " + .nowWord$
+    ... + "."
+
+    label END_SETTINGS_NOTE
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlSettingsVocabulary
+# ----------------------------------------------------------------------------
+# COPY THE RENDERING'S VOCABULARY OUT BEFORE THE RENDERER RUNS AGAIN.
+#
+# A procedure's outputs in Praat survive exactly until that procedure runs
+# again, and Praat cannot pass an array to a procedure. So the field keys and
+# the reader-facing names have to meet @emlSettingsChangeNote in globals, and
+# a copy loop written out at each call site is a copy loop that gets one index
+# wrong at one of them -- silently, because the wrong name in an announcement
+# is still a well-formed sentence.
+#
+# THE GLOBAL ARRAYS ARE THE HAND-OFF AND ARE WRITTEN NOWHERE ELSE. They are
+# published names under a single writer, which is this procedure, and v142
+# asserts that nothing else in the plugin assigns them -- the same discipline
+# section (d) of the result-store ruling puts on the store itself.
+#
+# Call it immediately after @emlRenderResultSettings:
+#
+#     @emlRenderResultSettings: "group", ...
+#     @emlSettingsVocabulary
+#     @emlSettingsChangeNote: emlStoreIdentityAgrees.field$, ...
+# ----------------------------------------------------------------------------
+procedure emlSettingsVocabulary
+    emlSettingsN = emlRenderResultSettings.nFields
+    emlSettingsText$ = emlRenderResultSettings.result$
+    for .f from 1 to emlSettingsN
+        emlSettingsKey$[.f] = emlRenderResultSettings.key$[.f]
+        emlSettingsName$[.f] = emlRenderResultSettings.name$[.f]
+        emlSettingsValue$[.f] = emlRenderResultSettings.value$[.f]
+    endfor
+endproc
+
 
 procedure emlFormatP: .pValue
     # Format p-value according to APA guidelines
@@ -1081,7 +1629,8 @@ procedure emlReportDescriptiveHeader
     @emlPadRight: "Median", 10
     .medianCol$ = emlPadRight.result$
     .headerLine$ = .indent$ + .groupCol$ + .nCol$ + .meanCol$ + .sdCol$ + .medianCol$
-    appendInfoLine: .headerLine$
+    ; ITEM 1.2 — factual table frame; canonical.
+    @emlEmit: .headerLine$, ""
 endproc
 
 
@@ -1112,7 +1661,8 @@ procedure emlReportDescriptiveRow: .label$, .n, .mean, .sd, .median
     .medianCol$ = emlPadRight.result$
     
     .rowLine$ = .indent$ + .groupCol$ + .nCol$ + .meanCol$ + .sdCol$ + .medianCol$
-    appendInfoLine: .rowLine$
+    ; ITEM 1.2 — factual table row; canonical.
+    @emlEmit: .rowLine$, ""
 endproc
 
 
@@ -1865,9 +2415,11 @@ endproc
 #
 # Fields:
 #   boolean: "Clear Info window", emlLastClearInfo
+#   boolean: "Annotate results with explanations", emlLastShowExplanations
 #
 # Variable derivation (available after endPause):
 #   clear_Info_window (numeric, 0 or 1)
+#   annotate_results_with_explanations (numeric, 0 or 1)
 #
 # THE SECTION MARKER IS THE HEAVY BOX-DRAWING RULE every dialog separates its
 # zones with (see dev/DESIGN_DIALOG_SYSTEM.md, "Separator"). This procedure
@@ -1881,6 +2433,16 @@ endproc
 # purpose is iteration. @emlHandleCommonFields records it, because that is
 # the procedure that already reads the answer.
 #
+# THE EXPLANATIONS TOGGLE (punch list 6.1; language batch item 9, verbatim
+# label; default off) PERSISTS THE SAME WAY, in emlLastShowExplanations. This
+# is the ONE control the ruling gives every menu analysis dialog for the
+# explanations gate — the wizard has no control (always on) and a standalone
+# graph has no control (always on); only a dialog reached through this
+# procedure gets to choose, and DERIVING the population from this shared
+# call, instead of a hand-kept list of wrapper names, is what the ruling
+# asks for: a dialog added later that calls @emlWrapperCommonFields is
+# covered without anyone remembering to add it anywhere.
+#
 # Usage:
 #   beginPause: "My Analysis"
 #       # ... wrapper-specific fields ...
@@ -1893,14 +2455,19 @@ endproc
 # Wrappers needing group order add it to their own dialog.
 # ────────────────────────────────────────────────────────────────────────────
 emlLastClearInfo = 0
+emlLastShowExplanations = 0
 
 procedure emlWrapperCommonFields
     if not variableExists ("emlLastClearInfo")
         emlLastClearInfo = 0
     endif
+    if not variableExists ("emlLastShowExplanations")
+        emlLastShowExplanations = 0
+    endif
     comment: ""
     comment: "─────────────────────────────────────"
     boolean: "Clear Info window", emlLastClearInfo
+    boolean: "Annotate results with explanations", emlLastShowExplanations
 endproc
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -1928,10 +2495,67 @@ procedure emlHandleCommonFields
 
     ; Remember the answer so the next trip round the wrapper's repeat
     ; loop (and the next wrapper this session) reopens with it still set.
-    emlLastClearInfo = clear_Info_window
-    if clear_Info_window
-        @emlClearInfo
+    ;
+    ; GUARDED THE SAME WAY AS THE EXPLANATIONS TOGGLE BELOW, for the same
+    ; reason: clear_Info_window is the OTHER field @emlWrapperCommonFields
+    ; declares, and this procedure is the one place that reads it. A caller
+    ; that never ran the dialog has no clear_Info_window either -- it just
+    ; happens that every such caller in this tree today (the harness leg
+    ; standing in for the wrapper's repeat-loop boundary) presets it by
+    ; hand, which masks the same unguarded-read defect rather than closing
+    ; it. Absent, there is nothing to remember and nothing to clear, so the
+    ; whole step is skipped rather than given a literal default -- unlike
+    ; the explanations toggle, this field carries no ruled default to fall
+    ; back to.
+    if variableExists ("clear_Info_window")
+        emlLastClearInfo = clear_Info_window
+        if clear_Info_window
+            @emlClearInfo
+        endif
     endif
+
+    ; THE EXPLANATIONS TOGGLE (punch list 6.1). Remembered the same way as
+    ; "Clear Info window", and applied to the SAME global the wizard sets
+    ; unconditionally and @emlGraphsWorkflow's standalone entry defaults --
+    ; there is only one emlShowExplanations gate, and this is where a menu
+    ; dialog's own answer reaches it, once per Run, before the orchestrator
+    ; call that is about to read it.
+    ;
+    ; emlExplanationsFromDialog and emlDialogShowExplanations are what let a
+    ; later "Draw" button on THIS wrapper's post-analysis dialog hand the
+    ; SAME answer to @emlGraphsWorkflow instead of that procedure's own
+    ; standalone-launch default of 1 -- see the entry of @emlGraphsWorkflow in
+    ; graphs/eml-graphs-form.praat, the only reader of either variable. Set
+    ; every Run (not just once), so a `New` that changes the toggle is not
+    ; stuck with the first Run's answer, and never cleared here -- the
+    ; wrapper's "Quit" ends the whole script (@emlWrapperCommonFields's own
+    ; header note), so nothing outside this script scope can see it.
+    ; GUARDED ON THE FIELD'S OWN PRESENCE, the same idiom
+    ; @emlRecordCaptureStats uses for every dialog-only variable it reads
+    ; (eml-record.praat, "if variableExists (...)" per field, never a
+    ; compound and/or -- Praat evaluates both halves of one regardless of
+    ; the first, so a compound guard here would read the very variable it
+    ; is testing for and reintroduce the crash it exists to prevent). A
+    ; caller that reaches this procedure without having run
+    ; @emlWrapperCommonFields's dialog -- the harness leg standing in for
+    ; a wrapper's repeat-loop boundary (harness/runblock's "callsite" case)
+    ; is exactly that caller -- has no annotate_results_with_explanations
+    ; at all, and Praat stops the script dead on the unset variable rather
+    ; than answering with anything. Absent, the toggle keeps the ruled
+    ; default (punch list 6.1: "Annotate results with explanations",
+    ; default off), not whatever a previous dialog in this session left
+    ; behind -- emlLastShowExplanations already opens at 0 for exactly the
+    ; same reason.
+    if variableExists ("annotate_results_with_explanations")
+        emlLastShowExplanations = annotate_results_with_explanations
+        emlShowExplanations = annotate_results_with_explanations
+        emlDialogShowExplanations = annotate_results_with_explanations
+    else
+        emlLastShowExplanations = 0
+        emlShowExplanations = 0
+        emlDialogShowExplanations = 0
+    endif
+    emlExplanationsFromDialog = 1
 
     ; This runs once per Run, inside the wrapper's repeat loop, and it
     ; runs before the orchestrator prints anything — so it is the one place
@@ -4346,9 +4970,15 @@ endproc
 # the lines without printing them, still uses it directly.
 # ────────────────────────────────────────────────────────────────────────────
 procedure emlReportNote: .s$
+    ; ITEM 1.2 — @emlReportNote IS THE DISCLOSURE PRINTER AND IT BUFFERS. A
+    ; note states what was or was not computed and prints on every path, so
+    ; it belongs in the canonical text. The two notes in this tree that are
+    ; EXPLANATIONS rather than disclosures — @emlPostHocCaution's caution and
+    ; @emlEffectMatrixCaption's second sentence — do not come through here
+    ; any more; they go through @emlExplainLine, which never buffers.
     @emlWrapText: .s$, 68
     for .nl from 1 to emlWrapText.nLines
-        appendInfoLine: "  ", emlWrapText.line$ [.nl]
+        @emlEmit: "  " + emlWrapText.line$ [.nl], ""
     endfor
 endproc
 
@@ -4609,7 +5239,19 @@ procedure emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
 
     @emlReportBlank
     @emlReportSection: "Distribution Shape"
+    ; EXPLANATION (punch list 6.2): @emlWizardExplainSkewness and
+    ; @emlWizardExplainKurtosis already exist, reused verbatim from the
+    ; normality reporter (@emlReportNormalityAnalysis), which glosses the
+    ; same two quantities computed the same way. @emlReportLine appends
+    ; emlWizardExplain$ itself when emlShowExplanations is set, so setting
+    ; it just before the call is the whole change.
+    if emlShowExplanations
+        @emlWizardExplainSkewness: emlDescribe.skewness
+    endif
     @emlReportLine: "Skewness", emlDescribe.skewness, 4
+    if emlShowExplanations
+        @emlWizardExplainKurtosis: emlDescribe.kurtosis
+    endif
     @emlReportLine: "Kurtosis (excess)", emlDescribe.kurtosis, 4
 
     @emlReportBlank

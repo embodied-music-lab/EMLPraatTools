@@ -154,6 +154,12 @@ repeat
             selectObject: tableId
             @emlCountGroups: tableId, groupCol$
             .allGroupsOK = 1
+            # COVERAGE. A group too small to test (n < 3) is skipped below,
+            # not tested -- and the column summary must never generalise
+            # over a group it never examined. .nAssessed counts groups that
+            # actually ran; the summary compares it against
+            # emlCountGroups.nGroups rather than assuming the two are equal.
+            .nAssessed = 0
 
             # Group labels for the Q-Q picker, captured from the same
             # @emlCountGroups call the analysis used rather than recomputed
@@ -173,6 +179,7 @@ repeat
                 @eml_getGroupData: tableId, col$, groupCol$, .gLabel$
 
                 if eml_getGroupData.n >= 3
+                    .nAssessed = .nAssessed + 1
                     .data# = eml_getGroupData.data#
                     .n = eml_getGroupData.n
 
@@ -257,16 +264,27 @@ repeat
                     # called above with the raw .skew, .kurt and
                     # emlShapiroWilk.p, and the per-group verdict printed
                     # below reads that call and not these strings.
-                    @eml_fixed: .swW, 4
-                    .wTxt$ = eml_fixed.result$
                     @eml_fixed: .skew, 3
                     .skewTxt$ = eml_fixed.result$
                     @eml_fixed: .kurt, 3
                     .kurtTxt$ = eml_fixed.result$
-                    @emlFormatP: .swP
                     appendInfoLine: "  ", .gDisplay$, " (n = ", .n, "):"
-                    appendInfoLine: "    W = ", .wTxt$,
-                    ... "  ", emlFormatP.formatted$
+                    # Shapiro-Wilk errors on this group -- zero range, every
+                    # value identical -- leave .swW and .swP undefined, so the
+                    # error is read before either is printed and the producer's
+                    # own text stands in for them. A reader told
+                    # "W = --undefined--" learns nothing about their data;
+                    # told the range is zero, they learn everything.
+                    # @wizardNormDiag guards its own call the same way.
+                    if emlShapiroWilk.error$ = ""
+                        @eml_fixed: .swW, 4
+                        .wTxt$ = eml_fixed.result$
+                        @emlFormatP: .swP
+                        appendInfoLine: "    W = ", .wTxt$,
+                        ... "  ", emlFormatP.formatted$
+                    else
+                        appendInfoLine: "    Shapiro-Wilk: ", emlShapiroWilk.error$
+                    endif
                     appendInfoLine: "    Skewness = ", .skewTxt$,
                     ... "  Kurtosis (excess) = ", .kurtTxt$
 
@@ -330,8 +348,21 @@ repeat
 
             appendInfoLine: ""
             if .allGroupsOK
-                appendInfoLine: "  Summary: no group in this column shows a"
-                ... + " strong departure"
+                if .nAssessed < emlCountGroups.nGroups
+                    # COVERAGE was incomplete: at least one group was too
+                    # small to test and never examined. "no group ... shows
+                    # a strong departure" is a claim about every group in
+                    # the column; this loop did not examine all of them, so
+                    # that claim is false about the data in front of the
+                    # reader. Language batch item 13, verbatim.
+                    appendInfoLine: "  Summary: No strong departure in the"
+                    ... + " groups large enough to test (",
+                    ... .nAssessed, " of ", emlCountGroups.nGroups,
+                    ... " assessed)."
+                else
+                    appendInfoLine: "  Summary: no group in this column shows a"
+                    ... + " strong departure"
+                endif
             else
                 appendInfoLine: "  Summary: one or more groups in this column"
                 ... + " show a strong departure"
@@ -496,6 +527,57 @@ repeat
                         if emlDrawQQPlot.nDropped > 0
                             appendInfoLine: "  ", emlDrawQQPlot.nDropped,
                             ... " row(s) excluded as missing."
+                        endif
+
+                        ; RECORD WORKFLOW. Same three-part guard every other
+                        ; draw hook uses -- present, initialised, recording --
+                        ; but placed HERE at the call site rather than inside
+                        ; @emlDrawQQPlot itself, because that procedure takes
+                        ; .data# already extracted and has no .objectId of its
+                        ; own to hand @emlRecordSource: this Table, still
+                        ; selected, is the only object in scope. Recorded on
+                        ; the success branch only, matching @emlDrawQQPlot's
+                        ; own real refusal path (unlike every other draw
+                        ; procedure, this one can decline to draw at all --
+                        ; see its .drew output) -- a refusal here draws
+                        ; nothing, so there is nothing to record.
+                        ;
+                        ; .code$ REBUILDS .data# RATHER THAN NAMING `data`,
+                        ; unlike every other draw hook's one-line call. Those
+                        ; rely on the generic column-manifest machinery to
+                        ; build `data` from a valueCol$ role before the call;
+                        ; @emlDrawQQPlot has no such role here (see the empty
+                        ; .spec$ branch added for it in
+                        ; stats/eml-record.praat's emlRecordColumnSpec, and
+                        ; the comment there on why: .colLabel$ is a caption
+                        ; already resolved by this caller, composite on the
+                        ; grouped path, not a column name a retarget could
+                        ; feed back into a table read). So the replay has to
+                        ; carry the extraction itself. This mirrors the two
+                        ; branches above exactly; it has not been run through
+                        ; an emitted script and replayed, so treat it as a
+                        ; documented best effort rather than a proven one.
+                        if variableExists ("emlRecordLoaded")
+                            if hasGroupCol
+                                .qqCode$ = "@eml_getGroupData: data, """
+                                ... + qqCol$ + """, """ + groupCol$ + """, """
+                                ... + qqGroup$ + """" + newline$
+                                ... + "data# = eml_getGroupData.data#"
+                            else
+                                .qqCode$ = "data# = zero# (Get number of rows)"
+                                ... + newline$ + "for iRow from 1 to size (data#)"
+                                ... + newline$ + "    data# [iRow] = Get value: iRow, """
+                                ... + qqCol$ + """" + newline$ + "endfor"
+                            endif
+                            .qqCode$ = .qqCode$ + newline$
+                            ... + "@emlDrawQQPlot: data#, """ + qqLabel$
+                            ... + """, 6, 4.5, ""color"", 1"
+                            @emlRecordDrawStep: tableId, "Normal Q-Q plot",
+                            ... qqLabel$,
+                            ... "Points on the line mean the column matches a normal distribution; a systematic curve away from it does not.",
+                            ... .qqCode$,
+                            ... "In the GUI: run Check normality..., then Draw Q-Q plot for a tested column",
+                            ... ""
                         endif
                     endif
                 endif

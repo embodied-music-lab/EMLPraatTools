@@ -213,7 +213,7 @@ endproc
 # from @emlGraphsDispatchDraw, with the values from the draw dialog's
 # "Erase page first" and "Panel origin" fields. A recorded workflow calls it
 # with the values the block at the top of the emitted script declares. A
-# standalone script that never calls it gets @emlInitDrawingDefaults' erase-on
+# standalone script that never calls it gets @emlInitializeDrawingDefaults' erase-on
 # single panel at the origin, which is what such a script has always had.
 # ----------------------------------------------------------------------------
 procedure emlBeginPanel: .originX, .originY, .erase
@@ -279,14 +279,14 @@ procedure emlSetPanelViewport
 endproc
 
 # ----------------------------------------------------------------------------
-# @emlInitDrawingDefaults
+# @emlInitializeDrawingDefaults
 # Initializes all rendering globals to sensible defaults. Call once at
 # script top for standalone scripts or PraatGen companion files.
 # The plugin does NOT call this — it has its own UI-driven path.
 #
 # Precondition for all @emlDraw* orchestrator procedures.
 # ----------------------------------------------------------------------------
-procedure emlInitDrawingDefaults
+procedure emlInitializeDrawingDefaults
     # Panel origin (single panel at Picture window origin)
     emlPanelOriginX = 0
     emlPanelOriginY = 0
@@ -484,7 +484,7 @@ endproc
 procedure emlSetAdaptiveTheme: .vpWidth, .vpHeight
     # Y-axis step constraint guard. Defined here only when it does not already
     # exist, for the same reason as the panel-origin guard below: a draw
-    # procedure can be entered without @emlInitDrawingDefaults having run, and
+    # procedure can be entered without @emlInitializeDrawingDefaults having run, and
     # an undefined global aborts the figure at the first comparison.
     #
     # It must NOT be unconditionally reset here. @emlDrawAxes calls this
@@ -542,7 +542,7 @@ procedure emlSetAdaptiveTheme: .vpWidth, .vpHeight
     #
     # THE GUARD IS THE TICK-WIDTH RULE'S GUARD, not a new one: read through
     # variableExists, take the WIDER of the two candidates, never shrink.
-    # A caller that has not loaded @emlInitDrawingDefaults -- a PraatGen
+    # A caller that has not loaded @emlInitializeDrawingDefaults -- a PraatGen
     # companion, a harness case, this repository's own probes -- reads
     # nothing and gets the margin it has always had.
     if variableExists ("emlSecondAxisOn")
@@ -2660,7 +2660,7 @@ endproc
 # ----------------------------------------------------------------------------
 # @emlPrimaryLineStyle   ->  .style
 # THE PRIMARY'S PEN, READ THROUGH THE GUARD every other request global is read
-# through. A caller that never loaded @emlInitDrawingDefaults -- a PraatGen
+# through. A caller that never loaded @emlInitializeDrawingDefaults -- a PraatGen
 # companion, a harness case, this repository's own probes -- has no
 # emlLineStyle, and an unguarded read would abort its figure at "Unknown
 # variable" rather than drawing the solid line it has always drawn.
@@ -2816,7 +2816,7 @@ endproc
 # procedure reads the request the way it reads the page settings and cannot
 # abort a figure on a caller that set the tickbox and nothing else.
 #
-# The defaults are @emlInitDrawingDefaults' defaults, which is what makes a
+# The defaults are @emlInitializeDrawingDefaults' defaults, which is what makes a
 # partial request behave like the dialog: no range is auto, no label falls
 # back to the column name at the call site, and no style is Dashed.
 # ----------------------------------------------------------------------------
@@ -3061,7 +3061,7 @@ procedure emlDrawAlignedMarksRight: .yMin, .yMax, .targetTicks, .useMinor
     # current colour is. Measured in 6.6.30 on `One mark right:`,
     # `Marks right every:` and `Text right:`, each on its own, reading the ink
     # back off the pixels -- harness/secondaxis/margin_ink.praat is the probe.
-    # See the second-axis block in @emlInitDrawingDefaults for what follows
+    # See the second-axis block in @emlInitializeDrawingDefaults for what follows
     # from it for the ruling.
 
     # Derive dynamic mark parameters
@@ -5992,7 +5992,7 @@ procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
         ; SOURCE TWO, THE MATRIX'S OWN MEASUREMENT, and why it is needed.
         ; totalCanvasHeight is a FORM local. @emlDrawLegend is reached from
         ; outside the form as well: a standalone script or a PraatGen
-        ; companion file calls @emlInitDrawingDefaults, which sets
+        ; companion file calls @emlInitializeDrawingDefaults, which sets
         ; emlLegendPlacement and does NOT set totalCanvasHeight. Such a caller
         ; that laid out its own matrix and then asked for placement 3 would
         ; get a band starting at the plot's own bottom edge, drawn straight
@@ -6013,7 +6013,7 @@ procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
         ;
         ; graphOverhangInches is another form local, but the value it is
         ; assigned from — emlFitCategoricalLabels.overhangInches — is a
-        ; drawing-layer global that @emlInitDrawingDefaults seeds at 0, so the
+        ; drawing-layer global that @emlInitializeDrawingDefaults seeds at 0, so the
         ; rotated-label allowance is read from where it actually lives.
         ;
         ; THE LARGER OF THE TWO WINS, and neither can pull the band UP: the
@@ -6227,7 +6227,7 @@ procedure emlDrawLegend: .xMin, .xMax, .yMin, .yMax, .position$, .fontSize
             ;
             ; READ THROUGH variableExists, like every other cross-layer read
             ; in this procedure: a caller that loaded the draw library but
-            ; never @emlInitDrawingDefaults has no union to consult, and
+            ; never @emlInitializeDrawingDefaults has no union to consult, and
             ; reading one unconditionally aborts with "Unknown variable".
             .unionBottom = .pageBottom
             if variableExists ("emlDrawnMaxY")
@@ -6365,7 +6365,10 @@ endproc
 # scanned and EVERY non-empty cell must parse cleanly.
 #
 # Cell classification (one of four):
-#   missing      — empty or whitespace-only; not a failure, not evidence
+#   missing      — empty or whitespace-only, OR Praat's own native missing
+#                  cell ("--undefined--", what "Get value:" reads back from a
+#                  numeric cell set to `undefined`); not a failure, not
+#                  evidence
 #   numeric      — matches a strict decimal/exponent literal AND number()
 #                  returns a defined value
 #   coerced      — number() returns a value only via a lossy coercion, e.g.
@@ -6441,6 +6444,9 @@ procedure emlCheckNumericColumn: .tableId, .colName$
     for .i from 1 to .nChecked
         .val$ = Get value: .i, .colName$
         .isBlank = index_regex (.val$, .wsPat$)
+        if .isBlank = 0 and .val$ = "--undefined--"
+            .isBlank = 1
+        endif
         if .isBlank > 0
             .nMissing = .nMissing + 1
         else
@@ -6500,6 +6506,37 @@ procedure emlCheckNumericColumn: .tableId, .colName$
     endif
 
     label CHECK_NUM_END
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlDescribeFilterNumericColumns: .tableId
+#   -> .nNumericCols, .numericCol'k'$
+#
+# Every column of .tableId, judged by @emlCheckNumericColumn — one reader,
+# the same one the draw layer and the refusals already use — rather than a
+# second, ad hoc opinion. Built for scripts/eml-describe-table.praat (punch
+# list 7.3): every row is scanned, because a column whose first rows are
+# missing is a column a sample would miss no matter how much numeric data
+# follows them. A column is offered only when @emlCheckNumericColumn's
+# complete-case verdict says numeric.
+#
+# Arguments: .tableId
+# Outputs:
+#   .nNumericCols     — count of columns judged numeric
+#   .numericCol'k'$   — the k-th numeric column's name, 1-based
+# ----------------------------------------------------------------------------
+procedure emlDescribeFilterNumericColumns: .tableId
+    @emlTableColumnNames: .tableId
+    .nCols = emlTableColumnNames.nCols
+    .nNumericCols = 0
+    for .iCol from 1 to .nCols
+        .colName$ = emlTableColumnNames.name$ [.iCol]
+        @emlCheckNumericColumn: .tableId, .colName$
+        if emlCheckNumericColumn.isNumeric
+            .nNumericCols = .nNumericCols + 1
+            .numericCol'.nNumericCols'$ = .colName$
+        endif
+    endfor
 endproc
 
 # ----------------------------------------------------------------------------
@@ -7917,7 +7954,7 @@ endproc
 
 
 # ============================================================================
-# @emlGraphsMeltSeries: .objectId, .timeCol$, .cols$
+# @emlReshapeSeriesLong: .objectId, .timeCol$, .cols$
 #   -> .tableId, .nSeries, .nDataRows
 # ============================================================================
 # SEVERAL COLUMNS BECOME THE ONE SHAPE THE DRAWING LAYER TAKES, and the user
@@ -7957,7 +7994,7 @@ endproc
 # The form passes a list it built from the array, so the round trip is the
 # identity.
 # ============================================================================
-procedure emlGraphsMeltSeries: .objectId, .timeCol$, .cols$
+procedure emlReshapeSeriesLong: .objectId, .timeCol$, .cols$
     ; The list, split into the array the melt walks. Trailing separator
     ; tolerated: the form builds this list beside a `prev_` copy that ends in
     ; one, and a refusal to accept it would be a trap rather than a rule.
@@ -8008,10 +8045,10 @@ endproc
 
 
 # ============================================================================
-# @emlGraphsPivotSeries: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$
+# @emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$
 #   -> .tableId, .nSeries, .nDataRows, .nUnlisted
 # ============================================================================
-# THE MIRROR IMAGE OF @emlGraphsMeltSeries, AND IT IS HERE FOR THE SAME
+# THE MIRROR IMAGE OF @emlReshapeSeriesLong, AND IT IS HERE FOR THE SAME
 # REASON: the user is never asked about it.
 #
 # The melt takes several columns of one measurement and stacks them into the
@@ -8034,7 +8071,7 @@ endproc
 # PNGs to be the same file.
 #
 # WHY THE LEVELS ARRIVE AS ONE COMMA-SEPARATED STRING. It is the shape
-# @emlGraphsMeltSeries' `.cols$` already has, and for the same reason: the
+# @emlReshapeSeriesLong' `.cols$` already has, and for the same reason: the
 # recorder lifts a call's string literals into the editable block, so a list
 # that is one literal is one line a reader can retarget. A level whose own
 # name contains a comma cannot be carried this way, and the FORM refuses that
@@ -8055,7 +8092,7 @@ endproc
 # single value. The rows come out in ascending time because that is what the
 # sort this procedure needs anyway leaves behind.
 # ============================================================================
-procedure emlGraphsPivotSeries: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$
+procedure emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$
     ; ---- the levels, split exactly as the melt splits its column list -----
     .nSeries = 0
     .rest$ = .levels$

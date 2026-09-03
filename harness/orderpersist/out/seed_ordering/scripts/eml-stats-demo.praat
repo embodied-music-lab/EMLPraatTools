@@ -44,7 +44,7 @@ include eml-lib.praat
 # The graphs workflow normally does this; the demo draws via
 # eml-graph-procedures directly, so call the shared initializer here to avoid
 # "Unknown variable" errors (emlSubtitle$, emlFont$, ...) on the draw path.
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 # ============================================================================
 # SECTION 1: GENERATE SYNTHETIC DATA

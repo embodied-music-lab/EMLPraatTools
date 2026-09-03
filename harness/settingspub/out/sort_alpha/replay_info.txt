@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Two-Group Comparison
-  Mon Aug 24 20:39:31 2026
+  Thu Sep  3 04:11:05 2026
   from: recorded script (recorded settings publication, originally analysis dialog)
 ══════════════════════════════════════════════
 
@@ -17,20 +17,21 @@
 
 
   ── Welch ───────────────────────────────────
-  Why: Compares means of two independent groups (robust to unequal variances).
-  t                   6.067		The observed difference is 6.1 standard errors from zero
-  df                  26.0		Welch-adjusted for unequal variances. More df = more reliable.
-  p                   < .001  (2.08e-06)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
-  Mean diff (alfa − zulu) 7.3505		alfa mean is 7.35 units higher
+  t                   6.067
+  df                  26.0
+  p                   < .001  (2.08e-06)
+  Mean diff (alfa − zulu) 7.3505
   95% CI of diff      [4.8599, 9.8411]
 
 
   ── Effect Size ─────────────────────────────
-  Cohen's d           2.293		Effect size: large by Cohen's convention (d >= 0.8 = large). The group means differ by 2.3 pooled standard deviations
-  Hedges' g           2.226		Cohen's d with the small-sample bias removed; large by Cohen's convention (g >= 0.8 = large)
+  Cohen's d           2.293
+  Hedges' g           2.226
   Magnitude           large by Cohen's convention
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 

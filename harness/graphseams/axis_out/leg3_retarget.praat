@@ -13,9 +13,9 @@ for g from 1 to 4
 endfor
 table = selected ("Table")
 Erase all
-include /home/claude/EMLPraatTools/harness/graphseams/axis_out/auto_emitted.praat
+include /home/claude/repo/harness/graphseams/axis_out/auto_emitted.praat
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/graphseams/axis_out/leg3.png"
+Save as 300-dpi PNG file: "/home/claude/repo/harness/graphseams/axis_out/leg3.png"
 appendInfoLine: "AXISLO=", fixed$ (emlDrawViolinPlot.axisYMin, 6)
 appendInfoLine: "AXISHI=", fixed$ (emlDrawViolinPlot.axisYMax, 6)
 selectObject: table

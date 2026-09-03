@@ -1,15 +1,15 @@
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-output.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-record.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
+include /home/claude/repo/plugin/stats/eml-core-utilities.praat
+include /home/claude/repo/plugin/stats/eml-core-descriptive.praat
+include /home/claude/repo/plugin/stats/eml-extract.praat
+include /home/claude/repo/plugin/stats/eml-output.praat
+include /home/claude/repo/plugin/stats/eml-inferential.praat
+include /home/claude/repo/plugin/stats/eml-result-writer.praat
+include /home/claude/repo/plugin/stats/eml-record.praat
+include /home/claude/repo/plugin/graphs/eml-graph-procedures.praat
+include /home/claude/repo/plugin/graphs/eml-annotation-procedures.praat
+include /home/claude/repo/plugin/graphs/eml-draw-procedures.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 
 Create Table with column names: "vt", 0, "grp val"
 rngState = 20260815
@@ -30,6 +30,6 @@ Erase all
 @emlDrawBoxPlot: table, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4,
 ... "color", 1, "grp", "val", 0, 0
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/graphseams/axis_out/leg8.png"
+Save as 300-dpi PNG file: "/home/claude/repo/harness/graphseams/axis_out/leg8.png"
 appendInfoLine: "AXISLO=", fixed$ (emlDrawBoxPlot.axisYMin, 6)
 appendInfoLine: "AXISHI=", fixed$ (emlDrawBoxPlot.axisYMax, 6)

@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Pairwise Wilcoxon/Mann-Whitney (Benjamini-Hochberg adjustment)
-  Tue Aug 25 20:36:18 2026
+  Thu Sep  3 04:08:12 2026
   from: analysis dialog
 ══════════════════════════════════════════════
 
@@ -55,5 +55,7 @@ mu            1.000       -1.000      ---
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 == END pairwise_wilcoxon_on ==

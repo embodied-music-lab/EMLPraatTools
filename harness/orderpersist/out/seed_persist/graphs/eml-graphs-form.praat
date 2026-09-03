@@ -1240,7 +1240,7 @@ endproc
 # ============================================================================
 # ADJUSTMENT-METHOD LOOKUP
 # ============================================================================
-# Maps a correction index onto the string @emlBridgeGroupComparison expects in
+# Maps a correction index onto the string @emlRunAnnotationComparison expects in
 # annotCorrectionMethod$. The index now comes from @emlComparisonFromMenu, so
 # the family and the correction are two outputs of one chosen row and cannot
 # disagree; see THE COMPARISON MENU below for why that replaced two controls
@@ -1280,6 +1280,35 @@ endproc
 # ----------------------------------------------------------------------------
 procedure emlComparisonMenuRows
     option: "-- Parametric --"
+    ; ITEM 3.5 -- THE POST-HOC OPT-OUT, AS A ROW.
+    ;
+    ; WHAT IT CLOSES. @emlRunAnnotationComparison decides, on every parametric
+    ; k >= 3 figure, whether to run a pairwise post-hoc. That decision belongs
+    ; to the user, and a page with no way to state it hands the bridge a
+    ; literal instead -- a figure showing Tukey whatever was asked for, and
+    ; disagreeing in silence with the analysis door on the same data
+    ; (validate/v127, legs 1 and 3). Fable's 26 Aug ruling: the fix is THIS
+    ; DIALOG'S ACTUAL POST-HOC CHOICE reaching the bridge, adding the field if
+    ; none exists, never a different literal. This row is that field.
+    ;
+    ; A ROW AND NOT A SECOND CONTROL, and the reason is the reason this menu
+    ; exists at all. ONE CONTROL, NO EXPRESSIBLE MISMATCH, above: a Praat
+    ; dialog is static once drawn, so a "run a post-hoc" tickbox beside a menu
+    ; whose rows NAME a post-hoc would be one press behind it, and a page
+    ; reading "Tukey HSD" with the box unticked would say two things at once.
+    ; Stating it as a row removes the possibility instead of guarding against
+    ; it, and it is the shape the wizard's own k-group menu already uses --
+    ; "ANOVA only, no pairwise tests", punch list 4.2, verbatim below
+    ; (scripts/eml-wizard.praat, @emlWizard3GroupTestRows).
+    ;
+    ; AND IT COSTS NO TAB STOP. An optionmenu is ONE field however many rows
+    ; it carries, so no page's tab order moves and no transcript driven by tab
+    ; index has to be re-driven. What DOES move is the row INDEX: the
+    ; nonparametric header and its three rows all shift down by one, which is
+    ; why @emlComparisonFromMenu and @emlComparisonToMenu below are amended in
+    ; the same breath and why nothing outside this registry may hardcode a row
+    ; number (v61 pins that all six pages come through it).
+    option: "ANOVA only, no pairwise tests"
     option: "Tukey HSD (family-wise; no separate correction)"
     option: "-- Nonparametric --"
     option: "Dunn, Holm (step-down; more power than Bonferroni)"
@@ -1292,43 +1321,70 @@ endproc
 # Outputs: .isHeader (1 = a category header, not a choice)
 #          .testType  (1 = parametric, 2 = nonparametric)
 #          .adjustIdx (1 = bonferroni, 2 = holm, 3 = bh — as @emlAdjustMethodName)
+#          .doPostHoc (ITEM 3.5. 1 = run the pairwise post-hoc, 0 = omnibus
+#                      only. This is the value the pages commit to
+#                      annotPostHoc, which is the ONLY channel it has to
+#                      @emlRunAnnotationComparison — that procedure reads the
+#                      global, exactly as it reads annotCorrectionMethod$,
+#                      because its argument list is fixed by four call sites
+#                      in this file and by every user script that calls it.)
 # The parametric row carries holm as its adjustment so that switching to a
 # nonparametric row later starts from the same default the old two-control
 # page did. Tukey ignores it.
+#
+# ITEM 3.5 -- THE ROW NUMBERS BELOW ALL MOVED BY ONE from row 3 down, because
+# "ANOVA only, no pairwise tests" was inserted as row 2. They are written out
+# rather than computed so that this decode and @emlComparisonMenuRows can be
+# read against each other line by line; v61 pins that all six pages come
+# through this one registry, so this is the only place that has to know.
 # ----------------------------------------------------------------------------
 procedure emlComparisonFromMenu: .row
     .isHeader = 0
     .testType = 1
     .adjustIdx = 2
-    if .row = 1 or .row = 3
+    .doPostHoc = 1
+    if .row = 1 or .row = 4
         .isHeader = 1
-    elsif .row = 4
-        .testType = 2
-        .adjustIdx = 2
+    elsif .row = 2
+        ; ANOVA only, no pairwise tests. The omnibus still runs; what the
+        ; user has declined is the pairwise table under it.
+        .doPostHoc = 0
     elsif .row = 5
         .testType = 2
-        .adjustIdx = 1
+        .adjustIdx = 2
     elsif .row = 6
+        .testType = 2
+        .adjustIdx = 1
+    elsif .row = 7
         .testType = 2
         .adjustIdx = 3
     endif
 endproc
 
 # ----------------------------------------------------------------------------
-# @emlComparisonToMenu: .testType, .adjustIdx
+# @emlComparisonToMenu: .testType, .adjustIdx, .doPostHoc
 # The inverse, for seeding the menu from what the page last used. Never
 # returns a header row: a seed that landed on one would re-show the page the
 # user just left.
+#
+# ITEM 3.5 -- .doPostHoc IS AN ARGUMENT AND NOT A DEFAULT, so a page the user
+# left on "ANOVA only" opens on "ANOVA only". A seed that dropped it would
+# re-tick a post-hoc the user had just declined, which is the same class of
+# defect as the literal this item removes, arriving one dialog later.
+# .doPostHoc is read on the parametric side only: a nonparametric row is
+# already a named pairwise test and the Dunn opt-out is not this item.
 # ----------------------------------------------------------------------------
-procedure emlComparisonToMenu: .testType, .adjustIdx
-    .row = 2
+procedure emlComparisonToMenu: .testType, .adjustIdx, .doPostHoc
+    .row = 3
     if .testType = 2
-        .row = 4
+        .row = 5
         if .adjustIdx = 1
-            .row = 5
-        elsif .adjustIdx = 3
             .row = 6
+        elsif .adjustIdx = 3
+            .row = 7
         endif
+    elsif .doPostHoc = 0
+        .row = 2
     endif
 endproc
 
@@ -3173,7 +3229,7 @@ procedure emlGraphsPostDispatchAnnotations
         #     (192, 214) and a box handed (0, 0): placed at y = 0, outside
         #     the frame, and clipped away with no error and no note.
         #
-        # NO BRACKETS IS NOT AN EDGE CASE. @emlBridgeGroupComparison sets
+        # NO BRACKETS IS NOT AN EDGE CASE. @emlRunAnnotationComparison sets
         # annotTextN = 1 for the omnibus on every path, and leaves
         # annotBracketN at 0 whenever no pair clears alpha — which includes
         # every non-significant omnibus. Driven by
@@ -3268,20 +3324,43 @@ endproc
 # ============================================================================
 procedure emlGraphsWorkflow: .objectId
 
-    # Enable explanations in the graphs/drawing path.
+    # THE EXPLANATIONS GATE (punch list 6.1). Three origins reach this
+    # procedure, and the ruling gives each a different answer:
     #
-    # THIS GATE IS GLOBAL, so raising it here and walking away would make
-    # every LATER analysis report in the same session verbose, and report
-    # content would depend on draw order: the same test printing different
-    # text depending on whether a figure had been drawn first. The bottom of
-    # this procedure calls @emlResetExplanations, which puts the gate back to
-    # the default declared in stats/eml-output.praat — the declared default
-    # and not a literal 0, so this file cannot drift from that declaration.
-    # Whatever the calling wrapper does after Draw returns, it sees the same
-    # gate it would have seen without the Draw. The "Quit" buttons inside the
-    # form call exitScript, which ends the script and its entire variable
-    # scope, so they need no reset of their own.
-    emlShowExplanations = 1
+    #   -- THE WIZARD sets emlShowExplanations = 1 itself, once, at the very
+    #      top of eml-wizard.praat, before any page or any draw call. It has
+    #      no control and none of what follows is meant to touch that.
+    #   -- A MENU ANALYSIS DIALOG'S OWN TOGGLE ("Annotate results with
+    #      explanations", item 9) is read in @emlHandleCommonFields
+    #      (stats/eml-output.praat), which -- in every wrapper that has one --
+    #      runs before this procedure ever could. It sets emlShowExplanations
+    #      to the user's own answer AND sets emlExplanationsFromDialog = 1
+    #      with emlDialogShowExplanations holding that same answer, so a
+    #      later "Draw" button on the SAME wrapper hands this procedure the
+    #      dialog's own setting rather than a default.
+    #   -- STANDALONE (scripts/eml-graphs.praat, a fresh script scope that
+    #      never ran a wrapper dialog first) leaves emlExplanationsFromDialog
+    #      unset. The ruling says a standalone graph that annotates
+    #      statistics is on, unconditionally.
+    #
+    # emlExplanationsFromDialog is the only thing that tells the standalone
+    # case apart from the menu-dialog case, and it is re-asserted from
+    # emlDialogShowExplanations on EVERY entry rather than left to whatever
+    # emlShowExplanations already holds -- @emlResetExplanations below runs at
+    # the end of every call, including a first Draw, so a second Draw off the
+    # same wrapper's post-analysis dialog must not see the shared default in
+    # its place. Overwriting emlShowExplanations unconditionally here is
+    # exactly the bug the item's red demonstration exists to catch: it would
+    # make the toggle's OFF setting invisible on every figure a menu dialog
+    # launches.
+    if not variableExists ("emlExplanationsFromDialog")
+        emlExplanationsFromDialog = 0
+    endif
+    if emlExplanationsFromDialog
+        emlShowExplanations = emlDialogShowExplanations
+    else
+        emlShowExplanations = 1
+    endif
 
     # =================================================================
     # 1. IDEMPOTENT SETUP (every call)
@@ -3373,6 +3452,7 @@ prev_scatterRegressionLine = -1
 prev_scatterShowFormula = -1
 prev_scatterShowDots = -1
 prev_scatterUseGroup = -1
+prev_scatterCorrScope = 0
 
 # Box plot persistence
 prev_boxGroupIdx = 0
@@ -3429,6 +3509,14 @@ prev_histAnnotStyle = 1
 # Multiple-comparison adjustment persistence (shared by every
 # annotate-capable dialog). 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg.
 prev_annotAdjustIdx = 2
+
+# ITEM 3.5 -- post-hoc persistence, the same shape and the same scope as the
+# adjustment above: shared by every annotate-capable dialog, seeded into the
+# Comparison menu by @emlComparisonToMenu, written back from
+# @emlComparisonFromMenu.doPostHoc. 1 = run the pairwise post-hoc (the
+# behaviour before this item, so a session that never touches the row is
+# unchanged), 0 = omnibus only.
+prev_annotPostHoc = 1
 
 # THE ADJUSTMENT GATE IS GONE, AND SO IS THE CONDITION IT GUARDED.
 # It existed because the correction field was only put on the dialog when the
@@ -3549,6 +3637,12 @@ annotShowNS = 0
 annotShowEffect = 0
 annotAlpha = 0.05
 annotCorrectionMethod$ = "holm"
+; ITEM 3.5 -- the channel the Comparison menu's post-hoc row reaches
+; @emlRunAnnotationComparison through. Initialised here, beside
+; annotCorrectionMethod$ and for the same reason: the bridge is also called
+; by scripts that never open this form, and a global nothing has set stops
+; Praat dead. 1 is the behaviour every caller had before this item.
+annotPostHoc = 1
 annotLayoutMode = 1
 
 # Scatter plot column names (initialized to prevent undefined errors)
@@ -3562,6 +3656,9 @@ scatterRegressionLine = 0
 scatterAnalysisType = 0
 scatterShowFormula = 0
 scatterShowDots = 1
+; Relationships shown, grouped scatter only: 1 = Per group, 2 = Overall,
+; 3 = Both (each line labeled). Item 8.3 (punch list, 25 Aug 2026).
+scatterCorrScope = 1
 
     # =================================================================
     # CONTEXT DETECTION
@@ -3671,9 +3768,9 @@ scatterShowDots = 1
     # the calling test actually used.
     #
     # annotCorrectionMethod$ is the ONLY channel this value has:
-    # @emlBridgeGroupComparison does not take it as an argument, it reads the
+    # @emlRunAnnotationComparison does not take it as an argument, it reads the
     # global — the `.correction$ = "holm"` resolution block inside
-    # @emlBridgeGroupComparison, eml-annotation-procedures.praat. (Search for
+    # @emlRunAnnotationComparison, eml-annotation-procedures.praat. (Search for
     # the assignment, not for a line number: a line number in a comment
     # drifts.) So the job here is to make sure the global is well defined by
     # the time the bridge runs, on BOTH test paths — the bridge resolves
@@ -3693,7 +3790,7 @@ scatterShowDots = 1
     #     rather than later from inside the annotation layer.
     #
     # WHAT THIS DOES NOT DECIDE: on the parametric k >= 3 path the consuming
-    # side ignores the value. The Tukey branch of @emlBridgeGroupComparison —
+    # side ignores the value. The Tukey branch of @emlRunAnnotationComparison —
     # the branch opening `# --- One-way ANOVA + Tukey HSD ---` in
     # eml-annotation-procedures.praat — does not read .correction$; only the
     # Dunn branch does, because Tukey's p is already family-wise. Delivering
@@ -6026,10 +6123,10 @@ repeat
                             # never asked about: several series become the
                             # long shape the draw layer has always taken.
                             if tsSeriesRole = 1 and tsNSeries >= 2
-                                @emlGraphsMeltSeries: objectId, timeColName$,
+                                @emlReshapeSeriesLong: objectId, timeColName$,
                                 ... tsSeriesCols$
                                 tsOrigObjectId = objectId
-                                tsMeltTableId = emlGraphsMeltSeries.tableId
+                                tsMeltTableId = emlReshapeSeriesLong.tableId
 
                                 # ---- THE MELT, RECORDED AS A CONVERSION ----
                                 # WITHOUT THIS THE EMITTED SCRIPT CANNOT RUN.
@@ -6075,10 +6172,10 @@ repeat
                                 if variableExists ("emlRecordLoaded")
                                     @emlRecordInit
                                     if emlRecordActive = 1
-                                        tsMeltCode$ = "@emlGraphsMeltSeries: data, """
+                                        tsMeltCode$ = "@emlReshapeSeriesLong: data, """
                                         ... + timeColName$ + """, """
                                         ... + tsSeriesCols$ + """" + newline$
-                                        ... + "data = emlGraphsMeltSeries.tableId"
+                                        ... + "data = emlReshapeSeriesLong.tableId"
                                         ... + newline$ + "selectObject: data"
                                         @emlRecordConvert: tsOrigObjectId,
                                         ... tsMeltTableId, tsMeltCode$,
@@ -6226,11 +6323,11 @@ repeat
                                 # question would leave the column page looking
                                 # at a table the user does not have.
                                 if allFormsDone = 1 and tsLevelMode = 1
-                                    @emlGraphsPivotSeries: objectId,
+                                    @emlReshapeSeriesWide: objectId,
                                     ... timeColName$, tsLongValueCol$,
                                     ... tsLevelNameCol$, tsSeriesCols$
                                     tsOrigObjectId = objectId
-                                    tsPivotTableId = emlGraphsPivotSeries.tableId
+                                    tsPivotTableId = emlReshapeSeriesWide.tableId
 
                                     # ---- RECORDED AS A CONVERSION ----
                                     # WITHOUT THIS THE EMITTED SCRIPT CANNOT
@@ -6256,12 +6353,12 @@ repeat
                                     if variableExists ("emlRecordLoaded")
                                         @emlRecordInit
                                         if emlRecordActive = 1
-                                            tsPivotCode$ = "@emlGraphsPivotSeries: data, """
+                                            tsPivotCode$ = "@emlReshapeSeriesWide: data, """
                                             ... + timeColName$ + """, """
                                             ... + tsLongValueCol$ + """, """
                                             ... + tsLevelNameCol$ + """, """
                                             ... + tsSeriesCols$ + """" + newline$
-                                            ... + "data = emlGraphsPivotSeries.tableId"
+                                            ... + "data = emlReshapeSeriesWide.tableId"
                                             ... + newline$ + "selectObject: data"
                                             @emlRecordConvert: tsOrigObjectId,
                                             ... tsPivotTableId, tsPivotCode$,
@@ -6489,7 +6586,7 @@ repeat
                     # variable and not a re-test of tmpBarTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: tmpBarTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: tmpBarTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpBarAnnotStyle
@@ -6634,6 +6731,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_bar_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_bar_annotStyle = significance_style
                     prev_adv_bar_VMin$ = string$ (left_Value_range)
@@ -6769,6 +6870,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -6973,7 +7081,7 @@ repeat
                     # variable and not a re-test of tmpViolinTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: tmpViolinTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: tmpViolinTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpViolinAnnotStyle
@@ -7121,6 +7229,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_vio_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_vio_annotStyle = significance_style
                     prev_adv_vio_showJitter = show_jittered_points
@@ -7260,6 +7372,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -7445,6 +7564,14 @@ repeat
             tmpAnnotStyle = 3
         endif
 
+        # Relationships shown (grouped scope): the value the user last chose
+        # in this dialog. Read only where the field renders (scatterGroupShown
+        # = 1); harmless to seed here regardless.
+        if prev_scatterCorrScope >= 1
+            scatterCorrScope = prev_scatterCorrScope
+        endif
+        tmpCorrScope = scatterCorrScope
+
         # Regression defaults (1=None, 2=Line, 3=Formula, 4=Both)
         #
         # Preset first, remembered value second. The restore below runs AFTER
@@ -7576,6 +7703,19 @@ repeat
                         option: "Regression line"
                         option: "Formula"
                         option: "Both"
+                    # Item 8.3 (punch list, 25 Aug 2026) / language batch
+                    # item 15. Meaningless without a grouping column -- with
+                    # none in use there is only ever one model, the overall
+                    # one -- so the field exists only on the branch where
+                    # "Use group column" is ticked (RULING_DIALOG_COMPACTION
+                    # §1: a field that cannot be discarded because it is not
+                    # there to discard). Wording is verbatim from the batch.
+                    if scatterGroupShown = 1
+                        optionmenu: "Relationships shown", tmpCorrScope
+                            option: "Per group"
+                            option: "Overall"
+                            option: "Both, each line labeled"
+                    endif
                     optionmenu: "Significance style", tmpAnnotStyle
                         option: "p-value"
                         option: "stars"
@@ -7694,6 +7834,9 @@ repeat
                 if config_showAdvanced
                     # Toggling TO beginner: save advanced state
                     prev_adv_sca_corrType = correlation_method
+                    if scatterGroupShown = 1
+                        prev_adv_sca_corrScope = relationships_shown
+                    endif
                     prev_adv_sca_annotStyle = significance_style
                     prev_adv_sca_regressionLine = regression
                     prev_adv_sca_showDots = show_data_points
@@ -7714,6 +7857,7 @@ repeat
                     # Reset to beginner defaults
                     tmpCorrType = 1
                     tmpRegression = 1
+                    tmpCorrScope = 1
                     tmpAnnotStyle = 1
                     tmpShowDots = 1
                     tmpDotSize = 2
@@ -7739,6 +7883,9 @@ repeat
                     # Toggling TO advanced: restore saved state
                     if variableExists ("prev_adv_sca_corrType")
                         tmpCorrType = prev_adv_sca_corrType
+                        if variableExists ("prev_adv_sca_corrScope")
+                            tmpCorrScope = prev_adv_sca_corrScope
+                        endif
                         tmpAnnotStyle = prev_adv_sca_annotStyle
                         tmpRegression = prev_adv_sca_regressionLine
                         tmpShowDots = prev_adv_sca_showDots
@@ -7837,6 +7984,17 @@ repeat
                     endif
                     scatterShowDots = show_data_points
                     scatterDotSize = dot_size
+                    # Relationships shown: read only where the field
+                    # rendered (a grouping column in use). Ungrouped, there
+                    # is only ever the overall model, so the scope choice is
+                    # moot -- fixed at "Per group" the way scatterCorrScope's
+                    # global default has always been, harmlessly, because
+                    # @emlDrawScatterPlot's ungrouped path never reads it.
+                    if scatterGroupShown = 1
+                        scatterCorrScope = relationships_shown
+                    else
+                        scatterCorrScope = 1
+                    endif
                 else
                     # Beginner defaults: no annotation, reset all advanced-only fields
                     annotate = 0
@@ -7847,6 +8005,7 @@ repeat
                     scatterShowFormula = 0
                     scatterShowDots = 1
                     scatterDotSize = 2
+                    scatterCorrScope = 1
                 endif
                 gridline_mode = tmpGridMode
                 output_DPI = tmpDPI
@@ -7857,6 +8016,7 @@ repeat
                 prev_scatterShowFormula = scatterShowFormula
                 prev_scatterShowDots = scatterShowDots
                 prev_scatterUseGroup = use_group_column
+                prev_scatterCorrScope = scatterCorrScope
 
                 scatterXCol$ = x_column$
                 scatterYCol$ = y_column$
@@ -8042,7 +8202,7 @@ repeat
                     # variable and not a re-test of tmpBoxTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: tmpBoxTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: tmpBoxTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpBoxAnnotStyle
@@ -8190,6 +8350,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_box_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_box_annotStyle = significance_style
                     prev_adv_box_showJitter = show_jittered_points
@@ -8329,6 +8493,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -8545,7 +8716,7 @@ repeat
                     # variable and not a re-test of prev_histAnnotTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: prev_histAnnotTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: prev_histAnnotTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_histAnnotStyle
@@ -8710,6 +8881,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_his_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_his_annotStyle = significance_style
                     prev_adv_his_VMin$ = string$ (left_Value_range)
@@ -8882,6 +9057,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -9130,7 +9312,7 @@ repeat
                     # variable and not a re-test of prev_gvAnnotTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: prev_gvAnnotTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: prev_gvAnnotTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_gvAnnotStyle
@@ -9289,6 +9471,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_gv_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_gv_annotStyle = significance_style
                     prev_adv_gv_showJitter = show_jittered_points
@@ -9437,6 +9623,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -9627,7 +9820,7 @@ repeat
                     # variable and not a re-test of prev_gbAnnotTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: prev_gbAnnotTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: prev_gbAnnotTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_gbAnnotStyle
@@ -9786,6 +9979,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_gbTestType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_gbAnnotStyle = significance_style
                     prev_adv_gbShowJitter = show_jittered_points
@@ -9932,6 +10129,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -10464,7 +10668,26 @@ repeat
         annotLayoutMode = 3
     endif
 
-    # Every @emlBridgeGroupComparison call below delivers the
+    ; THE REPORT IS PRINTED ONLY WHEN THE BRIDGE SAYS SO, AND THAT IS THE
+    ; DUPLICATE REPORT'S FIX. @emlReportBridgeStats prints a FULL analysis
+    ; report in the Info window. Before the result store the bridge always
+    ; recomputed, so the sequence "run a Kruskal-Wallis from the stats menu,
+    ; then draw a violin of it" printed the whole report twice -- Ian's
+    ; driven session, and the defect docs/RULING_RESULT_STORE.md section (c)
+    ; is a contract about.
+    ;
+    ; The bridge now decides, because the bridge is the only thing that knows
+    ; whether it computed anything: .printReport is 1 when this report is the
+    ; FIRST report of this result (nothing was published, or the data moved
+    ; and the analysis was re-measured) and 0 when it is not (the figure drew
+    ; from the store, or a setting changed and the bridge has already said so
+    ; in one line). The form obeys it and adds no rule of its own -- a second
+    ; rule here is how the two would come to disagree.
+    ;
+    ; READ THROUGH variableExists, because a tree in which the bridge has not
+    ; run -- an error path, a user script -- has no .printReport to read, and
+    ; the safe answer in that case is the old one: print.
+    # Every @emlRunAnnotationComparison call below delivers the
     # multiple-comparison method through the annotCorrectionMethod$ global, not
     # through the argument list — the bridge has no parameter for it. That
     # global is live here for both values of annotTestType$: it is seeded from
@@ -10475,39 +10698,39 @@ repeat
     # then uses it is decided in eml-annotation-procedures.praat.
     if (graph_type = 6 or graph_type = 7 or graph_type = 9) and annotate = 1
         # Bar chart / Violin / Box plot: run group comparison bridge
-        @emlBridgeGroupComparison: objectId, valueColName$, groupColName$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, valueColName$, groupColName$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
-            @emlReportBridgeStats: objectId, valueColName$, groupColName$
+            @emlGraphsReportBridgeIfNew: objectId, valueColName$, groupColName$
         endif
     elsif graph_type = 11 and annotate = 1
         # Grouped Violin: compare sub-groups (pooled across categories)
-        @emlBridgeGroupComparison: objectId, gvValueCol$, gvSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, gvValueCol$, gvSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
-            emlBridgeGroupComparison.omnibus$ = emlBridgeGroupComparison.omnibus$ + " (pooled)"
+            emlRunAnnotationComparison.omnibus$ = emlRunAnnotationComparison.omnibus$ + " (pooled)"
             annotMatrixOmnibus$ = annotMatrixOmnibus$ + " (pooled)"
-            @emlReportBridgeStats: objectId, gvValueCol$, gvSubCol$
+            @emlGraphsReportBridgeIfNew: objectId, gvValueCol$, gvSubCol$
         endif
     elsif graph_type = 10 and annotate = 1 and histGroupCol$ <> ""
         # Histogram: group comparison (matrix only, no brackets)
-        @emlBridgeGroupComparison: objectId, histValueCol$, histGroupCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, histValueCol$, histGroupCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
-            @emlReportBridgeStats: objectId, histValueCol$, histGroupCol$
+            @emlGraphsReportBridgeIfNew: objectId, histValueCol$, histGroupCol$
         endif
     elsif graph_type = 12 and annotate = 1
         # Grouped Box Plot: compare sub-groups (pooled across categories)
-        @emlBridgeGroupComparison: objectId, gbValueCol$, gbSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, gbValueCol$, gbSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
-            emlBridgeGroupComparison.omnibus$ = emlBridgeGroupComparison.omnibus$ + " (pooled)"
+            emlRunAnnotationComparison.omnibus$ = emlRunAnnotationComparison.omnibus$ + " (pooled)"
             annotMatrixOmnibus$ = annotMatrixOmnibus$ + " (pooled)"
-            @emlReportBridgeStats: objectId, gbValueCol$, gbSubCol$
+            @emlGraphsReportBridgeIfNew: objectId, gbValueCol$, gbSubCol$
         endif
     endif
     # Scatter annotation is handled entirely within @emlDrawScatterPlot
@@ -10820,10 +11043,14 @@ until keepGoing = 0
     scatterPresetHasGroup = 0
 
     # --- restore the explanation gate ---
-    # Raised at the top of this procedure for the graphs path only. It is a
-    # global, so leaving it raised would make every later analysis report in
-    # the session verbose and make report content depend on draw order. The
-    # gate goes back to the default declared in stats/eml-output.praat, not to
-    # a literal written out here.
+    # Set at the top of this procedure for every call. It is a global, so
+    # leaving it as this call left it would make a later analysis report in
+    # the session verbose (or silent) depending only on draw order. The gate
+    # goes back to the default declared in stats/eml-output.praat, not to a
+    # literal written out here. emlExplanationsFromDialog is deliberately NOT
+    # cleared here: a wrapper's post-analysis dialog can call this procedure
+    # more than once per Run (a second "Draw"), and the entry above re-derives
+    # emlShowExplanations from emlDialogShowExplanations on every one of those
+    # calls, not just the first.
     @emlResetExplanations
 endproc

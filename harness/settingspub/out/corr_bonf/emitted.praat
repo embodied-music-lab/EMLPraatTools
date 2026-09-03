@@ -39,7 +39,7 @@ include /home/claude/repo/plugin/graphs/eml-draw-procedures.praat
 include /home/claude/repo/plugin/stats/eml-analysis.praat
 include /home/claude/repo/plugin/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -82,7 +82,8 @@ data = selected ()
 annotCorrectionMethod$ = "bonferroni"
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
-@emlBridgeGroupComparison: data, valueCol$, groupCol$, 0.05, "p-value", 1, 0, "nonparametric", 2
+emlShowExplanations = 0
+@emlRunAnnotationComparison: data, valueCol$, groupCol$, 0.05, "p-value", 1, 0, "nonparametric", 2
 
 # Kruskal-Wallis: H(2) = 11.39, p = .003, \ep^2 = 0.326
 #   3 groups, alpha = 0.050

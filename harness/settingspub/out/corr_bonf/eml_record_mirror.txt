@@ -6,4 +6,5 @@ Reached through the figure's annotation rather than the stats menu; the test and
 annotCorrectionMethod$ = "bonferroni"
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
-@emlBridgeGroupComparison: data, "val", "grp", 0.05, "p-value", 1, 0, "nonparametric", 2
+emlShowExplanations = 0
+@emlRunAnnotationComparison: data, "val", "grp", 0.05, "p-value", 1, 0, "nonparametric", 2

@@ -436,7 +436,7 @@ endproc
 # Y-axis unit option (Hz or semitones re 440 Hz). The queries, the
 #        auto-range and the draw command all branch on the unit.
 # ----------------------------------------------------------------------------
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 # ============================================================================
 # @emlDrawColumnIsClean: .tableId, .colName$
@@ -729,7 +729,7 @@ endproc
 # Uses stepped symmetric amplitude bounds and zero-line reference.
 # Source: task spec (17 Feb 2026), adapted for plugin dispatch signature.
 # ----------------------------------------------------------------------------
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .tMin, .tMax, .aMin, .aMax
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -861,7 +861,7 @@ endproc
 # Source: v1.1 (17 Feb 2026), adapted for plugin dispatch signature.
 # Frequency auto-detection uses sensible defaults, not time queries.
 # ----------------------------------------------------------------------------
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .fMin, .fMax, .pMin, .pMax
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -1053,7 +1053,7 @@ endproc
 #        Okabe-Ito color assignment. Draw order back-to-front:
 #        Bars → Speckles → Poles → Curve. Fallback if all disabled: Curve.
 # ----------------------------------------------------------------------------
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .fMin, .fMax, .pMin, .pMax, .showCurve, .showBars, .showPoles, .showSpeckles
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -1346,7 +1346,7 @@ endproc
 # ============================================================================
 # Simple time series: one line, or one line per group. No individuals.
 # ============================================================================
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .timeCol$, .valueCol$, .groupCol$, .tMin, .tMax, .vMin, .vMax
     # The column test runs once, at procedure entry, because the flag is
@@ -1386,7 +1386,7 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # THIS IS THE ONE FIGURE IN THE PLUGIN THAT MAY CARRY A RIGHT-HAND
     # Y-AXIS. @emlSecondAxisGate is the judge for all of them; here it says
     # yes, and every other draw procedure calls the same line and is told no
-    # out loud. See the second-axis block in @emlInitDrawingDefaults.
+    # out loud. See the second-axis block in @emlInitializeDrawingDefaults.
     #
     # THE REQUEST IS VALIDATED HERE AS WELL AS AT THE DIALOG, because the
     # dialog is not the only caller: a recorded script, the API export and any
@@ -2058,7 +2058,7 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         ; in black whatever colour is current. That is measured, not assumed
         ; -- harness/secondaxis/margin_ink.praat drives all three under a red
         ; pen and reads the ink back off the pixels -- and it is the answer to
-        ; the one thing Ian left open. See @emlInitDrawingDefaults.
+        ; the one thing Ian left open. See @emlInitializeDrawingDefaults.
         Axes: .xMin, .xMax, .rMin, .rMax
         ; AND THE MARKER SCALE WITH IT. @emlDrawMarker sizes a mark in WORLD
         ; units, from the world-per-inch @emlSetPatternScale published for the
@@ -2354,7 +2354,7 @@ endproc
 # Detects repeated measures per time point and computes mean ± CI using
 # the t-distribution. CI level is (1 - annotAlpha) — default 95%.
 # ============================================================================
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme),
 #                annotAlpha (confidence level; default 0.05 = 95% CI).
 procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .timeCol$, .valueCol$, .groupCol$, .tMin, .tMax, .vMin, .vMax
@@ -2894,7 +2894,7 @@ endproc
 #   .showMean  — boolean: draw bold mean overlay
 #   .vMin/.vMax — y-axis range (both 0 = auto)
 # ============================================================================
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .condCol$, .valueCol$, .idCol$, .groupCol$, .showMean, .vMin, .vMax
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -3510,7 +3510,7 @@ endproc
 # Error mode: 0=none, 1=SE (auto), 2=SD (auto), 3=custom column.
 # Source: task spec (17 Feb 2026), adapted for plugin dispatch signature.
 # ----------------------------------------------------------------------------
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .groupCol$, .valueCol$, .errorMode, .errorCol$, .vMin, .vMax
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -3891,7 +3891,7 @@ endproc
 # v1.1 fixes: bracket notation for string arrays, pre-computed indices.
 # Calls @emlDrawViolin from eml-graph-procedures.praat for each group.
 # ----------------------------------------------------------------------------
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .groupCol$, .valueCol$, .vMin, .vMax
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -4380,7 +4380,7 @@ endproc
 #   .yMin, .yMax — axis y range (both 0 = auto)
 #   .annotate    — 1 = draw annotations, 0 = skip
 # ============================================================================
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .colX$, .colY$, .groupCol$, .xMin, .xMax, .yMin, .yMax, .annotate
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -4674,7 +4674,7 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             .spearmanR = 0
             .spearmanP = 0
             if annotCorrType$ = "spearman" or annotCorrType$ = "both"
-                @emlSpearmanCorrelation: .xData#, .yData#, 2
+                @emlSpearmanCorrelationDispatch: .xData#, .yData#, 2
                 if emlSpearmanCorrelation.error$ = ""
                     .haveSpearman = 1
                     .spearmanR = emlSpearmanCorrelation.rho
@@ -5030,7 +5030,13 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         # printed to the Info window instead and the figure says so. See the
         # commit site below the loop.
         .pgN = 0
-        if .annotate = 1 or scatterRegressionLine = 1
+        # v1.23 — RELATIONSHIPS SHOWN. scatterCorrScope: 1 = Per group,
+        # 2 = Overall, 3 = Both (each line labeled). The per-group loop
+        # below is this figure's ONLY source of per-group lines, so gating
+        # it on scope <> 2 turns "Overall" into a scope that shows none of
+        # them; the pooled block after the loop is the only source of the
+        # Overall line and is gated the mirror way (scope <> 1).
+        if (.annotate = 1 or scatterRegressionLine = 1) and scatterCorrScope <> 2
 
             for .g from 1 to .nGroups
                 # Extract this group's x/y data
@@ -5089,7 +5095,7 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
 
                         # --- Per-group Spearman (annotation) ---
                         if annotCorrType$ = "spearman" or annotCorrType$ = "both"
-                            @emlSpearmanCorrelation: .gXTrim#, .gYTrim#, 2
+                            @emlSpearmanCorrelationDispatch: .gXTrim#, .gYTrim#, 2
                             if emlSpearmanCorrelation.error$ = ""
                                 .gSpearmanR = emlSpearmanCorrelation.rho
                                 .gSpearmanP = emlSpearmanCorrelation.p
@@ -5232,6 +5238,142 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             endfor
         endif
 
+        # --- Overall (pooled) relationship, when scope asks for it ---
+        # scatterCorrScope <> 1: "Overall" or "Both". The pooled model is
+        # computed from .xData#/.yData#/.nValid — the WHOLE table's clean
+        # pairs, read at Step 2 before this procedure ever branched into the
+        # grouped path, and never touched by the per-group loop above (which
+        # reads its own .gXData#/.gYData# per group). Buffered into the same
+        # .pgLabel$/.pgDraw$ arrays as the per-group lines so the existing
+        # all-or-none 20-line budget below governs it too — an "Overall"
+        # line that fit while a sixth group's line did not would be exactly
+        # the kind of partial box that budget exists to prevent.
+        if (scatterCorrScope = 2 or scatterCorrScope = 3) and (.annotate = 1 or scatterRegressionLine = 1) and .nValid >= 3
+            .oHavePearson = 0
+            .oPearsonR = 0
+            if .annotate = 1
+                .oPearsonP = 0
+                if annotCorrType$ = "pearson" or annotCorrType$ = "both"
+                    @emlPearsonCorrelation: .xData#, .yData#, 2
+                    if emlPearsonCorrelation.error$ = ""
+                        .oHavePearson = 1
+                        .oPearsonR = emlPearsonCorrelation.r
+                        .oPearsonP = emlPearsonCorrelation.p
+
+                        @emlFormatAnnotLabel: .oPearsonP, 0, annotStyle$, 0, ""
+                        .pText$ = emlFormatAnnotLabel.result$
+
+                        .pgN = .pgN + 1
+                        .pgLabel$[.pgN] = "Overall: r = " + fixed$ (.oPearsonR, 3) + ", " + .pText$
+                        .pgDraw$[.pgN] = "Overall: %r = " + fixed$ (.oPearsonR, 3) + ", " + .pText$
+                    endif
+                endif
+
+                if annotCorrType$ = "spearman" or annotCorrType$ = "both"
+                    @emlSpearmanCorrelationDispatch: .xData#, .yData#, 2
+                    if emlSpearmanCorrelation.error$ = ""
+                        .oSpearmanR = emlSpearmanCorrelation.rho
+                        .oSpearmanP = emlSpearmanCorrelation.p
+
+                        @emlFormatAnnotLabel: .oSpearmanP, 0, annotStyle$, 0, ""
+                        .pText$ = emlFormatAnnotLabel.result$
+
+                        .pgN = .pgN + 1
+                        .pgLabel$[.pgN] = "Overall: rs = " + fixed$ (.oSpearmanR, 3) + ", " + .pText$
+                        .pgDraw$[.pgN] = "Overall: %%r%_s = " + fixed$ (.oSpearmanR, 3) + ", " + .pText$
+                    endif
+                endif
+            endif
+
+            # --- Rich Info window output via shared reporters (overall) ---
+            .oReportedOLS = 0
+            if .annotate = 1
+                selectObject: .objectId
+                .oTableName$ = selected$ ("Table")
+                if (scatterAnalysisType = 1 or scatterAnalysisType = 3) and annotCorrType$ <> ""
+                    @emlReportCorrelationAnalysis: .oTableName$ + " -- Overall",
+                    ... .colX$, .colY$, .nValid, annotCorrType$
+                endif
+                if scatterAnalysisType >= 2
+                    @emlLinearRegression: .xData#, .yData#
+                    if emlLinearRegression.error$ = ""
+                        @emlReportRegressionAnalysis: .oTableName$ + " -- Overall",
+                        ... .colY$, .colX$, .nValid, 0
+                        .oReportedOLS = 1
+                    endif
+                endif
+            endif
+
+            # --- Overall regression line (independent of annotate) ---
+            if scatterRegressionLine = 1
+                .oUseTheilSen = 0
+                if annotCorrType$ = "spearman"
+                    if .oReportedOLS = 0
+                        .oUseTheilSen = 1
+                    endif
+                endif
+                .oLineMethod$ = "OLS"
+                if .oUseTheilSen = 1
+                    .oLineMethod$ = "Theil-Sen"
+                    @emlTheilSen: .xData#, .yData#
+                    if emlTheilSen.error$ = ""
+                        .oSlope = emlTheilSen.slope
+                        .oIntercept = emlTheilSen.intercept
+                    else
+                        .oSlope = undefined
+                    endif
+                else
+                    if .oHavePearson = 0
+                        @emlPearsonCorrelation: .xData#, .yData#, 2
+                        if emlPearsonCorrelation.error$ = ""
+                            .oPearsonR = emlPearsonCorrelation.r
+                        endif
+                    endif
+
+                    .oMeanX = mean (.xData#)
+                    .oMeanY = mean (.yData#)
+                    .oSdX = stdev (.xData#)
+                    .oSdY = stdev (.yData#)
+
+                    if .oSdX > 0
+                        .oSlope = .oPearsonR * (.oSdY / .oSdX)
+                        .oIntercept = .oMeanY - .oSlope * .oMeanX
+                    else
+                        .oSlope = undefined
+                    endif
+                endif
+
+                if .oSlope <> undefined
+                    # Overall line drawn in the same neutral colour the
+                    # ungrouped path uses (.regColor$) rather than any
+                    # group's palette slot — a pooled model is not any one
+                    # group's line and must not read as one.
+                    @emlDrawRegressionLine: .dataXMin, .dataXMax, .oSlope, .oIntercept, .axisYMin, .axisYMax, .regColor$
+
+                    if .oLineMethod$ = "OLS"
+                        .oR2 = .oPearsonR * .oPearsonR
+                        .oEqn$ = "  Overall: OLS fitted line: y = " + fixed$ (.oSlope, 4) + "x + " + fixed$ (.oIntercept, 4) + "  (R" + "² = " + fixed$ (.oR2, 3) + ")"
+                    else
+                        .oEqn$ = "  Overall: " + .oLineMethod$ + " fitted line: y = " + fixed$ (.oSlope, 4) + "x + " + fixed$ (.oIntercept, 4)
+                    endif
+                    appendInfoLine: .oEqn$
+
+                    if scatterShowFormula = 1
+                        .pgN = .pgN + 1
+                        .oMethodTag$ = .oLineMethod$ + ": "
+                        if .oLineMethod$ = "OLS"
+                            .oR2Annot = .oPearsonR * .oPearsonR
+                            .pgLabel$[.pgN] = "Overall: " + .oMethodTag$ + "y = " + fixed$ (.oSlope, 4) + "x + " + fixed$ (.oIntercept, 4) + "  (R² = " + fixed$ (.oR2Annot, 3) + ")"
+                            .pgDraw$[.pgN] = "Overall: " + .oMethodTag$ + "%y = " + fixed$ (.oSlope, 4) + "%x + " + fixed$ (.oIntercept, 4) + "  (%R² = " + fixed$ (.oR2Annot, 3) + ")"
+                        else
+                            .pgLabel$[.pgN] = "Overall: " + .oMethodTag$ + "y = " + fixed$ (.oSlope, 4) + "x + " + fixed$ (.oIntercept, 4)
+                            .pgDraw$[.pgN] = "Overall: " + .oMethodTag$ + "%y = " + fixed$ (.oSlope, 4) + "%x + " + fixed$ (.oIntercept, 4)
+                        endif
+                    endif
+                endif
+            endif
+        endif
+
         # v1.22 — COMMIT THE BUFFERED PER-GROUP LINES, ALL OR NONE.
         #
         # The budget is @emlDisclose's 20-line block cap, less whatever is
@@ -5366,6 +5508,15 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                 ... + "annotCorrType$ = """ + annotCorrType$ + """" + newline$
                 ... + "scatterRegressionLine = "
                 ... + string$ (scatterRegressionLine) + newline$
+                ; Relationships shown (v1.23): only meaningful once a
+                ; grouping column exists, but harmless to set unconditionally
+                ; -- the ungrouped path never reads it. Recorded alongside
+                ; its three siblings above so a replay of a grouped scatter
+                ; reproduces which model(s) it drew, not just that it drew.
+                if variableExists ("scatterCorrScope")
+                    .recSetup$ = .recSetup$ + "scatterCorrScope = "
+                    ... + string$ (scatterCorrScope) + newline$
+                endif
             endif
             .recNote$ = "A fitted line is descriptive and carries no test."
             .recBoth$ = .recFit$
@@ -5404,7 +5555,7 @@ endproc
 # Draws a grouped box-and-whisker plot with Tukey whiskers and outlier dots.
 # Follows the same data extraction pattern as @emlDrawViolinPlot.
 # ============================================================================
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .groupCol$, .valueCol$, .vMin, .vMax
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -5680,7 +5831,7 @@ endproc
 # Mode 2 is faceted, not side-by-side: see the branch at Step 9-10.
 # Auto-bins via Sturges formula when binCount = 0.
 # ============================================================================
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .valueCol$, .groupCol$, .binCount, .displayMode, .vMin, .vMax, .freqMax
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -6304,7 +6455,7 @@ endproc
 # side-by-side violins within each category.
 # Example: 5 songs (categories) x 3 platforms (sub-groups) = 15 violins
 # ============================================================================
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .catCol$, .subCol$, .valueCol$, .vMin, .vMax
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -6704,7 +6855,7 @@ endproc
 # ============================================================================
 # Categories on x-axis, sub-groups as side-by-side boxes per category.
 # ============================================================================
-# Requires: @emlInitDrawingDefaults (or manual global initialization).
+# Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .catCol$, .subCol$, .valueCol$, .vMin, .vMax
     # A REQUEST THIS FIGURE CANNOT HONOUR IS REFUSED OUT LOUD.
@@ -7073,13 +7224,13 @@ procedure emlDrawLMMForest
     .figH = .chromeH + .rowPitch * .p
 
     # Display-toggle globals are normally set by the graphs form's UI path
-    # (eml-graphs-form.praat) or by @emlInitDrawingDefaults. The LMM tool
+    # (eml-graphs-form.praat) or by @emlInitializeDrawingDefaults. The LMM tool
     # reaches this procedure through neither, so seed them if absent —
     # @emlDrawAlignedMarksBottom reads emlShowTicksX / emlShowAxisValuesX and
     # Praat raises "Unknown variable" on an undefined global inside an if.
     # Same self-heal idiom as the panel-origin guard in @emlSetAdaptiveTheme.
     if variableExists ("emlShowTicksX") = 0
-        @emlInitDrawingDefaults
+        @emlInitializeDrawingDefaults
     endif
     if variableExists ("colorMode$") = 0
         colorMode$ = "color"
@@ -7160,7 +7311,7 @@ procedure emlDrawLMMForest
     ; that stood here by hand -- bodySize, axisColor$, axisLineWidth -- and
     ; then honours emlShowInnerBox, which the bare `Draw inner box` it replaces
     ; ignored: a user who turned the frame off still got one on this figure.
-    ; The globals it reads are seeded by the @emlInitDrawingDefaults guard at
+    ; The globals it reads are seeded by the @emlInitializeDrawingDefaults guard at
     ; the top of this procedure, which sets emlShowInnerBox and emlShowTicksX
     ; together.
     @emlDrawInnerBoxIf

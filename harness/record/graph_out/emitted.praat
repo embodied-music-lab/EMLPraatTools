@@ -39,7 +39,7 @@ include ~/repo/plugin/graphs/eml-draw-procedures.praat
 include ~/repo/plugin/stats/eml-analysis.praat
 include ~/repo/plugin/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -91,6 +91,9 @@ emlPanelOriginY = panelOriginY
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 emlLineStyle = lineStyle
 emlSecondAxisOn = secondAxisOn
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # Axis resolved to 170.0000 .. 270.0000 over 4 groups on the recorded data; auto adapts to other data.

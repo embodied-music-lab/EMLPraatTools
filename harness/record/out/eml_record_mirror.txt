@@ -7,4 +7,6 @@ Loaded /home/claude/repo/evidence/csv/demo_3groups_input.csv as supplied. Nothin
 One-way ANOVA of SPL_dB by voice_type, 3 groups.
 Tukey HSD requested. Alpha 0.05 (default, not specified by the user).
 Normality was NOT tested on this path.
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlRunAnovaAnalysis: data, "SPL_dB", "voice_type", 1

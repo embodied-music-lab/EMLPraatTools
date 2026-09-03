@@ -62,6 +62,47 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     ; variable". The record then reports only what was actually computed.
     .p = undefined
     .mwP = undefined
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
+    ; The publication sits after the end label, beside the record hook and
+    ; for the same reason: every guard above it jumps there, and A RUN THAT
+    ; REFUSES MUST PUBLISH ITS REFUSAL -- otherwise the run before it is
+    ; still published, wearing this run's silence. Praat aborts on a read of
+    ; a variable that was never assigned, so every field the publication
+    ; states is given a value here, before the first guard can jump.
+    ; UNDEFINED IS THE VALUE FOR "THIS RUN DID NOT PRODUCE ONE" and never
+    ; zero, which is a number a reader would believe.
+    ; ---------------------------------------------------------------------
+    .stKey$ = ""
+    .stKeyError$ = ""
+    .stSort$ = "table"
+    .stTest$ = ""
+    .stCorrection$ = ""
+    .stNGroups = 0
+    .stOmniLabel$ = ""
+    .stOmni = undefined
+    .stDf1 = undefined
+    .stDf2 = undefined
+    .stP = undefined
+    .stEffLabel$ = ""
+    .stEff = undefined
+    .stN = undefined
+    .stSecLabel$ = ""
+    .stSec = undefined
+    .stSecDf1 = undefined
+    .stSecP = undefined
+    .stSecEffLabel$ = ""
+    .stSecEff = undefined
+    .stPostHoc$ = ""
+    .stHasMatrix = 0
+    .stStatLabel$ = ""
+    .stPairEffLabel$ = ""
+    .stNone## = zero## (1, 1)
+    .stPMat## = zero## (1, 1)
+    .stDiffMat## = zero## (1, 1)
+    .stStatMat## = zero## (1, 1)
+    .stEffMat## = zero## (1, 1)
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -133,13 +174,45 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         goto END_TWO_GROUP
     endif
 
+    ; THE KEY, TAKEN IN THE SAME PASS THAT READS THE DATA and before the
+    ; first value is read. THE FINGERPRINT CANNOT CHECK THIS AND SAYS SO:
+    ; a key taken after the reads is truthful about the wrong moment, and no
+    ; digest width detects it -- the fault is in the ORDER of the calls.
+    ; @emlStoreKeyTake stamps the group sort order at the same instant, for
+    ; the same reason: it decides the order the contrasts are formed in, so
+    ; it is part of what this pass produced.
+    @emlStoreKeyTake: .tableId, .dataCol$, .groupCol$
+    ; THE ERROR FIRST, THEN THE OUTPUTS IT GUARDS -- lane 9.2's order, which
+    ; validate/v134's lint reads. The diagnosis is PUBLISHED rather than
+    ; dropped: an unkeyed result is already safe, because "" never agrees,
+    ; but a reason nobody can read is the silent class the error census
+    ; counted nineteen of.
+    .stKeyError$ = emlStoreKeyTake.error$
+    .stKey$ = emlStoreKeyTake.key$
+    .stSort$ = emlStoreKeyTake.sort$
+
     .group1$ = emlCountGroups.groupLabel$[1]
     .group2$ = emlCountGroups.groupLabel$[2]
 
+    ; BOTH CALLS BELOW READ THEIR ERROR, THOUGH NEITHER CAN FAIL HERE.
+    ; @eml_getGroupData's only failure path is a column that is not there, and
+    ; @emlRequireColumnPresent and @emlRequireNumericColumn have already
+    ; refused that case above, each with a goto out. The reads cost nothing and
+    ; they hold if the guards above are ever moved or a caller reaches this
+    ; procedure another way -- which is cheaper than a promise that the failure
+    ; path stays unreachable.
     @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .group1$
+    if eml_getGroupData.error$ <> ""
+        .error$ = eml_getGroupData.error$
+        goto END_TWO_GROUP
+    endif
     .g1# = eml_getGroupData.data#
     .n1 = eml_getGroupData.n
     @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .group2$
+    if eml_getGroupData.error$ <> ""
+        .error$ = eml_getGroupData.error$
+        goto END_TWO_GROUP
+    endif
     .g2# = eml_getGroupData.data#
     .n2 = eml_getGroupData.n
 
@@ -265,6 +338,50 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         ... .doPar, .doNon, .group1$, .group2$
     endif
 
+    ; ---- THE STORE'S FIELDS FOR THIS RUN. Read from the kernels' own
+    ; namespaces, which @emlReportTwoGroupComparison PRINTS FROM AND DOES NOT
+    ; RECOMPUTE, so the publication states the numbers the reader was shown.
+    ; Guarded on the arm having run: an arm that never ran has no namespace,
+    ; and reading one aborts the script.
+    if .error$ = ""
+        .stNGroups = 2
+        emlPublishInLabel$ [1] = .group1$
+        emlPublishInLabel$ [2] = .group2$
+        .stN = .n1 + .n2
+        if .doPar
+            .stTest$ = "student t"
+            if .equalVar = 0
+                .stTest$ = "welch t"
+            endif
+            .stOmniLabel$ = "t"
+            .stOmni = emlTTest.t
+            .stDf1 = emlTTest.df
+            .stP = emlTTest.p
+            .stEffLabel$ = "Cohen's d"
+            .stEff = emlCohenD.d
+        endif
+        if .doNon
+            if .doPar
+                ; BOTH ARMS RAN, so both are published. A run that computed
+                ; two tests and published one would be this contract's own
+                ; defect at field granularity.
+                .stTest$ = .stTest$ + " + mann-whitney"
+                .stSecLabel$ = "U"
+                .stSec = emlMannWhitneyU.u1
+                .stSecP = emlMannWhitneyU.p
+                .stSecEffLabel$ = "rank-biserial r"
+                .stSecEff = emlRankBiserialR.r
+            else
+                .stTest$ = "mann-whitney"
+                .stOmniLabel$ = "U"
+                .stOmni = emlMannWhitneyU.u1
+                .stP = emlMannWhitneyU.p
+                .stEffLabel$ = "rank-biserial r"
+                .stEff = emlRankBiserialR.r
+            endif
+        endif
+    endif
+
     ; The numbers the reporter printed, from this procedure's OWN locals.
     if .error$ = ""
         .recResult$ = .group1$ + ": n = " + string$ (.n1) + ", mean = "
@@ -280,6 +397,54 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         endif
     endif
     label END_TWO_GROUP
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
+    ; identity, statistics, matrices and the key taken at the read -- the way
+    ; the pens are stated on every press. See THE RESULT STORE: THE SINGLE
+    ; WRITE SITE in stats/eml-extract.praat.
+    ;
+    ; PLACED AFTER THE END LABEL, with the record hook and for the record
+    ; hook's reason: a refusal published is what stops the previous run's
+    ; result standing as the answer to this one.
+    ;
+    ; NO ALPHA CONTROL ON THIS DOOR, so the alpha in force is the one the
+    ; report itself is written against -- @emlReportAlpha, which is this
+    ; tree's one answer to "significant against what". A literal .05 here
+    ; would be the frozen-choice defect the lint in validate/v116 exists for.
+    ; ---------------------------------------------------------------------
+    ; ------------------------------------------------------------------
+    ; ITEM 1.2 — THE CANONICAL REPORT TEXT, HANDED TO THE WRITE SITE.
+    ;
+    ; emlEmitText$ is what the shared reporter above rendered through the
+    ; minimal renderer (@emlEmit, stats/eml-output.praat): the FACTUAL and
+    ; DISCLOSURE lines of the report that has this moment been printed, with
+    ; no explanation line, no two-tab gloss, no timestamp and no provenance
+    ; line in it. It is read HERE, immediately before the publication,
+    ; because the buffer holds the most recent rendering and nothing between
+    ; the reporter and this line renders a report.
+    ;
+    ; ONLY ON A RUN THAT COMPUTED. A refusal jumps to the label above without
+    ; printing a report at all, so the buffer would still hold an EARLIER
+    ; analysis's text — a stored report about a different result, which is
+    ; the one thing a text comparison must never be handed. "" is the honest
+    ; answer there, and "" means "no report was printed for this result".
+    ; ------------------------------------------------------------------
+    emlPublishInReport$ = ""
+    if .error$ = ""
+        emlPublishInReport$ = emlEmitText$
+    endif
+
+    @emlReportAlpha
+    @emlPublishAnalysisResult: "emlRunTwoGroupAnalysis", "menu", "group",
+    ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
+    ... .dataCol$, .groupCol$, .stTest$, .stCorrection$,
+    ... emlReportAlpha.value, .stSort$,
+    ... .stNGroups, .stOmniLabel$, .stOmni, .stDf1, .stDf2, .stP,
+    ... .stEffLabel$, .stEff, .stN,
+    ... .stSecLabel$, .stSec, .stSecDf1, .stSecP, .stSecEffLabel$, .stSecEff,
+    ... .stPostHoc$, .stHasMatrix, .stStatLabel$, .stPairEffLabel$,
+    ... .stPMat##, .stDiffMat##, .stStatMat##, .stEffMat##
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -311,6 +476,47 @@ endproc
 # ============================================================================
 
 procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
+    ; The publication sits after the end label, beside the record hook and
+    ; for the same reason: every guard above it jumps there, and A RUN THAT
+    ; REFUSES MUST PUBLISH ITS REFUSAL -- otherwise the run before it is
+    ; still published, wearing this run's silence. Praat aborts on a read of
+    ; a variable that was never assigned, so every field the publication
+    ; states is given a value here, before the first guard can jump.
+    ; UNDEFINED IS THE VALUE FOR "THIS RUN DID NOT PRODUCE ONE" and never
+    ; zero, which is a number a reader would believe.
+    ; ---------------------------------------------------------------------
+    .stKey$ = ""
+    .stKeyError$ = ""
+    .stSort$ = "table"
+    .stTest$ = ""
+    .stCorrection$ = ""
+    .stNGroups = 0
+    .stOmniLabel$ = ""
+    .stOmni = undefined
+    .stDf1 = undefined
+    .stDf2 = undefined
+    .stP = undefined
+    .stEffLabel$ = ""
+    .stEff = undefined
+    .stN = undefined
+    .stSecLabel$ = ""
+    .stSec = undefined
+    .stSecDf1 = undefined
+    .stSecP = undefined
+    .stSecEffLabel$ = ""
+    .stSecEff = undefined
+    .stPostHoc$ = ""
+    .stHasMatrix = 0
+    .stStatLabel$ = ""
+    .stPairEffLabel$ = ""
+    .stNone## = zero## (1, 1)
+    .stPMat## = zero## (1, 1)
+    .stDiffMat## = zero## (1, 1)
+    .stStatMat## = zero## (1, 1)
+    .stEffMat## = zero## (1, 1)
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -352,6 +558,23 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
         goto END_ANOVA
     endif
 
+    ; THE KEY, TAKEN IN THE SAME PASS THAT READS THE DATA and before the
+    ; first value is read. THE FINGERPRINT CANNOT CHECK THIS AND SAYS SO:
+    ; a key taken after the reads is truthful about the wrong moment, and no
+    ; digest width detects it -- the fault is in the ORDER of the calls.
+    ; @emlStoreKeyTake stamps the group sort order at the same instant, for
+    ; the same reason: it decides the order the contrasts are formed in, so
+    ; it is part of what this pass produced.
+    @emlStoreKeyTake: .tableId, .dataCol$, .groupCol$
+    ; THE ERROR FIRST, THEN THE OUTPUTS IT GUARDS -- lane 9.2's order, which
+    ; validate/v134's lint reads. The diagnosis is PUBLISHED rather than
+    ; dropped: an unkeyed result is already safe, because "" never agrees,
+    ; but a reason nobody can read is the silent class the error census
+    ; counted nineteen of.
+    .stKeyError$ = emlStoreKeyTake.error$
+    .stKey$ = emlStoreKeyTake.key$
+    .stSort$ = emlStoreKeyTake.sort$
+
     @emlOneWayAnova: .tableId, .dataCol$, .groupCol$, .doTukey
     if emlOneWayAnova.error$ <> ""
         .error$ = emlOneWayAnova.error$
@@ -359,17 +582,35 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     endif
 
     # Ensure pairwise Cohen's d matrix always exists
+    #
+    # ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_2026-09-01.md
+    # §5). This used to call @eml_getGroupData again for every (i, j)
+    # pair -- group j re-extracted for every pair it appeared in -- even
+    # though @emlOneWayAnova, just above, already extracted every group's
+    # vector once to run the F-test. It now reads
+    # emlOneWayAnova.groupData'g'#, the cache that call left behind, which
+    # is populated whether or not Tukey ran (@emlOneWayAnova's own single
+    # extraction loop runs unconditionally). The reporter reads; it does
+    # not re-extract.
     if .doTukey = 0
         emlOneWayAnova.dMatrix## = zero## (.nGroups, .nGroups)
         for .i from 1 to .nGroups - 1
-            @eml_getGroupData: .tableId, .dataCol$, .groupCol$, emlOneWayAnova.groupLabel$[.i]
-            .vi# = eml_getGroupData.data#
+            .vi# = emlOneWayAnova.groupData'.i'#
             for .j from .i + 1 to .nGroups
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$, emlOneWayAnova.groupLabel$[.j]
-                @emlCohenD: .vi#, eml_getGroupData.data#
+                @emlCohenD: .vi#, emlOneWayAnova.groupData'.j'#
                 if emlCohenD.error$ = ""
                     emlOneWayAnova.dMatrix## [.i, .j] = emlCohenD.d
                     emlOneWayAnova.dMatrix## [.j, .i] = -emlCohenD.d
+                else
+                    ; Punch list 9.1. Left at the zero## default, a failed
+                    ; pair printed as an indistinguishable "0.000" -- a true
+                    ; zero effect and a computation that could not run read
+                    ; the same in a matrix a reader uses to judge effect
+                    ; sizes. undefined is what @eml_fixed already refuses to
+                    ; round silently, and the printer below now shows "n/a"
+                    ; for it, matching @emlPairwiseT's own matrix.
+                    emlOneWayAnova.dMatrix## [.i, .j] = undefined
+                    emlOneWayAnova.dMatrix## [.j, .i] = undefined
                 endif
             endfor
         endfor
@@ -412,7 +653,97 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
         ... .tableId, .doTukey
     endif
 
+    ; ---- THE STORE'S FIELDS FOR THIS RUN. @emlReportAnovaComparison re-runs
+    ; @emlOneWayAnova itself, so emlOneWayAnova.* here holds exactly what was
+    ; PRINTED -- the same reason the record hook below reads it rather than
+    ; scraping the Info window.
+    if emlOneWayAnova.error$ = ""
+        .stNGroups = .nGroups
+        for .gi from 1 to .nGroups
+            emlPublishInLabel$ [.gi] = emlOneWayAnova.groupLabel$[.gi]
+        endfor
+        .stTest$ = "one-way anova"
+        .stOmniLabel$ = "F"
+        .stOmni = emlOneWayAnova.fValue
+        .stDf1 = emlOneWayAnova.dfBetween
+        .stDf2 = emlOneWayAnova.dfWithin
+        .stP = emlOneWayAnova.p
+        .stEffLabel$ = "eta squared"
+        .stEff = emlOneWayAnova.etaSquared
+        .stN = emlOneWayAnova.dfTotal + 1
+        ; THE EFFECT-SIZE MATRIX EXISTS ON BOTH BRANCHES -- the block above
+        ; builds it pair by pair when Tukey did not run -- so it is published
+        ; either way, and the pairwise p, q and mean difference are published
+        ; as undefined when no post-hoc produced them. Undefined and not zero:
+        ; see @emlPublishAbsentMatrix.
+        .stHasMatrix = 1
+        .stPairEffLabel$ = "Cohen's d"
+        .stEffMat## = emlOneWayAnova.dMatrix##
+        if .doTukey
+            .stTest$ = "one-way anova + tukey"
+            .stPostHoc$ = "tukey"
+            .stStatLabel$ = "q"
+            .stPMat## = emlOneWayAnova.pMatrix##
+            .stStatMat## = emlOneWayAnova.qMatrix##
+            .stDiffMat## = emlOneWayAnova.meanDiff##
+        else
+            @emlPublishAbsentMatrix: .nGroups
+            .stPMat## = emlPublishAbsentMatrix.m##
+            @emlPublishAbsentMatrix: .nGroups
+            .stStatMat## = emlPublishAbsentMatrix.m##
+            @emlPublishAbsentMatrix: .nGroups
+            .stDiffMat## = emlPublishAbsentMatrix.m##
+        endif
+    endif
+
     label END_ANOVA
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
+    ; identity, statistics, matrices and the key taken at the read -- the way
+    ; the pens are stated on every press. See THE RESULT STORE: THE SINGLE
+    ; WRITE SITE in stats/eml-extract.praat.
+    ;
+    ; PLACED AFTER THE END LABEL, with the record hook and for the record
+    ; hook's reason: a refusal published is what stops the previous run's
+    ; result standing as the answer to this one.
+    ;
+    ; THE ALPHA IS THE ONE IN FORCE, never a literal: @emlReportAlpha is this
+    ; tree's single answer to "significant against what", and it is the alpha
+    ; the report above was written against.
+    ; ---------------------------------------------------------------------
+    ; ------------------------------------------------------------------
+    ; ITEM 1.2 — THE CANONICAL REPORT TEXT, HANDED TO THE WRITE SITE.
+    ;
+    ; emlEmitText$ is what the shared reporter above rendered through the
+    ; minimal renderer (@emlEmit, stats/eml-output.praat): the FACTUAL and
+    ; DISCLOSURE lines of the report that has this moment been printed, with
+    ; no explanation line, no two-tab gloss, no timestamp and no provenance
+    ; line in it. It is read HERE, immediately before the publication,
+    ; because the buffer holds the most recent rendering and nothing between
+    ; the reporter and this line renders a report.
+    ;
+    ; ONLY ON A RUN THAT COMPUTED. A refusal jumps to the label above without
+    ; printing a report at all, so the buffer would still hold an EARLIER
+    ; analysis's text — a stored report about a different result, which is
+    ; the one thing a text comparison must never be handed. "" is the honest
+    ; answer there, and "" means "no report was printed for this result".
+    ; ------------------------------------------------------------------
+    emlPublishInReport$ = ""
+    if .error$ = ""
+        emlPublishInReport$ = emlEmitText$
+    endif
+
+    @emlReportAlpha
+    @emlPublishAnalysisResult: "emlRunAnovaAnalysis", "menu", "group",
+    ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
+    ... .dataCol$, .groupCol$, .stTest$, .stCorrection$,
+    ... emlReportAlpha.value, .stSort$,
+    ... .stNGroups, .stOmniLabel$, .stOmni, .stDf1, .stDf2, .stP,
+    ... .stEffLabel$, .stEff, .stN,
+    ... .stSecLabel$, .stSec, .stSecDf1, .stSecP, .stSecEffLabel$, .stSecEff,
+    ... .stPostHoc$, .stHasMatrix, .stStatLabel$, .stPairEffLabel$,
+    ... .stPMat##, .stDiffMat##, .stStatMat##, .stEffMat##
 
     ; ---------------------------------------------------------------------
     ; RECORD WORKFLOW. Inert unless a recording is running: every entry point
@@ -566,8 +897,49 @@ endproc
 #
 # ============================================================================
 
-procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$
+procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod$
     .recResult$ = ""
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
+    ; The publication sits after the end label, beside the record hook and
+    ; for the same reason: every guard above it jumps there, and A RUN THAT
+    ; REFUSES MUST PUBLISH ITS REFUSAL -- otherwise the run before it is
+    ; still published, wearing this run's silence. Praat aborts on a read of
+    ; a variable that was never assigned, so every field the publication
+    ; states is given a value here, before the first guard can jump.
+    ; UNDEFINED IS THE VALUE FOR "THIS RUN DID NOT PRODUCE ONE" and never
+    ; zero, which is a number a reader would believe.
+    ; ---------------------------------------------------------------------
+    .stKey$ = ""
+    .stKeyError$ = ""
+    .stSort$ = "table"
+    .stTest$ = ""
+    .stCorrection$ = ""
+    .stNGroups = 0
+    .stOmniLabel$ = ""
+    .stOmni = undefined
+    .stDf1 = undefined
+    .stDf2 = undefined
+    .stP = undefined
+    .stEffLabel$ = ""
+    .stEff = undefined
+    .stN = undefined
+    .stSecLabel$ = ""
+    .stSec = undefined
+    .stSecDf1 = undefined
+    .stSecP = undefined
+    .stSecEffLabel$ = ""
+    .stSecEff = undefined
+    .stPostHoc$ = ""
+    .stHasMatrix = 0
+    .stStatLabel$ = ""
+    .stPairEffLabel$ = ""
+    .stNone## = zero## (1, 1)
+    .stPMat## = zero## (1, 1)
+    .stDiffMat## = zero## (1, 1)
+    .stStatMat## = zero## (1, 1)
+    .stEffMat## = zero## (1, 1)
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -609,6 +981,23 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
         goto END_KW
     endif
 
+    ; THE KEY, TAKEN IN THE SAME PASS THAT READS THE DATA and before the
+    ; first value is read. THE FINGERPRINT CANNOT CHECK THIS AND SAYS SO:
+    ; a key taken after the reads is truthful about the wrong moment, and no
+    ; digest width detects it -- the fault is in the ORDER of the calls.
+    ; @emlStoreKeyTake stamps the group sort order at the same instant, for
+    ; the same reason: it decides the order the contrasts are formed in, so
+    ; it is part of what this pass produced.
+    @emlStoreKeyTake: .tableId, .dataCol$, .groupCol$
+    ; THE ERROR FIRST, THEN THE OUTPUTS IT GUARDS -- lane 9.2's order, which
+    ; validate/v134's lint reads. The diagnosis is PUBLISHED rather than
+    ; dropped: an unkeyed result is already safe, because "" never agrees,
+    ; but a reason nobody can read is the silent class the error census
+    ; counted nineteen of.
+    .stKeyError$ = emlStoreKeyTake.error$
+    .stKey$ = emlStoreKeyTake.key$
+    .stSort$ = emlStoreKeyTake.sort$
+
     @emlKruskalWallis: .tableId, .dataCol$, .groupCol$
     ; CAPTURED AT THE TEST, not at the end label. A Praat procedure's outputs
     ; live only until it runs again, and everything downstream of here reads
@@ -642,17 +1031,26 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
             .needRMatrix = 0
         endif
     endif
+    ; ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_2026-09-01.md
+    ; §5). This used to re-extract every pair from the table even though
+    ; @emlKruskalWallis, just above, already extracted every group once.
+    ; Reads emlKruskalWallis.groupData'g'#, the cache that call left
+    ; behind, instead.
     if .needRMatrix
         emlKruskalWallis.rMatrix## = zero## (.nGroups, .nGroups)
         for .i from 1 to .nGroups - 1
-            @eml_getGroupData: .tableId, .dataCol$, .groupCol$, emlKruskalWallis.groupName$[.i]
-            .vi# = eml_getGroupData.data#
+            .vi# = emlKruskalWallis.groupData'.i'#
             for .j from .i + 1 to .nGroups
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$, emlKruskalWallis.groupName$[.j]
-                @emlRankBiserialR: .vi#, eml_getGroupData.data#, 2
+                @emlRankBiserialR: .vi#, emlKruskalWallis.groupData'.j'#, 2
                 if emlRankBiserialR.error$ = ""
                     emlKruskalWallis.rMatrix## [.i, .j] = emlRankBiserialR.r
                     emlKruskalWallis.rMatrix## [.j, .i] = -emlRankBiserialR.r
+                else
+                    ; Punch list 9.1, the rank-biserial sibling of the
+                    ; Cohen's d fix above. Same shape, same reason: a failed
+                    ; pair must not read as a true zero effect.
+                    emlKruskalWallis.rMatrix## [.i, .j] = undefined
+                    emlKruskalWallis.rMatrix## [.j, .i] = undefined
                 endif
             endfor
         endfor
@@ -680,7 +1078,106 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
         @emlDeclareKWResult: .tableName$, .dataCol$, .groupCol$
     endif
 
+    ; ---- THE STORE'S FIELDS FOR THIS RUN. Read from emlKruskalWallis, whose
+    ; namespace the block above has already been careful to keep -- neither
+    ; the reporter nor the declaration re-invokes the test.
+    if .error$ = ""
+        .stNGroups = .nGroups
+        for .gi from 1 to .nGroups
+            emlPublishInLabel$ [.gi] = emlKruskalWallis.groupName$[.gi]
+        endfor
+        .stTest$ = "kruskal-wallis"
+        .stOmniLabel$ = "H"
+        .stOmni = emlKruskalWallis.h
+        .stDf1 = emlKruskalWallis.df
+        .stP = emlKruskalWallis.p
+        .stEffLabel$ = "epsilon squared"
+        .stEff = emlKruskalWallis.epsilonSq
+        .stN = emlKruskalWallis.n
+        ; THE RANK-BISERIAL MATRIX EXISTS ON BOTH BRANCHES, built pair by
+        ; pair above when Dunn's did not run or failed, so it is published
+        ; either way; the pairwise p and z are undefined when nothing
+        ; produced them. See @emlPublishAbsentMatrix.
+        .stHasMatrix = 1
+        .stPairEffLabel$ = "rank-biserial r"
+        .stEffMat## = emlKruskalWallis.rMatrix##
+        @emlPublishAbsentMatrix: .nGroups
+        .stDiffMat## = emlPublishAbsentMatrix.m##
+        .stDunnRan = 0
+        if .doDunn = 1
+            if variableExists ("emlDunnTest.error$")
+                if emlDunnTest.error$ = ""
+                    .stDunnRan = 1
+                endif
+            endif
+        endif
+        if .stDunnRan = 1
+            .stTest$ = "kruskal-wallis + dunn"
+            ; THE CORRECTION IS PUBLISHED ONLY WHERE ONE WAS APPLIED. With no
+            ; post-hoc there is no family to adjust, and publishing the
+            ; dialog's dormant choice would make two runs that computed the
+            ; same numbers compare as two different analyses.
+            .stCorrection$ = .adjMethod$
+            .stPostHoc$ = "dunn"
+            .stStatLabel$ = "z"
+            .stPMat## = emlDunnTest.pMatrix##
+            .stStatMat## = emlDunnTest.zMatrix##
+        else
+            @emlPublishAbsentMatrix: .nGroups
+            .stPMat## = emlPublishAbsentMatrix.m##
+            @emlPublishAbsentMatrix: .nGroups
+            .stStatMat## = emlPublishAbsentMatrix.m##
+        endif
+    endif
+
     label END_KW
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
+    ; identity, statistics, matrices and the key taken at the read -- the way
+    ; the pens are stated on every press. See THE RESULT STORE: THE SINGLE
+    ; WRITE SITE in stats/eml-extract.praat.
+    ;
+    ; PLACED AFTER THE END LABEL, with the record hook and for the record
+    ; hook's reason: a refusal published is what stops the previous run's
+    ; result standing as the answer to this one.
+    ;
+    ; THE ALPHA IS THE ONE IN FORCE, never a literal: @emlReportAlpha is this
+    ; tree's single answer to "significant against what", and it is the alpha
+    ; the report above was written against.
+    ; ---------------------------------------------------------------------
+    ; ------------------------------------------------------------------
+    ; ITEM 1.2 — THE CANONICAL REPORT TEXT, HANDED TO THE WRITE SITE.
+    ;
+    ; emlEmitText$ is what the shared reporter above rendered through the
+    ; minimal renderer (@emlEmit, stats/eml-output.praat): the FACTUAL and
+    ; DISCLOSURE lines of the report that has this moment been printed, with
+    ; no explanation line, no two-tab gloss, no timestamp and no provenance
+    ; line in it. It is read HERE, immediately before the publication,
+    ; because the buffer holds the most recent rendering and nothing between
+    ; the reporter and this line renders a report.
+    ;
+    ; ONLY ON A RUN THAT COMPUTED. A refusal jumps to the label above without
+    ; printing a report at all, so the buffer would still hold an EARLIER
+    ; analysis's text — a stored report about a different result, which is
+    ; the one thing a text comparison must never be handed. "" is the honest
+    ; answer there, and "" means "no report was printed for this result".
+    ; ------------------------------------------------------------------
+    emlPublishInReport$ = ""
+    if .error$ = ""
+        emlPublishInReport$ = emlEmitText$
+    endif
+
+    @emlReportAlpha
+    @emlPublishAnalysisResult: "emlRunKruskalWallisAnalysis", "menu", "group",
+    ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
+    ... .dataCol$, .groupCol$, .stTest$, .stCorrection$,
+    ... emlReportAlpha.value, .stSort$,
+    ... .stNGroups, .stOmniLabel$, .stOmni, .stDf1, .stDf2, .stP,
+    ... .stEffLabel$, .stEff, .stN,
+    ... .stSecLabel$, .stSec, .stSecDf1, .stSecP, .stSecEffLabel$, .stSecEff,
+    ... .stPostHoc$, .stHasMatrix, .stStatLabel$, .stPairEffLabel$,
+    ... .stPMat##, .stDiffMat##, .stStatMat##, .stEffMat##
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -696,7 +1193,7 @@ procedure emlRunKWAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn, .adjMethod
         @emlRecordAnalysisStep: .tableId, "Kruskal-Wallis",
         ... .dataCol$ + " by " + .groupCol$,
         ... "Rank-based; it does not assume normality and does not test it.",
-        ... "@emlRunKWAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, " + string$ (.doDunn) + ", """ + .adjMethod$ + """",
+        ... "@emlRunKruskalWallisAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, " + string$ (.doDunn) + ", """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Stats & Graphs > Compare k groups (Kruskal-Wallis)...",
         ... .recResult$, .error$
     endif
@@ -713,6 +1210,47 @@ endproc
 
 procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjMethod$
     .recResult$ = ""
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
+    ; The publication sits after the end label, beside the record hook and
+    ; for the same reason: every guard above it jumps there, and A RUN THAT
+    ; REFUSES MUST PUBLISH ITS REFUSAL -- otherwise the run before it is
+    ; still published, wearing this run's silence. Praat aborts on a read of
+    ; a variable that was never assigned, so every field the publication
+    ; states is given a value here, before the first guard can jump.
+    ; UNDEFINED IS THE VALUE FOR "THIS RUN DID NOT PRODUCE ONE" and never
+    ; zero, which is a number a reader would believe.
+    ; ---------------------------------------------------------------------
+    .stKey$ = ""
+    .stKeyError$ = ""
+    .stSort$ = "table"
+    .stTest$ = ""
+    .stCorrection$ = ""
+    .stNGroups = 0
+    .stOmniLabel$ = ""
+    .stOmni = undefined
+    .stDf1 = undefined
+    .stDf2 = undefined
+    .stP = undefined
+    .stEffLabel$ = ""
+    .stEff = undefined
+    .stN = undefined
+    .stSecLabel$ = ""
+    .stSec = undefined
+    .stSecDf1 = undefined
+    .stSecP = undefined
+    .stSecEffLabel$ = ""
+    .stSecEff = undefined
+    .stPostHoc$ = ""
+    .stHasMatrix = 0
+    .stStatLabel$ = ""
+    .stPairEffLabel$ = ""
+    .stNone## = zero## (1, 1)
+    .stPMat## = zero## (1, 1)
+    .stDiffMat## = zero## (1, 1)
+    .stStatMat## = zero## (1, 1)
+    .stEffMat## = zero## (1, 1)
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -742,7 +1280,7 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         goto END_PAIRWISE
     endif
     ; CAPTURED HERE. @emlCountGroups is re-invoked inside every post-hoc
-    ; procedure below -- the hazard @emlBridgeGroupComparison documents at
+    ; procedure below -- the hazard @emlRunAnnotationComparison documents at
     ; length -- so .nGroups must be taken now or not at all.
     .recGroups = emlCountGroups.nGroups
     if emlCountGroups.nGroups < 2
@@ -770,6 +1308,23 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         .error$ = emlRequireNumericColumn.error$
         goto END_PAIRWISE
     endif
+
+    ; THE KEY, TAKEN IN THE SAME PASS THAT READS THE DATA and before the
+    ; first value is read. THE FINGERPRINT CANNOT CHECK THIS AND SAYS SO:
+    ; a key taken after the reads is truthful about the wrong moment, and no
+    ; digest width detects it -- the fault is in the ORDER of the calls.
+    ; @emlStoreKeyTake stamps the group sort order at the same instant, for
+    ; the same reason: it decides the order the contrasts are formed in, so
+    ; it is part of what this pass produced.
+    @emlStoreKeyTake: .tableId, .dataCol$, .groupCol$
+    ; THE ERROR FIRST, THEN THE OUTPUTS IT GUARDS -- lane 9.2's order, which
+    ; validate/v134's lint reads. The diagnosis is PUBLISHED rather than
+    ; dropped: an unkeyed result is already safe, because "" never agrees,
+    ; but a reason nobody can read is the silent class the error census
+    ; counted nineteen of.
+    .stKeyError$ = emlStoreKeyTake.error$
+    .stKey$ = emlStoreKeyTake.key$
+    .stSort$ = emlStoreKeyTake.sort$
 
     if .test$ = "welch" or .test$ = "student"
         if .test$ = "welch"
@@ -815,6 +1370,112 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         @emlDeclarePairwiseResult: .tableName$, .groupCol$, .test$, .adjMethod$
     endif
 
+    ; ---- THE STORE'S FIELDS FOR THIS RUN. A PAIRWISE FAMILY HAS NO
+    ; OMNIBUS, so the omnibus slots stay at the entry value -- "" and
+    ; undefined, which is what "this run did not produce one" is written as
+    ; everywhere in this store. What it has is the matrices, and they are
+    ; published whole.
+    ;
+    ; THE KERNELS' NAMESPACES SURVIVE THE REPORTER. @emlReportPairwiseComparison
+    ; re-reads the data column for its per-group descriptives and prints from
+    ; emlPairwiseT / emlPairwiseWilcoxon / emlScheffe; it does not re-run any
+    ; of them.
+    if .error$ = ""
+        .stNGroups = .recGroups
+        .stCorrection$ = .adjMethod$
+        .stHasMatrix = 1
+        if .test$ = "welch" or .test$ = "student"
+            .stTest$ = "pairwise " + .tType$ + " t"
+            .stPostHoc$ = .tType$ + " t"
+            .stStatLabel$ = "t"
+            .stPairEffLabel$ = "Cohen's d"
+            for .gi from 1 to .recGroups
+                emlPublishInLabel$ [.gi] = emlPairwiseT.groupName$[.gi]
+            endfor
+            .stPMat## = emlPairwiseT.pMatrix##
+            .stStatMat## = emlPairwiseT.tMatrix##
+            .stEffMat## = emlPairwiseT.dMatrix##
+            ; STILL THE ABSENT MATRIX, BUT NOT BECAUSE THE KERNEL LACKS THE
+            ; NUMBER ANY MORE. @emlPairwiseT now publishes .diffMatrix##
+            ; (item 2, 26 August work order) -- the mean difference is
+            ; computed on every row, every correction. It is kept out of
+            ; the store here for the same reason it is kept out of the
+            ; Info-window report: D-NODIFF converts from exempt to compared
+            ; once the point differences PRINT
+            ; (docs/RULING_KIT_DELTAS_2026-08-26.md), and they do not print
+            ; until Ian's en-bloc language approval lands. Publishing the
+            ; real matrix here, ahead of that, would surface the drafted
+            ; number through the result store and any figure or export that
+            ; reads it -- a second door for language that is supposed to
+            ; stay dark behind the one door the report itself controls.
+            ; Revisit alongside the language batch, not before.
+            @emlPublishAbsentMatrix: .recGroups
+            .stDiffMat## = emlPublishAbsentMatrix.m##
+            ; .stN -- THE TOTAL COMPLETE-CASE N THE ANALYSIS CONSUMED, per
+            ; Fable's 26 August work order: the sum, across every group this
+            ; run used, of that group's own complete-case count (the same
+            ; total the R oracle reads as length(x) after dropping a blank
+            ; group cell or an unusable value cell). @emlPairwiseT tests all
+            ; C(k,2) pairs from the SAME k groups, so this is one pass over
+            ; the groups, not per pair -- each row is counted once no matter
+            ; how many pairs it appears in.
+            ; ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_2026-09
+            ; -01.md §5): @emlPairwiseT already extracted every group once
+            ; to run its own C(k,2) tests, and .groupN[.gi] is its own
+            ; cached per-group size, in the same group order as
+            ; .groupName$[.gi] above -- read it rather than re-extracting.
+            .stN = 0
+            for .gi from 1 to .recGroups
+                .stN = .stN + emlPairwiseT.groupN[.gi]
+            endfor
+        elsif .test$ = "wilcoxon"
+            .stTest$ = "pairwise wilcoxon"
+            .stPostHoc$ = "wilcoxon"
+            .stStatLabel$ = "U"
+            .stPairEffLabel$ = "rank-biserial r"
+            for .gi from 1 to .recGroups
+                emlPublishInLabel$ [.gi] = emlPairwiseWilcoxon.groupName$[.gi]
+            endfor
+            .stPMat## = emlPairwiseWilcoxon.pMatrix##
+            .stStatMat## = emlPairwiseWilcoxon.uMatrix##
+            .stEffMat## = emlPairwiseWilcoxon.rMatrix##
+            @emlPublishAbsentMatrix: .recGroups
+            .stDiffMat## = emlPublishAbsentMatrix.m##
+            ; .stN -- same definition and same reason as the t arm above:
+            ; one pass over the k groups this run used, not per pair.
+            ; ONE EXTRACTION PER CASE, same reasoning as the t/Welch arm
+            ; above: read @emlPairwiseWilcoxon's own cached .groupN[.gi].
+            .stN = 0
+            for .gi from 1 to .recGroups
+                .stN = .stN + emlPairwiseWilcoxon.groupN[.gi]
+            endfor
+        elsif .test$ = "scheffe"
+            .stTest$ = "scheffe"
+            .stPostHoc$ = "scheffe"
+            .stStatLabel$ = "F"
+            ; SCHEFFE'S OWN CORRECTION IS THE TEST. It does not take an
+            ; adjustment argument -- the critical value carries the family
+            ; -- so publishing the dialog's adjustment beside it would name
+            ; a correction that was never applied.
+            .stCorrection$ = ""
+            for .gi from 1 to .recGroups
+                emlPublishInLabel$ [.gi] = emlScheffe.groupName$[.gi]
+            endfor
+            .stPMat## = emlScheffe.pMatrix##
+            .stStatMat## = emlScheffe.fMatrix##
+            .stDiffMat## = emlScheffe.diffMatrix##
+            @emlPublishAbsentMatrix: .recGroups
+            .stEffMat## = emlPublishAbsentMatrix.m##
+            ; .stN -- the Scheffe arm's existing .totalN, design-wide by
+            ; construction (it is summed once over all k groups inside
+            ; @emlScheffe, not per pair -- see its .dfWithin = .totalN -
+            ; .nGroups). Reusing it here is the "existing .totalN" half of
+            ; the same work-order sentence the t/wilcoxon arms above answer
+            ; with their own per-group sum.
+            .stN = emlScheffe.totalN
+        endif
+    endif
+
     ; A pairwise family has no single statistic; it has a shape. What a
     ; reader needs from the record is which test, which correction, and over
     ; how many comparisons -- the family size is what makes an adjusted p
@@ -826,6 +1487,49 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     endif
 
     label END_PAIRWISE
+
+    ; ---------------------------------------------------------------------
+    ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
+    ; identity, statistics, matrices and the key taken at the read -- the way
+    ; the pens are stated on every press. See THE RESULT STORE: THE SINGLE
+    ; WRITE SITE in stats/eml-extract.praat.
+    ;
+    ; PLACED AFTER THE END LABEL, with the record hook and for the record
+    ; hook's reason: a refusal published is what stops the previous run's
+    ; result standing as the answer to this one.
+    ;
+    ; NO ALPHA CONTROL ON THIS DOOR, so the alpha in force is the one the
+    ; report itself is written against -- @emlReportAlpha, which is this
+    ; tree's one answer to "significant against what". A literal .05 here
+    ; would be the frozen-choice defect the lint in validate/v116 exists for.
+    ; ---------------------------------------------------------------------
+    ; ------------------------------------------------------------------
+    ; ITEM 1.2 — THIS DOOR PUBLISHES NO CANONICAL REPORT TEXT, AND SAYS SO.
+    ; Fable's amendment puts the minimal renderer on THE TWO STORE-WIRED
+    ; DOORS ONLY, and @emlReportPairwiseComparison is not one of the three
+    ; reporters those two doors share. Its report is therefore not canonical,
+    ; and handing over a half-rendered text would let a later run fall silent
+    ; on a match against text that is not the report anybody read. "" is the
+    ; honest answer and it means exactly that: the reprint comparison never
+    ; fires against a stored "".
+    ;
+    ; NOTHING IS LOST TODAY. A figure asking the store about this result finds
+    ; a pairwise family in emlStoreTestType$ against the graph door's own
+    ; "one-way anova + tukey", so the verdict is "settings" and no report is
+    ; reprinted on that path at all.
+    ; ------------------------------------------------------------------
+    emlPublishInReport$ = ""
+
+    @emlReportAlpha
+    @emlPublishAnalysisResult: "emlRunPairwiseAnalysis", "menu", "group",
+    ... .error$, .stKey$, .stKeyError$, .tableId, .tableName$,
+    ... .dataCol$, .groupCol$, .stTest$, .stCorrection$,
+    ... emlReportAlpha.value, .stSort$,
+    ... .stNGroups, .stOmniLabel$, .stOmni, .stDf1, .stDf2, .stP,
+    ... .stEffLabel$, .stEff, .stN,
+    ... .stSecLabel$, .stSec, .stSecDf1, .stSecP, .stSecEffLabel$, .stSecEff,
+    ... .stPostHoc$, .stHasMatrix, .stStatLabel$, .stPairEffLabel$,
+    ... .stPMat##, .stDiffMat##, .stStatMat##, .stEffMat##
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -919,6 +1623,120 @@ procedure emlReportAlpha
     while right$ (.text$, 1) = "0" and length (.text$) > 4
         .text$ = left$ (.text$, length (.text$) - 1)
     endwhile
+endproc
+
+
+# ============================================================================
+# @emlPostHocCaution — the one line a post-hoc under a quiet omnibus carries
+# ============================================================================
+# THE POLICY THIS BELONGS TO. A post-hoc the user chose runs on every door,
+# whatever the omnibus says (punch list 2026-08-25, lane 3.1). Four sites used
+# to decide otherwise and three of them took the post-hoc away in silence.
+# Running it is the ruling; this line is what the ruling owes the reader when
+# the omnibus did not reach the level in force — a pairwise result read out of
+# a family the omnibus could not separate deserves the caveat, and the caveat
+# is a sentence rather than a missing table.
+#
+# ROUTED AS AN EXPLANATION, deliberately, and the language batch says why
+# (item 11): the FACT is the omnibus p, and that number is printed on every
+# path by the report above this line, so nothing the reader needs rides on a
+# line the explanations toggle can remove. Compare @emlEffectMatrixCaption
+# below, whose first half is a DISCLOSURE for exactly the opposite reason.
+#
+# THE LEVEL IS THE ALPHA IN FORCE, never a literal: @emlReportAlpha is the
+# report's one answer to "significant against what", and the leading zero is
+# dropped the way every other level and p-value in the tree drops it. A run at
+# alpha = .01 therefore reads ".01 level" and means it.
+#
+# Arguments:
+#   .omnibusP — the omnibus p-value for the analysis the post-hoc sits under
+# Output:
+#   .printed  — 1 if the line was printed, 0 if not (a significant omnibus, an
+#               undefined p, or explanations off)
+# ============================================================================
+procedure emlPostHocCaution: .omnibusP
+    .printed = 0
+    @emlReportAlpha
+    ; NESTED, NOT `and`: Praat evaluates both operands, and an undefined p
+    ; compared against a number is not a comparison anyone should rely on.
+    if .omnibusP <> undefined
+        if .omnibusP >= emlReportAlpha.value
+            if emlShowExplanations
+                ; ITEM 1.2 — THIS LINE IS AN EXPLANATION AND MUST NOT BUFFER.
+                ; The header above already says why it is routed as one (the
+                ; FACT is the omnibus p, printed on every path). What is new
+                ; is that it now goes through @emlExplainLine rather than
+                ; @emlReportBlank/@emlReportNote, both of which are canonical
+                ; printers: buffered, this caution would put the explanations
+                ; toggle inside the stored report text and make two identical
+                ; reports compare as different. Same bytes on the page — the
+                ; blank line, then the note wrapped at the report's 68-column
+                ; body width, which is the width @emlReportNote uses.
+                .level$ = replace$ (emlReportAlpha.text$, "0.", ".", 1)
+                @emlExplainLine: "", 0
+                @emlExplainLine: "The overall test did not reach significance "
+                ... + "at the " + .level$ + " level; interpret individual "
+                ... + "pairwise results with caution.", 68
+                .printed = 1
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlEffectMatrixCaption — what a pairwise effect-size matrix says when no
+#                           pairwise test was run beside it
+# ============================================================================
+# The effect-size matrix prints whether or not a post-hoc ran; with the
+# post-hoc off it is the only pairwise thing in the report, and an unlabelled
+# grid of numbers under a heading that says "pairwise" invites being read as
+# significance. Two sentences, and the language batch (item 12) splits them by
+# routing on purpose:
+#
+#   * "No pairwise significance tests were run" is a DISCLOSURE. It states what
+#     was NOT computed, so it prints on every path — a toggle must not be able
+#     to remove it.
+#   * "Effect sizes estimate the size of each pairwise difference" is an
+#     EXPLANATION. It teaches what the numbers are, and where explanations are
+#     off it is absent rather than shortened.
+#
+# UNCORRECTED PAIRWISE p-VALUES ARE NEVER SHOWN HERE, and that is the standing
+# rule this caption sits under (lane 3.4): if a bare-LSD pairwise test is ever
+# added it must bring its own omnibus gate with it.
+#
+# emlPairwiseFollows IS HOW A CALLER SAYS "NOT YET", and it exists because one
+# door runs its omnibus and its post-hoc as two calls. The wizard's Scheffe and
+# pairwise-Welch rows ask @emlRunAnovaAnalysis for an ANOVA with NO Tukey, and
+# then ask @emlRunPairwiseAnalysis for the post-hoc the user actually chose --
+# so at the moment this caption is reached, `no pairwise significance tests
+# were run` is true of the report it sits in and FALSE of the run, and the
+# pairwise p-values it denies are eleven lines further down the same Info
+# window. A caller that is about to print them raises this flag around the
+# omnibus call and lowers it afterwards, the way @emlGraphsWorkflow raises and
+# lowers emlShowExplanations for its own scope. Unset means what it says: no
+# door but the wizard sets it, and an absent variable reads as 0.
+# ============================================================================
+procedure emlEffectMatrixCaption
+    .pairwiseFollows = 0
+    if variableExists ("emlPairwiseFollows")
+        if emlPairwiseFollows = 1
+            .pairwiseFollows = 1
+        endif
+    endif
+    if .pairwiseFollows = 0
+        ; ITEM 1.2 — THE TWO SENTENCES SPLIT HERE THE WAY THEY ALWAYS DID,
+        ; and now the split is structural rather than a matter of which `if`
+        ; they sit in. The DISCLOSURE keeps @emlReportNote, so it is in the
+        ; canonical text; the EXPLANATION goes through @emlExplainLine, which
+        ; never buffers, so toggling explanations cannot change one character
+        ; of the stored report. Both print exactly as before, wrapped at 68.
+        @emlReportNote: "No pairwise significance tests were run."
+        if emlShowExplanations
+            @emlExplainLine: "Effect sizes estimate the size of each pairwise "
+            ... + "difference.", 68
+        endif
+    endif
 endproc
 
 
@@ -1117,6 +1935,75 @@ endproc
 # Arguments:
 #   .tableId — the table the test ran on. Required for the per-group
 #              descriptives, which re-read the column.
+#
+# Output (welch/student branch only; DARK -- computed, never printed):
+#   .meanDiffFlat# — mean difference per pair, C(k,2) length, in the same
+#                    pair order as .rawP# / .adjustedP#. Computed on every
+#                    row regardless of correction, per Fable's 26 August
+#                    work order, but not yet reported: the language it
+#                    would print is drafted and gated on Ian's en-bloc
+#                    approval (docs/RULING_INTERVALS_2026-08-26.md).
+#   .lowFlat#, .highFlat# — the interval per pair, or undefined where the
+#                    correction in force does not define one. Populated
+#                    only when .adjMethod$ is "bonferroni" (level
+#                    1 - alpha/m per pair); undefined for holm and bh,
+#                    which define no such level. Not yet reported, for the
+#                    same reason as .meanDiffFlat# above.
+#
+# Output (wilcoxon branch only; DARK -- computed, never printed):
+#   .hlEstFlat#    — the Hodges-Lehmann shift estimate per pair, C(k,2)
+#                    long, in @emlPairwiseWilcoxon's own pair order.
+#                    Computed on every row under every correction, per
+#                    the same 26 August work order clause that governs
+#                    .meanDiffFlat# above, and printed by nothing: the
+#                    line it would print, "Hodges-Lehmann shift
+#                    (C1 - C2): x.xx", is drafted and gated on Ian's
+#                    en-bloc approval of the language batch
+#                    (docs/RULING_INTERVALS_2026-08-26.md).
+#   .hlLowFlat#, .hlHighFlat# — that estimate's interval per pair, or
+#                    undefined where the correction in force does not
+#                    define one. Bonferroni only, at
+#                    .level = 1 - alpha/m; undefined under holm and bh.
+#   .hlMethod$ [i] — "exact" or "normal approximation" for pair i: WHICH
+#                    NULL DISTRIBUTION THAT PAIR'S INTERVAL CAME FROM.
+#                    Exposed because it must equal the branch the pair's
+#                    p-value was computed on, and a report whose interval
+#                    and p-value disagree about that is incoherent while
+#                    both numbers still look reasonable. v145 reads it.
+#
+#   These four are named apart from the welch/student branch's
+#   .meanDiffFlat# / .lowFlat# / .highFlat# rather than sharing them.
+#   Only one branch of this procedure runs per call, so sharing would
+#   compile; it would also let a stale interval from a previous t-branch
+#   call be read back as this call's Hodges-Lehmann one, which is a
+#   reading error no check would see.
+#
+# Output (scheffe branch only; DARK -- computed, never printed):
+#   .scheffeLowFlat#, .scheffeHighFlat# — the Scheffe simultaneous interval
+#                    per pair, C(k,2) long, in @emlScheffe's own (i, j)
+#                    nested-loop pair order, through @emlScheffeInterval
+#                    (item 5, 26 August work order). The mean difference
+#                    itself needs no flat array of its own here -- unlike
+#                    the welch/student branch, this branch's existing
+#                    printed table already reads it every row straight from
+#                    @emlScheffe.diffMatrix##, which is this procedure's
+#                    point estimate on every row and every correction, same
+#                    as the other two arms.
+#
+#                    UNGATED, ON PURPOSE. The welch/student and wilcoxon
+#                    branches only populate their interval arrays when
+#                    .adjMethod$ is "bonferroni" (their .level is
+#                    1 - alpha/m and Holm/BH define no level at all).
+#                    Scheffe has no such gate to apply: this branch runs
+#                    with no separate .adjMethod$ toggle (Scheffe's p is
+#                    already familywise-controlled, per the "p adjustment"
+#                    line this procedure prints), and its multiplier IS
+#                    the one and only simultaneity correction there is for
+#                    it -- so .scheffeLowFlat#/.scheffeHighFlat# are
+#                    computed on EVERY row this branch prints, at
+#                    .alpha directly, never alpha/m. Language is drafted
+#                    and gated on Ian's en-bloc approval, same as the other
+#                    two arms (docs/RULING_INTERVALS_2026-08-26.md).
 # ============================================================================
 
 procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupCol$, .test$, .adjMethod$
@@ -1148,11 +2035,36 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
         @emlReportLine: "Pairs tested", emlPairwiseT.nPairs, 0
         @emlReportLineString: "p adjustment", .adjLabel$
         @emlReportLineString: "Alpha", .alphaText$
+        .groupList$ = ""
+        for .iGroup from 1 to .nGroups
+            if .iGroup > 1
+                .groupList$ = .groupList$ + ", "
+            endif
+            .groupList$ = .groupList$ + emlPairwiseT.groupName$ [.iGroup]
+        endfor
+        @emlReportGroupOrderLine: .groupList$
 
         @emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
 
         @emlReportBlank
         @emlReportSection: "Per-pair results"
+        ; EXPLANATION, reused verbatim from @emlReportTwoGroupComparison's
+        ; Welch/Student branch (punch list 6.2) -- this table runs the same
+        ; test pairwise, so the same sentence is true of every row in it.
+        ; No per-pair gloss is added below: @emlWizardExplainP and
+        ; @emlWizardExplainEffectD are written for ONE value, and this table
+        ; prints .nPairs of each, so applying either per row would repeat
+        ; the same banded sentence under most pairs and misstate it under
+        ; the rest. No existing helper is shaped for a matrix of values.
+        if emlShowExplanations
+            if .test$ = "welch"
+                appendInfoLine: "  Why: Compares means of two independent "
+                ... + "groups (robust to unequal variances)."
+            else
+                appendInfoLine: "  Why: Compares means of two independent "
+                ... + "groups (assumes equal variances)."
+            endif
+        endif
         appendInfoLine: ""
         @emlPadCell: "Comparison", 26
         .hdr$ = "  " + emlPadCell.result$
@@ -1164,6 +2076,33 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
         .hdr$ = .hdr$ + emlPadCell.result$
         .hdr$ = .hdr$ + "d"
         appendInfoLine: .hdr$
+
+        ; ----------------------------------------------------------------
+        ; ITEM 2 -- THE INTERVAL PLUMBING, BUILT DARK.
+        ;
+        ; Fable's 26 August work order (docs/WORK_ORDER_INTERVALS_2026-08-26.md)
+        ; requires every pairwise arm to compute the point estimate (the mean
+        ; difference) on every row, every correction, and the interval
+        ; whenever the correction in force defines one -- Bonferroni here, at
+        ; .level = 1 - alpha/m per pair. Holm and BH define no such level, so
+        ; no interval is computed for them at all, not merely left unprinted.
+        ;
+        ; THE REPORT STRINGS THAT WOULD PRINT THESE ARE NOT YET APPROVED.
+        ; "Mean difference (C1 - C2): x.xx", the "[low, high]" rendering and
+        ; the block header naming the level are drafted into the language
+        ; batch and print only after Ian's en-bloc approval
+        ; (docs/RULING_INTERVALS_2026-08-26.md, "Language"). So this computes
+        ; and stores every value below and PRINTS NONE OF THEM -- no
+        ; appendInfoLine anywhere in this procedure reads .meanDiffFlat#,
+        ; .lowFlat# or .highFlat#. They exist as outputs of this procedure
+        ; (readable as emlReportPairwiseComparison.meanDiffFlat# etc.) so a
+        ; check can confirm the numbers without the report ever showing them.
+        ; Approval adds the print calls against these already-computed
+        ; arrays; nothing in this computation needs to change or be rebuilt.
+        ; ----------------------------------------------------------------
+        .meanDiffFlat# = zero# (emlPairwiseT.nPairs)
+        .lowFlat# = zero# (emlPairwiseT.nPairs)
+        .highFlat# = zero# (emlPairwiseT.nPairs)
 
         .pair = 0
         for .iGroup from 1 to .nGroups - 1
@@ -1199,6 +2138,23 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                     @eml_fixed: .dVal, 3
                     .dTxt$ = eml_fixed.result$
                 endif
+
+                ; THE POINT ESTIMATE, every row, every correction --
+                ; descriptive footing, the same as .dVal above. Captured
+                ; from @emlPairwiseT's own .diffMatrix##, not recomputed.
+                .meanDiffFlat# [.pair] = emlPairwiseT.diffMatrix## [.iGroup, .jGroup]
+
+                ; THE INTERVAL, ONLY WHEN THE CORRECTION IN FORCE DEFINES ONE.
+                .lowFlat# [.pair] = undefined
+                .highFlat# [.pair] = undefined
+                if .adjMethod$ = "bonferroni"
+                    .pairLevel = 1 - .alpha / emlPairwiseT.nPairs
+                    @emlTTestInterval: .meanDiffFlat# [.pair], .tVal, .dfVal,
+                        ... .pairLevel
+                    .lowFlat# [.pair] = emlTTestInterval.low
+                    .highFlat# [.pair] = emlTTestInterval.high
+                endif
+
                 @emlSigMark: .adjP, .alpha
                 @emlPadCell: .cmp$, 26
                 .row$ = "  " + emlPadCell.result$
@@ -1212,8 +2168,13 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 appendInfoLine: .row$
             endfor
         endfor
+        ; t IS SIGNED, AND SO IS d, and both come out of the same
+        ; subtraction: @emlPairwiseT runs each pair as the first group
+        ; against the second and negates for the mirror cell. One clause
+        ; therefore names the direction of the pair of them.
         appendInfoLine: "  * adjusted p < ", .alphaText$,
-            ... ". d is Cohen's d, first group minus second."
+            ... ". t and d both run first group minus second;"
+            ... + " d is Cohen's d."
 
         @emlReportBlank
         @emlReportSection: "Adjusted p-values (" + .adjLabel$ + ")"
@@ -1294,11 +2255,32 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
         @emlReportLine: "Pairs tested", emlPairwiseWilcoxon.nPairs, 0
         @emlReportLineString: "p adjustment", .adjLabel$
         @emlReportLineString: "Alpha", .alphaText$
+        .groupList$ = ""
+        for .iGroup from 1 to .nGroups
+            if .iGroup > 1
+                .groupList$ = .groupList$ + ", "
+            endif
+            .groupList$ = .groupList$ + emlPairwiseWilcoxon.groupName$ [.iGroup]
+        endfor
+        @emlReportGroupOrderLine: .groupList$
 
         @emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
 
         @emlReportBlank
         @emlReportSection: "Per-pair results"
+        ; EXPLANATION, reused verbatim from @emlReportTwoGroupComparison's
+        ; Mann-Whitney branch (punch list 6.2) -- pairwise Wilcoxon re-ranks
+        ; each pair on its own, the same procedure Mann-Whitney runs on two
+        ; groups, so the same sentence is true of every row here. No
+        ; per-pair gloss is added: @emlWizardExplainP and
+        ; @emlWizardExplainEffectR are written for ONE value, and this table
+        ; prints .nPairs of each, so applying either per row would repeat
+        ; the same banded sentence under most pairs and misstate it under
+        ; the rest. No existing helper is shaped for a matrix of values.
+        if emlShowExplanations
+            appendInfoLine: "  Why: Compares distributions of two "
+            ... + "independent groups without assuming normality."
+        endif
         appendInfoLine: ""
         @emlPadCell: "Comparison", 26
         .hdr$ = "  " + emlPadCell.result$
@@ -1310,6 +2292,57 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
         .hdr$ = .hdr$ + emlPadCell.result$
         .hdr$ = .hdr$ + "r"
         appendInfoLine: .hdr$
+
+        ; ----------------------------------------------------------------
+        ; ITEM 3 -- THE HODGES-LEHMANN PLUMBING, BUILT DARK.
+        ;
+        ; The same rule item 2 wired into the welch/student branch above,
+        ; applied to this one (docs/WORK_ORDER_INTERVALS_2026-08-26.md):
+        ; the POINT ESTIMATE on every row under every correction, and the
+        ; INTERVAL only where the correction in force defines a level --
+        ; Bonferroni at 1 - alpha/m per pair. Holm and BH define none, so
+        ; .hlLowFlat# / .hlHighFlat# stay undefined on those runs.
+        ;
+        ; The estimate here is the Hodges-Lehmann shift, not a mean
+        ; difference: this arm ranks, so its location statistic is the
+        ; median of the cross-differences, and @emlHodgesLehmannTwoSample
+        ; takes the branch -- exact or normal approximation --
+        ; @emlMannWhitneyU took on the same two vectors, by the same gate
+        ; copied verbatim from it. .hlMethod$ records which, so a check
+        ; can confirm the interval and the p-value are on the same
+        ; distribution.
+        ;
+        ; WHY THE PROCEDURE IS CALLED ON EVERY ROW AND NOT ONLY ON
+        ; BONFERRONI ONES. The estimate and the interval come out of one
+        ; call -- unlike the t branch, where the mean difference was
+        ; already sitting in @emlPairwiseT's .diffMatrix## and only the
+        ; interval needed computing. The work order's own instruction for
+        ; this is "compute-then-conditionally-print ... the branch is one
+        ; if at the print site", so the call is made with the Bonferroni
+        ; level throughout and the RESULT is what the correction gates.
+        ; A Holm run therefore computes an interval and stores it
+        ; nowhere, which is the order's shape, not an oversight.
+        ;
+        ; THE VECTORS ARE RE-READ FROM THE TABLE, through the same
+        ; @eml_getGroupData and the same group labels
+        ; @emlPairwiseWilcoxon built its matrices from, exactly as
+        ; @emlReportPairwiseDescriptives above re-reads them for the
+        ; group means. @emlPairwiseWilcoxon keeps matrices, not data, so
+        ; there is nothing to inherit.
+        ;
+        ; AND NONE OF IT PRINTS. "Hodges-Lehmann shift (C1 - C2): x.xx"
+        ; and the "[low, high]" rendering are drafted into the language
+        ; batch and print only after Ian's en-bloc approval
+        ; (docs/RULING_INTERVALS_2026-08-26.md, "Language"). No
+        ; appendInfoLine in this procedure reads .hlEstFlat#,
+        ; .hlLowFlat#, .hlHighFlat# or .hlMethod$; they are outputs a
+        ; check reads, and approval adds print calls against numbers that
+        ; are already computed.
+        ; ----------------------------------------------------------------
+        .hlEstFlat# = zero# (emlPairwiseWilcoxon.nPairs)
+        .hlLowFlat# = zero# (emlPairwiseWilcoxon.nPairs)
+        .hlHighFlat# = zero# (emlPairwiseWilcoxon.nPairs)
+        .hlLevel = 1 - .alpha / emlPairwiseWilcoxon.nPairs
 
         .pair = 0
         for .iGroup from 1 to .nGroups - 1
@@ -1341,6 +2374,62 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                     @eml_fixed: .rVal, 3
                     .rTxt$ = eml_fixed.result$
                 endif
+
+                ; THE POINT ESTIMATE, every row, every correction --
+                ; descriptive footing, the same as .rVal above -- and the
+                ; interval, only where the correction defines one. See
+                ; the block above the loop for why the call is made on
+                ; every row and the CORRECTION gates the result.
+                ;
+                ; ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_
+                ; 2026-09-01.md §5). THE VECTORS USED TO BE RE-READ FROM
+                ; THE TABLE here, through @eml_getGroupData, on every one
+                ; of the C(k,2) pairs -- even though @emlPairwiseWilcoxon,
+                ; above, already extracted every group once to run its own
+                ; tests. They now read emlPairwiseWilcoxon.groupData'g'#,
+                ; the cache that call left behind, instead. The .hlErrI$ /
+                ; .hlErrJ$ gate below stays: a cache read cannot itself
+                ; fail (both groups were already extracted successfully to
+                ; reach this point), but the shape is kept so a future
+                ; change to what feeds .hlI# / .hlJ# does not silently
+                ; drop the error-read discipline v134 lints.
+                .hlErrI$ = ""
+                .hlI# = emlPairwiseWilcoxon.groupData'.iGroup'#
+                .hlErrJ$ = ""
+                .hlJ# = emlPairwiseWilcoxon.groupData'.jGroup'#
+
+                .hlEstFlat# [.pair] = undefined
+                .hlLowFlat# [.pair] = undefined
+                .hlHighFlat# [.pair] = undefined
+                .hlMethod$ [.pair] = ""
+                if .hlErrI$ = "" and .hlErrJ$ = ""
+                    @emlHodgesLehmannTwoSample: .hlI#, .hlJ#, .hlLevel
+                    .hlError$ = emlHodgesLehmannTwoSample.error$
+                    .hlEstFlat# [.pair] = emlHodgesLehmannTwoSample.estimate
+                    .hlMethod$ [.pair] = emlHodgesLehmannTwoSample.method$
+                    ; The estimate stands on its own -- an all-tied pair
+                    ; still HAS a median cross-difference, and the
+                    ; procedure returns it while refusing the interval.
+                    ; The interval needs both a clean computation and a
+                    ; correction that defines a level.
+                    if .hlError$ = "" and (.adjMethod$ = "bonferroni")
+                        .hlLowFlat# [.pair] = emlHodgesLehmannTwoSample.low
+                        .hlHighFlat# [.pair] = emlHodgesLehmannTwoSample.high
+                    endif
+                    ; DARK, LIKE THE REST OF THIS PROCEDURE'S LANGUAGE.
+                    ; When .hlError$ <> "" here it is because every
+                    ; observation in the combined pair is tied (SIGMA.CI
+                    ; = 0 on the normal-approximation branch) -- the
+                    ; estimate above still stands, only the interval is
+                    ; refused. Fable's ruling on this cell
+                    ; (docs/RULING_ITEM3_CASES_2026-08-26.md, case 1) pins
+                    ; the disclosure line for when this prints:
+                    ;     No confidence interval: all observations are tied
+                    ; Drafted into the language batch alongside the other
+                    ; interval strings; not printed here or anywhere yet,
+                    ; gated on the same en-bloc approval.
+                endif
+
                 @emlSigMark: .adjP, .alpha
                 @emlPadCell: .cmp$, 26
                 .row$ = "  " + emlPadCell.result$
@@ -1354,8 +2443,12 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 appendInfoLine: .row$
             endfor
         endfor
+        ; U belongs to a group; r carries a direction. @emlRankBiserialR
+        ; returns +1 when the first group of the pair outranks the second,
+        ; so this line states both facts rather than only the first.
         appendInfoLine: "  * adjusted p < ", .alphaText$,
-            ... ". U is for the first group of the pair."
+            ... ". U is for the first group of the pair; r is positive"
+            ... + " when that group ranks above the second."
 
         @emlReportBlank
         @emlReportSection: "Adjusted p-values (" + .adjLabel$ + ")"
@@ -1434,11 +2527,31 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
         ; adjustment step and therefore no raw p to show beside it.
         @emlReportLineString: "p adjustment", "Scheffe (familywise, built in)"
         @emlReportLineString: "Alpha", .alphaText$
+        .groupList$ = ""
+        for .iGroup from 1 to .nGroups
+            if .iGroup > 1
+                .groupList$ = .groupList$ + ", "
+            endif
+            .groupList$ = .groupList$ + emlScheffe.groupName$ [.iGroup]
+        endfor
+        @emlReportGroupOrderLine: .groupList$
 
         @emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
 
         @emlReportBlank
         @emlReportSection: "Per-pair results"
+        ; EXPLANATION, reused verbatim from @emlReportTwoGroupComparison's
+        ; Student branch (punch list 6.2) -- Scheffe compares pairwise means
+        ; off the same pooled within-group variance a Student t uses, so the
+        ; same equal-variance sentence is true of it. No per-pair gloss is
+        ; added: @emlWizardExplainP is written for ONE p, and this table
+        ; prints .nPairs of them, so applying it per row would repeat the
+        ; same banded sentence under most pairs and misstate it under the
+        ; rest. No existing helper is shaped for a matrix of values.
+        if emlShowExplanations
+            appendInfoLine: "  Why: Compares means of two independent "
+            ... + "groups (assumes equal variances)."
+        endif
         appendInfoLine: ""
         @emlPadCell: "Comparison", 26
         .hdr$ = "  " + emlPadCell.result$
@@ -1449,8 +2562,39 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
         .hdr$ = .hdr$ + "Mean diff"
         appendInfoLine: .hdr$
 
+        ; ----------------------------------------------------------------
+        ; ITEM 5 -- THE SCHEFFE INTERVAL PLUMBING, BUILT DARK.
+        ;
+        ; The same rule items 2 and 3 wired into the welch/student and
+        ; wilcoxon branches above, applied to this one
+        ; (docs/WORK_ORDER_INTERVALS_2026-08-26.md): the point estimate
+        ; already prints on every row above (.diffTxt$, from
+        ; emlScheffe.diffMatrix##) and the INTERVAL is computed here through
+        ; @emlScheffeInterval, AT ALPHA, on every row -- not gated behind
+        ; ".adjMethod$ = "bonferroni"" the way the other two arms' interval
+        ; arrays are, because Scheffe has no such gate to begin with: its
+        ; multiplier IS the one simultaneity correction, so the interval is
+        ; defined here on every row this branch ever prints.
+        ;
+        ; .se comes from @emlScheffe.seMatrix## -- an output added in this
+        ; same commit; @emlScheffe computed this SE already, to build
+        ; .fMatrix##, but never published it. See that procedure's Outputs
+        ; header for why it is now contractual.
+        ;
+        ; AND NONE OF IT PRINTS. The "[low, high]" rendering and the block
+        ; header naming the level ("95% simultaneous intervals (Scheffe)")
+        ; are drafted into the language batch and print only after Ian's
+        ; en-bloc approval (docs/RULING_INTERVALS_2026-08-26.md). No
+        ; appendInfoLine in this procedure reads .scheffeLowFlat# or
+        ; .scheffeHighFlat#; they are outputs a check reads.
+        ; ----------------------------------------------------------------
+        .scheffeLowFlat# = zero# (emlScheffe.nPairs)
+        .scheffeHighFlat# = zero# (emlScheffe.nPairs)
+
+        .pair = 0
         for .iGroup from 1 to .nGroups - 1
             for .jGroup from .iGroup + 1 to .nGroups
+                .pair = .pair + 1
                 .cmp$ = emlScheffe.groupName$ [.iGroup] + " vs "
                     ... + emlScheffe.groupName$ [.jGroup]
                 .fVal = emlScheffe.fMatrix## [.iGroup, .jGroup]
@@ -1476,6 +2620,23 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                     @eml_fixed: .diffVal, 3
                     .diffTxt$ = eml_fixed.result$
                 endif
+
+                ; THE INTERVAL, AT ALPHA -- every row, unconditionally.
+                ; Read .error$ first, per the error-read-order rule v134
+                ; lints: a diff or SE that came back undefined (a degenerate
+                ; group pair) must not leave a stale zero sitting in the
+                ; interval slots.
+                .scheffeLowFlat# [.pair] = undefined
+                .scheffeHighFlat# [.pair] = undefined
+                @emlScheffeInterval: .diffVal,
+                    ... emlScheffe.seMatrix## [.iGroup, .jGroup],
+                    ... .nGroups, emlScheffe.dfWithin, .alpha
+                .scheffeIntervalErr$ = emlScheffeInterval.error$
+                if .scheffeIntervalErr$ = ""
+                    .scheffeLowFlat# [.pair] = emlScheffeInterval.low
+                    .scheffeHighFlat# [.pair] = emlScheffeInterval.high
+                endif
+
                 @emlSigMark: .pVal, .alpha
                 @emlPadCell: .cmp$, 26
                 .row$ = "  " + emlPadCell.result$
@@ -1578,14 +2739,18 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
-    # NO INFO-WINDOW SAVE/RESTORE HERE. Praat's built-in
-    # `Report two-way anova` clears the Info window, but snapshotting info$ ()
-    # and replaying it with writeInfo: afterwards is not the answer: under
-    # `praat --run` the replay prints the whole preceding transcript a second
-    # time, because Info is streamed to stdout in batch and nothing can be
-    # un-printed. @emlTwoWayAnova ASSIGNS the built-in's result instead of
-    # running it bare, which never touches the Info window, so there is
-    # nothing to put back. See the note there.
+    # NO INFO-WINDOW SAVE/RESTORE HERE, AND NONE NEEDED. This orchestrator
+    # used to snapshot info$ () before calling @emlTwoWayAnova and replay it
+    # with writeInfo: afterwards, because Praat's built-in `Report two-way
+    # anova` clears the Info window when it runs. That replay was correct in
+    # the GUI and wrong in batch -- under `praat --run`, Info output is
+    # streamed to stdout as it is produced, so writeInfo: does not restore
+    # anything, it re-prints the whole preceding transcript a second time.
+    # @emlTwoWayAnova no longer calls that built-in at all (it routes
+    # through @emlAnovaKernelTwoWay, per
+    # mailbox/to-opus/RULING_CONSOLIDATED_KERNELS_2026-09-01.md Class C), so
+    # there is no Info-window side effect to save or restore in the first
+    # place, not merely one that has been captured instead.
     @emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     if emlTwoWayAnova.error$ <> ""
         .error$ = emlTwoWayAnova.error$
@@ -1799,6 +2964,22 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     @emlCSVInit
     @emlReportPairedComparison: .tableName$, .col1$, .col2$, .n, .mean1, .sd1, .median1, .mean2, .sd2, .median2, .testType$
 
+    ; Punch list 9.1. In "both" mode a single arm can fail beside one that
+    ; succeeds (.ranSomething = 1 above already excludes the case where
+    ; NEITHER ran), and until this the report simply omitted that arm's
+    ; section with no word of why -- @emlReportPairedComparison guards each
+    ; block on its own error$ and prints nothing else. The two-group report
+    ; discloses exactly this drop, right after its own report call, in this
+    ; wording; this is that same disclosure for the paired path.
+    if .failParametric$ <> ""
+        .parNote$ = "  Parametric results omitted — Paired t-test failed: " + .failParametric$
+        appendInfoLine: .parNote$
+    endif
+    if .failNonparametric$ <> ""
+        .nonNote$ = "  Nonparametric results omitted — Wilcoxon signed-rank failed: " + .failNonparametric$
+        appendInfoLine: .nonNote$
+    endif
+
     if .nExcluded > 0
         .exclNote$ = "  Note: " + string$ (.nExcluded) + " row(s) excluded for missing data (analyzed n = " + string$ (.n) + " complete pairs)."
         appendInfoLine: .exclNote$
@@ -1863,6 +3044,15 @@ endproc
 # ============================================================================
 
 procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
+    ; .recResult$ is read past the end label on EVERY path, including a
+    ; refusal -- see the record-workflow block below. Every sibling
+    ; orchestrator (two-group, ANOVA, KW, pairwise, paired, ...) sets
+    ; .recResult$ = "" at entry for exactly that reason; this one did not,
+    ; so a guard reached before .recResult$ was ever assigned (e.g. on the
+    ; very first correlation call in a running script) read an unassigned
+    ; variable and Praat aborted the whole script instead of refusing.
+    .recResult$ = ""
+
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -1941,7 +3131,7 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
         .pearErr$ = emlPearsonCorrelation.error$
     endif
     if .testType$ = "spearman" or .testType$ = "both"
-        @emlSpearmanCorrelation: .dataX#, .dataY#, 2
+        @emlSpearmanCorrelationDispatch: .dataX#, .dataY#, 2
         .spearRho = emlSpearmanCorrelation.rho
         .spearT = emlSpearmanCorrelation.t
         .spearDf = emlSpearmanCorrelation.df
@@ -2236,7 +3426,7 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
             ; CAPTURED HERE, NOT AT THE HOOK. @emlReportRegressionAnalysis and
             ; @emlDeclareRegressionResult both re-invoke @emlLinearRegression,
             ; and a Praat procedure's outputs survive only until it runs
-            ; again -- the same hazard @emlBridgeGroupComparison documents for
+            ; again -- the same hazard @emlRunAnnotationComparison documents for
             ; @emlCountGroups. Reading emlLinearRegression.slope after those
             ; calls would read whatever the LAST invocation left.
             .recResult$ = .depCol$ + " = "
@@ -2279,6 +3469,223 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         ... "@emlRunRegressionAnalysis: data, """ + .depCol$ + """, """ + .predCol$ + """",
         ... "In the GUI: New > EML Stats & Graphs > Linear regression...",
         ... .recResult$, .error$
+    endif
+
+    selectObject: .tableId
+endproc
+
+
+# ============================================================================
+# @emlRunGroupedRegressionAnalysis -- per-group regression fits beside the overall one
+# ============================================================================
+# Punch list 4.5 / OPEN_ITEMS "the regression group column" ruling: the
+# correlate dialog's per-group block (eml-correlate.praat) is the whole
+# pattern this ports. ONE procedure, called from BOTH doors (the menu's
+# eml-regress.praat and the wizard's D_PREDICT_COLUMNS page) so the group
+# column cannot drift between them the way the two independently-copied
+# correlation blocks (menu vs wizard) already have -- the DRY law in
+# CLAUDE.md ("state the canon once in a procedure").
+#
+# PRECONDITION: called immediately after @emlRunRegressionAnalysis has
+# succeeded for the WHOLE table and nothing else has run in between --
+# emlLinearRegression.* still holds the OVERALL fit, exactly the assumption
+# @emlReportRegressionAnalysis itself already makes. The overall coefficients
+# are read into this procedure's own dotted locals in its first lines, before
+# anything below re-invokes @emlLinearRegression on a group's data and
+# overwrites those globals -- the same hazard @emlDeclareRegressionResult's
+# comment documents for @emlRunAnnotationComparison.
+#
+# Two passes over the groups, for the reason @emlCountGroups is called before
+# any group prints: pass 1 only counts complete pairs per group, so the block
+# is announced with its own header and counts before any group's report
+# appears, and the groups too small to fit (n < 3, the same floor
+# @emlLinearRegression itself enforces) are named on ONE summary line rather
+# than costing an orphan line each.
+#
+# ONE export, not one per group: tidy is rebuilt (glance's overall row
+# survives) with EVERY row labelled in `term` -- "(overall) (Intercept)" /
+# "(overall) <predictor>" for the whole-table fit, "<group> = <level>
+# (Intercept)" / "<group> = <level> <predictor>" per group -- so a reader of
+# the export can tell which fit each row belongs to without re-deriving it.
+# n.groups records how many per-group fits are in tidy, the same field the
+# grouped correlation export already writes.
+#
+# The legacy CSV buffer's per-group additions (made by the calls into
+# @emlReportRegressionAnalysis below, which also feed the legacy writer) are
+# truncated back to the overall analysis afterwards -- same restore
+# eml-correlate.praat's own per-group block performs, and for the same
+# reason: the legacy buffer has no group column to carry the label in.
+#
+# Arguments:
+#   .tableId    -- the Table object
+#   .tableName$ -- for the per-group report's "Table" field and Info titles
+#   .predCol$   -- predictor (X) column name
+#   .respCol$   -- response (Y) column name
+#   .groupCol$  -- grouping column name (caller has already confirmed this
+#                  is neither .predCol$ nor .respCol$)
+#
+# Outputs:
+#   .pgTotal, .pgRun, .pgSkipped -- group counts, for a caller that wants
+#                                   them (e.g. a flow-invariant or coverage
+#                                   check); the Info report already states
+#                                   them in words.
+# ============================================================================
+procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .groupCol$
+    ; Read directly from the object rather than taking it as an argument --
+    ; @emlRunRegressionAnalysis does the same for its own report, and the
+    ; menu door (which HAS a tableName$ global) and the wizard (which does
+    ; not; it only ever names the table for DISPLAY, in displayTable$) would
+    ; otherwise need two different call shapes.
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+
+    .ovIntercept = emlLinearRegression.intercept
+    .ovSeIntercept = emlLinearRegression.seIntercept
+    .ovTIntercept = emlLinearRegression.tIntercept
+    .ovPIntercept = emlLinearRegression.pIntercept
+    .ovSlope = emlLinearRegression.slope
+    .ovSeSlope = emlLinearRegression.seSlope
+    .ovTSlope = emlLinearRegression.tSlope
+    .ovPSlope = emlLinearRegression.pSlope
+
+    selectObject: .tableId
+    @emlCountGroups: .tableId, .groupCol$
+    .pgTotal = emlCountGroups.nGroups
+    .pgRun = 0
+    .pgSkipped = 0
+    .pgSkipList$ = ""
+    .pgSkipMore = 0
+    for .pgI from 1 to .pgTotal
+        .pgLabel$ [.pgI] = emlCountGroups.groupLabel$ [.pgI]
+        selectObject: .tableId
+        @eml_getGroupPairedData: .tableId, .predCol$, .respCol$,
+        ... .groupCol$, .pgLabel$ [.pgI]
+        .pgN [.pgI] = eml_getGroupPairedData.n
+        if .pgN [.pgI] >= 3
+            .pgRun = .pgRun + 1
+        else
+            .pgSkipped = .pgSkipped + 1
+            ; The Info window does not wrap, so the summary names as many
+            ; skipped groups as fit on one line and counts the rest.
+            if length (.pgSkipList$) < 45
+                if .pgSkipList$ <> ""
+                    .pgSkipList$ = .pgSkipList$ + ", "
+                endif
+                .pgSkipList$ = .pgSkipList$
+                ... + replace$ (.pgLabel$ [.pgI], "_", " ", 0)
+            else
+                .pgSkipMore = .pgSkipMore + 1
+            endif
+        endif
+    endfor
+    if .pgSkipMore > 0
+        .pgSkipList$ = .pgSkipList$ + ", and " + string$ (.pgSkipMore) + " more"
+    endif
+
+    @emlUnderscoreToSpace: .groupCol$
+    .pgColDisplay$ = emlUnderscoreToSpace.result$
+    @emlReportHeader: "Regression by " + .pgColDisplay$
+    @emlReportLineString: "Grouping column", .pgColDisplay$
+    @emlReportLine: "Groups", .pgTotal, 0
+    @emlReportLine: "Analysed", .pgRun, 0
+
+    .pgCsvN = emlCSV_n
+    @emlTidyClear
+    @emlTidyRow: "(overall) (Intercept)"
+    @emlTidyNum: "estimate", .ovIntercept
+    @emlTidyNum: "std.error", .ovSeIntercept
+    @emlTidyNum: "statistic", .ovTIntercept
+    @emlTidyNum: "p.value", .ovPIntercept
+    @emlTidyRow: "(overall) " + .predCol$
+    @emlTidyNum: "estimate", .ovSlope
+    @emlTidyNum: "std.error", .ovSeSlope
+    @emlTidyNum: "statistic", .ovTSlope
+    @emlTidyNum: "p.value", .ovPSlope
+
+    for .pgI from 1 to .pgTotal
+        if .pgN [.pgI] >= 3
+            .pgDisplay$ = replace$ (.pgLabel$ [.pgI], "_", " ", 0)
+            selectObject: .tableId
+            @eml_getGroupPairedData: .tableId, .predCol$, .respCol$,
+            ... .groupCol$, .pgLabel$ [.pgI]
+            .pgX# = eml_getGroupPairedData.dataX#
+            .pgY# = eml_getGroupPairedData.dataY#
+            .pgThisN = eml_getGroupPairedData.n
+            .pgExcluded = eml_getGroupPairedData.nExcluded
+            .pgTerm$ = .groupCol$ + " = " + .pgLabel$ [.pgI]
+
+            @emlLinearRegression: .pgX#, .pgY#
+            if emlLinearRegression.error$ = ""
+                @emlReportRegressionAnalysis: .tableName$
+                ... + " -- " + .pgColDisplay$ + " = " + .pgDisplay$,
+                ... .respCol$, .predCol$, .pgThisN, .pgExcluded
+                if .pgExcluded > 0
+                    .pgExclNote$ = "  Note: " + string$ (.pgExcluded)
+                    ... + " row(s) excluded for missing data"
+                    ... + " (analyzed n = " + string$ (.pgThisN)
+                    ... + " complete pairs)."
+                    appendInfoLine: .pgExclNote$
+                endif
+                @emlTidyRow: .pgTerm$ + " (Intercept)"
+                @emlTidyNum: "estimate", emlLinearRegression.intercept
+                @emlTidyNum: "std.error", emlLinearRegression.seIntercept
+                @emlTidyNum: "statistic", emlLinearRegression.tIntercept
+                @emlTidyNum: "p.value", emlLinearRegression.pIntercept
+                @emlTidyRow: .pgTerm$ + " " + .predCol$
+                @emlTidyNum: "estimate", emlLinearRegression.slope
+                @emlTidyNum: "std.error", emlLinearRegression.seSlope
+                @emlTidyNum: "statistic", emlLinearRegression.tSlope
+                @emlTidyNum: "p.value", emlLinearRegression.pSlope
+            endif
+        endif
+    endfor
+
+    ; The legacy rows the per-group reporter calls appended carry a
+    ; fabricated table name and duplicate what tidy now holds properly
+    ; labelled, so the buffer is truncated back to the overall analysis.
+    emlCSV_n = .pgCsvN
+    @emlGlanceNum: "n.groups", .pgRun
+
+    if .pgSkipped > 0
+        @emlReportBlank
+        @emlReportLineString: "Skipped (n < 3)",
+        ... string$ (.pgSkipped) + " of " + string$ (.pgTotal)
+        ... + ": " + .pgSkipList$
+    endif
+    if .pgRun = 0
+        appendInfoLine: "  No group has 3 or more complete "
+        ... + "pairs -- a coarser grouping column would give"
+        appendInfoLine: "  regressions that can be computed."
+    endif
+    appendInfoLine: emlReportHeader.border$
+
+    selectObject: .tableId
+
+    ; RECORD WORKFLOW. Inert unless a recording is running, the same
+    ; three-part guard @emlRunRegressionAnalysis uses just above --
+    ; present, initialised, recording. This procedure has no refusal path
+    ; of its own to record: its own header states the PRECONDITION that it
+    ; is only ever called right after @emlRunRegressionAnalysis has
+    ; already succeeded for the whole table, so there is nothing here for
+    ; an error branch to catch and no .error$ local to read.
+    ;
+    ; .ovIntercept and .ovSlope are the overall fit, captured into this
+    ; procedure's own locals in its first lines before any per-group call
+    ; overwrites emlLinearRegression's globals -- see the header comment.
+    ; .pgRun and .pgTotal are set above by the same per-group loop the
+    ; Info report reads, not re-derived here.
+    if variableExists ("emlRecordLoaded")
+        .recResult$ = .respCol$ + " = "
+        ... + fixed$ (.ovIntercept, 4) + " + "
+        ... + fixed$ (.ovSlope, 4) + " x " + .predCol$ + " (overall)"
+        ... + newline$ + "  " + string$ (.pgRun) + " of "
+        ... + string$ (.pgTotal) + " group(s) fit within " + .groupCol$
+        @emlRecordAnalysisStep: .tableId, "Per-group linear regression",
+        ... .respCol$ + " on " + .predCol$ + " within " + .groupCol$,
+        ... "Groups with fewer than 3 complete pairs are skipped, not fit, and are reported once as a count rather than a line each.",
+        ... "@emlRunGroupedRegressionAnalysis: data, """ + .predCol$ + """, """ + .respCol$ + """, """ + .groupCol$ + """",
+        ... "In the GUI: New > EML Stats & Graphs > Linear regression..., after running the overall fit",
+        ... .recResult$, ""
     endif
 
     selectObject: .tableId
@@ -2530,34 +3937,32 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         goto END_NORMALITY
     endif
 
-    # Extract column data (exclude undefined)
-    .nValid = 0
-    for .iRow from 1 to .nRows
-        selectObject: .tableId
-        .val = Get value: .iRow, .dataCol$
-        if .val <> undefined
-            .nValid += 1
-        endif
-    endfor
+    # CONFORMANCE, 27 August 2026. This read used Praat's own `Get value:`
+    # on every row, which coerces a cell rather than classifying it: the
+    # comma-decimal cell "73,4" came back as 73, because Praat's numeric
+    # grammar parses a leading prefix and stops at the comma. The value was
+    # then reported as data. @emlRunDescriptiveAnalysis reads the same cell
+    # through @emlExtractColumn, which excludes it and discloses the
+    # exclusion -- so one table produced two different n, and the procedure
+    # that answered had the wrong number.
+    #
+    # The shipped contract is exclude-and-disclose, and descriptive already
+    # conformed. This brings normality to it. Both procedures now read
+    # through the one extractor, so they cannot disagree about a cell.
+    @emlExtractColumn: .tableId, .dataCol$
+    if emlExtractColumn.error$ <> ""
+        .error$ = emlExtractColumn.error$
+    endif
+    .nValid = emlExtractColumn.n
 
-    if .nValid < 3
+    if .error$ = "" and .nValid < 3
         .error$ = "Need at least 3 non-missing values (found "
         ... + string$ (.nValid) + ")."
     endif
 
     if .error$ = ""
-        .data# = zero# (.nValid)
-        .idx = 0
-        for .iRow from 1 to .nRows
-            selectObject: .tableId
-            .val = Get value: .iRow, .dataCol$
-            if .val <> undefined
-                .idx += 1
-                .data# [.idx] = .val
-            endif
-        endfor
-
-        .nUndefined = .nRows - .nValid
+        .data# = emlExtractColumn.data#
+        .nUndefined = emlExtractColumn.nUndefined
 
         # Descriptive shape measures
         @emlSkewness: .data#
@@ -2652,11 +4057,23 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
     selectObject: .tableId
 endproc
 
-# v1.2 item 7: unimplemented stub. It has no call sites anywhere in the
-# plugin; it exists so the Phase 4 API surface is declared. It returns a
-# non-empty .error$ and computes nothing — callers must check .error$ before
-# reading any other output, because no other output is set.
-procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measure$, .scale$
+# v1.2 item 7: Reliability doorway, survey-row signature frozen by
+# mailbox/to-opus/RULING_SURVEY_ROWS_ACCEPTED_2026-09-03.md -- changes only
+# on Ian's word, the way the RM signature is frozen. The family name stays
+# emlRunReliabilityAnalysis for every future reliability measure; there is
+# no `.measure$` selector, because Praat calls are positional with no
+# default arguments and a selector added now would break every sibling
+# procedure's call the day a second measure arrives. A model-choice
+# dropdown belongs at the wizard, in a later round.
+#
+# Builds a respondent x item matrix from .itemCols$# and hands it whole,
+# undefined cells included, to @emlCronbachAlpha and, when asked,
+# @emlAlphaInfluence. Both kernels do their own listwise deletion and
+# report it in .nExcluded; this orchestrator propagates their .error$
+# rather than repeating their checks, and reports the exclusion as a
+# WARNING on the success path -- the analysis is valid on the complete
+# cases, and the reader is told how many rows were set aside.
+procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfluence
     .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
@@ -2665,15 +4082,182 @@ procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measu
     ; least 2 condition columns" would export the previous analysis's tidy and
     ; glance under the RM name.
     @emlCSVInit
-    ; ASCII HYPHENS, NOT AN EM DASH, and the reason is Praat's file writer.
-    ; Praat writes a text file as UTF-16 the moment its content contains one
-    ; non-ASCII character. This string reaches a RECORDED SCRIPT verbatim as
-    ; the refusal note for the step, so a session that touched the LMM path
-    ; produced a UTF-16 .praat file -- runnable, but undiffable in git and
-    ; unreadable by anything that assumes bytes. One em dash, one encoding.
-    .error$ = "Not yet implemented -- scheduled for Phase 4."
+    .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
+
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+    .nRows = Get number of rows
+
+    .k = size (.itemCols$#)
+
+    ; The item list and the recorder's reproduction snippet are built BEFORE
+    ; any guard can jump out, because a refusal is recorded as a step too --
+    ; see @emlRecordAnalysisStep below -- and it needs something to show for
+    ; .itemCols$#. `{ }` does not parse as an empty vector literal, so a
+    ; refusal with zero items reproduces as `empty$# (0)` instead.
+    .itemsList$ = ""
+    .itemsRepro$ = "empty$# (0)"
+    if .k > 0
+        .itemsRepro$ = "{"
+        for .j from 1 to .k
+            if .j > 1
+                .itemsList$ = .itemsList$ + ", "
+                .itemsRepro$ = .itemsRepro$ + ", "
+            endif
+            .itemsList$ = .itemsList$ + .itemCols$# [.j]
+            .itemsRepro$ = .itemsRepro$ + """" + .itemCols$# [.j] + """"
+        endfor
+        .itemsRepro$ = .itemsRepro$ + "}"
+    endif
+
+    if .k < 2
+        .error$ = "Need at least 2 item columns (found " + string$ (.k) + ")."
+        goto END_RELIABILITY
+    endif
+
+    if .confidence = undefined or .confidence <= 0 or .confidence >= 1
+        .error$ = "Confidence must be strictly between 0 and 1, e.g. 0.95 (got "
+        ... + string$ (.confidence) + ")."
+        goto END_RELIABILITY
+    endif
+
+    ; Every item column must exist and hold numbers. strict = 0: a column
+    ; with SOME unusable cells is not refused here -- @emlCronbachAlpha does
+    ; its own listwise deletion over the matrix built below and discloses it,
+    ; the same complete-case convention every other orchestrator in this file
+    ; follows. See @emlRequireNumericColumn in eml-inferential.praat.
+    for .j from 1 to .k
+        if .error$ = ""
+            @emlRequireNumericColumn: .tableId, "Item column " + string$ (.j),
+            ... .itemCols$# [.j], 0
+            .error$ = emlRequireNumericColumn.error$
+        endif
+    endfor
+    if .error$ <> ""
+        goto END_RELIABILITY
+    endif
+
+    ; THE FULL MATRIX, undefined cells included -- unlike
+    ; @emlExtractConditionMatrix, which drops an incomplete row before its
+    ; caller ever sees it. @emlCronbachAlpha does its OWN listwise deletion
+    ; and reports .nExcluded; deleting rows here first would make this
+    ; orchestrator's count disagree with the kernel's. Reads go through
+    ; @eml_openColumn / @eml_readCell, the same classifier every other
+    ; extraction path in this file uses, so a European "1,5" is undefined
+    ; here exactly as it would be anywhere else.
+    for .j from 1 to .k
+        @eml_openColumn: .tableId, .itemCols$# [.j]
+        .clean [.j] = eml_openColumn.clean
+    endfor
+    .data## = zero## (.nRows, .k)
+    for .row from 1 to .nRows
+        for .j from 1 to .k
+            @eml_readCell: .tableId, .row, .itemCols$# [.j], .clean [.j]
+            .data## [.row, .j] = eml_readCell.value
+        endfor
+    endfor
+
+    @emlCronbachAlpha: .data##, .confidence
+    .error$ = emlCronbachAlpha.error$
+    if .error$ <> ""
+        goto END_RELIABILITY
+    endif
+    .alpha = emlCronbachAlpha.alpha
+    .ciLow = emlCronbachAlpha.ciLow
+    .ciHigh = emlCronbachAlpha.ciHigh
+    .n = emlCronbachAlpha.n
+    .nExcluded = emlCronbachAlpha.nExcluded
+
+    ; EXCLUDED ROWS ARE A WARNING, NOT AN ERROR. The analysis succeeded on
+    ; the complete cases; the reader is told how many were set aside, the
+    ; same disclosure the paired-comparison success path prints for its own
+    ; listwise deletion.
+    if .nExcluded > 0
+        .warning$ = string$ (.nExcluded) + " row(s) excluded for missing "
+        ... + "data (assessed n = " + string$ (.n) + " of " + string$ (.nRows)
+        ... + " respondents)."
+    endif
+
+    .doInf = 0
+    .infError$ = ""
+    .deltaMax = undefined
+    .deltaMaxRow = 0
+    if .doInfluence = 1
+        @emlAlphaInfluence: .data##
+        .infError$ = emlAlphaInfluence.error$
+        if .infError$ = ""
+            .doInf = 1
+            .deltaMax = emlAlphaInfluence.deltaMax
+            .deltaMaxRow = emlAlphaInfluence.deltaMaxRow
+        else
+            ; INFLUENCE IS AN ADD-ON, NOT THE ANALYSIS. Alpha already
+            ; succeeded on this same matrix, so a refusal here is reported
+            ; and skipped rather than taking the whole result down with it.
+            if .warning$ <> ""
+                .warning$ = .warning$ + " "
+            endif
+            .warning$ = .warning$ + "Respondent-influence check not "
+            ... + "computed: " + .infError$
+        endif
+    endif
+
+    @emlCSVInit
+    @emlCILevelLabel: 1 - .confidence
+    .ciPercent$ = emlCILevelLabel.percent$
+    .h$ = "Reliability (Cronbach's alpha) -- " + .tableName$
+    appendInfoLine: .h$
+    appendInfoLine: "  Items (k) = " + string$ (.k) + ", respondents (n) = "
+    ... + string$ (.n)
+    @eml_fixed: .alpha, 4
+    .aVal$ = eml_fixed.result$
+    @eml_fixed: .ciLow, 4
+    .loVal$ = eml_fixed.result$
+    @eml_fixed: .ciHigh, 4
+    .hiVal$ = eml_fixed.result$
+    appendInfoLine: "  Cronbach's alpha = " + .aVal$ + ", " + .ciPercent$
+    ... + "% CI [" + .loVal$ + ", " + .hiVal$ + "]"
+    if .warning$ <> ""
+        @emlWrapText: "Note: " + .warning$, 68
+        for .wl from 1 to emlWrapText.nLines
+            appendInfoLine: "  ", emlWrapText.line$ [.wl]
+        endfor
+    endif
+    if .k >= 3
+        appendInfoLine: "  Alpha if item deleted:"
+        for .j from 1 to .k
+            .aid = emlCronbachAlpha.alphaIfDeleted# [.j]
+            if .aid <> undefined
+                @eml_fixed: .aid, 4
+                appendInfoLine: "    " + .itemCols$# [.j] + " = "
+                ... + eml_fixed.result$
+            endif
+        endfor
+    endif
+    if .doInf = 1
+        @eml_fixed: .deltaMax, 4
+        appendInfoLine: "  Most influential respondent: row "
+        ... + string$ (.deltaMaxRow) + " (removing it changes alpha by "
+        ... + eml_fixed.result$ + ")"
+    endif
+
+    @emlResultClearExtras
+    @emlDeclareReliabilityResult: .tableName$, .itemCols$#, .k, .n,
+    ... .nExcluded, .warning$
+    .ok = 1
+
+    .recResult$ = "alpha = " + .aVal$ + ", " + .ciPercent$ + "% CI ["
+    ... + .loVal$ + ", " + .hiVal$ + "]" + newline$
+    ... + "  n = " + string$ (.n) + " respondents, k = " + string$ (.k)
+    ... + " items"
+    if .warning$ <> ""
+        .recResult$ = .recResult$ + newline$ + "  " + .warning$
+    endif
+
+    label END_RELIABILITY
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -2687,9 +4271,679 @@ procedure emlRunReliabilityAnalysis: .tableId, .subjectCol$, .raterCols$, .measu
     ; loaded the recorder executes nothing here.
     if variableExists ("emlRecordLoaded")
         @emlRecordAnalysisStep: .tableId, "Reliability",
-        ... .measure$ + " over " + .raterCols$ + ", subject " + .subjectCol$,
-        ... "The ICC form and the scale of interest are choices; both are stated in the report.",
-        ... "@emlRunReliabilityAnalysis: data, """ + .subjectCol$ + """, """ + .raterCols$ + """, """ + .measure$ + """, """ + .scale$ + """",
+        ... "Cronbach's alpha over " + string$ (.k) + " item(s) ("
+        ... + .itemsList$ + ")",
+        ... "Alpha describes internal consistency of THIS scale on THIS "
+        ... + "sample; it is not evidence the items measure one trait, and "
+        ... + "it is not a licence for any later test.",
+        ... "@emlRunReliabilityAnalysis: data, " + .itemsRepro$ + ", "
+        ... + string$ (.confidence) + ", " + string$ (.doInfluence),
+        ... "Not in the GUI: there is no menu entry for this yet.",
+        ... .recResult$, .error$
+    endif
+
+    selectObject: .tableId
+endproc
+
+# Categorical doorway, signature FROZEN by
+# mailbox/to-opus/RULING_CATEGORICAL_DOORWAY_2026-09-03.md -- changes only
+# on Ian's word, the way the reliability and RM signatures are frozen.
+#
+# The kernel, @emlChiSquareIndependence (eml-categorical.praat), takes one
+# matrix of counts; this doorway's whole job is building that matrix from
+# the two shapes a user actually has. .countCol$ = "" means raw data, one
+# row per observation (SPSS crosstabs style) -- every row contributes a
+# weight of 1 to its (row category, column category) cell. .countCol$
+# naming a column means the table is already aggregated (SPSS weight-cases
+# / R xtabs style) -- every row contributes THAT row's count to its cell.
+# Both paths tally into the same .observed## and everything downstream
+# -- chi-square, df, p, Cramer's V, the low-expected-count warning -- is
+# identical.
+#
+# Category levels are read as plain strings via `Get value:`, the same
+# direct read @emlTwoWayAnova's own two-factor cell scan uses
+# (eml-inferential.praat, ~line 5318) -- category labels are not
+# measurements, so this does NOT go through @eml_openColumn /
+# @eml_readCell's numeric classifier the way a data column would. Levels
+# are matched on the LITERAL string, with no case-fold or whitespace-trim
+# merge: unlike @emlCountGroups's one-way group column, nothing here
+# collapses "Male" and " Male" into one level, because nothing in this
+# doorway's ruling asked for it and the two-factor ANOVA gather this
+# is modelled on does not do it either.
+#
+# THE KERNEL ALREADY RAISES THE LOW-EXPECTED-COUNT WARNING. This doorway
+# surfaces emlChiSquareIndependence.warning$ verbatim into .warning$; it
+# does not recompute expected counts or re-derive the disclosure.
+procedure emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$,
+... .countCol$, .correction
+    .recResult$ = ""
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
+    ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
+    ; would then still be set.
+    @emlCSVInit
+    .error$ = ""
+    .warning$ = ""
+    .ok = 0
+    # Menu item that WOULD work on this table, when one exists.
+    .remedy$ = ""
+    ; INITIALISED AT ENTRY, NOT WHERE IT IS DECIDED. The recorder block
+    ; below the end label reads .usingCounts to say whether the run was
+    ; weighted, and every guard above the count-column branch reaches that
+    ; block by `goto`. Assigned only at the branch, the variable is unset on
+    ; those paths -- and because a procedure local is a namespaced global
+    ; that outlives the call, a refusal either dies with "Unknown variable:
+    ; .usingCounts" on the first run of a session or silently inherits the
+    ; PREVIOUS run's value on every run after. Found by a refusal; the
+    ; happy-path probes all passed.
+    .usingCounts = 0
+
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+    .nRows = Get number of rows
+
+    ; THE RECORDER'S REPRODUCTION STRING, BUILT BEFORE ANY GUARD CAN JUMP
+    ; OUT, because a REFUSAL is recorded as a step too -- see
+    ; @emlRecordAnalysisStep below. An empty .countCol$ reproduces as a
+    ; plain `""`, which is exactly what a caller would type to ask for the
+    ; raw-data tally.
+    .countRepro$ = """" + .countCol$ + """"
+    .recCode$ = "@emlRunCategoricalAnalysis: data, """ + .rowCol$ + """, """
+    ... + .colCol$ + """, " + .countRepro$ + ", " + string$ (.correction)
+
+    @emlRequireColumnPresent: .tableId, "Row category column", .rowCol$
+    .error$ = emlRequireColumnPresent.error$
+    if .error$ <> ""
+        goto END_CATEGORICAL
+    endif
+
+    @emlRequireColumnPresent: .tableId, "Column category column", .colCol$
+    .error$ = emlRequireColumnPresent.error$
+    if .error$ <> ""
+        goto END_CATEGORICAL
+    endif
+
+    if .rowCol$ = .colCol$
+        .error$ = "Row and column categories must be different columns; "
+        ... + "both are """ + .rowCol$ + """."
+        goto END_CATEGORICAL
+    endif
+
+    if .correction <> 0 and .correction <> 1
+        .error$ = "correction must be 0 or 1 (got " + string$ (.correction)
+        ... + ")."
+        goto END_CATEGORICAL
+    endif
+
+    if .nRows < 1
+        .error$ = "The table has no rows."
+        goto END_CATEGORICAL
+    endif
+
+    ; PRE-AGGREGATED COUNTS ARE A MEASUREMENT COLUMN, SO IT GETS THE SAME
+    ; GATE EVERY OTHER NUMERIC COLUMN IN THIS FILE GETS. strict = 1: a
+    ; weight-cases column is read as a whole to build the tally below, so
+    ; one unusable cell would silently replace every count with its
+    ; alphabetical rank exactly as @emlRequireNumericColumn's own header
+    ; warns -- there is no per-row listwise deletion to fall back on here,
+    ; because the offending row IS one cell of the contingency table, not
+    ; one respondent among many.
+    if .countCol$ <> ""
+        .usingCounts = 1
+        @emlRequireColumnPresent: .tableId, "Count column", .countCol$
+        .error$ = emlRequireColumnPresent.error$
+        if .error$ <> ""
+            goto END_CATEGORICAL
+        endif
+        @emlRequireNumericColumn: .tableId, "Count column", .countCol$, 1
+        .error$ = emlRequireNumericColumn.error$
+        if .error$ <> ""
+            goto END_CATEGORICAL
+        endif
+        @eml_openColumn: .tableId, .countCol$
+        .countClean = eml_openColumn.clean
+    endif
+
+    ; PASS 1: discover distinct levels of each category column, in
+    ; first-seen order, and -- when counts are pre-aggregated -- validate
+    ; every count in the same pass. A non-integer or negative count is a
+    ; refusal, not a silent round: rounding it would print a contingency
+    ; table that does not match the number the user typed in.
+    .nRowLevels = 0
+    .nColLevels = 0
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .rv$ = Get value: .r, .rowCol$
+        .cv$ = Get value: .r, .colCol$
+
+        .found = 0
+        for .i from 1 to .nRowLevels
+            if .rowLevel'.i'$ = .rv$
+                .found = 1
+            endif
+        endfor
+        if .found = 0
+            .nRowLevels = .nRowLevels + 1
+            .rowLevel'.nRowLevels'$ = .rv$
+        endif
+
+        .found = 0
+        for .j from 1 to .nColLevels
+            if .colLevel'.j'$ = .cv$
+                .found = 1
+            endif
+        endfor
+        if .found = 0
+            .nColLevels = .nColLevels + 1
+            .colLevel'.nColLevels'$ = .cv$
+        endif
+
+        if .usingCounts = 1 and .error$ = ""
+            @eml_readCell: .tableId, .r, .countCol$, .countClean
+            .wt = eml_readCell.value
+            if .wt = undefined or .wt < 0 or .wt <> round (.wt)
+                .error$ = "Count column """ + .countCol$ + """ must hold "
+                ... + "non-negative whole numbers; row " + string$ (.r)
+                ... + " is " + string$ (.wt) + "."
+            endif
+        endif
+    endfor
+    if .error$ <> ""
+        goto END_CATEGORICAL
+    endif
+
+    ; SORT BOTH LEVEL LISTS ALPHABETICALLY so the matrix -- and the printed
+    ; table -- come out in the same order every run, the same bubble sort
+    ; over an interpolated-name array @emlGetUniqueLevels uses
+    ; (eml-lmm.praat, ~line 660; levels are typically a handful, so an
+    ; O(n^2) sort is not worth a second procedure).
+    for .a from 1 to .nRowLevels - 1
+        for .b from 1 to .nRowLevels - .a
+            .bp = .b + 1
+            if .rowLevel'.b'$ > .rowLevel'.bp'$
+                .tmp$ = .rowLevel'.b'$
+                .rowLevel'.b'$ = .rowLevel'.bp'$
+                .rowLevel'.bp'$ = .tmp$
+            endif
+        endfor
+    endfor
+    for .a from 1 to .nColLevels - 1
+        for .b from 1 to .nColLevels - .a
+            .bp = .b + 1
+            if .colLevel'.b'$ > .colLevel'.bp'$
+                .tmp$ = .colLevel'.b'$
+                .colLevel'.b'$ = .colLevel'.bp'$
+                .colLevel'.bp'$ = .tmp$
+            endif
+        endfor
+    endfor
+
+    if .nRowLevels < 2 or .nColLevels < 2
+        .error$ = "After tallying, """ + .rowCol$ + """ has "
+        ... + string$ (.nRowLevels) + " distinct categor"
+        if .nRowLevels = 1
+            .error$ = .error$ + "y"
+        else
+            .error$ = .error$ + "ies"
+        endif
+        .error$ = .error$ + " and """ + .colCol$ + """ has "
+        ... + string$ (.nColLevels) + "; the chi-square test of "
+        ... + "independence needs at least 2 x 2."
+        goto END_CATEGORICAL
+    endif
+
+    ; PASS 2: tally into the observed matrix, rows = sorted levels of
+    ; .rowCol$, columns = sorted levels of .colCol$. Cells with no
+    ; observations stay at the zero## fill -- 0, not missing.
+    .observed## = zero## (.nRowLevels, .nColLevels)
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .rv$ = Get value: .r, .rowCol$
+        .cv$ = Get value: .r, .colCol$
+
+        .ri = 0
+        for .i from 1 to .nRowLevels
+            if .rowLevel'.i'$ = .rv$
+                .ri = .i
+            endif
+        endfor
+        .ci = 0
+        for .j from 1 to .nColLevels
+            if .colLevel'.j'$ = .cv$
+                .ci = .j
+            endif
+        endfor
+
+        if .usingCounts = 1
+            @eml_readCell: .tableId, .r, .countCol$, .countClean
+            .wt = eml_readCell.value
+        else
+            .wt = 1
+        endif
+        .observed## [.ri, .ci] = .observed## [.ri, .ci] + .wt
+    endfor
+
+    @emlChiSquareIndependence: .observed##, .correction
+    .error$ = emlChiSquareIndependence.error$
+    if .error$ <> ""
+        goto END_CATEGORICAL
+    endif
+
+    ; THE RESULTS COME BACK ONTO THIS PROCEDURE'S OWN NAMESPACE, which is
+    ; what every other orchestrator in this file does -- @emlRunNormality-
+    ; Analysis copies emlShapiroWilk.w, @emlRunCorrelationAnalysis copies
+    ; emlPearsonCorrelation.r, @emlRunReliabilityAnalysis copies
+    ; emlCronbachAlpha.alpha. It is not tidiness. A kernel's locals are
+    ; namespaced globals shared by every caller and outliving every call,
+    ; so after a REFUSAL here emlChiSquareIndependence.p still holds the
+    ; p-value of whatever ran before -- a plausible number, from another
+    ; analysis, sitting where a caller would look for this one's. Reading
+    ; results off the kernel is only safe for a caller that also checks
+    ; .ok; reading them off the doorway is safe because a refusal never
+    ; reaches this line.
+    .chiSq        = emlChiSquareIndependence.chiSq
+    .df           = emlChiSquareIndependence.df
+    .p            = emlChiSquareIndependence.p
+    .cramersV     = emlChiSquareIndependence.cramersV
+    .n            = emlChiSquareIndependence.n
+    .minExpected  = emlChiSquareIndependence.minExpected
+    .nCellsBelow5 = emlChiSquareIndependence.nCellsBelow5
+    ; SURFACED, NOT RE-DERIVED. The kernel already decided whether any
+    ; expected count fell below 5; this doorway only carries that verdict
+    ; through to .warning$.
+    .warning$ = emlChiSquareIndependence.warning$
+
+    @emlCSVInit
+    .h$ = "Chi-square test of independence -- " + .tableName$
+    appendInfoLine: .h$
+    appendInfoLine: "  " + .rowCol$ + " (rows) x " + .colCol$
+    ... + " (columns), n = " + string$ (emlChiSquareIndependence.n)
+    appendInfoLine: ""
+
+    @emlPadCell: .rowCol$, 20
+    .hdr$ = "  " + emlPadCell.result$
+    for .j from 1 to .nColLevels
+        @emlPadCell: .colLevel'.j'$, 12
+        .hdr$ = .hdr$ + emlPadCell.result$
+    endfor
+    appendInfoLine: .hdr$
+
+    for .i from 1 to .nRowLevels
+        @emlPadCell: .rowLevel'.i'$, 20
+        .line$ = "  " + emlPadCell.result$
+        for .j from 1 to .nColLevels
+            @emlPadCell: string$ (.observed## [.i, .j]), 12
+            .line$ = .line$ + emlPadCell.result$
+        endfor
+        appendInfoLine: .line$
+    endfor
+    appendInfoLine: ""
+
+    @eml_fixed: emlChiSquareIndependence.chiSq, 4
+    .chiTxt$ = eml_fixed.result$
+    @eml_fixed: emlChiSquareIndependence.p, 4
+    .pTxt$ = eml_fixed.result$
+    @eml_fixed: emlChiSquareIndependence.cramersV, 4
+    .vTxt$ = eml_fixed.result$
+    appendInfoLine: "  Chi-square(" + string$ (emlChiSquareIndependence.df)
+    ... + ") = " + .chiTxt$ + ", p = " + .pTxt$
+    appendInfoLine: "  Cramer's V = " + .vTxt$ + ", n = "
+    ... + string$ (emlChiSquareIndependence.n)
+    if .warning$ <> ""
+        @emlWrapText: "Note: " + .warning$, 68
+        for .wl from 1 to emlWrapText.nLines
+            appendInfoLine: "  ", emlWrapText.line$ [.wl]
+        endfor
+    endif
+
+    @emlResultClearExtras
+    @emlDeclareCategoricalResult: .tableName$, .rowCol$, .colCol$, .warning$
+    .ok = 1
+
+    .recResult$ = "chi-square(" + string$ (emlChiSquareIndependence.df)
+    ... + ") = " + .chiTxt$ + ", p = " + .pTxt$ + newline$
+    ... + "  Cramer's V = " + .vTxt$ + ", n = "
+    ... + string$ (emlChiSquareIndependence.n)
+    if .warning$ <> ""
+        .recResult$ = .recResult$ + newline$ + "  " + .warning$
+    endif
+
+    label END_CATEGORICAL
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep. PRESENT, INITIALISED,
+    ; RECORDING -- the same three-part guard every draw hook and every
+    ; other orchestrator in this file uses.
+    if variableExists ("emlRecordLoaded")
+        .detail$ = .rowCol$ + " by " + .colCol$
+        if .usingCounts = 1
+            .detail$ = .detail$ + ", weighted by " + .countCol$
+        endif
+        @emlRecordAnalysisStep: .tableId, "Chi-square test of independence",
+        ... .detail$,
+        ... "Association is not causation, and a significant chi-square "
+        ... + "with a small Cramer's V may not be practically meaningful.",
+        ... .recCode$,
+        ... "Not in the GUI: there is no menu entry for this yet.",
+        ... .recResult$, .error$
+    endif
+
+    selectObject: .tableId
+endproc
+
+# Proportion doorway, signature FROZEN by whatever supersedes
+# RULING_CATEGORICAL_DOORWAY_2026-09-03.md for this procedure -- do not
+# alter .tableId, .col$, .successValue$, .countCol$, .confidence.
+#
+# The kernel, @emlWilsonInterval (eml-categorical.praat, ~line 236), takes
+# one pair of counts (.successes, .n); this doorway's whole job is counting
+# those two numbers from the two shapes a user actually has -- the SAME
+# .countCol$ convention @emlRunCategoricalAnalysis settles above.
+# .countCol$ = "" means raw data, one row per observation: n is the number
+# of USABLE rows (a blank .col$ cell is missing, not a category, the same
+# distinction @emlCountGroups's .nBlankRows draws for a one-way group
+# column) and successes are the usable rows whose .col$ value equals
+# .successValue$. .countCol$ naming a column means the table already
+# arrived pre-aggregated -- "37 yes, 83 no" as a two-row table -- and every
+# row's count, blank .col$ cells included, contributes to n; a category
+# match still requires the LITERAL string, same as raw mode.
+#
+# .col$ is read as a plain string via `Get value:`, never through
+# @eml_openColumn / @eml_readCell's numeric classifier -- category labels
+# are not measurements, matching @emlRunCategoricalAnalysis's own
+# .rowCol$/.colCol$ reads immediately above, and matching plainly why a
+# numeric 0/1 column classifies the same way as a text Yes/No column once
+# .successValue$ names the value being counted. No case-fold or
+# whitespace-trim merge, for the same reason categorical declines it.
+#
+# A .successValue$ that matches no level actually present is a REFUSAL
+# naming the values that ARE present -- a typo is not a proportion of
+# zero. .countCol$, when named, gets the same non-negative-whole-number
+# guard categorical's own count column gets, for the same reason: this
+# doorway reads it as a whole to build n and successes, and one bad cell
+# would silently substitute alphabetical rank for count.
+procedure emlRunProportionAnalysis: .tableId, .col$, .successValue$,
+... .countCol$, .confidence
+    .recResult$ = ""
+    ; The three-file declaration flag is cleared HERE, at entry, and not at
+    ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto
+    ; END_*` without ever calling @emlCSVInit, and the flag from the
+    ; PREVIOUS analysis would then still be set.
+    @emlCSVInit
+    .error$ = ""
+    .warning$ = ""
+    .ok = 0
+    # Menu item that WOULD work on this table, when one exists.
+    .remedy$ = ""
+    ; INITIALISED AT ENTRY, NOT WHERE IT IS DECIDED. The recorder block
+    ; below the end label reads .usingCounts to say whether the run was
+    ; weighted, and every guard above the count-column branch reaches that
+    ; block by `goto`. Assigned only at the branch, the variable is unset on
+    ; those paths -- and because a procedure local is a namespaced global
+    ; that outlives the call, a refusal either dies with "Unknown variable:
+    ; .usingCounts" on the first run of a session or silently inherits the
+    ; PREVIOUS run's value on every run after. Found by a refusal; the
+    ; happy-path probes all passed.
+    .usingCounts = 0
+
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+    .nRows = Get number of rows
+
+    ; THE RECORDER'S REPRODUCTION STRING, BUILT BEFORE ANY GUARD CAN JUMP
+    ; OUT, because a REFUSAL is recorded as a step too -- see
+    ; @emlRecordAnalysisStep below.
+    .recCode$ = "@emlRunProportionAnalysis: data, """ + .col$ + """, """
+    ... + .successValue$ + """, """ + .countCol$ + """, "
+    ... + string$ (.confidence)
+
+    @emlRequireColumnPresent: .tableId, "Category column", .col$
+    .error$ = emlRequireColumnPresent.error$
+    if .error$ <> ""
+        goto END_PROPORTION
+    endif
+
+    if .successValue$ = ""
+        .error$ = "successValue must not be empty."
+        goto END_PROPORTION
+    endif
+
+    if .confidence = undefined or .confidence <= 0 or .confidence >= 1
+        .error$ = "Confidence must be strictly between 0 and 1, e.g. 0.95 "
+        ... + "(got " + string$ (.confidence) + ")."
+        goto END_PROPORTION
+    endif
+
+    if .nRows < 1
+        .error$ = "The table has no rows."
+        goto END_PROPORTION
+    endif
+
+    ; PRE-AGGREGATED COUNTS ARE A MEASUREMENT COLUMN, SO IT GETS THE SAME
+    ; GATE @emlRunCategoricalAnalysis's own count column gets. strict = 1:
+    ; this doorway reads the column as a whole to build n and successes,
+    ; so one unusable cell would silently replace every count with its
+    ; alphabetical rank, and there is no per-row listwise deletion to fall
+    ; back on -- the offending row IS one count, not one respondent among
+    ; many.
+    if .countCol$ <> ""
+        .usingCounts = 1
+        @emlRequireColumnPresent: .tableId, "Count column", .countCol$
+        .error$ = emlRequireColumnPresent.error$
+        if .error$ <> ""
+            goto END_PROPORTION
+        endif
+        @emlRequireNumericColumn: .tableId, "Count column", .countCol$, 1
+        .error$ = emlRequireNumericColumn.error$
+        if .error$ <> ""
+            goto END_PROPORTION
+        endif
+        @eml_openColumn: .tableId, .countCol$
+        .countClean = eml_openColumn.clean
+    endif
+
+    ; PASS 1: discover distinct levels of .col$, in first-seen order, so a
+    ; refusal on a mistyped .successValue$ can name what IS there, and --
+    ; when counts are pre-aggregated -- validate every count in the same
+    ; pass. A non-integer or negative count is a refusal, not a silent
+    ; round, the same convention @emlRunCategoricalAnalysis's own count
+    ; column follows. In raw mode a blank .col$ cell is missing, not a
+    ; category: it is tallied into .nExcluded and skipped here, exactly as
+    ; @emlCountGroups skips a blank group cell into its own .nBlankRows.
+    .nLevels = 0
+    .nExcluded = 0
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .cv$ = Get value: .r, .col$
+
+        .isBlank = 0
+        if .usingCounts = 0 and .cv$ = ""
+            .isBlank = 1
+            .nExcluded = .nExcluded + 1
+        endif
+
+        if .isBlank = 0
+            .found = 0
+            for .i from 1 to .nLevels
+                if .level'.i'$ = .cv$
+                    .found = 1
+                endif
+            endfor
+            if .found = 0
+                .nLevels = .nLevels + 1
+                .level'.nLevels'$ = .cv$
+            endif
+        endif
+
+        if .usingCounts = 1 and .error$ = ""
+            @eml_readCell: .tableId, .r, .countCol$, .countClean
+            .wt = eml_readCell.value
+            if .wt = undefined or .wt < 0 or .wt <> round (.wt)
+                .error$ = "Count column """ + .countCol$ + """ must hold "
+                ... + "non-negative whole numbers; row " + string$ (.r)
+                ... + " is " + string$ (.wt) + "."
+            endif
+        endif
+    endfor
+    if .error$ <> ""
+        goto END_PROPORTION
+    endif
+
+    ; SORT THE LEVEL LIST ALPHABETICALLY so a refusal's "values present"
+    ; list reads the same way on every run -- the same bubble sort over an
+    ; interpolated-name array @emlRunCategoricalAnalysis's own level lists
+    ; use immediately above.
+    for .a from 1 to .nLevels - 1
+        for .b from 1 to .nLevels - .a
+            .bp = .b + 1
+            if .level'.b'$ > .level'.bp'$
+                .tmp$ = .level'.b'$
+                .level'.b'$ = .level'.bp'$
+                .level'.bp'$ = .tmp$
+            endif
+        endfor
+    endfor
+
+    ; NO USABLE VALUES AT ALL is a different refusal from a typo'd
+    ; successValue -- in raw mode every row can be blank, and .nLevels
+    ; stays 0 with nothing to name. Caught here, separately, so the
+    ; message says "no usable data" rather than a "values present" list
+    ; with nothing in it.
+    if .nLevels = 0
+        .error$ = "Category column """ + .col$ + """ has no usable "
+        ... + "values -- every row is blank."
+        goto END_PROPORTION
+    endif
+
+    ; A SUCCESSVALUE THAT MATCHES NO ROW IS A TYPO, NOT A PROPORTION OF
+    ; ZERO. Named here, before any counting, so the message can name every
+    ; value actually present.
+    .successValuePresent = 0
+    for .i from 1 to .nLevels
+        if .level'.i'$ = .successValue$
+            .successValuePresent = 1
+        endif
+    endfor
+    if .successValuePresent = 0
+        .valuesList$ = ""
+        for .i from 1 to .nLevels
+            if .i > 1
+                .valuesList$ = .valuesList$ + ", "
+            endif
+            .valuesList$ = .valuesList$ + """" + .level'.i'$ + """"
+        endfor
+        .error$ = "successValue """ + .successValue$ + """ does not match "
+        ... + "any value in """ + .col$ + """. Values present: "
+        ... + .valuesList$ + "."
+        goto END_PROPORTION
+    endif
+
+    ; PASS 2: tally successes and n. Raw mode weights every usable row 1
+    ; and a blank cell 0, so blanks fall out of both n and successes
+    ; exactly as .nExcluded already counted them above; aggregated mode
+    ; weights every row by its (already-validated) count.
+    .successes = 0
+    .n = 0
+    for .r from 1 to .nRows
+        selectObject: .tableId
+        .cv$ = Get value: .r, .col$
+        if .usingCounts = 1
+            @eml_readCell: .tableId, .r, .countCol$, .countClean
+            .wt = eml_readCell.value
+        else
+            .wt = 1
+            if .cv$ = ""
+                .wt = 0
+            endif
+        endif
+        .n = .n + .wt
+        if .cv$ = .successValue$
+            .successes = .successes + .wt
+        endif
+    endfor
+
+    if .n < 1
+        .error$ = "After excluding blank values, n = 0; a proportion needs "
+        ... + "at least 1 usable observation."
+        goto END_PROPORTION
+    endif
+
+    @emlWilsonInterval: .successes, .n, .confidence
+    .error$ = emlWilsonInterval.error$
+    if .error$ <> ""
+        goto END_PROPORTION
+    endif
+    .propHat = emlWilsonInterval.propHat
+    .ciLow = emlWilsonInterval.ciLow
+    .ciHigh = emlWilsonInterval.ciHigh
+
+    ; EXCLUDED ROWS ARE A WARNING, NOT AN ERROR -- the same disclosure the
+    ; reliability and repeated-measures paths print for their own listwise
+    ; deletion.
+    if .nExcluded > 0
+        .warning$ = string$ (.nExcluded) + " row(s) excluded for missing "
+        ... + "data (assessed n = " + string$ (.n) + " of " + string$ (.nRows)
+        ... + " rows)."
+    endif
+
+    @emlCSVInit
+    @emlCILevelLabel: 1 - .confidence
+    .ciPercent$ = emlCILevelLabel.percent$
+    .catWord$ = "categories"
+    if .nLevels = 1
+        .catWord$ = "category"
+    endif
+    .h$ = "Proportion -- " + .tableName$
+    appendInfoLine: .h$
+    appendInfoLine: "  " + .col$ + ": success = """ + .successValue$
+    ... + """ (" + string$ (.nLevels) + " " + .catWord$ + " seen)"
+    @eml_fixed: .propHat, 4
+    .pVal$ = eml_fixed.result$
+    @eml_fixed: .ciLow, 4
+    .loVal$ = eml_fixed.result$
+    @eml_fixed: .ciHigh, 4
+    .hiVal$ = eml_fixed.result$
+    appendInfoLine: "  Proportion = " + .pVal$ + ", " + .ciPercent$
+    ... + "% Wilson CI [" + .loVal$ + ", " + .hiVal$ + "]"
+    appendInfoLine: "  successes = " + string$ (.successes) + ", n = "
+    ... + string$ (.n)
+    if .warning$ <> ""
+        @emlWrapText: "Note: " + .warning$, 68
+        for .wl from 1 to emlWrapText.nLines
+            appendInfoLine: "  ", emlWrapText.line$ [.wl]
+        endfor
+    endif
+
+    @emlResultClearExtras
+    @emlDeclareProportionResult: .tableName$, .col$, .successValue$,
+    ... .n, .nExcluded, .warning$
+    .ok = 1
+
+    .recResult$ = "p = " + .pVal$ + ", " + .ciPercent$ + "% Wilson CI ["
+    ... + .loVal$ + ", " + .hiVal$ + "]" + newline$
+    ... + "  successes = " + string$ (.successes) + ", n = " + string$ (.n)
+    if .warning$ <> ""
+        .recResult$ = .recResult$ + newline$ + "  " + .warning$
+    endif
+
+    label END_PROPORTION
+
+    ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
+    ; the end label so a refusal is recorded as a step rather than
+    ; vanishing -- see @emlRecordAnalysisStep. PRESENT, INITIALISED,
+    ; RECORDING -- the same three-part guard every other orchestrator in
+    ; this file uses.
+    if variableExists ("emlRecordLoaded")
+        .detail$ = .col$ + " = """ + .successValue$ + """"
+        if .usingCounts = 1
+            .detail$ = .detail$ + ", weighted by " + .countCol$
+        endif
+        @emlRecordAnalysisStep: .tableId, "Proportion", .detail$,
+        ... "A confidence interval describes sampling uncertainty in THIS "
+        ... + "sample; it is not evidence the true proportion differs from "
+        ... + "any particular value someone had in mind before looking.",
+        ... .recCode$,
         ... "Not in the GUI: there is no menu entry for this yet.",
         ... .recResult$, .error$
     endif
@@ -3281,12 +5535,31 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
         ... + string$ (emlRMAnovaTest.dfErr) + ") = "
         ... + eml_fixed.result$ + ", " + emlInlineP.text$
     appendInfoLine: .fLine$
+    ; EXPLANATION (punch list 6.2), reusing @emlWizardExplainP verbatim --
+    ; it glosses the p of a t, F, H, r or slope generically ("if there were
+    ; truly no effect...") and names no design, so it is exactly as true of
+    ; this within-subject F as of the between-subjects one the ANOVA report
+    ; already glosses this way. NOT glossed here: F itself
+    ; (@emlWizardExplainF names it a "between-group" mean square ratio,
+    ; which misdescribes a within-subject design) and partial eta squared
+    ; (@emlWizardExplainEffectPartialEta2 is written for a factorial table
+    ; with several effects sharing different denominators; this design has
+    ; one). Neither existing helper is correct here, and this report is not
+    ; the place to compose new ones.
+    if emlShowExplanations
+        @emlWizardExplainP: emlRMAnovaTest.p
+        appendInfoLine: "    " + emlWizardExplain$
+    endif
     @emlInlineP: emlRMAnovaTest.pGG
     @eml_fixed: emlRMAnovaTest.ggEpsilon, 4
     .ggLine$ = "  Greenhouse-Geisser epsilon = "
         ... + eml_fixed.result$ + ", GG-corrected "
         ... + emlInlineP.text$
     appendInfoLine: .ggLine$
+    if emlShowExplanations
+        @emlWizardExplainP: emlRMAnovaTest.pGG
+        appendInfoLine: "    " + emlWizardExplain$
+    endif
 
     ; AN EFFECT SIZE, not only F, p and epsilon: without one the report says
     ; how unlikely the condition effect is under the null and not how big it
@@ -3327,6 +5600,14 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
 
     if .doPostHoc
         @emlRMPostHoc: .data##, .n, .k, "parametric", .adjMethod$
+        ; THE SAME CAUTION THE BETWEEN-SUBJECTS REPORTS CARRY. This post-hoc
+        ; was never gated on the omnibus -- .doPostHoc is the user's own
+        ; answer and nothing else has ever been consulted -- so lane 3.1 takes
+        ; nothing away here. What lane 3.3 adds is the line that goes with the
+        ; policy: a pairwise table printed under an F that did not reach the
+        ; level in force says so. Reading it any other way would leave one
+        ; door explaining an ungated post-hoc and three not.
+        @emlPostHocCaution: emlRMAnovaTest.p
     endif
     if .nExcluded > 0
         .exclNote$ = "  Note: " + string$ (.nExcluded)
@@ -3443,6 +5724,18 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     .chiLine$ = "  chi-square(" + string$ (emlFriedmanTest.df) + ") = "
         ... + eml_fixed.result$ + ", " + emlInlineP.text$
     appendInfoLine: .chiLine$
+    ; EXPLANATION (punch list 6.2), @emlWizardExplainP reused verbatim for
+    ; the same reason as the RM-ANOVA path above -- it names no design and
+    ; is exactly as true of this chi-square as of a t, F, H, r or slope.
+    ; NOT glossed here: chi-square itself and Kendall's W. No existing
+    ; helper describes either -- @emlWizardExplainEffectEpsilon2 is the
+    ; Kruskal-Wallis epsilon-squared (H / (n - 1), a share of variance in
+    ; ranks across GROUPS), a different quantity from Kendall's W (rank
+    ; agreement across within-subject CONDITIONS), so it is not reused here.
+    if emlShowExplanations
+        @emlWizardExplainP: emlFriedmanTest.p
+        appendInfoLine: "    " + emlWizardExplain$
+    endif
 
     ; AN EFFECT SIZE beside the chi-square and p. Kendall's W is
     ; chi-square / (n * (k - 1)) — the same quantity the glance frame
@@ -3465,6 +5758,9 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
 
     if .doPostHoc
         @emlRMPostHoc: .data##, .n, .k, "nonparametric", .adjMethod$
+        ; The Friedman twin of the caution under the RM-ANOVA post-hoc above,
+        ; for its reason.
+        @emlPostHocCaution: emlFriedmanTest.p
     endif
     if .nExcluded > 0
         .exclNote$ = "  Note: " + string$ (.nExcluded)
@@ -3526,6 +5822,46 @@ endproc
 # @emlRMPostHoc — pairwise post-hoc for repeated-measures designs.
 # Parametric -> paired t; nonparametric -> Wilcoxon signed-rank.
 # p-values adjusted by .adjMethod$ (bonferroni / holm / bh).
+#
+# Output (parametric branch only; DARK -- computed, never printed):
+#   .meanDiffFlat# — mean difference per pair, C(k,2) long, in this
+#                    procedure's own pair order (a < b, a outer).
+#                    Captured from @emlTTestPaired, not recomputed.
+#                    Computed on every row under every correction, per
+#                    Fable's 26 August work order
+#                    (docs/WORK_ORDER_INTERVALS_2026-08-26.md, item 4).
+#   .lowFlat#, .highFlat# — that difference's interval per pair, or
+#                    undefined where the correction in force defines no
+#                    level. Bonferroni only, at 1 - alpha/m per pair;
+#                    undefined under holm and bh.
+#
+# Output (nonparametric branch only; DARK -- computed, never printed):
+#   .hlEstFlat#    — the Hodges-Lehmann shift per pair: the median of
+#                    the n(n+1)/2 Walsh averages of the within-subject
+#                    differences, from @emlHodgesLehmannPaired. Every
+#                    row, every correction.
+#   .hlLowFlat#, .hlHighFlat# — that estimate's interval per pair, on
+#                    the same Bonferroni-only rule as .lowFlat# above.
+#   .hlMethod$ [i] — "exact" or "normal approximation" for pair i:
+#                    WHICH NULL DISTRIBUTION THAT PAIR'S INTERVAL CAME
+#                    FROM. It must equal the branch the pair's p-value
+#                    was computed on, and a report whose interval and
+#                    p-value disagree about that is incoherent while
+#                    both numbers still look reasonable. v145 reads it.
+#
+# Only one branch runs per call. The other branch's arrays are filled
+# with undefined rather than left at zero# ()'s zeros, because a zero
+# that means "not computed" reads as "no difference" and no check would
+# see it.
+#
+# NOTHING HERE PRINTS. The lines that would -- "Mean difference
+# (C1 - C2): x.xx", "Hodges-Lehmann shift (C1 - C2): x.xx" and the
+# "[low, high]" rendering -- are drafted into the language batch and
+# print only after Ian's en-bloc approval
+# (docs/RULING_INTERVALS_2026-08-26.md, "Language"). No appendInfoLine
+# in this procedure reads any of the seven arrays above; they are
+# outputs a check can read, and approval adds print calls against
+# numbers that are already computed.
 # ============================================================================
 procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
     # THE REQUESTED ADJUSTMENT METHOD IS VALIDATED. An unrecognised string
@@ -3543,6 +5879,35 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
     .rawP# = zero# (.nPairs)
     .nSkipped = 0
     .pairIdx = 0
+
+    ; ----------------------------------------------------------------
+    ; ITEM 4 -- THE INTERVAL PLUMBING ON BOTH REPEATED-MEASURES
+    ; BRANCHES, BUILT DARK.
+    ;
+    ; The same rule items 2 and 3 wired into the between-subjects
+    ; reporter (@emlReportPairwiseComparison above), applied to this
+    ; procedure: the POINT ESTIMATE on every row under every
+    ; correction, and the INTERVAL only where the correction in force
+    ; defines a level -- Bonferroni at 1 - alpha/m per pair. Holm and
+    ; BH define none, so their interval arrays stay undefined.
+    ;
+    ; THE LEVEL IS BUILT FROM THE METHOD THAT ACTUALLY RAN, .adjUsed$,
+    ; and not from .adjMethod$. This procedure silently falls back to
+    ; Holm on an unrecognised method and discloses the fallback in its
+    ; header; an interval gated on the REQUESTED method would then
+    ; print a Bonferroni interval under a Holm heading. The
+    ; between-subjects reporter has no such fallback and reads
+    ; .adjMethod$ directly.
+    ; ----------------------------------------------------------------
+    @emlReportAlpha
+    .phAlpha = emlReportAlpha.value
+    .phLevel = 1 - .phAlpha / .nPairs
+    .meanDiffFlat# = zero# (.nPairs)
+    .lowFlat# = zero# (.nPairs)
+    .highFlat# = zero# (.nPairs)
+    .hlEstFlat# = zero# (.nPairs)
+    .hlLowFlat# = zero# (.nPairs)
+    .hlHighFlat# = zero# (.nPairs)
     for .a from 1 to .k - 1
         for .b from .a + 1 to .k
             .pairIdx = .pairIdx + 1
@@ -3552,6 +5917,19 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
                 .va# [.i] = .data## [.i, .a]
                 .vb# [.i] = .data## [.i, .b]
             endfor
+            ; The seven interval-plumbing arrays are set on EVERY pair,
+            ; in both branches, so the branch that did not run holds
+            ; undefined rather than zero#()'s zero. Each producing
+            ; call's .error$ is read BEFORE any other field of that same
+            ; call, per the error-read rule v134 lints.
+            .meanDiffFlat# [.pairIdx] = undefined
+            .lowFlat# [.pairIdx] = undefined
+            .highFlat# [.pairIdx] = undefined
+            .hlEstFlat# [.pairIdx] = undefined
+            .hlLowFlat# [.pairIdx] = undefined
+            .hlHighFlat# [.pairIdx] = undefined
+            .hlMethod$ [.pairIdx] = ""
+
             # v1.2 item 1: the pairwise test can fail (zero-variance
             # differences, all-zero differences, too few pairs). Previously
             # its undefined .p was written straight into .rawP#, and the
@@ -3561,10 +5939,90 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
                 @emlTTestPaired: .va#, .vb#, 2
                 .pairErr$ = emlTTestPaired.error$
                 .pairP = emlTTestPaired.p
+                ; Copied on the next lines, before anything else can run
+                ; and overwrite the emlTTestPaired namespace.
+                .phDiff = emlTTestPaired.meanDiff
+                .phT = emlTTestPaired.t
+                .phDf = emlTTestPaired.df
+
+                ; THE POINT ESTIMATE, every row, every correction. It is
+                ; taken from the test rather than recomputed, and it
+                ; survives the zero-variance refusal: @emlTTestPaired
+                ; assigns .meanDiff before it checks the SD, so a pair
+                ; with identical differences still HAS a mean difference
+                ; and only the test statistic is missing.
+                .meanDiffFlat# [.pairIdx] = .phDiff
+
+                ; THE INTERVAL, ONLY WHEN THE CORRECTION IN FORCE
+                ; DEFINES ONE.
+                ;
+                ; NO WELCH/STUDENT SPLIT EXISTS ON A PAIRED BRANCH, AND
+                ; MATHEMATICALLY NONE CAN. Welch's correction addresses
+                ; unequal variances across two INDEPENDENT samples, and
+                ; a paired test works on the differences, which is one
+                ; sample with one variance. There is no second variance
+                ; for a correction to reconcile. This comment is here to
+                ; stop one being built: the between-subjects arm above
+                ; carries a genuine welch/student split, and the
+                ; symmetry invites the same split here, where it would
+                ; be a fabricated distinction with two plausible-looking
+                ; answers.
+                ;
+                ; The df is @emlTTestPaired's own n - 1, handed straight
+                ; to @emlTTestInterval, which never recomputes one.
+                if .adjUsed$ = "bonferroni"
+                    @emlTTestInterval: .phDiff, .phT, .phDf, .phLevel
+                    ; .error$ read before .low, per the rule v134 lints:
+                    ; a pair with t = 0 or an undefined df is refused, and
+                    ; the bounds stay undefined rather than being read
+                    ; back out of a refusal.
+                    .ciErr$ = emlTTestInterval.error$
+                    if .ciErr$ = ""
+                        .lowFlat# [.pairIdx] = emlTTestInterval.low
+                        .highFlat# [.pairIdx] = emlTTestInterval.high
+                    endif
+                endif
             else
                 @emlWilcoxonSignedRank: .va#, .vb#, 2
                 .pairErr$ = emlWilcoxonSignedRank.error$
                 .pairP = emlWilcoxonSignedRank.p
+
+                ; THE POINT ESTIMATE on this branch is the
+                ; Hodges-Lehmann shift, not a mean difference: this arm
+                ; ranks, so its location statistic is the median of the
+                ; n(n+1)/2 Walsh averages of the within-subject
+                ; differences. @emlHodgesLehmannPaired takes the branch
+                ; -- exact or normal approximation --
+                ; @emlWilcoxonSignedRank took on the same two vectors,
+                ; by the same gate copied verbatim from it.
+                ;
+                ; The call is made on every row and the CORRECTION gates
+                ; the RESULT, for the reason the between-subjects
+                ; Wilcoxon arm gives: the estimate and the interval come
+                ; out of one call, and the work order's instruction is
+                ; compute-then-conditionally-print.
+                @emlHodgesLehmannPaired: .va#, .vb#, .phLevel
+                .hlErr$ = emlHodgesLehmannPaired.error$
+                .hlEstFlat# [.pairIdx] = emlHodgesLehmannPaired.estimate
+                .hlMethod$ [.pairIdx] = emlHodgesLehmannPaired.method$
+                ; The estimate stands on its own -- an all-zero-difference
+                ; pair still HAS a median Walsh average, and the
+                ; procedure returns it while refusing the interval.
+                if .hlErr$ = "" and .adjUsed$ = "bonferroni"
+                    .hlLowFlat# [.pairIdx] = emlHodgesLehmannPaired.low
+                    .hlHighFlat# [.pairIdx] = emlHodgesLehmannPaired.high
+                endif
+                ; DARK, LIKE THE REST OF THIS PROCEDURE'S LANGUAGE. When
+                ; .hlErr$ <> "" here it is because every within-subject
+                ; difference in the pair is zero or the same non-zero
+                ; constant -- the estimate above still stands, only the
+                ; interval is refused. Fable's ruling on this cell
+                ; (docs/RULING_ITEM3_CASES_2026-08-26.md, case 1) pins the
+                ; disclosure line for when this prints:
+                ;     No confidence interval: all observations are tied
+                ; Drafted into the language batch alongside the other
+                ; interval strings; not printed here or anywhere yet,
+                ; gated on the same en-bloc approval.
             endif
             .pairNote$ [.pairIdx] = ""
             if .pairErr$ <> ""
@@ -4169,7 +6627,16 @@ procedure emlDeclareTwoWayResult: .tableName$, .dataCol$, .factor1$, .factor2$,
     @emlGlanceNum: "deviance", emlTwoWayAnova.ssError
     @emlGlanceNum: "nobs", .nobs
     @emlGlanceNum: "n.cells", emlTwoWayAnova.nCells
-    @emlGlanceStr: "method", "Two-way ANOVA"
+    ; NAMES THE SS TYPE THAT PRODUCED THE TABLE ABOVE, per
+    ; RULING_CONSOLIDATED_KERNELS_2026-09-01.md section 2 ("the output
+    ; always names the type that produced the table"). "method" is the
+    ; column this goes in, not a new one: eml-result-writer.praat's Glance
+    ; vocabulary is a closed, checked list (validate/v17_broom_parity.R)
+    ; owned by a concurrent edit elsewhere, so this reads from the field
+    ; the kernel actually set and folds it into the existing "method"
+    ; string rather than requesting a new column.
+    @emlGlanceStr: "method", "Two-way ANOVA (" + emlTwoWayAnova.ssTypeLabel$
+    ... + " SS)"
     if emlTwoWayAnova.warning$ <> ""
         @emlGlanceStr: "warning", emlTwoWayAnova.warning$
     endif
@@ -4750,4 +7217,83 @@ procedure emlDeclareFriedmanPostHoc
         @emlTidyStr: "method", "Wilcoxon signed rank ("
         ... + emlRMPostHoc.adjUsed$ + ")"
     endfor
+endproc
+
+
+# --- 12. Reliability (Cronbach's alpha) — a survey row ---------------------
+# Reads emlCronbachAlpha.* directly, the way @emlDeclareRMResult reads
+# emlRMAnovaTest.* -- the kernel's outputs live only until it runs again,
+# and this is called before anything else can re-enter it.
+procedure emlDeclareReliabilityResult: .tableName$, .itemCols$#, .k, .n,
+    ... .nExcluded, .warning$
+    @emlResultBegin: .tableName$, "Reliability (Cronbach's alpha)"
+
+    @emlTidyRow: "Scale"
+    @emlTidyNum: "estimate",  emlCronbachAlpha.alpha
+    @emlTidyNum: "conf.low",  emlCronbachAlpha.ciLow
+    @emlTidyNum: "conf.high", emlCronbachAlpha.ciHigh
+    @emlTidyStr: "method",    "Cronbach's alpha (Feldt confidence interval)"
+
+    ; ALPHA IF ITEM DELETED, one row per item, in the order given -- undefined
+    ; for k = 2 (@emlCronbachAlpha's own note: a one-item reduced scale has no
+    ; alpha), and @emlTidyNum writes nothing for an undefined value, so those
+    ; cells stay empty and R reads NA, the same convention @emlDeclareNormalityResult
+    ; follows for skewness and kurtosis below their own minimum n.
+    for .j from 1 to .k
+        @emlTidyRow: .itemCols$# [.j]
+        @emlTidyNum: "estimate", emlCronbachAlpha.alphaIfDeleted# [.j]
+        @emlTidyStr: "method",   "Alpha if item deleted"
+    endfor
+
+    @emlGlanceNum: "estimate",   emlCronbachAlpha.alpha
+    @emlGlanceNum: "nobs",       .n
+    @emlGlanceNum: "n.excluded", .nExcluded
+    @emlGlanceStr: "method",     "Cronbach's alpha (Feldt confidence interval)"
+    if .warning$ <> ""
+        @emlGlanceStr: "warning", .warning$
+    endif
+endproc
+
+
+procedure emlDeclareCategoricalResult: .tableName$, .rowCol$, .colCol$,
+... .warning$
+    @emlResultBegin: .tableName$, "Chi-square test of independence"
+
+    ; broom::tidy(chisq.test()) has exactly these four columns.
+    @emlTidyRow: .rowCol$ + " x " + .colCol$
+    @emlTidyNum: "statistic", emlChiSquareIndependence.chiSq
+    @emlTidyNum: "parameter", emlChiSquareIndependence.df
+    @emlTidyNum: "p.value",   emlChiSquareIndependence.p
+    @emlTidyNum: "estimate",  emlChiSquareIndependence.cramersV
+    @emlTidyStr: "method",    "Pearson's Chi-squared test"
+
+    @emlGlanceNum: "statistic", emlChiSquareIndependence.chiSq
+    @emlGlanceNum: "df",        emlChiSquareIndependence.df
+    @emlGlanceNum: "p.value",   emlChiSquareIndependence.p
+    @emlGlanceNum: "estimate",  emlChiSquareIndependence.cramersV
+    @emlGlanceNum: "nobs",      emlChiSquareIndependence.n
+    @emlGlanceStr: "method",    "Pearson's Chi-squared test"
+    if .warning$ <> ""
+        @emlGlanceStr: "warning", .warning$
+    endif
+endproc
+
+
+procedure emlDeclareProportionResult: .tableName$, .col$, .successValue$,
+... .n, .nExcluded, .warning$
+    @emlResultBegin: .tableName$, "Proportion (Wilson score interval)"
+
+    @emlTidyRow: .col$ + " = " + .successValue$
+    @emlTidyNum: "estimate",  emlWilsonInterval.propHat
+    @emlTidyNum: "conf.low",  emlWilsonInterval.ciLow
+    @emlTidyNum: "conf.high", emlWilsonInterval.ciHigh
+    @emlTidyStr: "method",    "Wilson score confidence interval"
+
+    @emlGlanceNum: "estimate",   emlWilsonInterval.propHat
+    @emlGlanceNum: "nobs",       .n
+    @emlGlanceNum: "n.excluded", .nExcluded
+    @emlGlanceStr: "method",     "Wilson score confidence interval"
+    if .warning$ <> ""
+        @emlGlanceStr: "warning", .warning$
+    endif
 endproc

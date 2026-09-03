@@ -3,4 +3,13 @@
 --- step 1 (draw), run 1
 Box plot: f0 by cohort
 Whisker convention and outlier rule are stated in the figure, not assumed.
+emlEraseFirst = 1
+emlPanelOriginX = 0
+emlPanelOriginY = 0
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = 1
+emlSecondAxisOn = 0
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawBoxPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "val", 0, 0

@@ -1,5 +1,5 @@
 praat_version	Praat 6.6.30 (June 30 2026)
-source_tree	/home/claude/EMLPraatTools
+source_tree	/home/claude/repo
 leg	onebin
 onebin_bin_width	5.383301
 onebin_bins_in_range	1
@@ -100,46 +100,46 @@ native_recorded_min	140.0000
 native_recorded_max	320.0000
 leg	--shell--
 rec_auto_emitted	yes
-rec_auto_blockline	axisYMin  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-rec_auto_blockline	axisYMax  = 0.0   ; on the recorded data it resolved to 140.0000 .. 320.0000
+rec_auto_blockline	axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+rec_auto_blockline	axisYMax     = 0.0   ; on the recorded data this resolved to 140.0000 .. 320.0000; auto adapts to other data
 rec_auto_violin_call	axisYMin, axisYMax
 rec_auto_box_call	
 rec_auto_bar_call	
 rec_auto_spectrum_call	
 rec_auto_block_promise	1
 rec_two_emitted	yes
-rec_two_blockline	axisYMin  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-rec_two_blockline	axisYMax  = 0.0   ; on the recorded data it resolved to 140.0000 .. 320.0000
-rec_two_blockline	axisYMin2 = 20   ; the y-axis range -- as typed in the dialog -- run 2, step 2 (draw)
-rec_two_blockline	axisYMax2 = 95   ; the figure was drawn on 20.0000 .. 95.0000
+rec_two_blockline	axisYMin      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+rec_two_blockline	axisYMax      = 0.0   ; on the recorded data this resolved to 140.0000 .. 320.0000; auto adapts to other data
+rec_two_blockline	axisYMin2     = 20   ; the y-axis range -- as typed in the dialog -- run 2, step 2 (draw)
+rec_two_blockline	axisYMax2     = 95   ; the figure was drawn on 20.0000 .. 95.0000
 rec_two_violin_call	axisYMin, axisYMax
 rec_two_box_call	
 rec_two_bar_call	
 rec_two_spectrum_call	6, 4, "color", 1, 995, 1005, axisYMin2, axisYMax2
 rec_two_block_promise	1
 rec_form_emitted	yes
-rec_form_blockline	axisYMin  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-rec_form_blockline	axisYMax  = 0.0   ; on the recorded data it resolved to 190.0000 .. 290.0000
+rec_form_blockline	axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+rec_form_blockline	axisYMax     = 0.0   ; on the recorded data this resolved to 190.0000 .. 290.0000; auto adapts to other data
 rec_form_violin_call	axisYMin, axisYMax
 rec_form_box_call	
 rec_form_bar_call	
 rec_form_spectrum_call	
 rec_form_block_promise	1
 rec_noform_emitted	yes
-rec_noform_blockline	axisYMin  = 150   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
-rec_noform_blockline	axisYMax  = 400   ; the figure was drawn on 150.0000 .. 400.0000
+rec_noform_blockline	axisYMin     = 150   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
+rec_noform_blockline	axisYMax     = 400   ; the figure was drawn on 150.0000 .. 400.0000
 rec_noform_violin_call	axisYMin, axisYMax
 rec_noform_box_call	
 rec_noform_bar_call	
 rec_noform_spectrum_call	
 rec_noform_block_promise	1
 rec_pairs_emitted	yes
-rec_pairs_blockline	axisYMin   = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-rec_pairs_blockline	axisYMax   = 0.0   ; on the recorded data it resolved to 140.0000 .. 320.0000
-rec_pairs_blockline	axisYMin2  = 0   ; the y-axis range -- as typed in the dialog -- run 2, step 2 (draw)
-rec_pairs_blockline	axisYMax2  = 120   ; the figure was drawn on 0.0000 .. 120.0000
-rec_pairs_blockline	axisYMin3  = 0   ; the y-axis range -- as typed in the dialog -- run 3, step 3 (draw)
-rec_pairs_blockline	axisYMax3  = 300   ; the figure was drawn on 0.0000 .. 300.0000
+rec_pairs_blockline	axisYMin      = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
+rec_pairs_blockline	axisYMax      = 0.0   ; on the recorded data this resolved to 140.0000 .. 320.0000; auto adapts to other data
+rec_pairs_blockline	axisYMin2     = 0   ; the y-axis range -- as typed in the dialog -- run 2, step 2 (draw)
+rec_pairs_blockline	axisYMax2     = 120   ; the figure was drawn on 0.0000 .. 120.0000
+rec_pairs_blockline	axisYMin3     = 0   ; the y-axis range -- as typed in the dialog -- run 3, step 3 (draw)
+rec_pairs_blockline	axisYMax3     = 300   ; the figure was drawn on 0.0000 .. 300.0000
 rec_pairs_violin_call	axisYMin, axisYMax
 rec_pairs_box_call	axisYMin2, axisYMax2
 rec_pairs_bar_call	axisYMin3, axisYMax3

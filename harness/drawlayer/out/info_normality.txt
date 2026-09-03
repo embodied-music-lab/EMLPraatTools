@@ -2,7 +2,7 @@ normality
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Mon Aug 17 21:50:41 2026
+  Thu Sep  3 03:56:03 2026
 ══════════════════════════════════════════════
 
   Table               nm
@@ -17,31 +17,35 @@ normality
 
 
   ── Distribution Shape ──────────────────────
-  Why: Skewness and kurtosis indicate departures from a normal (bell-shaped) distribution.
-  Skewness            0.0000		Approximately symmetric (|skew| < 2 is typically acceptable)
-  Kurtosis (excess)   -1.2000		Near-normal peakedness (0 = normal; |excess| < 7 treated as typical)
+  Skewness            0.0000
+  Kurtosis (excess)   -1.2000
   → Skewness within typical limits (criterion: |skew| < 2)
   → Kurtosis within typical limits (criterion: |excess kurt| < 7)
 
 
   ── Shapiro-Wilk Test ───────────────────────
-  Why: Formal test of whether the data are drawn from a normal distribution.
-  W                   0.9589		Closer to 1 = more normal (range: 0 to 1)
-  p                   .416		Not statistically significant at the 5% level
+  W                   0.9589
+  p                   .416
   → Does not reject normality (p >= 0.05)
 
 
   ── Recommendation ──────────────────────────
-  Normality appears reasonable.
-  → Parametric tests (t-test, ANOVA, Pearson r) are appropriate.
+  Shapiro-Wilk does not reject normality (p >= .05), and skewness and
+  kurtosis are within the thresholds.
+  → Parametric tests (t-test, ANOVA, Pearson r) are recommended.
+  What was checked: the marginal distribution of this column. Parametric
+  tests assume normality of the model RESIDUALS, which is not the same
+  distribution and is not examined here.
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 ══════════════════════════════════════════════
   EML Stats : Normality Assessment
-  Mon Aug 17 21:50:41 2026
+  Thu Sep  3 03:56:03 2026
 ══════════════════════════════════════════════
 
   Table               nm
@@ -56,24 +60,28 @@ normality
 
 
   ── Distribution Shape ──────────────────────
-  Why: Skewness and kurtosis indicate departures from a normal (bell-shaped) distribution.
-  Skewness            2.2743		Substantial right skew (|skew| < 2 is typically acceptable)
-  Kurtosis (excess)   4.9207		Near-normal peakedness (0 = normal; |excess| < 7 treated as typical)
+  Skewness            2.2743
+  Kurtosis (excess)   4.9207
   → Skewness outside typical limits (criterion: |skew| < 2)
   → Kurtosis within typical limits (criterion: |excess kurt| < 7)
 
 
   ── Shapiro-Wilk Test ───────────────────────
-  Why: Formal test of whether the data are drawn from a normal distribution.
-  W                   0.6370		Closer to 1 = more normal (range: 0 to 1)
-  p                   < .001  (1.65e-06)		Statistically significant: <0.1% probability due to chance
+  W                   0.6370
+  p                   < .001  (1.65e-06)
   → Rejects normality (p < 0.05)
 
 
   ── Recommendation ──────────────────────────
-  Evidence against normality.
-  → Consider nonparametric tests (Mann-Whitney, Kruskal-Wallis, Spearman rho).
+  The evidence is against normality on the reading printed above.
+  → Nonparametric tests (Mann-Whitney, Kruskal-Wallis, Spearman rho) are
+     recommended.
+  What was checked: the marginal distribution of this column. Parametric
+  tests assume normality of the model RESIDUALS, which is not the same
+  distribution and is not examined here.
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════

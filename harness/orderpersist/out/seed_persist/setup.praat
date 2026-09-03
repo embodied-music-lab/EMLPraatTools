@@ -389,21 +389,22 @@ emlSetupPath$ = emlPluginRoot.abs$ + "/scripts/eml-lib-user.praat"
 # table with the demo generator emits a create step that calls @emlDemoTable
 # to build it again, and the two lists are compared against each other by
 # validate/v82.
-emlSetupNModules = 14
+emlSetupNModules = 15
 emlSetupModule$ [ 1] = "stats/eml-core-utilities.praat"
 emlSetupModule$ [ 2] = "stats/eml-core-descriptive.praat"
 emlSetupModule$ [ 3] = "stats/eml-extract.praat"
 emlSetupModule$ [ 4] = "stats/eml-output.praat"
-emlSetupModule$ [ 5] = "stats/eml-inferential.praat"
-emlSetupModule$ [ 6] = "stats/eml-psychometrics.praat"
-emlSetupModule$ [ 7] = "stats/eml-categorical.praat"
-emlSetupModule$ [ 8] = "stats/eml-result-writer.praat"
-emlSetupModule$ [ 9] = "stats/eml-record.praat"
-emlSetupModule$ [10] = "graphs/eml-graph-procedures.praat"
-emlSetupModule$ [11] = "graphs/eml-annotation-procedures.praat"
-emlSetupModule$ [12] = "graphs/eml-draw-procedures.praat"
-emlSetupModule$ [13] = "stats/eml-analysis.praat"
-emlSetupModule$ [14] = "stats/eml-demo-tables.praat"
+emlSetupModule$ [ 5] = "stats/eml-anova-kernel.praat"
+emlSetupModule$ [ 6] = "stats/eml-inferential.praat"
+emlSetupModule$ [ 7] = "stats/eml-psychometrics.praat"
+emlSetupModule$ [ 8] = "stats/eml-categorical.praat"
+emlSetupModule$ [ 9] = "stats/eml-result-writer.praat"
+emlSetupModule$ [10] = "stats/eml-record.praat"
+emlSetupModule$ [11] = "graphs/eml-graph-procedures.praat"
+emlSetupModule$ [12] = "graphs/eml-annotation-procedures.praat"
+emlSetupModule$ [13] = "graphs/eml-draw-procedures.praat"
+emlSetupModule$ [14] = "stats/eml-analysis.praat"
+emlSetupModule$ [15] = "stats/eml-demo-tables.praat"
 
 # ── THE MODULES THAT ARE NOT IN THE BARREL, AND WHY ────────────────────────
 #
@@ -430,6 +431,7 @@ emlSetupModule$ [14] = "stats/eml-demo-tables.praat"
 # not-in-barrel: stats/eml-linalg.praat -- Linear algebra. Nothing but eml-lmm.praat calls it, so it is out for the same reason and would be weight in every user script that is not using a mixed model.
 # not-in-barrel: stats/eml-optimizer.praat -- Derivative-free optimisers. Nothing but eml-lmm.praat calls them; out with it.
 # not-in-barrel: graphs/eml-graphs-form.praat -- The interactive graphs dialog: the graph-type registry, config persistence and @emlGraphsWorkflow. It raises pause dialogs, so a script that included it from the barrel would be a headless script that can stop for a window nobody is watching. The plugin's own wrappers reach it through scripts/eml-lib-graphs.praat, which sits in scripts/ and can therefore use relative paths.
+# not-in-barrel: stats/eml-studentized-range.praat -- The studentised-range port (ptukey/qtukey). It is written and it is NOT accepted: measured against a converged mpmath reference it is 64 percent low at k=10, df=3 near p=1e-6, and wrong by smaller but systematic amounts across df 3 to 5. Nothing calls it yet -- @emlTukeyHSD still uses Praat's built-in -- and a barrel line would make a procedure with a known accuracy defect loadable from any script on the machine in one include. It joins the table when it passes validate/v154.
 # not-in-barrel: graphs/eml-draw-qq.praat -- @emlDrawQQPlot, an adapter that computes Blom quantiles and hands them to @emlDrawScatterPlot. THIS ROW IS NOT A DEPENDENCY RULING: every procedure it calls is in the table above, and the file loads and draws on top of the generated barrel. It is reached today through scripts/eml-check-normality.praat, which includes it directly, and a user's own script has to include it directly too. Putting it in the table changes what one include line loads, and carries the re-drive of every harness that records an include block; that has not been done.
 
 # THE GENERATED TEXT IS PURE ASCII, ON PURPOSE. Praat picks an output encoding

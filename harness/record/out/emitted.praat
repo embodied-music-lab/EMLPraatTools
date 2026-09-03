@@ -39,7 +39,7 @@ include ~/repo/plugin/graphs/eml-draw-procedures.praat
 include ~/repo/plugin/stats/eml-analysis.praat
 include ~/repo/plugin/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -87,6 +87,8 @@ data = selected ()
 # Normality was NOT tested on this path.
 
 @emlReportContext: "recorded script (recorded roundtrip, originally analysis dialog)", ""
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlRunAnovaAnalysis: data, valueCol$, groupCol$, 1
 
 # F(2, 42) = 18.0603, p = 0.000002, eta-squared = 0.4624

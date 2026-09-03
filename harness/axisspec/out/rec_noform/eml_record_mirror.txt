@@ -3,4 +3,13 @@
 --- step 1 (draw), run 1
 Violin plot of val, grouped by grp, 3 groups.
 Violin width is a kernel density estimate, not a count.
+emlEraseFirst = 1
+emlPanelOriginX = 0
+emlPanelOriginY = 0
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = 1
+emlSecondAxisOn = 0
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawViolinPlot: data, "f0 by group", "Group", "val", 6, 4, "color", 1, "grp", "val", 150, 400

@@ -1,5 +1,5 @@
 praat_version	Praat 6.6.30 (June 30 2026)
-source_tree	/home/claude/EMLPraatTools
+source_tree	/home/claude/repo
 leg	bracket_auto
 bracket_auto_dialog_min	0
 bracket_auto_dialog_max	0
@@ -7,24 +7,6 @@ bracket_auto_afterpublish_pub_hasmin	1
 bracket_auto_afterpublish_pub_hasmax	1
 bracket_auto_afterpublish_pub_min	0
 bracket_auto_afterpublish_pub_max	0
-bracket_auto_brackets	6
-bracket_auto_afterbridge_pub_hasmin	1
-bracket_auto_afterbridge_pub_hasmax	1
-bracket_auto_afterbridge_pub_min	0
-bracket_auto_afterbridge_pub_max	0
-bracket_auto_resolved_min	195.0000
-bracket_auto_resolved_max	268.9205
-bracket_auto_afterheadroom_pub_hasmin	1
-bracket_auto_afterheadroom_pub_hasmax	1
-bracket_auto_afterheadroom_pub_min	0
-bracket_auto_afterheadroom_pub_max	0
-bracket_auto_afterannot_pub_hasmin	1
-bracket_auto_afterannot_pub_hasmax	1
-bracket_auto_afterannot_pub_min	0
-bracket_auto_afterannot_pub_max	0
-bracket_auto_axis_min	195.0000
-bracket_auto_axis_max	268.9205
-bracket_auto_flushed	1
 leg	bracket_typed
 bracket_typed_dialog_min	150.0000
 bracket_typed_dialog_max	400.0000
@@ -32,24 +14,6 @@ bracket_typed_afterpublish_pub_hasmin	1
 bracket_typed_afterpublish_pub_hasmax	1
 bracket_typed_afterpublish_pub_min	150.0000
 bracket_typed_afterpublish_pub_max	400.0000
-bracket_typed_brackets	6
-bracket_typed_afterbridge_pub_hasmin	1
-bracket_typed_afterbridge_pub_hasmax	1
-bracket_typed_afterbridge_pub_min	150.0000
-bracket_typed_afterbridge_pub_max	400.0000
-bracket_typed_resolved_min	150.0000
-bracket_typed_resolved_max	612.0032
-bracket_typed_afterheadroom_pub_hasmin	1
-bracket_typed_afterheadroom_pub_hasmax	1
-bracket_typed_afterheadroom_pub_min	150.0000
-bracket_typed_afterheadroom_pub_max	400.0000
-bracket_typed_afterannot_pub_hasmin	1
-bracket_typed_afterannot_pub_hasmax	1
-bracket_typed_afterannot_pub_min	150.0000
-bracket_typed_afterannot_pub_max	400.0000
-bracket_typed_axis_min	150.0000
-bracket_typed_axis_max	612.0032
-bracket_typed_flushed	1
 leg	legend_auto
 legend_auto_dialog_min	0
 legend_auto_dialog_max	0
@@ -124,26 +88,14 @@ fmt1_7	8.300000|8.3|8.3
 fmt2_8	-0.0000000001|-0.0000000001|0.00
 fmt1_8	-0.0000000001|-0.0000000001|0.0
 leg	--shell--
-bracket_auto_emitted	yes
-bracket_auto_blockline	axisYMin  = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 2 (draw)
-bracket_auto_blockline	axisYMax  = 0.0   ; on the recorded data it resolved to 195.0000 .. 268.9205
-bracket_auto_violin_call	axisYMin, axisYMax
-bracket_auto_gviolin_call	
-bracket_auto_resolved_note	axisYMax  = 0.0   ; on the recorded data it resolved to 195.0000 .. 268.9205
-bracket_auto_auto_marked	1
-bracket_typed_emitted	yes
-bracket_typed_blockline	axisYMin  = 150   ; the y-axis range -- as typed in the dialog -- run 1, step 2 (draw)
-bracket_typed_blockline	axisYMax  = 400   ; the figure was drawn on 150.0000 .. 612.0032
-bracket_typed_violin_call	axisYMin, axisYMax
-bracket_typed_gviolin_call	
-bracket_typed_resolved_note	
-bracket_typed_auto_marked	0
+bracket_auto_emitted	<none>
+bracket_typed_emitted	<none>
 legend_auto_emitted	yes
 legend_auto_blockline	axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-legend_auto_blockline	axisYMax     = 0.0   ; on the recorded data it resolved to 195.0000 .. 275.0000
+legend_auto_blockline	axisYMax     = 0.0   ; on the recorded data this resolved to 195.0000 .. 275.0000; auto adapts to other data
 legend_auto_violin_call	
 legend_auto_gviolin_call	axisYMin, axisYMax
-legend_auto_resolved_note	axisYMax     = 0.0   ; on the recorded data it resolved to 195.0000 .. 275.0000
+legend_auto_resolved_note	axisYMax     = 0.0   ; on the recorded data this resolved to 195.0000 .. 275.0000; auto adapts to other data
 legend_auto_auto_marked	1
 legend_typed_emitted	yes
 legend_typed_blockline	axisYMin     = 100   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
@@ -153,8 +105,8 @@ legend_typed_gviolin_call	axisYMin, axisYMax
 legend_typed_resolved_note	
 legend_typed_auto_marked	0
 noform_emitted	yes
-noform_blockline	axisYMin  = 150   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
-noform_blockline	axisYMax  = 400   ; the figure was drawn on 150.0000 .. 400.0000
+noform_blockline	axisYMin     = 150   ; the y-axis range -- as typed in the dialog -- run 1, step 1 (draw)
+noform_blockline	axisYMax     = 400   ; the figure was drawn on 150.0000 .. 400.0000
 noform_violin_call	axisYMin, axisYMax
 noform_gviolin_call	
 noform_resolved_note	
@@ -167,9 +119,9 @@ code_reqmin_writes	4
 code_reqmax_writes	4
 code_headroom_calls	1
 code_legendroom_calls	1
-line_publish_call	8329
-line_headroom_call	8478
-line_legendroom_call	8572
+line_publish_call	10616
+line_headroom_call	10794
+line_legendroom_call	10888
 code_form_fixed	0
 code_graph_fixed	15
 code_graph_eml_fixed	2

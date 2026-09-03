@@ -10,7 +10,7 @@ include /home/claude/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/
 include /home/claude/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
 include /home/claude/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs/stats/eml-analysis.praat
 Text writing preferences: "UTF-8"
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 @emlRecordInit
 emlRecordPluginRoot$ = "/home/claude/repo/harness/runblock/out/head_tree/plugin_EML_StatsGraphs"

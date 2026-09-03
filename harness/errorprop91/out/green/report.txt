@@ -6,7 +6,7 @@ strict=1 error=[Column not found: y]
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Wed Aug 26 03:23:47 2026
+  Thu Sep  3 03:56:11 2026
 ══════════════════════════════════════════════
 
   Table               s2
@@ -17,17 +17,15 @@ strict=1 error=[Column not found: y]
 
 
   ── ANOVA Table ─────────────────────────────
-  Why: Tests whether group means differ when normality and equal variances hold.
 
 Source              SS              df    MS              F           p
 Between             73.75           2     36.87           19.9312     < .001
 Within              14.80           8     1.85            
 Total               88.55           10    
 
-  F                   19.9312		Ratio of mean squares: the between-group mean square is 19.9 times the within-group mean square. With no real effect, this ratio tends to be near 1
-  p                   < .001  (7.81e-04)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
-  Effect size         eta-squared = 0.8329		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 83% of the total variance
-  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  F                   19.9312
+  p                   < .001  (7.81e-04)
+  Effect size         eta-squared = 0.8329
   Equal spread        Brown-Forsythe F(2, 8) = 4.1119
   Equal-spread p      p = .059
 
@@ -41,7 +39,6 @@ Total               88.55           10
 
   ── Pairwise Effect Sizes (Cohen's d) ───────
   No pairwise significance tests were run.
-  Effect sizes estimate the size of each pairwise difference.
 
               A flat      B flat      C spread    
 A flat        ---         n/a         -3.948      
@@ -52,13 +49,15 @@ C spread      3.948       2.037       ---
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 === SITE 4: paired both-mode, parametric arm fails alone ===
 
 ══════════════════════════════════════════════
   EML Stats : Paired Comparison
-  Wed Aug 26 03:23:47 2026
+  Thu Sep  3 03:56:12 2026
 ══════════════════════════════════════════════
 
   Table               s4
@@ -75,18 +74,20 @@ Paired t-test error: All differences are identical (zero variance)
 
 
   ── Wilcoxon Signed-Rank Test ───────────────
-  Why: Nonparametric test for paired observations — no normality assumption needed.
-  T+                  15.0		Sum of ranks for positive differences (subjects who increased)
-  T-                  0.0		Sum of ranks for negative differences (subjects who decreased)
+  T+                  15.0
+  T-                  0.0
   z                   2.087
-  p                   .037		Statistically significant at the 5% level: if there were truly no effect, results at least this extreme would occur less than 5% of the time
+  p                   .037
+  p method            normal approximation (ties present)
 
 
   ── Nonparametric Effect Size ───────────────
-  Matched-pairs r     1.000		Effect size: large by Cohen's convention (|r| >= 0.5 = large). Rank-biserial r: the net proportion of cross-group pairs favouring one group
+  Matched-pairs r     1.000
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
   Parametric results omitted — Paired t-test failed: All differences are identical (zero variance)

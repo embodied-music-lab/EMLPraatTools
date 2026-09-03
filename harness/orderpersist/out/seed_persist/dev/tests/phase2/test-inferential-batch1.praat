@@ -269,11 +269,12 @@ tightTolerance = 0.000000001
 @emlTestAssertEqualNum: "Mean2", 10, emlCohenD.mean2, tolerance
 @emlTestAssertTrue: "No error", emlCohenD.error$ = ""
 
-# --- Test 4.2: Hedges' g correction ---
-# df = 8, J = 1 - 3/(4*8 - 1) = 1 - 3/31 = 0.90323
-# g = 1.6 * 0.90323 = 1.4452
-@emlTestAssertEqualNum: "Hedges g correction factor", 0.9032258065, emlCohenD.correctionFactor, tightTolerance
-@emlTestAssertEqualNum: "Hedges g", 1.4451612903, emlCohenD.g, tightTolerance
+# --- Test 4.2: Hedges' g correction (exact form, Hedges 1981) ---
+# df = 8, J = exp(lnGamma(4) - 0.5*ln(4) - lnGamma(3.5)) = 0.9027033337
+# g = 1.6 * 0.9027033337 = 1.4443253339
+# Agrees with effectsize::hedges_g(g1, g2) = 1.4443253339.
+@emlTestAssertEqualNum: "Hedges g correction factor", 0.9027033337, emlCohenD.correctionFactor, tightTolerance
+@emlTestAssertEqualNum: "Hedges g", 1.4443253339, emlCohenD.g, tightTolerance
 
 # --- Test 4.3: g < d always (for finite samples) ---
 @emlTestAssertTrue: "g < d", emlCohenD.g < emlCohenD.d

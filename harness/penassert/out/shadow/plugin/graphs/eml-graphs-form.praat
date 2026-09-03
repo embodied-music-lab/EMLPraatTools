@@ -676,9 +676,10 @@ procedure emlLoadConfig
                     elsif .key$ = "showAdvanced"
                         @emlConfigFlag: .value$
                         config_showAdvanced = emlConfigFlag.v
-                    elsif .key$ = "groupSort"
-                        @emlConfigMenu: .value$, 1, 2
-                        config_groupSort = emlConfigMenu.v
+                    ; NO "groupSort" KEY, ON PURPOSE. Group order is session-only
+                    ; — see @emlSaveConfig and the sessionGroupSort restore right
+                    ; after @emlLoadConfig is called, for the reasoning that
+                    ; already governs "Erase page first" the same way.
                     endif
                 endif
             endif
@@ -728,7 +729,12 @@ procedure emlSaveConfig
     appendFileLine: .configPath$, "lastPNGFolder: ", config_lastPNGFolder$
     appendFileLine: .configPath$, "lastCSVFolder: ", config_lastCSVFolder$
     appendFileLine: .configPath$, "showAdvanced: ", config_showAdvanced
-    appendFileLine: .configPath$, "groupSort: ", config_groupSort
+    ; GROUP ORDER IS NOT WRITTEN HERE. It is a display choice, and by the
+    ; same reasoning as "Erase page first" (see the field itself, below) a
+    ; remembered order would greet a relaunch with alphabetical order chosen
+    ; a week ago instead of the table-order default. It is remembered for
+    ; the rest of THIS session in sessionGroupSort instead — see the restore
+    ; right after @emlLoadConfig is called.
 endproc
 
 # ============================================================================
@@ -1230,7 +1236,7 @@ endproc
 # ============================================================================
 # ADJUSTMENT-METHOD LOOKUP
 # ============================================================================
-# Maps a correction index onto the string @emlBridgeGroupComparison expects in
+# Maps a correction index onto the string @emlRunAnnotationComparison expects in
 # annotCorrectionMethod$. The index now comes from @emlComparisonFromMenu, so
 # the family and the correction are two outputs of one chosen row and cannot
 # disagree; see THE COMPARISON MENU below for why that replaced two controls
@@ -1270,6 +1276,35 @@ endproc
 # ----------------------------------------------------------------------------
 procedure emlComparisonMenuRows
     option: "-- Parametric --"
+    ; ITEM 3.5 -- THE POST-HOC OPT-OUT, AS A ROW.
+    ;
+    ; WHAT IT CLOSES. @emlRunAnnotationComparison decides, on every parametric
+    ; k >= 3 figure, whether to run a pairwise post-hoc. That decision belongs
+    ; to the user, and a page with no way to state it hands the bridge a
+    ; literal instead -- a figure showing Tukey whatever was asked for, and
+    ; disagreeing in silence with the analysis door on the same data
+    ; (validate/v127, legs 1 and 3). Fable's 26 Aug ruling: the fix is THIS
+    ; DIALOG'S ACTUAL POST-HOC CHOICE reaching the bridge, adding the field if
+    ; none exists, never a different literal. This row is that field.
+    ;
+    ; A ROW AND NOT A SECOND CONTROL, and the reason is the reason this menu
+    ; exists at all. ONE CONTROL, NO EXPRESSIBLE MISMATCH, above: a Praat
+    ; dialog is static once drawn, so a "run a post-hoc" tickbox beside a menu
+    ; whose rows NAME a post-hoc would be one press behind it, and a page
+    ; reading "Tukey HSD" with the box unticked would say two things at once.
+    ; Stating it as a row removes the possibility instead of guarding against
+    ; it, and it is the shape the wizard's own k-group menu already uses --
+    ; "ANOVA only, no pairwise tests", punch list 4.2, verbatim below
+    ; (scripts/eml-wizard.praat, @emlWizard3GroupTestRows).
+    ;
+    ; AND IT COSTS NO TAB STOP. An optionmenu is ONE field however many rows
+    ; it carries, so no page's tab order moves and no transcript driven by tab
+    ; index has to be re-driven. What DOES move is the row INDEX: the
+    ; nonparametric header and its three rows all shift down by one, which is
+    ; why @emlComparisonFromMenu and @emlComparisonToMenu below are amended in
+    ; the same breath and why nothing outside this registry may hardcode a row
+    ; number (v61 pins that all six pages come through it).
+    option: "ANOVA only, no pairwise tests"
     option: "Tukey HSD (family-wise; no separate correction)"
     option: "-- Nonparametric --"
     option: "Dunn, Holm (step-down; more power than Bonferroni)"
@@ -1282,43 +1317,70 @@ endproc
 # Outputs: .isHeader (1 = a category header, not a choice)
 #          .testType  (1 = parametric, 2 = nonparametric)
 #          .adjustIdx (1 = bonferroni, 2 = holm, 3 = bh — as @emlAdjustMethodName)
+#          .doPostHoc (ITEM 3.5. 1 = run the pairwise post-hoc, 0 = omnibus
+#                      only. This is the value the pages commit to
+#                      annotPostHoc, which is the ONLY channel it has to
+#                      @emlRunAnnotationComparison — that procedure reads the
+#                      global, exactly as it reads annotCorrectionMethod$,
+#                      because its argument list is fixed by four call sites
+#                      in this file and by every user script that calls it.)
 # The parametric row carries holm as its adjustment so that switching to a
 # nonparametric row later starts from the same default the old two-control
 # page did. Tukey ignores it.
+#
+# ITEM 3.5 -- THE ROW NUMBERS BELOW ALL MOVED BY ONE from row 3 down, because
+# "ANOVA only, no pairwise tests" was inserted as row 2. They are written out
+# rather than computed so that this decode and @emlComparisonMenuRows can be
+# read against each other line by line; v61 pins that all six pages come
+# through this one registry, so this is the only place that has to know.
 # ----------------------------------------------------------------------------
 procedure emlComparisonFromMenu: .row
     .isHeader = 0
     .testType = 1
     .adjustIdx = 2
-    if .row = 1 or .row = 3
+    .doPostHoc = 1
+    if .row = 1 or .row = 4
         .isHeader = 1
-    elsif .row = 4
-        .testType = 2
-        .adjustIdx = 2
+    elsif .row = 2
+        ; ANOVA only, no pairwise tests. The omnibus still runs; what the
+        ; user has declined is the pairwise table under it.
+        .doPostHoc = 0
     elsif .row = 5
         .testType = 2
-        .adjustIdx = 1
+        .adjustIdx = 2
     elsif .row = 6
+        .testType = 2
+        .adjustIdx = 1
+    elsif .row = 7
         .testType = 2
         .adjustIdx = 3
     endif
 endproc
 
 # ----------------------------------------------------------------------------
-# @emlComparisonToMenu: .testType, .adjustIdx
+# @emlComparisonToMenu: .testType, .adjustIdx, .doPostHoc
 # The inverse, for seeding the menu from what the page last used. Never
 # returns a header row: a seed that landed on one would re-show the page the
 # user just left.
+#
+# ITEM 3.5 -- .doPostHoc IS AN ARGUMENT AND NOT A DEFAULT, so a page the user
+# left on "ANOVA only" opens on "ANOVA only". A seed that dropped it would
+# re-tick a post-hoc the user had just declined, which is the same class of
+# defect as the literal this item removes, arriving one dialog later.
+# .doPostHoc is read on the parametric side only: a nonparametric row is
+# already a named pairwise test and the Dunn opt-out is not this item.
 # ----------------------------------------------------------------------------
-procedure emlComparisonToMenu: .testType, .adjustIdx
-    .row = 2
+procedure emlComparisonToMenu: .testType, .adjustIdx, .doPostHoc
+    .row = 3
     if .testType = 2
-        .row = 4
+        .row = 5
         if .adjustIdx = 1
-            .row = 5
-        elsif .adjustIdx = 3
             .row = 6
+        elsif .adjustIdx = 3
+            .row = 7
         endif
+    elsif .doPostHoc = 0
+        .row = 2
     endif
 endproc
 
@@ -1921,6 +1983,91 @@ procedure emlGraphsCheckAxisRanges
     # hunt for a field by that name, and there is none.
     @emlGraphsAxisPairRefusal: "Second axis", secondMin, secondMax
     .refused = emlGraphsAxisRefusalN
+endproc
+
+
+# ============================================================================
+# @emlGraphsPitchRangeRefusal
+# ============================================================================
+# THE PITCH FLOOR/CEILING PAIR IS JUDGED HERE, ON ITS OWN. It is not an axis:
+# it sets the search range the analysis algorithm hunts within, not a plot
+# axis, and @emlGraphsCheckAxisRanges's roster is expressly not the place for
+# it — that roster is derived from the rows rendered under the 📐 axes
+# heading, and this pair renders under "🎵 Pitch analysis" instead. A ceiling
+# below its floor is the same order-reversal mistake the axis pairs already
+# refuse, and gets a refusal of its own beside theirs rather than borrowing
+# it.
+#
+#   .refused    1 when the pair cannot be used, 0 otherwise
+#   .headline$  the one-line statement of the conflict, with both numbers
+#   .message$   the whole refusal as a single sentence-run
+#
+# NAMED AS THE PAGE NAMES IT. The row the user filled in reads "Pitch
+# (floor/ceiling, Hz)" — one label split across a left box and a right box,
+# floor on the left, ceiling on the right. The refusal names the two halves
+# of that label, "Pitch floor" and "Pitch ceiling", so a reader can find the
+# field the message is about; the page has no field called anything else.
+# ============================================================================
+procedure emlGraphsPitchRangeRefusal: .floor, .ceiling
+    emlGraphsPitchRefusalRemedy$ = "Enter a pitch floor that is below the "
+    ... + "pitch ceiling."
+    .refused = 0
+    .headline$ = ""
+    .message$ = ""
+    if .ceiling < .floor
+        .refused = 1
+        .headline$ = "Pitch ceiling (" + string$ (.ceiling) + ") is below "
+        ... + "Pitch floor (" + string$ (.floor) + ")."
+        .message$ = .headline$ + " " + emlGraphsPitchRefusalRemedy$
+        emlGraphsPitchRefusalN = emlGraphsPitchRefusalN + 1
+        emlGraphsPitchRefusalLine$ [emlGraphsPitchRefusalN] = .headline$
+    endif
+endproc
+
+
+# ============================================================================
+# @emlGraphsShowPitchRefusal
+# ============================================================================
+# PUT THE ACCUMULATED REFUSAL ON SCREEN. Same shape as
+# @emlGraphsShowAxisRefusal: one headline, then the remedy, one button, and
+# nothing to choose.
+# ============================================================================
+procedure emlGraphsShowPitchRefusal
+    beginPause: "Pitch analysis"
+        for .i from 1 to emlGraphsPitchRefusalN
+            comment: emlGraphsPitchRefusalLine$ [.i]
+        endfor
+        comment: emlGraphsPitchRefusalRemedy$
+    endPause: "OK", 1, 0
+endproc
+
+
+# ============================================================================
+# @emlGraphsCheckPitchRange
+# ============================================================================
+# SWEEPS THE ONE PITCH PAIR THE PITCH CONTOUR PAGE CAN RETURN, WHEN IT EXISTS.
+# The floor/ceiling row only renders — and only assigns pitch_floor and
+# pitch_ceiling — on the pitch-contour page (graph_type = 1) when the source
+# was auto-converted from a Sound (loadedObjectId > 0). Reading either
+# variable outside that gate reads something never set, and Praat does not
+# stop to tell you: it stops dead. So the gate is tested HERE, by this
+# procedure, rather than trusted to the caller.
+#
+# THE GATE IS SAFE TO EVALUATE ON EVERY CALL. Praat does not short-circuit
+# `and` — both sides of "graph_type = 1 and loadedObjectId > 0" are always
+# evaluated — but graph_type and loadedObjectId are themselves set long
+# before any page's dialog loop runs (loadedObjectId = 0 at the top of the
+# script), so testing them is never the unset read the pair itself would be.
+# pitch_floor and pitch_ceiling are read only from inside the `if` body,
+# which Praat does not enter unless the gate already passed.
+# ============================================================================
+procedure emlGraphsCheckPitchRange
+    emlGraphsPitchRefusalN = 0
+    .refused = 0
+    if graph_type = 1 and loadedObjectId > 0
+        @emlGraphsPitchRangeRefusal: pitch_floor, pitch_ceiling
+        .refused = emlGraphsPitchRangeRefusal.refused
+    endif
 endproc
 # ============================================================================
 # @emlGraphsPublishAxisRequest
@@ -3078,7 +3225,7 @@ procedure emlGraphsPostDispatchAnnotations
         #     (192, 214) and a box handed (0, 0): placed at y = 0, outside
         #     the frame, and clipped away with no error and no note.
         #
-        # NO BRACKETS IS NOT AN EDGE CASE. @emlBridgeGroupComparison sets
+        # NO BRACKETS IS NOT AN EDGE CASE. @emlRunAnnotationComparison sets
         # annotTextN = 1 for the omnibus on every path, and leaves
         # annotBracketN at 0 whenever no pair clears alpha — which includes
         # every non-significant omnibus. Driven by
@@ -3173,26 +3320,60 @@ endproc
 # ============================================================================
 procedure emlGraphsWorkflow: .objectId
 
-    # Enable explanations in the graphs/drawing path.
+    # THE EXPLANATIONS GATE (punch list 6.1). Three origins reach this
+    # procedure, and the ruling gives each a different answer:
     #
-    # THIS GATE IS GLOBAL, so raising it here and walking away would make
-    # every LATER analysis report in the same session verbose, and report
-    # content would depend on draw order: the same test printing different
-    # text depending on whether a figure had been drawn first. The bottom of
-    # this procedure calls @emlResetExplanations, which puts the gate back to
-    # the default declared in stats/eml-output.praat — the declared default
-    # and not a literal 0, so this file cannot drift from that declaration.
-    # Whatever the calling wrapper does after Draw returns, it sees the same
-    # gate it would have seen without the Draw. The "Quit" buttons inside the
-    # form call exitScript, which ends the script and its entire variable
-    # scope, so they need no reset of their own.
-    emlShowExplanations = 1
+    #   -- THE WIZARD sets emlShowExplanations = 1 itself, once, at the very
+    #      top of eml-wizard.praat, before any page or any draw call. It has
+    #      no control and none of what follows is meant to touch that.
+    #   -- A MENU ANALYSIS DIALOG'S OWN TOGGLE ("Annotate results with
+    #      explanations", item 9) is read in @emlHandleCommonFields
+    #      (stats/eml-output.praat), which -- in every wrapper that has one --
+    #      runs before this procedure ever could. It sets emlShowExplanations
+    #      to the user's own answer AND sets emlExplanationsFromDialog = 1
+    #      with emlDialogShowExplanations holding that same answer, so a
+    #      later "Draw" button on the SAME wrapper hands this procedure the
+    #      dialog's own setting rather than a default.
+    #   -- STANDALONE (scripts/eml-graphs.praat, a fresh script scope that
+    #      never ran a wrapper dialog first) leaves emlExplanationsFromDialog
+    #      unset. The ruling says a standalone graph that annotates
+    #      statistics is on, unconditionally.
+    #
+    # emlExplanationsFromDialog is the only thing that tells the standalone
+    # case apart from the menu-dialog case, and it is re-asserted from
+    # emlDialogShowExplanations on EVERY entry rather than left to whatever
+    # emlShowExplanations already holds -- @emlResetExplanations below runs at
+    # the end of every call, including a first Draw, so a second Draw off the
+    # same wrapper's post-analysis dialog must not see the shared default in
+    # its place. Overwriting emlShowExplanations unconditionally here is
+    # exactly the bug the item's red demonstration exists to catch: it would
+    # make the toggle's OFF setting invisible on every figure a menu dialog
+    # launches.
+    if not variableExists ("emlExplanationsFromDialog")
+        emlExplanationsFromDialog = 0
+    endif
+    if emlExplanationsFromDialog
+        emlShowExplanations = emlDialogShowExplanations
+    else
+        emlShowExplanations = 1
+    endif
 
     # =================================================================
     # 1. IDEMPOTENT SETUP (every call)
     # =================================================================
     @emlInitAlphaSprites
     @emlLoadConfig
+    ; GROUP ORDER, RESTORED OVER THE LOAD, NOT FROM IT. @emlLoadConfig just
+    ; reset config_groupSort to its table-order default (no file key backs
+    ; it — see @emlLoadConfig and @emlSaveConfig). sessionGroupSort is the
+    ; script-session memory of the choice, exactly parallel to
+    ; sessionEraseFirst below: it does not exist on the first call of a
+    ; fresh script, so the table-order default stands; a later call in the
+    ; same session restores whatever the user last chose, without ever
+    ; touching disk.
+    if variableExists ("sessionGroupSort")
+        config_groupSort = sessionGroupSort
+    endif
 
     # =================================================================
     # 2. SENTINEL-GUARDED PERSISTENCE (first call only)
@@ -3270,6 +3451,7 @@ prev_scatterRegressionLine = -1
 prev_scatterShowFormula = -1
 prev_scatterShowDots = -1
 prev_scatterUseGroup = -1
+prev_scatterCorrScope = 0
 
 # Box plot persistence
 prev_boxGroupIdx = 0
@@ -3326,6 +3508,14 @@ prev_histAnnotStyle = 1
 # Multiple-comparison adjustment persistence (shared by every
 # annotate-capable dialog). 1 = Bonferroni, 2 = Holm, 3 = Benjamini-Hochberg.
 prev_annotAdjustIdx = 2
+
+# ITEM 3.5 -- post-hoc persistence, the same shape and the same scope as the
+# adjustment above: shared by every annotate-capable dialog, seeded into the
+# Comparison menu by @emlComparisonToMenu, written back from
+# @emlComparisonFromMenu.doPostHoc. 1 = run the pairwise post-hoc (the
+# behaviour before this item, so a session that never touches the row is
+# unchanged), 0 = omnibus only.
+prev_annotPostHoc = 1
 
 # THE ADJUSTMENT GATE IS GONE, AND SO IS THE CONDITION IT GUARDED.
 # It existed because the correction field was only put on the dialog when the
@@ -3417,6 +3607,14 @@ prev_scatter_yMax = 0
     # Loop control
     keepGoing = 1
     loadedObjectId = 0
+    # THE PITCH REFUSAL'S ACCUMULATOR, INITIALISED HERE. Reversed pair
+    # guards run inside the pitch-contour page's own Draw branch, ahead of
+    # the sweep (@emlGraphsCheckPitchRange) that normally zeroes this before
+    # anything increments it -- so it has to already exist by the time that
+    # branch can run, or the very first reversed pair reads a global nothing
+    # has set yet and stops Praat dead, the same failure this file's own
+    # rule warns against.
+    emlGraphsPitchRefusalN = 0
     tsMeltTableId = 0
     ; THE PIVOT'S TABLE, BESIDE THE MELT'S AND FOR THE SAME REASONS. The two
     ; transforms are mirror images -- wide columns stacked into the long shape
@@ -3438,6 +3636,12 @@ annotShowNS = 0
 annotShowEffect = 0
 annotAlpha = 0.05
 annotCorrectionMethod$ = "holm"
+; ITEM 3.5 -- the channel the Comparison menu's post-hoc row reaches
+; @emlRunAnnotationComparison through. Initialised here, beside
+; annotCorrectionMethod$ and for the same reason: the bridge is also called
+; by scripts that never open this form, and a global nothing has set stops
+; Praat dead. 1 is the behaviour every caller had before this item.
+annotPostHoc = 1
 annotLayoutMode = 1
 
 # Scatter plot column names (initialized to prevent undefined errors)
@@ -3451,6 +3655,9 @@ scatterRegressionLine = 0
 scatterAnalysisType = 0
 scatterShowFormula = 0
 scatterShowDots = 1
+; Relationships shown, grouped scatter only: 1 = Per group, 2 = Overall,
+; 3 = Both (each line labeled). Item 8.3 (punch list, 25 Aug 2026).
+scatterCorrScope = 1
 
     # =================================================================
     # CONTEXT DETECTION
@@ -3560,9 +3767,9 @@ scatterShowDots = 1
     # the calling test actually used.
     #
     # annotCorrectionMethod$ is the ONLY channel this value has:
-    # @emlBridgeGroupComparison does not take it as an argument, it reads the
+    # @emlRunAnnotationComparison does not take it as an argument, it reads the
     # global — the `.correction$ = "holm"` resolution block inside
-    # @emlBridgeGroupComparison, eml-annotation-procedures.praat. (Search for
+    # @emlRunAnnotationComparison, eml-annotation-procedures.praat. (Search for
     # the assignment, not for a line number: a line number in a comment
     # drifts.) So the job here is to make sure the global is well defined by
     # the time the bridge runs, on BOTH test paths — the bridge resolves
@@ -3582,7 +3789,7 @@ scatterShowDots = 1
     #     rather than later from inside the annotation layer.
     #
     # WHAT THIS DOES NOT DECIDE: on the parametric k >= 3 path the consuming
-    # side ignores the value. The Tukey branch of @emlBridgeGroupComparison —
+    # side ignores the value. The Tukey branch of @emlRunAnnotationComparison —
     # the branch opening `# --- One-way ANOVA + Tukey HSD ---` in
     # eml-annotation-procedures.praat — does not read .correction$; only the
     # Dunn branch does, because Tukey's p is already family-wise. Delivering
@@ -3730,18 +3937,40 @@ repeat
     mainFormDone = 0
     repeat
         beginPause: "EML Graphs"
+            ; TWO GROUPS, AND EVERY ROW SITS UNDER ONE OF THEM. What the
+            ; figure IS comes first, then where it lands on the page: a
+            ; reader scanning for the origin boxes finds them under a
+            ; heading that says "page", not at the bottom of an unlabelled
+            ; list. RULING_LAYOUT_GROUPS, rule 1 — no field renders outside
+            ; a named group.
+            comment: "🖼️ Figure"
             optionmenu: "Graph type", menuDefault
                 for iMenu from 1 to filteredNMenuItems
                     option: filteredMenuLabel$[iMenu]
                 endfor
+            ; TITLE AND SUBTITLE ARE TWO FULL-WIDTH ROWS, NOT A PAIR. The
+            ; two-box row is visual grammar for like, symmetric, short
+            ; values — a range, coordinates, dimensions. These are unlike
+            ; kinds of long free text and read as one truncated mess side
+            ; by side. RULING_DIALOG_LABELS_v3, pairing legitimacy.
             sentence: "Title (blank = auto from table and columns)", prev_title$
             sentence: "Subtitle", prev_subtitle$
             optionmenu: "Color mode", config_colorMode
                 option: "Color"
                 option: "Black and White"
-            positive: "Figure width (inches)", string$ (config_width)
-            positive: "Figure height (inches)", string$ (config_height)
+            ; ONE ROW, TWO BOXES. `left` and `right` as the first word of a
+            ; numeric field's label are a layout cue: Praat puts the two
+            ; boxes on one row and shows the LEFT field's label remainder
+            ; once, so the right field's text never appears. Width and
+            ; height are one decision with two numbers. The cue word stays
+            ; in the derived name, so these bind left_Figure_size and
+            ; right_Figure_size and the remap block below carries them to
+            ; figure_width and figure_height. APPENDIX_C_GUI section C.1.
+            positive: "left Figure size (w × h, inches)", string$ (config_width)
+            positive: "right Figure size", string$ (config_height)
             # ── THE PAGE ────────────────────────────────────────────────────
+            comment: "📄 Page"
+            comment: "Untick Erase to add this figure to the page already drawn."
             # PER-DRAW FIELDS, NEVER A SESSION MODE. Both are read fresh from
             # this dialog on every press and both are recorded with the
             # drawing they belong to, so a composed page is a sequence of
@@ -3775,20 +4004,36 @@ repeat
             # that outlives its page. It is live whether or not the page is
             # erased: erase-on with an offset origin is valid and starts a
             # composite whose first panel is not at 0, 0.
-            real: "Panel origin x (inches)", "0"
-            real: "Panel origin y (inches)", "0"
-            comment: "Untick Erase to add this figure to the page already drawn."
-            # THE ONE SENTENCE THE NO-ERASE LEGEND RULE OWES THE USER. The
-            # headroom negotiation in @emlGraphsDrawWithLegendRoom draws,
-            # measures and draws again on a widened axis; the second pass
+            #
+            # X AND Y ARE ONE ROW, TWO BOXES, for the same reason the figure
+            # size is: a point is one setting with two coordinates. They bind
+            # left_Panel_origin and right_Panel_origin; the remap block below
+            # carries them to panel_origin_x and panel_origin_y.
+            real: "left Panel origin (x/y, inches)", "0"
+            real: "right Panel origin", "0"
+            # THE ONE SENTENCE THE NO-ERASE LEGEND RULE OWES THE USER travels
+            # with the Legend placement field on each page that offers one:
+            # the headroom negotiation in @emlGraphsDrawWithLegendRoom draws,
+            # measures and draws again on a widened axis, and the second pass
             # depends on the first being erased, so on a composed page there
-            # is one pass and the legend takes the naive position. Said here,
-            # on the dialog that offers the choice, and pointing at the two
-            # placements that keep the plot clear -- the same advice
-            # @emlLegendHeadroomAfterDraw gives when it cannot serve a legend.
-            comment: "   On a composed page a legend inside the plot is not"
-            comment: "   given axis room — use Right of plot or Below plot."
+            # is one pass and the legend takes the naive position. That advice
+            # is worth a row only where the placement is choosable, so it
+            # rides in the placement field's parenthetical there rather than
+            # costing this page two comment rows it cannot act on.
         clicked = endPause: "Quit", "Continue", 2, 1
+
+        # ── REMAP ───────────────────────────────────────────────────────────
+        # LABELS ARE PRESENTATION; VARIABLES ARE API. Praat derives a field's
+        # variable name from its label, so a label chosen for the dialog's
+        # layout binds a name the rest of this file has no reason to know.
+        # Every such name is copied to its canonical variable HERE, directly
+        # after endPause and before any commit logic, so nothing downstream
+        # reads a label-derived name and no rename ever reaches the draw
+        # layer, the recorder or the harnesses. RULING_DIALOG_COMPACTION §1.
+        figure_width = left_Figure_size
+        figure_height = right_Figure_size
+        panel_origin_x = left_Panel_origin
+        panel_origin_y = right_Panel_origin
 
         if clicked = 1
             @emlSaveConfig
@@ -4124,35 +4369,65 @@ repeat
 
             f0LineStyle = prev_f0LineStyle
             beginPause: "Pitch Contour Settings"
-                comment: "⏱️ Time (both 0 = auto)"
-                real: "left Time range (left/right)", tmpTMin$
-                real: "right Time range (left/right)", tmpTMax$
-                comment: "📐 Frequency (both 0 = auto)"
-                real: "left Frequency range (bottom/top)", tmpFMin$
-                real: "right Frequency range (bottom/top)", tmpFMax$
+                ; ONE AXES HEADING FOR BOTH RANGES. "both 0 = auto" is said
+                ; once, at the top, and each row underneath carries only the
+                ; quantity and which end is which. Two per-axis headings say
+                ; the auto rule twice and make two ranges read as two
+                ; unrelated groups. RULING_DIALOG_LABELS_v3, heading pattern.
+                comment: "📐 Axes (both 0 = auto)"
+                ; ONE ROW, TWO BOXES, AND THE NOUN IS THE QUANTITY. Praat
+                ; derives the variable name by cutting the label at its first
+                ; "(", so the parenthetical distinguishes nothing: two rows
+                ; whose labels differ only inside the brackets both bind one
+                ; name, and Praat draws both and silently keeps the last.
+                ; Naming the quantity — Time, Frequency — is what makes that
+                ; impossible on a page that carries two ranges.
+                real: "left Time (left/right)", tmpTMin$
+                real: "right Time (left/right)", tmpTMax$
+                real: "left Frequency (bottom/top)", tmpFMin$
+                real: "right Frequency (bottom/top)", tmpFMax$
                 optionmenu: "Y axis unit", tmpYUnit
                     option: "Hertz"
                     option: "Semitones re 440 Hz"
+                if config_showAdvanced
+                    ; THE LABELS SUB-HEADING SITS INSIDE THE AXIS GROUP,
+                    ; directly above the row it explains — the markup legend
+                    ; is about these two boxes and nothing else.
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR TOO. left/right on a sentence
+                    ; label puts both text boxes on one row and shows the
+                    ; left remainder once, so the x and y names are one
+                    ; decision rather than two stacked rows. Measured on
+                    ; 6.6.30 with this exact label text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                endif
+                if loadedObjectId > 0
+                    comment: "🎵 Pitch analysis (auto-converted from Sound)"
+                    comment: "Ceiling is doubled internally for the analysis algorithm."
+                    ; THE SEARCH RANGE IS AN HONEST PAIR — one setting with a
+                    ; bottom and a top — so it takes the two-box row like any
+                    ; other range.
+                    real: "left Pitch (floor/ceiling, Hz)", tmpPitchFloor$
+                    real: "right Pitch (floor/ceiling, Hz)", tmpPitchCeiling$
+                endif
+                ; THE LAYOUT GROUP OPENS ON THE BEGINNER BRANCH TOO, because
+                ; Line style renders there: a heading gated on the advanced
+                ; flag would leave that row under whatever heading happened to
+                ; be above it. RULING_LAYOUT_GROUPS rule 1 is judged per
+                ; rendered branch, not per source listing.
+                comment: "🎛️ Layout"
                 optionmenu: "Line style", f0LineStyle
                     option: "Solid"
                     option: "Dotted"
                     option: "Dashed"
                     option: "Dashed-dotted"
-                if loadedObjectId > 0
-                    comment: "🎵 Pitch analysis (auto-converted from Sound)"
-                    comment: "Ceiling is doubled internally for the analysis algorithm."
-                    real: "Pitch floor (Hz)", tmpPitchFloor$
-                    real: "Pitch ceiling (Hz)", tmpPitchCeiling$
-                endif
                 if config_showAdvanced
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Both"
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -4174,11 +4449,35 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST. The layout group runs mark, frame, text,
+                    ; output, so the resolution the figure is written at sits
+                    ; at the bottom rather than between two frame controls.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", toggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Labels are presentation; variables are API. Each label-derived
+            ; name is copied to the canonical variable the rest of this page
+            ; reads, here, before any commit logic — so the toggle branch, the
+            ; draw branch and everything downstream keep the names they always
+            ; had. Each assignment is gated on the same condition that rendered
+            ; its field: reading a field a branch never drew is an error.
+            ; RULING_DIALOG_COMPACTION §1.
+            left_Time_range = left_Time
+            right_Time_range = right_Time
+            left_Frequency_range = left_Frequency
+            right_Frequency_range = right_Frequency
+            if config_showAdvanced
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
+            if loadedObjectId > 0
+                pitch_floor = left_Pitch
+                pitch_ceiling = right_Pitch
+            endif
 
             if clicked = 1
                 # Go Back — exit form, allFormsDone stays 0
@@ -4287,22 +4586,39 @@ repeat
                 newFloor = number (tmpPitchFloor$)
                 newCeiling = number (tmpPitchCeiling$)
                 if loadedObjectId > 0 and (newFloor <> prev_f0_pitchFloor or newCeiling <> prev_f0_pitchCeiling)
-                    # User changed pitch range — re-convert from source
-                    selectObject: loadedObjectId
-                    Remove
-                    pitchTop = newCeiling * 2
-                    selectObject: originalSourceId
-                    sourceType$ = selected$ ()
-                    if startsWith (sourceType$, "Sound")
-                        objectId = To Pitch (filtered autocorrelation): 0, newFloor, pitchTop, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
-                    else
-                        # Spectrum source — two-step conversion
-                        tmpSnd = To Sound
-                        selectObject: tmpSnd
-                        objectId = To Pitch (filtered autocorrelation): 0, newFloor, pitchTop, 15, "no", 0.03, 0.09, 0.50, 0.055, 0.35, 0.14
-                        removeObject: tmpSnd
+                    # A REVERSED PAIR IS NOT RE-CONVERTED. `To Pitch
+                    # (filtered autocorrelation)` needs its ceiling
+                    # (doubled into pitchTop) above its floor internally; a
+                    # newFloor above newCeiling does not read back a wrong
+                    # number from that command, it stops Praat before the
+                    # refusal below ever gets a chance to run. The refusal
+                    # itself is judged once, downstream, by
+                    # @emlGraphsCheckPitchRange, in the same place every
+                    # other pair on this form is judged — this call is only
+                    # a guard against the crash arriving first.
+                    @emlGraphsPitchRangeRefusal: newFloor, newCeiling
+                    if emlGraphsPitchRangeRefusal.refused = 0
+                        # User changed pitch range — re-convert from source
+                        selectObject: loadedObjectId
+                        Remove
+                        pitchTop = newCeiling * 2
+                        selectObject: originalSourceId
+                        sourceType$ = selected$ ()
+                        ; @emlPitchArgsFAC states the canonical filtered-
+                        ; autocorrelation tail once; both branches below read
+                        ; it back rather than spelling it out a second time.
+                        @emlPitchArgsFAC: newFloor, pitchTop
+                        if startsWith (sourceType$, "Sound")
+                            objectId = To Pitch (filtered autocorrelation): 'emlPitchArgsFAC.args$'
+                        else
+                            # Spectrum source — two-step conversion
+                            tmpSnd = To Sound
+                            selectObject: tmpSnd
+                            objectId = To Pitch (filtered autocorrelation): 'emlPitchArgsFAC.args$'
+                            removeObject: tmpSnd
+                        endif
+                        loadedObjectId = objectId
                     endif
-                    loadedObjectId = objectId
                 endif
                 prev_f0_pitchFloor = newFloor
                 prev_f0_pitchCeiling = newCeiling
@@ -4351,12 +4667,29 @@ repeat
 
             wavLineStyle = prev_wavLineStyle
             beginPause: "Waveform Settings"
-                comment: "⏱️ Time (both 0 = auto)"
-                real: "left Time range (left/right)", tmpTMin$
-                real: "right Time range (left/right)", tmpTMax$
-                comment: "📐 Amplitude (both 0 = auto)"
-                real: "left Amplitude range (bottom/top)", tmpAMin$
-                real: "right Amplitude range (bottom/top)", tmpAMax$
+                ; ONE AXES HEADING FOR BOTH RANGES, and each row below it
+                ; carries the quantity and which end is which. The noun is
+                ; the quantity because Praat cuts a label at its first "(":
+                ; two rows distinguished only inside the brackets bind one
+                ; name, and Praat draws both and keeps the last, silently.
+                comment: "📐 Axes (both 0 = auto)"
+                real: "left Time (left/right)", tmpTMin$
+                real: "right Time (left/right)", tmpTMax$
+                real: "left Amplitude (bottom/top)", tmpAMin$
+                real: "right Amplitude (bottom/top)", tmpAMax$
+                if config_showAdvanced
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                endif
+                ; THE LAYOUT GROUP OPENS ON BOTH BRANCHES, because Line style
+                ; renders on the beginner page: a heading gated on the
+                ; advanced flag would leave that row under the axis heading.
+                comment: "🎛️ Layout"
                 optionmenu: "Line style", wavLineStyle
                     option: "Solid"
                     option: "Dotted"
@@ -4368,9 +4701,6 @@ repeat
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -4392,11 +4722,28 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", toggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer or the recorder. Each
+            ; assignment is gated on the condition that rendered its field.
+            ; RULING_DIALOG_COMPACTION §1.
+            left_Time_range = left_Time
+            right_Time_range = right_Time
+            left_Amplitude_range = left_Amplitude
+            right_Amplitude_range = right_Amplitude
+            if config_showAdvanced
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
 
             if clicked = 1
                 wavFormDone = 1
@@ -4521,12 +4868,29 @@ repeat
 
             specLineStyle = prev_specLineStyle
             beginPause: "Spectrum Settings"
-                comment: "📐 Frequency (both 0 = auto)"
-                real: "left Frequency range (left/right)", tmpFMin$
-                real: "right Frequency range (left/right)", tmpFMax$
-                comment: "📐 Power (both 0 = auto)"
-                real: "left Power range (bottom/top)", tmpPMin$
-                real: "right Power range (bottom/top)", tmpPMax$
+                ; ONE AXES HEADING FOR BOTH RANGES, and each row carries the
+                ; quantity and which end is which. The noun is the quantity
+                ; because Praat cuts a label at its first "(": two rows
+                ; distinguished only inside the brackets bind one name, and
+                ; Praat draws both and keeps the last, silently.
+                comment: "📐 Axes (both 0 = auto)"
+                real: "left Frequency (left/right)", tmpFMin$
+                real: "right Frequency (left/right)", tmpFMax$
+                real: "left Power (bottom/top)", tmpPMin$
+                real: "right Power (bottom/top)", tmpPMax$
+                if config_showAdvanced
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                endif
+                ; THE LAYOUT GROUP OPENS ON BOTH BRANCHES, because Line style
+                ; renders on the beginner page: a heading gated on the
+                ; advanced flag would leave that row under the axis heading.
+                comment: "🎛️ Layout"
                 optionmenu: "Line style", specLineStyle
                     option: "Solid"
                     option: "Dotted"
@@ -4538,9 +4902,6 @@ repeat
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -4562,11 +4923,28 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", toggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer or the recorder. Each
+            ; assignment is gated on the condition that rendered its field.
+            ; RULING_DIALOG_COMPACTION §1.
+            left_Frequency_range = left_Frequency
+            right_Frequency_range = right_Frequency
+            left_Power_range = left_Power
+            right_Power_range = right_Power
+            if config_showAdvanced
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
 
             if clicked = 1
                 specFormDone = 1
@@ -4699,12 +5077,39 @@ repeat
 
             ltasLineStyle = prev_ltasLineStyle
             beginPause: "LTAS Settings"
-                comment: "📐 Frequency (both 0 = auto)"
-                real: "left Frequency range (left/right)", tmpFMin$
-                real: "right Frequency range (left/right)", tmpFMax$
-                comment: "📐 Power (both 0 = auto)"
-                real: "left Power range (bottom/top)", tmpPMin$
-                real: "right Power range (bottom/top)", tmpPMax$
+                ; ONE AXES HEADING FOR BOTH RANGES, and each row carries the
+                ; quantity and which end is which. The noun is the quantity
+                ; because Praat cuts a label at its first "(": two rows
+                ; distinguished only inside the brackets bind one name, and
+                ; Praat draws both and keeps the last, silently.
+                comment: "📐 Axes (both 0 = auto)"
+                real: "left Frequency (left/right)", tmpFMin$
+                real: "right Frequency (left/right)", tmpFMax$
+                real: "left Power (bottom/top)", tmpPMin$
+                real: "right Power (bottom/top)", tmpPMax$
+                if config_showAdvanced
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                endif
+                if config_showAdvanced
+                    ; WHAT THE LTAS IS DRAWN AS is its own decision, taken
+                    ; before any question of frame or font, so it gets its own
+                    ; group above Layout. LTAS is the only type that offers it.
+                    comment: "🖌️ Drawing methods"
+                    boolean: "Show curve", tmpShowCurve
+                    boolean: "Show bars", tmpShowBars
+                    boolean: "Show poles", tmpShowPoles
+                    boolean: "Show speckles", tmpShowSpeckles
+                endif
+                ; THE LAYOUT GROUP OPENS ON BOTH BRANCHES, because Line style
+                ; renders on the beginner page: a heading gated on the
+                ; advanced flag would leave that row under the axis heading.
+                comment: "🎛️ Layout"
                 optionmenu: "Line style", ltasLineStyle
                     option: "Solid"
                     option: "Dotted"
@@ -4716,9 +5121,6 @@ repeat
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -4740,16 +5142,28 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🎨 Drawing methods"
-                    boolean: "Show curve", tmpShowCurve
-                    boolean: "Show bars", tmpShowBars
-                    boolean: "Show poles", tmpShowPoles
-                    boolean: "Show speckles", tmpShowSpeckles
-                    comment: "🏷️ Axis labels · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", toggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer or the recorder. Each
+            ; assignment is gated on the condition that rendered its field.
+            ; RULING_DIALOG_COMPACTION §1.
+            left_Frequency_range = left_Frequency
+            right_Frequency_range = right_Frequency
+            left_Power_range = left_Power
+            right_Power_range = right_Power
+            if config_showAdvanced
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
 
             if clicked = 1
                 ltasFormDone = 1
@@ -4999,7 +5413,15 @@ repeat
         repeat
             # --- Page A: what the lines are --------------------------
             beginPause: "Line Chart -- What the lines are"
-                comment: "What do the columns beside the time column hold?"
+                ; ONE GROUP, AND THE PAGE'S OWN QUESTION RIDES IN ITS HEADING.
+                ; The menu below is a fact about the COLUMNS -- what the ones
+                ; beside the time column hold -- so it belongs under 📋 like
+                ; every other column decision in this form, and rule 1 says it
+                ; cannot render without a heading over it. Folding the
+                ; question into the heading is what keeps that from costing a
+                ; row: the histogram's analysis heading carries a sentence the
+                ; same way. RULING_LAYOUT_GROUPS rules 1 and 5.
+                comment: "📋 Columns — what do the columns beside the time column hold?"
                 optionmenu: "The other columns hold", tsSeriesRole
                     option: "The same measurement, on different subjects or groups"
                     option: "Different measurements, on the same subject"
@@ -5118,7 +5540,20 @@ repeat
                     endif
 
                     beginPause: "Line Chart -- Column Mapping"
-                        comment: "📋 Select columns from your Table."
+                        ; FOUR GROUPS, IN THE ORDER THE DECISIONS ARE MADE:
+                        ; which columns the figure is drawn from, what is
+                        ; computed from them, what the axes are, and how the
+                        ; result is drawn. RULING_LAYOUT_GROUPS rules 1 and 2.
+                        ;
+                        ; NO FIELD RENDERS OUTSIDE A NAMED GROUP, on either
+                        ; branch. That is rule 1, and it is a rule because a
+                        ; field placed after the last heading joins whatever
+                        ; group that heading named, silently and wrongly. The
+                        ; beginner branch therefore pays for its own headings
+                        ; -- two rows on the page a new user meets -- rather
+                        ; than letting Line style trail off the end of the
+                        ; column list.
+                        comment: "📋 Columns"
                         optionmenu: "Time column", tsTimeIdx
                             for iCol from 1 to nCols
                                 option: colName$[iCol]
@@ -5152,8 +5587,53 @@ repeat
                         else
                             comment: "Measurement column: " + tsNumName$[1]
                         endif
+                        ; 📊 ANALYSIS, AND ONLY WHERE THERE IS ONE TO OFFER.
+                        ; The interval is not a way of drawing the line, it is
+                        ; a summary computed from the repeated observations at
+                        ; each point -- a mean and a confidence band that do
+                        ; not exist unless this box is ticked. So it is filed
+                        ; with the analysis and not with the data marks in
+                        ; 🎛️ Layout, which is where the spaghetti plot's mean
+                        ; OVERLAY sits: that one draws a summary of lines that
+                        ; are on the figure either way.
+                        ;
+                        ; THE HEADING IS INSIDE THE SAME GUARD AS THE FIELD.
+                        ; A heading emitted on its own would name an empty
+                        ; group on every table with one observation per point,
+                        ; which is most of them.
                         if tsCIOffer = 1
+                            comment: "📊 Analysis"
                             boolean: "Draw the mean and its interval (up to " + string$ (tsMaxPerPoint) + " observations per point)", tsShowCI
+                        endif
+                        if config_showAdvanced
+                            ; ONE AXIS HEADING, NOT TWO. Both ranges are axis
+                            ; ranges and both take the same sentinel, so the
+                            ; "(both 0 = auto)" is said once at the top of the
+                            ; group and each row carries only which axis it
+                            ; is. The four acoustic pages were merged the same
+                            ; way in c74d432.
+                            comment: "📐 Axes (both 0 = auto)"
+                            ; ONE ROW, TWO BOXES, NAMED BY THE QUANTITY. The
+                            ; trailing noun "range" is dropped: the roster
+                            ; @emlGraphsCheckAxisRanges is judged against
+                            ; names the axis, and every other page in this
+                            ; form spells its pairs this way. The cue word
+                            ; stays in the derived name, so these bind
+                            ; left_Time / right_Time and left_Value /
+                            ; right_Value and the remap block below carries
+                            ; them to the *_range names the arms read.
+                            real: "left Time (left/right)", tmpTMin$
+                            real: "right Time (left/right)", tmpTMax$
+                            real: "left Value (bottom/top)", tmpVMin$
+                            real: "right Value (bottom/top)", tmpVMax$
+                            ; The markup legend sits inside the axis group,
+                            ; directly above the row it explains.
+                            comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                            ; SENTENCE FIELDS PAIR: one row, two boxes, the
+                            ; left remainder shown once. Measured on 6.6.30
+                            ; with this text.
+                            sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                            sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
                         endif
                         ; THE SHARED AXIS HAS TO BE NAMED BY THE USER, AND IN
                         ; BEGINNER MODE THERE IS NOWHERE ELSE TO NAME IT.
@@ -5161,40 +5641,57 @@ repeat
                         ; the SUBJECTS, so nothing in the table names the
                         ; quantity they share -- the plugin cannot compose the
                         ; y-axis label the way it composes every other one.
-                        ; The advanced page has always carried a "Y axis
-                        ; label" field; this is the same field, shown on the
+                        ; The advanced page carries it in the paired axis-label
+                        ; row above; this is the same setting, shown on the
                         ; beginner page for the one case that cannot do
-                        ; without it. Only one of the two exists at a time, so
-                        ; they share the name Praat derives.
+                        ; without it, and only one of the two rows exists on
+                        ; any rendering.
+                        ;
+                        ; IT IS AN AXIS SETTING, SO IT SITS UNDER AN AXIS
+                        ; HEADING -- rule 1 again. There is no range on this
+                        ; branch, so the heading does not promise a sentinel
+                        ; it is not offering.
                         if tsSeriesRole = 1 and tsNNum >= 2 and config_showAdvanced = 0
+                            comment: "📐 Y axis"
                             sentence: "Y axis label", tmpYLabel$
                         endif
+                        ; 🎛️ LAYOUT, IN THE ORDER MARK -> FRAME -> TEXT ->
+                        ; OUTPUT. The line chart has no data-mark toggle, so
+                        ; the group opens on the pen that strokes the series.
+                        ; Legend placement follows Gridline mode here because
+                        ; that is where every other page in this form that
+                        ; offers one puts it -- scatter, spaghetti, histogram
+                        ; and the two grouped pages, all built to the ruling's
+                        ; own per-page maps. See the note in the report: the
+                        ; ruling's general sentence lists it between Font and
+                        ; Output DPI, and the five built pages do not.
+                        comment: "🎛️ Layout"
                         optionmenu: "Line style", tsLineStyle
                             option: "Solid"
                             option: "Dotted"
                             option: "Dashed"
                             option: "Dashed-dotted"
                         if config_showAdvanced
-                            comment: "📐 X-axis (both 0 = auto)"
-                            real: "left Time range (left/right)", tmpTMin$
-                            real: "right Time range (left/right)", tmpTMax$
-                            comment: "📐 Y-axis (both 0 = auto)"
-                            real: "left Value range (bottom/top)", tmpVMin$
-                            real: "right Value range (bottom/top)", tmpVMax$
                             optionmenu: "Gridline mode", tmpGridMode
                                 option: "Both"
                                 option: "Horizontal only"
                                 option: "Vertical only"
                                 option: "Off"
+                            ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                            ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                            ; draws again on a widened axis, and the second pass depends on the
+                            ; first being erased — so a page composed with Erase unticked takes
+                            ; one pass and a legend inside the plot lands where it falls. The
+                            ; two placements that keep the plot clear are named here, on the
+                            ; dialog that offers the choice, matching what
+                            ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                            comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                             optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                                 option: "Inside plot"
                                 option: "Right of plot"
                                 option: "Below plot"
                                 option: "Separate figure"
                                 option: "None"
-                            optionmenu: "Output DPI", tmpDPI
-                                option: "300 dpi"
-                                option: "600 dpi"
                             boolean: "Show inner box", tmpShowInnerBox
                             optionmenu: "Show axis names", tmpShowAxisNames
                                 option: "None"
@@ -5216,11 +5713,27 @@ repeat
                                 option: "Times"
                                 option: "Palatino"
                                 option: "Courier"
-                            comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                            sentence: "X axis label", tmpXLabel$
-                            sentence: "Y axis label", tmpYLabel$
+                            optionmenu: "Output DPI", tmpDPI
+                                option: "300 dpi"
+                                option: "600 dpi"
                         endif
                     clicked = endPause: "Go Back", "Quit", tsToggleLabel$, "Draw", 4, 1
+
+                    ; ── REMAP ───────────────────────────────────────────────
+                    ; Label-derived names are copied to the canonical
+                    ; variables this page's toggle and draw arms read, before
+                    ; any commit logic, so no rename reaches the draw layer,
+                    ; the recorder or a harness. Gated on the branch that
+                    ; rendered the fields: reading a field a branch never drew
+                    ; is an error, not a blank. RULING_DIALOG_COMPACTION §1.
+                    if config_showAdvanced
+                        left_Time_range = left_Time
+                        right_Time_range = right_Time
+                        left_Value_range = left_Value
+                        right_Value_range = right_Value
+                        x_axis_label$ = left_Axis_labels$
+                        y_axis_label$ = right_Axis_labels$
+                    endif
 
                     # THE FIELDS ARE READ ON BOTH BUTTONS THAT COME BACK HERE.
                     # Advanced re-presents this page, and an unread field
@@ -5241,6 +5754,7 @@ repeat
                             endif
                             prev_groupSort = group_order
                             config_groupSort = group_order
+                            sessionGroupSort = group_order
                         endif
                         if tsCIOffer = 1
                             tsShowCI = draw_the_mean_and_its_interval
@@ -5608,10 +6122,10 @@ repeat
                             # never asked about: several series become the
                             # long shape the draw layer has always taken.
                             if tsSeriesRole = 1 and tsNSeries >= 2
-                                @emlGraphsMeltSeries: objectId, timeColName$,
+                                @emlReshapeSeriesLong: objectId, timeColName$,
                                 ... tsSeriesCols$
                                 tsOrigObjectId = objectId
-                                tsMeltTableId = emlGraphsMeltSeries.tableId
+                                tsMeltTableId = emlReshapeSeriesLong.tableId
 
                                 # ---- THE MELT, RECORDED AS A CONVERSION ----
                                 # WITHOUT THIS THE EMITTED SCRIPT CANNOT RUN.
@@ -5657,10 +6171,10 @@ repeat
                                 if variableExists ("emlRecordLoaded")
                                     @emlRecordInit
                                     if emlRecordActive = 1
-                                        tsMeltCode$ = "@emlGraphsMeltSeries: data, """
+                                        tsMeltCode$ = "@emlReshapeSeriesLong: data, """
                                         ... + timeColName$ + """, """
                                         ... + tsSeriesCols$ + """" + newline$
-                                        ... + "data = emlGraphsMeltSeries.tableId"
+                                        ... + "data = emlReshapeSeriesLong.tableId"
                                         ... + newline$ + "selectObject: data"
                                         @emlRecordConvert: tsOrigObjectId,
                                         ... tsMeltTableId, tsMeltCode$,
@@ -5808,11 +6322,11 @@ repeat
                                 # question would leave the column page looking
                                 # at a table the user does not have.
                                 if allFormsDone = 1 and tsLevelMode = 1
-                                    @emlGraphsPivotSeries: objectId,
+                                    @emlReshapeSeriesWide: objectId,
                                     ... timeColName$, tsLongValueCol$,
                                     ... tsLevelNameCol$, tsSeriesCols$
                                     tsOrigObjectId = objectId
-                                    tsPivotTableId = emlGraphsPivotSeries.tableId
+                                    tsPivotTableId = emlReshapeSeriesWide.tableId
 
                                     # ---- RECORDED AS A CONVERSION ----
                                     # WITHOUT THIS THE EMITTED SCRIPT CANNOT
@@ -5838,12 +6352,12 @@ repeat
                                     if variableExists ("emlRecordLoaded")
                                         @emlRecordInit
                                         if emlRecordActive = 1
-                                            tsPivotCode$ = "@emlGraphsPivotSeries: data, """
+                                            tsPivotCode$ = "@emlReshapeSeriesWide: data, """
                                             ... + timeColName$ + """, """
                                             ... + tsLongValueCol$ + """, """
                                             ... + tsLevelNameCol$ + """, """
                                             ... + tsSeriesCols$ + """" + newline$
-                                            ... + "data = emlGraphsPivotSeries.tableId"
+                                            ... + "data = emlReshapeSeriesWide.tableId"
                                             ... + newline$ + "selectObject: data"
                                             @emlRecordConvert: tsOrigObjectId,
                                             ... tsPivotTableId, tsPivotCode$,
@@ -6058,6 +6572,12 @@ repeat
                     option: "Table order"
                     option: "Alphabetical"
                 if config_showAdvanced
+                    ; ONE ANALYSIS GROUP, one icon. Everything from the
+                    ; annotate tick down to alpha is one decision — what
+                    ; statistics go on the figure — and it is named once at
+                    ; the top instead of the rows reading as seven unrelated
+                    ; switches. RULING_LAYOUT_GROUPS, icons final.
+                    comment: "📊 Analysis"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -6065,7 +6585,7 @@ repeat
                     # variable and not a re-test of tmpBarTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: tmpBarTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: tmpBarTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpBarAnnotStyle
@@ -6080,14 +6600,25 @@ repeat
                         option: "Matrix"
                     real: "Alpha", string$ (annotAlpha)
                     comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -6109,9 +6640,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -6132,10 +6665,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", barToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -6167,6 +6716,7 @@ repeat
                 barGroupIdx = group_column
                 prev_groupSort = group_order
                 config_groupSort = group_order
+                sessionGroupSort = group_order
                 barValueIdx = value_column
                 barErrorIdx = error_bars
                 if config_showAdvanced
@@ -6180,6 +6730,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_bar_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_bar_annotStyle = significance_style
                     prev_adv_bar_VMin$ = string$ (left_Value_range)
@@ -6315,6 +6869,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -6365,6 +6926,7 @@ repeat
                 prev_barGroupIdx = group_column
                 prev_groupSort = group_order
                 config_groupSort = group_order
+                sessionGroupSort = group_order
                 prev_barValueIdx = value_column
                 prev_barErrorIdx = error_bars
 
@@ -6505,6 +7067,12 @@ repeat
                     option: "Table order"
                     option: "Alphabetical"
                 if config_showAdvanced
+                    ; ONE ANALYSIS GROUP, one icon. Everything from the
+                    ; annotate tick down to alpha is one decision — what
+                    ; statistics go on the figure — and it is named once at
+                    ; the top instead of the rows reading as seven unrelated
+                    ; switches. RULING_LAYOUT_GROUPS, icons final.
+                    comment: "📊 Analysis"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -6512,7 +7080,7 @@ repeat
                     # variable and not a re-test of tmpViolinTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: tmpViolinTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: tmpViolinTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpViolinAnnotStyle
@@ -6526,16 +7094,30 @@ repeat
                         option: "Annotate"
                         option: "Matrix"
                     real: "Alpha", string$ (annotAlpha)
-                    boolean: "Show jittered points", prev_violinShowJitter
                     comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
+                    ; DATA MARKS FIRST. The layout group runs mark, frame,
+                    ; text, output: what is drawn ON the data comes before
+                    ; what is drawn around it.
+                    boolean: "Show jittered points", prev_violinShowJitter
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -6557,9 +7139,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -6580,10 +7164,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", violinToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -6615,6 +7215,7 @@ repeat
                 violinGroupIdx = group_column
                 prev_groupSort = group_order
                 config_groupSort = group_order
+                sessionGroupSort = group_order
                 violinValueIdx = value_column
                 if config_showAdvanced
                     # Toggling TO beginner: save advanced state
@@ -6627,6 +7228,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_vio_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_vio_annotStyle = significance_style
                     prev_adv_vio_showJitter = show_jittered_points
@@ -6766,6 +7371,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -6805,6 +7417,7 @@ repeat
                 prev_violinGroupIdx = group_column
                 prev_groupSort = group_order
                 config_groupSort = group_order
+                sessionGroupSort = group_order
                 prev_violinValueIdx = value_column
 
                 valueMin = number (tmpVMin$)
@@ -6950,6 +7563,14 @@ repeat
             tmpAnnotStyle = 3
         endif
 
+        # Relationships shown (grouped scope): the value the user last chose
+        # in this dialog. Read only where the field renders (scatterGroupShown
+        # = 1); harmless to seed here regardless.
+        if prev_scatterCorrScope >= 1
+            scatterCorrScope = prev_scatterCorrScope
+        endif
+        tmpCorrScope = scatterCorrScope
+
         # Regression defaults (1=None, 2=Line, 3=Formula, 4=Both)
         #
         # Preset first, remembered value second. The restore below runs AFTER
@@ -7081,35 +7702,75 @@ repeat
                         option: "Regression line"
                         option: "Formula"
                         option: "Both"
+                    # Item 8.3 (punch list, 25 Aug 2026) / language batch
+                    # item 15. Meaningless without a grouping column -- with
+                    # none in use there is only ever one model, the overall
+                    # one -- so the field exists only on the branch where
+                    # "Use group column" is ticked (RULING_DIALOG_COMPACTION
+                    # §1: a field that cannot be discarded because it is not
+                    # there to discard). Wording is verbatim from the batch.
+                    if scatterGroupShown = 1
+                        optionmenu: "Relationships shown", tmpCorrScope
+                            option: "Per group"
+                            option: "Overall"
+                            option: "Both, each line labeled"
+                    endif
                     optionmenu: "Significance style", tmpAnnotStyle
                         option: "p-value"
                         option: "stars"
                         option: "both"
+                    comment: "📐 Axes (both 0 = auto)"
+                    ; THE NOUNS ARE X AND Y, and they carry no "range"
+                    ; suffix: the two-box rendering already says range and
+                    ; the heading already says 0 = auto. Naming the axis is
+                    ; forced here rather than optional — Praat cuts a label
+                    ; at its first "(", so two unqualified ranges on one page
+                    ; would derive one name, and Praat would draw both rows
+                    ; and silently keep the last. These bind left_X/right_X
+                    ; and left_Y/right_Y, remapped below to the canonical
+                    ; *_range names, and they do not collide with the
+                    ; x_column / y_column menus above: the pairing word is
+                    ; part of the derived name.
+                    real: "left X (left/right)", tmpXMin$
+                    real: "right X (left/right)", tmpXMax$
+                    real: "left Y (bottom/top)", tmpYMin$
+                    real: "right Y (bottom/top)", tmpYMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
+                    ; DATA MARKS FIRST. The layout group runs mark, frame,
+                    ; text, output: what is drawn ON the data comes before
+                    ; what is drawn around it.
                     boolean: "Show data points", tmpShowDots
                     optionmenu: "Dot size", tmpDotSize
                         option: "Small"
                         option: "Medium"
                         option: "Large"
-                    comment: "📐 Axis (both 0 = auto)"
-                    real: "left X range (left/right)", tmpXMin$
-                    real: "right X range (left/right)", tmpXMax$
-                    real: "left Y range (bottom/top)", tmpYMin$
-                    real: "right Y range (bottom/top)", tmpYMax$
-                    comment: "🎨 Layout"
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Both"
                         option: "Horizontal only"
                         option: "Vertical only"
                         option: "Off"
+                    ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                    ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                    ; draws again on a widened axis, and the second pass depends on the
+                    ; first being erased — so a page composed with Erase unticked takes
+                    ; one pass and a legend inside the plot lands where it falls. The
+                    ; two placements that keep the plot clear are named here, on the
+                    ; dialog that offers the choice, matching what
+                    ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                    comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                     optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
                         option: "Separate figure"
                         option: "None"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -7131,11 +7792,28 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", scatterToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_X_range = left_X
+                right_X_range = right_X
+                left_Y_range = left_Y
+                right_Y_range = right_Y
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
 
             if clicked = 1
                 scatterFormDone = 1
@@ -7149,11 +7827,15 @@ repeat
                     scatterGroupIdx = group_column
                     prev_groupSort = group_order
                     config_groupSort = group_order
+                    sessionGroupSort = group_order
                 endif
                 tmpUseGroup = use_group_column
                 if config_showAdvanced
                     # Toggling TO beginner: save advanced state
                     prev_adv_sca_corrType = correlation_method
+                    if scatterGroupShown = 1
+                        prev_adv_sca_corrScope = relationships_shown
+                    endif
                     prev_adv_sca_annotStyle = significance_style
                     prev_adv_sca_regressionLine = regression
                     prev_adv_sca_showDots = show_data_points
@@ -7174,6 +7856,7 @@ repeat
                     # Reset to beginner defaults
                     tmpCorrType = 1
                     tmpRegression = 1
+                    tmpCorrScope = 1
                     tmpAnnotStyle = 1
                     tmpShowDots = 1
                     tmpDotSize = 2
@@ -7199,6 +7882,9 @@ repeat
                     # Toggling TO advanced: restore saved state
                     if variableExists ("prev_adv_sca_corrType")
                         tmpCorrType = prev_adv_sca_corrType
+                        if variableExists ("prev_adv_sca_corrScope")
+                            tmpCorrScope = prev_adv_sca_corrScope
+                        endif
                         tmpAnnotStyle = prev_adv_sca_annotStyle
                         tmpRegression = prev_adv_sca_regressionLine
                         tmpShowDots = prev_adv_sca_showDots
@@ -7297,6 +7983,17 @@ repeat
                     endif
                     scatterShowDots = show_data_points
                     scatterDotSize = dot_size
+                    # Relationships shown: read only where the field
+                    # rendered (a grouping column in use). Ungrouped, there
+                    # is only ever the overall model, so the scope choice is
+                    # moot -- fixed at "Per group" the way scatterCorrScope's
+                    # global default has always been, harmlessly, because
+                    # @emlDrawScatterPlot's ungrouped path never reads it.
+                    if scatterGroupShown = 1
+                        scatterCorrScope = relationships_shown
+                    else
+                        scatterCorrScope = 1
+                    endif
                 else
                     # Beginner defaults: no annotation, reset all advanced-only fields
                     annotate = 0
@@ -7307,6 +8004,7 @@ repeat
                     scatterShowFormula = 0
                     scatterShowDots = 1
                     scatterDotSize = 2
+                    scatterCorrScope = 1
                 endif
                 gridline_mode = tmpGridMode
                 output_DPI = tmpDPI
@@ -7317,6 +8015,7 @@ repeat
                 prev_scatterShowFormula = scatterShowFormula
                 prev_scatterShowDots = scatterShowDots
                 prev_scatterUseGroup = use_group_column
+                prev_scatterCorrScope = scatterCorrScope
 
                 scatterXCol$ = x_column$
                 scatterYCol$ = y_column$
@@ -7328,6 +8027,7 @@ repeat
                     scatterGroupIdx = group_column
                     prev_groupSort = group_order
                     config_groupSort = group_order
+                    sessionGroupSort = group_order
                 endif
                 if scatterGroupIdx < 1 or scatterGroupIdx > nCols
                     scatterGroupIdx = 1
@@ -7488,6 +8188,12 @@ repeat
                     option: "Table order"
                     option: "Alphabetical"
                 if config_showAdvanced
+                    ; ONE ANALYSIS GROUP, one icon. Everything from the
+                    ; annotate tick down to alpha is one decision — what
+                    ; statistics go on the figure — and it is named once at
+                    ; the top instead of the rows reading as seven unrelated
+                    ; switches. RULING_LAYOUT_GROUPS, icons final.
+                    comment: "📊 Analysis"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -7495,7 +8201,7 @@ repeat
                     # variable and not a re-test of tmpBoxTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: tmpBoxTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: tmpBoxTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", tmpBoxAnnotStyle
@@ -7509,16 +8215,30 @@ repeat
                         option: "Annotate"
                         option: "Matrix"
                     real: "Alpha", string$ (annotAlpha)
-                    boolean: "Show jittered points", prev_boxShowJitter
                     comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
+                    ; DATA MARKS FIRST. The layout group runs mark, frame,
+                    ; text, output: what is drawn ON the data comes before
+                    ; what is drawn around it.
+                    boolean: "Show jittered points", prev_boxShowJitter
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -7540,9 +8260,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -7563,10 +8285,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", boxToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -7598,6 +8336,7 @@ repeat
                 boxGroupIdx = group_column
                 prev_groupSort = group_order
                 config_groupSort = group_order
+                sessionGroupSort = group_order
                 boxValueIdx = value_column
                 if config_showAdvanced
                     # Toggling TO beginner: save advanced state
@@ -7610,6 +8349,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_box_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_box_annotStyle = significance_style
                     prev_adv_box_showJitter = show_jittered_points
@@ -7749,6 +8492,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -7787,6 +8537,7 @@ repeat
                 prev_boxGroupIdx = group_column
                 prev_groupSort = group_order
                 config_groupSort = group_order
+                sessionGroupSort = group_order
                 prev_boxValueIdx = value_column
 
                 valueMin = number (tmpVMin$)
@@ -7925,12 +8676,38 @@ repeat
                         option: "Alphabetical"
                 endif
                 if config_showAdvanced
-                    comment: "📊 Binning"
+                    ; HOW THE HISTOGRAM IS BUILT is one group: how many bins,
+                    ; how high the count axis is allowed to go, and how the
+                    ; groups are laid out. The compound row that would put bin
+                    ; count and frequency maximum in one pair of boxes is
+                    ; refused — they are two unrelated numbers, and a shared
+                    ; label naming both in order makes the label carry the
+                    ; whole burden of honesty. Two rows stay.
+                    comment: "📊 Histogram"
                     integer: "Bin count (0 = auto)", string$ (tmpBinCount)
-                    comment: "📊 Grouped display"
-                    optionmenu: "Display mode", tmpDisplayMode
+                    ; THE FREQUENCY CAP IS THE COUNT AXIS'S TOP. It belongs
+                    ; with the binning that produces the counts, not with the
+                    ; value axis below, which is the other axis entirely.
+                    real: "Frequency maximum (0 = auto)", tmpFreqMax$
+                    ; THE CONDITION IS IN THE LABEL. Faceting needs panels to
+                    ; stack, so it does something only when the group column
+                    ; yields two or more groups; @emlDrawHistogram treats a
+                    ; single group as ungrouped and draws it overlapped, and
+                    ; says so when that happens. Saying the condition here is
+                    ; what keeps that from being a surprise.
+                    optionmenu: "Display mode (2 or more groups)", tmpDisplayMode
                         option: "Overlap (transparent)"
                         option: "Faceted (stacked panels)"
+                    ; ONE ANALYSIS GROUP, one icon, and the matrix note is
+                    ; the heading's own second clause rather than a row of its
+                    ; own: Violin, Bar and Box offer an "Annotation layout"
+                    ; menu, this type does not, and the draw path forces
+                    ; annotLayoutMode = 3 (Matrix) for it because significance
+                    ; BRACKETS have no place to land on a histogram — there is
+                    ; no single pair of x positions to span. A menu whose only
+                    ; honest entry is the one already in force is not a choice,
+                    ; so what is offered instead is the fact.
+                    comment: "📊 Analysis · comparisons appear as a matrix panel below the plot"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -7938,7 +8715,7 @@ repeat
                     # variable and not a re-test of prev_histAnnotTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: prev_histAnnotTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: prev_histAnnotTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_histAnnotStyle
@@ -7947,32 +8724,48 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
-                        # Violin, Bar and Box offer an
-                        # "Annotation layout" menu here; this type does not,
-                        # and the draw path forces annotLayoutMode = 3 (Matrix)
-                        # for it because significance BRACKETS have no place to
-                        # land on a histogram or on a two-factor panel -- there
-                        # is no single pair of x positions to span. A menu whose
-                        # only honest entry is the one already in force is not a
-                        # choice, so what is offered instead is the fact.
-                        comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
-                    comment: "📐 Axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
-                    real: "Frequency maximum (0 = auto)", tmpFreqMax$
+                    ; THE VALUE RANGE GOVERNS THE HORIZONTAL AXIS, so the row
+                    ; says left/right. MEASURED on 6.6.30 against
+                    ; @emlDrawHistogram: the procedure assigns .xMin = .vMin
+                    ; and .xMax = .vMax, and passing 22 and 28 drew x from 22
+                    ; to 28 with the count axis untouched, while the frequency
+                    ; maximum above moves .yMax alone. A histogram's data
+                    ; values lie along x and its counts rise up y — the
+                    ; opposite of every other stat page here, which is exactly
+                    ; why the orientation is stated rather than copied.
+                    comment: "📐 Value axis (both 0 = auto)"
+                    ; The row sheds its "range" suffix: the two-box rendering
+                    ; already says range. It binds left_Value / right_Value,
+                    ; remapped below to left_Value_range / right_Value_range.
+                    real: "left Value (left/right)", tmpVMin$
+                    real: "right Value (left/right)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                    ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                    ; draws again on a widened axis, and the second pass depends on the
+                    ; first being erased — so a page composed with Erase unticked takes
+                    ; one pass and a legend inside the plot lands where it falls. The
+                    ; two placements that keep the plot clear are named here, on the
+                    ; dialog that offers the choice, matching what
+                    ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                    comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                     optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
                         option: "Separate figure"
                         option: "None"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -7994,9 +8787,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -8017,10 +8812,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", histToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -8054,6 +8865,7 @@ repeat
                     histGroupIdx = group_column
                     prev_groupSort = group_order
                     config_groupSort = group_order
+                    sessionGroupSort = group_order
                 endif
                 tmpUseGroup = use_group_column
                 if config_showAdvanced
@@ -8068,6 +8880,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_his_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_his_annotStyle = significance_style
                     prev_adv_his_VMin$ = string$ (left_Value_range)
@@ -8181,6 +8997,7 @@ repeat
                     histGroupIdx = group_column
                     prev_groupSort = group_order
                     config_groupSort = group_order
+                    sessionGroupSort = group_order
                 endif
                 if histGroupIdx < 1 or histGroupIdx > nCols
                     histGroupIdx = 1
@@ -8239,6 +9056,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -8470,6 +9294,16 @@ repeat
                     option: "Table order"
                     option: "Alphabetical"
                 if config_showAdvanced
+                    ; ONE ANALYSIS GROUP, one icon, and the matrix note is
+                    ; the heading's own second clause rather than a row of its
+                    ; own: Violin, Bar and Box offer an "Annotation layout"
+                    ; menu, this type does not, and the draw path forces
+                    ; annotLayoutMode = 3 (Matrix) for it because significance
+                    ; BRACKETS have no place to land on a two-factor panel —
+                    ; there is no single pair of x positions to span. A menu
+                    ; whose only honest entry is the one already in force is
+                    ; not a choice, so what is offered instead is the fact.
+                    comment: "📊 Analysis · comparisons appear as a matrix panel below the plot"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -8477,7 +9311,7 @@ repeat
                     # variable and not a re-test of prev_gvAnnotTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: prev_gvAnnotTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: prev_gvAnnotTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_gvAnnotStyle
@@ -8486,32 +9320,46 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
-                        # Violin, Bar and Box offer an
-                        # "Annotation layout" menu here; this type does not,
-                        # and the draw path forces annotLayoutMode = 3 (Matrix)
-                        # for it because significance BRACKETS have no place to
-                        # land on a histogram or on a two-factor panel -- there
-                        # is no single pair of x positions to span. A menu whose
-                        # only honest entry is the one already in force is not a
-                        # choice, so what is offered instead is the fact.
-                        comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
-                    boolean: "Show jittered points", prev_gvShowJitter
                     comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
+                    ; DATA MARKS FIRST. The layout group runs mark, frame,
+                    ; text, output: what is drawn ON the data comes before
+                    ; what is drawn around it.
+                    boolean: "Show jittered points", prev_gvShowJitter
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                    ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                    ; draws again on a widened axis, and the second pass depends on the
+                    ; first being erased — so a page composed with Erase unticked takes
+                    ; one pass and a legend inside the plot lands where it falls. The
+                    ; two placements that keep the plot clear are named here, on the
+                    ; dialog that offers the choice, matching what
+                    ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                    comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                     optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
                         option: "Separate figure"
                         option: "None"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -8533,9 +9381,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -8556,10 +9406,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", gvToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -8592,6 +9458,7 @@ repeat
                 gvSubIdx = subgroup_column
                 prev_groupSort = group_order
                 config_groupSort = group_order
+                sessionGroupSort = group_order
                 gvValueIdx = value_column
                 if config_showAdvanced
                     # Toggling TO beginner: save advanced state
@@ -8603,6 +9470,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_gv_testType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_gv_annotStyle = significance_style
                     prev_adv_gv_showJitter = show_jittered_points
@@ -8751,6 +9622,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -8787,6 +9665,7 @@ repeat
                 prev_gvSubIdx = subgroup_column
                 prev_groupSort = group_order
                 config_groupSort = group_order
+                sessionGroupSort = group_order
                 prev_gvValueIdx = value_column
 
                 valueMin = number (tmpVMin$)
@@ -8923,6 +9802,16 @@ repeat
                     option: "Table order"
                     option: "Alphabetical"
                 if config_showAdvanced
+                    ; ONE ANALYSIS GROUP, one icon, and the matrix note is
+                    ; the heading's own second clause rather than a row of its
+                    ; own: Violin, Bar and Box offer an "Annotation layout"
+                    ; menu, this type does not, and the draw path forces
+                    ; annotLayoutMode = 3 (Matrix) for it because significance
+                    ; BRACKETS have no place to land on a two-factor panel —
+                    ; there is no single pair of x positions to span. A menu
+                    ; whose only honest entry is the one already in force is
+                    ; not a choice, so what is offered instead is the fact.
+                    comment: "📊 Analysis · comparisons appear as a matrix panel below the plot"
                     boolean: "Annotate results on graph", annotate
                     # The gate is set here, beside the
                     # field, and read at this page's two commit sites.
@@ -8930,7 +9819,7 @@ repeat
                     # variable and not a re-test of prev_gbAnnotTestType.
                     ; ONE CONTROL. See THE COMPARISON MENU near the top of this file
                     ; for why the family and the correction stopped being two.
-                    @emlComparisonToMenu: prev_gbAnnotTestType, prev_annotAdjustIdx
+                    @emlComparisonToMenu: prev_gbAnnotTestType, prev_annotAdjustIdx, prev_annotPostHoc
                     optionmenu: "Comparison", emlComparisonToMenu.row
                         @emlComparisonMenuRows
                     optionmenu: "Significance style", prev_gbAnnotStyle
@@ -8939,32 +9828,46 @@ repeat
                         option: "both"
                     boolean: "Show nonsignificant", annotShowNS
                     boolean: "Show effect sizes", annotShowEffect
-                        # Violin, Bar and Box offer an
-                        # "Annotation layout" menu here; this type does not,
-                        # and the draw path forces annotLayoutMode = 3 (Matrix)
-                        # for it because significance BRACKETS have no place to
-                        # land on a histogram or on a two-factor panel -- there
-                        # is no single pair of x positions to span. A menu whose
-                        # only honest entry is the one already in force is not a
-                        # choice, so what is offered instead is the fact.
-                        comment: "Comparisons appear as a matrix panel below the plot."
                     real: "Alpha", string$ (annotAlpha)
-                    boolean: "Show jittered points", prev_gbShowJitter
                     comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                    comment: "🎛️ Layout"
+                    ; DATA MARKS FIRST. The layout group runs mark, frame,
+                    ; text, output: what is drawn ON the data comes before
+                    ; what is drawn around it.
+                    boolean: "Show jittered points", prev_gbShowJitter
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                    ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                    ; draws again on a widened axis, and the second pass depends on the
+                    ; first being erased — so a page composed with Erase unticked takes
+                    ; one pass and a legend inside the plot lands where it falls. The
+                    ; two placements that keep the plot clear are named here, on the
+                    ; dialog that offers the choice, matching what
+                    ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                    comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                     optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
                         option: "Separate figure"
                         option: "None"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -8986,9 +9889,11 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 elsif emlGraphsPresetAnnotate > 0
                     # THE ONE CONTROL A WRAPPER'S REQUEST NEEDS, ON THE PAGE
                     # THE REQUEST ARRIVES AT.
@@ -9009,10 +9914,26 @@ repeat
                     # and untickable, which is the part a hidden carried-over
                     # flag cannot be. The page offers annotation, so drawing it
                     # is drawing what the dialog offers.
-                    comment: "📈 Your analysis found a result to put on this figure."
+                    ; THE GROUP IS NAMED ON THIS BRANCH TOO, and the reason
+                    ; it exists rides in the same row: one heading, one icon,
+                    ; the same 📊 the advanced branch uses.
+                    comment: "📊 Analysis — your analysis found a result to put on this figure."
                     boolean: "Annotate results on graph", annotate
                 endif
             clicked = endPause: "Go Back", "Quit", gbToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
             ; A CATEGORY HEADER IS NOT A CHOICE. The comparison list carries
             ; "-- Parametric --" and "-- Nonparametric --" as rows, because Praat
             ; has no other way to group a menu, and a user can land on one. This
@@ -9045,6 +9966,7 @@ repeat
                 gbSubIdx = subgroup_column
                 prev_groupSort = group_order
                 config_groupSort = group_order
+                sessionGroupSort = group_order
                 gbValueIdx = value_column
                 if config_showAdvanced
                     # Toggling TO beginner: save advanced state
@@ -9056,6 +9978,10 @@ repeat
                     if emlComparisonFromMenu.isHeader = 0
                         prev_adv_gbTestType = emlComparisonFromMenu.testType
                         prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                        ; ITEM 3.5 -- stashed with the family and the correction, because the
+                        ; three came off ONE row and a stash that kept two of them would open
+                        ; the page on a row that is none of the three.
+                        prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     endif
                     prev_adv_gbAnnotStyle = significance_style
                     prev_adv_gbShowJitter = show_jittered_points
@@ -9202,6 +10128,13 @@ repeat
                     @emlAdjustMethodName: emlComparisonFromMenu.adjustIdx
                     annotCorrectionMethod$ = emlAdjustMethodName.name$
                     prev_annotAdjustIdx = emlComparisonFromMenu.adjustIdx
+                    ; ITEM 3.5 -- THE SAME ROW ALSO CARRIES THE POST-HOC ANSWER, and it is
+                    ; committed here beside the correction for the same reason: this is the
+                    ; page's Draw arm, so what the bridge reads is what the dialog was
+                    ; showing when the user pressed Draw. annotPostHoc is the only channel
+                    ; it has to @emlRunAnnotationComparison; see @emlComparisonMenuRows.
+                    annotPostHoc = emlComparisonFromMenu.doPostHoc
+                    prev_annotPostHoc = emlComparisonFromMenu.doPostHoc
                     if emlComparisonFromMenu.testType = 2
                         annotTestType$ = "nonparametric"
                     else
@@ -9237,6 +10170,7 @@ repeat
                 prev_gbSubIdx = subgroup_column
                 prev_groupSort = group_order
                 config_groupSort = group_order
+                sessionGroupSort = group_order
                 prev_gbValueIdx = value_column
                 valueMin = number (tmpVMin$)
                 valueMax = number (tmpVMax$)
@@ -9394,6 +10328,33 @@ repeat
                         option: "Table order"
                         option: "Alphabetical"
                 endif
+                if config_showAdvanced
+                    comment: "📐 Y-axis (both 0 = auto)"
+                    ; THE RANGE ROW SHEDS ITS SUFFIX. The two-box rendering
+                    ; already says it is a range and the heading already says
+                    ; 0 = auto, so the label carries the quantity and which
+                    ; end is which. It binds left_Value / right_Value, and the
+                    ; remap block below carries those to the canonical
+                    ; left_Value_range / right_Value_range this page reads.
+                    real: "left Value (bottom/top)", tmpVMin$
+                    real: "right Value (bottom/top)", tmpVMax$
+                    ; The markup legend sits inside the axis group, directly
+                    ; above the row it explains.
+                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
+                    ; SENTENCE FIELDS PAIR: one row, two boxes, the left
+                    ; remainder shown once. Measured on 6.6.30 with this text.
+                    sentence: "left Axis labels (x / y; blank = auto)", tmpXLabel$
+                    sentence: "right Axis labels (x / y; blank = auto)", tmpYLabel$
+                endif
+                ; THE LAYOUT GROUP OPENS ON BOTH BRANCHES, because the mean
+                ; overlay and the pen render on the beginner page: a heading
+                ; gated on the advanced flag would leave those two rows under
+                ; the column heading. RULING_LAYOUT_GROUPS rule 1 is judged
+                ; per rendered branch, not per source listing.
+                comment: "🎛️ Layout"
+                ; DATA MARKS FIRST. The layout group runs mark, frame, text,
+                ; output: what is drawn ON the data comes before what is drawn
+                ; around it.
                 boolean: "Show mean overlay", tmpShowMean
                 # THE PEN IS THE STRAND'S, and the mean overlay stays solid --
                 # it is the summary of the strands, not another one of them.
@@ -9403,21 +10364,24 @@ repeat
                     option: "Dashed"
                     option: "Dashed-dotted"
                 if config_showAdvanced
-                    comment: "📐 Y-axis (both 0 = auto)"
-                    real: "left Value range (bottom/top)", tmpVMin$
-                    real: "right Value range (bottom/top)", tmpVMax$
                     optionmenu: "Gridline mode", tmpGridMode
                         option: "Horizontal"
                         option: "Off"
+                    ; THE ADVICE RIDES WITH THE CONTROL IT IS ABOUT. The headroom
+                    ; negotiation in @emlGraphsDrawWithLegendRoom draws, measures and
+                    ; draws again on a widened axis, and the second pass depends on the
+                    ; first being erased — so a page composed with Erase unticked takes
+                    ; one pass and a legend inside the plot lands where it falls. The
+                    ; two placements that keep the plot clear are named here, on the
+                    ; dialog that offers the choice, matching what
+                    ; @emlLegendHeadroomAfterDraw says when it cannot serve a legend.
+                    comment: "On a composed page a legend inside the plot is not given axis room — use Right of plot or Below plot."
                     optionmenu: "Legend placement (when drawn)", tmpLegendPlacement
                         option: "Inside plot"
                         option: "Right of plot"
                         option: "Below plot"
                         option: "Separate figure"
                         option: "None"
-                    optionmenu: "Output DPI", tmpDPI
-                        option: "300 dpi"
-                        option: "600 dpi"
                     boolean: "Show inner box", tmpShowInnerBox
                     optionmenu: "Show axis names", tmpShowAxisNames
                         option: "None"
@@ -9439,11 +10403,26 @@ repeat
                         option: "Times"
                         option: "Palatino"
                         option: "Courier"
-                    comment: "🏷️ Axis labels (blank = auto) · %italic #bold ^super _sub · \% and a space prints %"
-                    sentence: "X axis label", tmpXLabel$
-                    sentence: "Y axis label", tmpYLabel$
+                    ; OUTPUT LAST — the layout group runs mark, frame, text,
+                    ; output.
+                    optionmenu: "Output DPI", tmpDPI
+                        option: "300 dpi"
+                        option: "600 dpi"
                 endif
             clicked = endPause: "Go Back", "Quit", spToggleLabel$, "Draw", 4, 1
+
+            ; ── REMAP ───────────────────────────────────────────────────────
+            ; Label-derived names are copied to the canonical variables this
+            ; page's toggle and draw branches read, before any commit logic,
+            ; so no rename reaches the draw layer, the recorder or a harness.
+            ; Gated on the branch that rendered the fields: reading a field a
+            ; branch never drew is an error. RULING_DIALOG_COMPACTION §1.
+            if config_showAdvanced
+                left_Value_range = left_Value
+                right_Value_range = right_Value
+                x_axis_label$ = left_Axis_labels$
+                y_axis_label$ = right_Axis_labels$
+            endif
 
             if clicked = 1
                 spFormDone = 1
@@ -9458,6 +10437,7 @@ repeat
                     spGroupIdx = group_column
                     prev_spGroupSort = group_order
                     config_groupSort = group_order
+                    sessionGroupSort = group_order
                 endif
                 tmpUseGroup = use_group_column
                 tmpShowMean = show_mean_overlay
@@ -9521,6 +10501,7 @@ repeat
                     spGroupIdx = group_column
                     prev_spGroupSort = group_order
                     config_groupSort = group_order
+                    sessionGroupSort = group_order
                 endif
                 if spGroupIdx < 1 or spGroupIdx > nCols
                     spGroupIdx = 1
@@ -9591,6 +10572,24 @@ repeat
         @emlGraphsCheckAxisRanges
         if emlGraphsCheckAxisRanges.refused > 0
             @emlGraphsShowAxisRefusal
+            allFormsDone = 0
+            lastDrawnGraphType = graph_type
+        endif
+    endif
+
+    # =================================================================
+    # PITCH RANGE VALIDATION — REFUSE A CEILING BELOW ITS FLOOR
+    # =================================================================
+    # SAME MECHANISM, A DIFFERENT ROSTER OF ONE. The pitch floor/ceiling pair
+    # is not an axis — @emlGraphsCheckAxisRanges's roster is derived from the
+    # 📐 axes heading by design, and this pair renders under 🎵 Pitch
+    # analysis — so it gets its own sweep rather than joining that one.
+    # @emlGraphsCheckPitchRange is itself the gate: it is safe to call
+    # whether or not the pitch pair exists on the page that just committed.
+    if allFormsDone = 1
+        @emlGraphsCheckPitchRange
+        if emlGraphsCheckPitchRange.refused > 0
+            @emlGraphsShowPitchRefusal
             allFormsDone = 0
             lastDrawnGraphType = graph_type
         endif
@@ -9668,7 +10667,26 @@ repeat
         annotLayoutMode = 3
     endif
 
-    # Every @emlBridgeGroupComparison call below delivers the
+    ; THE REPORT IS PRINTED ONLY WHEN THE BRIDGE SAYS SO, AND THAT IS THE
+    ; DUPLICATE REPORT'S FIX. @emlReportBridgeStats prints a FULL analysis
+    ; report in the Info window. Before the result store the bridge always
+    ; recomputed, so the sequence "run a Kruskal-Wallis from the stats menu,
+    ; then draw a violin of it" printed the whole report twice -- Ian's
+    ; driven session, and the defect docs/RULING_RESULT_STORE.md section (c)
+    ; is a contract about.
+    ;
+    ; The bridge now decides, because the bridge is the only thing that knows
+    ; whether it computed anything: .printReport is 1 when this report is the
+    ; FIRST report of this result (nothing was published, or the data moved
+    ; and the analysis was re-measured) and 0 when it is not (the figure drew
+    ; from the store, or a setting changed and the bridge has already said so
+    ; in one line). The form obeys it and adds no rule of its own -- a second
+    ; rule here is how the two would come to disagree.
+    ;
+    ; READ THROUGH variableExists, because a tree in which the bridge has not
+    ; run -- an error path, a user script -- has no .printReport to read, and
+    ; the safe answer in that case is the old one: print.
+    # Every @emlRunAnnotationComparison call below delivers the
     # multiple-comparison method through the annotCorrectionMethod$ global, not
     # through the argument list — the bridge has no parameter for it. That
     # global is live here for both values of annotTestType$: it is seeded from
@@ -9679,39 +10697,39 @@ repeat
     # then uses it is decided in eml-annotation-procedures.praat.
     if (graph_type = 6 or graph_type = 7 or graph_type = 9) and annotate = 1
         # Bar chart / Violin / Box plot: run group comparison bridge
-        @emlBridgeGroupComparison: objectId, valueColName$, groupColName$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, valueColName$, groupColName$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
-            @emlReportBridgeStats: objectId, valueColName$, groupColName$
+            @emlGraphsReportBridgeIfNew: objectId, valueColName$, groupColName$
         endif
     elsif graph_type = 11 and annotate = 1
         # Grouped Violin: compare sub-groups (pooled across categories)
-        @emlBridgeGroupComparison: objectId, gvValueCol$, gvSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, gvValueCol$, gvSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
-            emlBridgeGroupComparison.omnibus$ = emlBridgeGroupComparison.omnibus$ + " (pooled)"
+            emlRunAnnotationComparison.omnibus$ = emlRunAnnotationComparison.omnibus$ + " (pooled)"
             annotMatrixOmnibus$ = annotMatrixOmnibus$ + " (pooled)"
-            @emlReportBridgeStats: objectId, gvValueCol$, gvSubCol$
+            @emlGraphsReportBridgeIfNew: objectId, gvValueCol$, gvSubCol$
         endif
     elsif graph_type = 10 and annotate = 1 and histGroupCol$ <> ""
         # Histogram: group comparison (matrix only, no brackets)
-        @emlBridgeGroupComparison: objectId, histValueCol$, histGroupCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, histValueCol$, histGroupCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
-            @emlReportBridgeStats: objectId, histValueCol$, histGroupCol$
+            @emlGraphsReportBridgeIfNew: objectId, histValueCol$, histGroupCol$
         endif
     elsif graph_type = 12 and annotate = 1
         # Grouped Box Plot: compare sub-groups (pooled across categories)
-        @emlBridgeGroupComparison: objectId, gbValueCol$, gbSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
-        if emlBridgeGroupComparison.error$ <> ""
-            appendInfoLine: "NOTE: Annotation skipped — " + emlBridgeGroupComparison.error$
+        @emlRunAnnotationComparison: objectId, gbValueCol$, gbSubCol$, annotAlpha, annotStyle$, annotShowNS, annotShowEffect, annotTestType$, annotLayoutMode
+        if emlRunAnnotationComparison.error$ <> ""
+            appendInfoLine: "NOTE: Annotation skipped — " + emlRunAnnotationComparison.error$
         else
-            emlBridgeGroupComparison.omnibus$ = emlBridgeGroupComparison.omnibus$ + " (pooled)"
+            emlRunAnnotationComparison.omnibus$ = emlRunAnnotationComparison.omnibus$ + " (pooled)"
             annotMatrixOmnibus$ = annotMatrixOmnibus$ + " (pooled)"
-            @emlReportBridgeStats: objectId, gbValueCol$, gbSubCol$
+            @emlGraphsReportBridgeIfNew: objectId, gbValueCol$, gbSubCol$
         endif
     endif
     # Scatter annotation is handled entirely within @emlDrawScatterPlot
@@ -10024,10 +11042,14 @@ until keepGoing = 0
     scatterPresetHasGroup = 0
 
     # --- restore the explanation gate ---
-    # Raised at the top of this procedure for the graphs path only. It is a
-    # global, so leaving it raised would make every later analysis report in
-    # the session verbose and make report content depend on draw order. The
-    # gate goes back to the default declared in stats/eml-output.praat, not to
-    # a literal written out here.
+    # Set at the top of this procedure for every call. It is a global, so
+    # leaving it as this call left it would make a later analysis report in
+    # the session verbose (or silent) depending only on draw order. The gate
+    # goes back to the default declared in stats/eml-output.praat, not to a
+    # literal written out here. emlExplanationsFromDialog is deliberately NOT
+    # cleared here: a wrapper's post-analysis dialog can call this procedure
+    # more than once per Run (a second "Draw"), and the entry above re-derives
+    # emlShowExplanations from emlDialogShowExplanations on every one of those
+    # calls, not just the first.
     @emlResetExplanations
 endproc

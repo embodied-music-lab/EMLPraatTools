@@ -9,7 +9,7 @@
    238
   ],
   [
-   "emlRunKWAnalysis",
+   "emlRunKruskalWallisAnalysis",
    292
   ],
   [
@@ -855,7 +855,7 @@
    1423
   ],
   [
-   "emlBridgeGroupComparison",
+   "emlRunAnnotationComparison",
    1773
   ],
   [
@@ -979,7 +979,7 @@
    299
   ],
   [
-   "emlInitDrawingDefaults",
+   "emlInitializeDrawingDefaults",
    318
   ],
   [

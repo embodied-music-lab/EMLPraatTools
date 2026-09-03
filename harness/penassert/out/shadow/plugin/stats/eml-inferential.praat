@@ -2,8 +2,65 @@
 # EML Stats : Inferential Statistics
 # ============================================================================
 # Module: eml-inferential.praat
-# Version: 1.4
-# Date: 2 August 2026
+# Version: 1.8
+# Date: 27 August 2026
+#
+# V1.8: Item 22 of the language batch, ruled by Fable 27 August 2026. Every
+#        rank-test kernel now composes .methodReason$ from ALL the
+#        conditions that applied -- ties present, large sample, zero
+#        differences, comma-separated in that fixed order, no precedence
+#        among them. @emlMannWhitneyU and @emlWilcoxonSignedRank gain the
+#        field; @emlSpearmanCorrelationDispatch's existing .methodReason$
+#        (V1.7 introduced it as a single-cause tag) is brought to the same
+#        composed shape.
+#
+#        THE SPEARMAN COLLISION: the dispatch decides ties-present without
+#        ever calling the kernel, so on that path it does not learn whether
+#        n is ALSO past the exact cutoff -- yet both must be named when both
+#        hold. A prior ruling forbids the dispatch from re-testing n against
+#        a second copy of 1290, so the cutoff test is pulled out of
+#        @eml_spearmanPspearman into @eml_spearmanExactEligible, a one-line
+#        predicate the kernel now calls instead of its own literal, and the
+#        dispatch calls the SAME predicate to learn the large-sample fact
+#        the ties-present short-circuit would otherwise hide. One executable
+#        1290 in the module, inside the predicate.
+#
+# V1.7: The Spearman branch law gains its third arm, and the arm is named
+#        where it is decided. R reaches the exact branch only with no ties
+#        and n <= 1290; @eml_spearmanPspearman already carried that guard,
+#        so the constant is not copied. The kernel now sets .method$,
+#        @emlSpearmanExactP propagates it, and the dispatch reads it rather
+#        than testing n again. New .methodReason$ separates why an
+#        approximation was chosen ("ties" / "large sample") from what was
+#        computed; the reason is derived by exhaustive dispatch, so an
+#        unrecognised label refuses rather than captioning itself, and the
+#        refusal reaches every existing reader. Two pins re-checked
+#        against the R-4-3-3 source and found
+#        already correct: the two-sided fold (tail by q vs (n^3-n)/6, then
+#        min(2p, 1)) and continuity = FALSE on the asymptotic arm.
+#        Fable's branch-law ruling, 27 August 2026.
+#
+# V1.6: New @emlSpearmanCorrelationDispatch -- the branch law (ties present
+#        -> the existing t-approximation; no ties -> @emlSpearmanExactP's
+#        AS 89 exact p), and the ONE call site every door now uses to reach
+#        it. Neither @emlSpearmanCorrelation nor @emlSpearmanExactP is
+#        touched. Wired at eml-analysis.praat's correlation orchestrator,
+#        eml-correlate.praat's and eml-wizard.praat's per-group loops, and
+#        the scatter's three draw-time annotation call sites in
+#        eml-draw-procedures.praat (ungrouped, per-group, overall/pooled).
+#        The two disclosure sentences ("exact method (AS 89)" / "t
+#        approximation (ties present)") stay in Ian's language batch,
+#        unapproved -- .method$ is an internal tag only, and no call site
+#        gained a print.
+#
+# V1.5: New @emlSpearmanExactP, a statement-for-statement port of R 4.3.3's
+#        prho() (src/library/stats/src/prho.c, AS 89 — Best & Roberts 1975)
+#        plus the pspearman()/tail-selection dispatch that surrounds it in
+#        cor.test.default (src/library/stats/R/cor.test.R), fetched from the
+#        R-4-3-3 tag. Given the same rho and n that @emlSpearmanCorrelation
+#        already computes, it reproduces R's default (exact) Spearman p
+#        rather than the t-approximation. Does not touch the existing rho
+#        computation. As of V1.6 it is wired -- see @emlSpearmanCorrelationDispatch.
 #
 # V1.4: @emlPairwiseT and @emlPairwiseWilcoxon now call
 #        @emlRequireNumericColumn (.strict = 0) straight after the
@@ -26,6 +83,7 @@
 #   @emlPearsonCorrelation, @emlSpearmanCorrelation,
 #   @emlTTestAlt, @emlTTestPairedAlt,
 #   @emlPearsonCorrelationAlt, @emlSpearmanCorrelationAlt,
+#   @emlSpearmanExactP, @emlSpearmanCorrelationDispatch,
 #   @emlMannWhitneyU, @emlWilcoxonSignedRank,
 #   @emlRankBiserialR, @emlMatchedPairsR,
 #   @emlBonferroni, @emlHolm, @emlBenjaminiHochberg,
@@ -255,18 +313,22 @@ procedure emlTTestAlt: .v1#, .v2#, .alternative$, .equalVariances
         .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
     else
         @emlTTest: .v1#, .v2#, .tails, .equalVariances
-        .t = emlTTest.t
-        .df = emlTTest.df
-        .pGreater = emlTTest.pGreater
-        .pLess = emlTTest.pLess
-        .mean1 = emlTTest.mean1
-        .mean2 = emlTTest.mean2
-        .sd1 = emlTTest.sd1
-        .sd2 = emlTTest.sd2
-        .meanDiff = emlTTest.meanDiff
-        .n1 = emlTTest.n1
-        .n2 = emlTTest.n2
-        .method$ = emlTTest.method$
+        if emlTTest.error$ <> ""
+            .error$ = emlTTest.error$
+        else
+            .t = emlTTest.t
+            .df = emlTTest.df
+            .pGreater = emlTTest.pGreater
+            .pLess = emlTTest.pLess
+            .mean1 = emlTTest.mean1
+            .mean2 = emlTTest.mean2
+            .sd1 = emlTTest.sd1
+            .sd2 = emlTTest.sd2
+            .meanDiff = emlTTest.meanDiff
+            .n1 = emlTTest.n1
+            .n2 = emlTTest.n2
+            .method$ = emlTTest.method$
+        endif
         .error$ = emlTTest.error$
 
         if .error$ = ""
@@ -431,17 +493,17 @@ procedure emlTTestPairedAlt: .v1#, .v2#, .alternative$
         .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
     else
         @emlTTestPaired: .v1#, .v2#, .tails
-        .t = emlTTestPaired.t
-        .df = emlTTestPaired.df
-        .pGreater = emlTTestPaired.pGreater
-        .pLess = emlTTestPaired.pLess
-        .meanDiff = emlTTestPaired.meanDiff
-        .sdDiff = emlTTestPaired.sdDiff
-        .seDiff = emlTTestPaired.seDiff
-        .n = emlTTestPaired.n
         .error$ = emlTTestPaired.error$
 
         if .error$ = ""
+            .t = emlTTestPaired.t
+            .df = emlTTestPaired.df
+            .pGreater = emlTTestPaired.pGreater
+            .pLess = emlTTestPaired.pLess
+            .meanDiff = emlTTestPaired.meanDiff
+            .sdDiff = emlTTestPaired.sdDiff
+            .seDiff = emlTTestPaired.seDiff
+            .n = emlTTestPaired.n
             .alternative$ = .requested$
             if .requested$ = "less"
                 .p = .pLess
@@ -461,21 +523,9 @@ endproc
 # Cohen's d uses the pooled standard deviation as the standardizer.
 # Hedges' g applies a correction factor J for small-sample bias.
 #
-# The correction factor uses the standard approximation:
-#   J = 1 - 3 / (4 * df - 1)
-# where df = n1 + n2 - 2. This is the formula used by most statistical
-# software. It approximates the exact factor
-#   J = gamma(df/2) / (sqrt(df/2) * gamma((df-1)/2))
-# from above; the approximation error is largest at the smallest df and
-# decays monotonically:
-#   df =  2 -> J 0.571429 vs exact 0.564190 (1.28% high)
-#   df =  4 -> J 0.800000 vs exact 0.797885 (0.27% high)
-#   df = 10 -> J 0.923077 vs exact 0.922746 (0.04% high)
-#   df = 20 -> J 0.962025 vs exact 0.961945 (0.01% high)
-# So the worst case is 1.28% at df = 2, not 0.27%; the earlier claim of
-# "3+ decimal places for df >= 4" was wrong (the df = 4 absolute error
-# is 0.0021). Accuracy reaches 3 decimal places at df >= 6.
-# Verified against scipy.special.gammaln.
+# The correction factor is the exact form (Hedges, 1981):
+#   J = exp(lnGamma(df/2) - 0.5*ln(df/2) - lnGamma((df-1)/2))
+# where df = n1 + n2 - 2. Agrees with effectsize::hedges_g.
 #
 # Arguments:
 #   .v1# - numeric vector, group 1
@@ -528,12 +578,68 @@ procedure emlCohenD: .v1#, .v2#
             # Cohen's d
             .d = (.mean1 - .mean2) / .pooledSD
 
-            # Hedges' g correction factor (approximation; overestimates
-            # the exact gamma-ratio J by at most 1.28%, at df = 2)
-            # J = 1 - 3 / (4 * df - 1)
-            .correctionFactor = 1 - 3 / (4 * .df - 1)
+            # Hedges' g correction factor, exact form (Hedges, 1981):
+            # J = exp(lnGamma(df/2) - 0.5*ln(df/2) - lnGamma((df-1)/2))
+            .correctionFactor = exp(lnGamma(.df / 2) - 0.5 * ln(.df / 2) - lnGamma((.df - 1) / 2))
             .g = .d * .correctionFactor
         endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlTTestInterval
+# ============================================================================
+# Confidence interval for a t-test mean difference, at whatever degrees
+# of freedom the CALLING VARIANT already computed. Never recomputes the
+# df: @emlTTest.df is Welch-Satterthwaite or pooled n1 + n2 - 2
+# depending on how the caller ran it, and @emlTTestPaired.df is n - 1.
+# Welch and Student take different degrees of freedom, and an interval
+# built on the wrong one looks entirely plausible -- there is no wrong
+# answer here that looks wrong, which is why the df is taken as an
+# argument rather than derived.
+#
+# SE is recovered as .meanDiff / .t. That recovers the calling variant's
+# OWN standard error -- Welch's or Student's, automatically, because
+# .t was computed as .meanDiff / SE by that same variant. Nothing here
+# recomputes an SE a second way.
+#
+# Follows @emlCI's guard shape (@emlDescriptive, stats/eml-core-
+# descriptive.praat): a degenerate input sets every numeric output to
+# undefined and .error$ to a message, and invStudentQ is reached only
+# on the clean path. invStudentQ (0, df) never converges -- it hangs
+# the script with no error -- so this guards .t = 0 (no SE can be
+# recovered from a zero t: .meanDiff / 0) and .df = undefined (nothing
+# to build a Student distribution on) BEFORE the call, not after, and
+# invStudentQ (0, df) is never reached from here under any input.
+#
+# Arguments:
+#   .meanDiff - the mean difference the calling test reported
+#   .t        - that same test's t statistic
+#   .df       - that same test's own degrees of freedom (not recomputed)
+#   .level    - confidence level as a proportion (e.g. 0.95, or a
+#               correction's own level such as 1 - alpha/m)
+#
+# Output:
+#   .low, .high - interval bounds, or undefined on refusal
+#   .error$     - "" when computed, else why not
+# ============================================================================
+
+procedure emlTTestInterval: .meanDiff, .t, .df, .level
+    .low = undefined
+    .high = undefined
+    .error$ = ""
+
+    if .t = 0
+        .error$ = "Cannot recover a standard error from t = 0"
+    elsif .df = undefined
+        .error$ = "Degrees of freedom are undefined"
+    else
+        .se = .meanDiff / .t
+        .tCrit = invStudentQ ((1 - .level) / 2, .df)
+        .halfWidth = abs (.tCrit) * .se
+        .low = .meanDiff - .halfWidth
+        .high = .meanDiff + .halfWidth
     endif
 endproc
 
@@ -699,18 +805,37 @@ endproc
 
 
 procedure emlPearsonCorrelation: .x#, .y#, .tails
+    ; Initialise every numeric output to undefined before the guard, matching
+    ; the sibling entry points @emlPearsonCorrelationAlt and
+    ; @emlSpearmanCorrelation, which already do this. Without it, a caller
+    ; that reads .r on an error path (e.g. zero variance) before this
+    ; procedure has ever succeeded once in the running script reads an
+    ; unassigned variable, and Praat aborts the whole script instead of
+    ; letting the caller's own .error$ guard handle the refusal.
+    .r = undefined
+    .t = undefined
+    .df = undefined
+    .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
+    .n = undefined
+    .warning$ = ""
+    .perfect = 0
     @eml_pearsonCore: .x#, .y#, .tails
-    .r = eml_pearsonCore.r
-    .t = eml_pearsonCore.t
-    .df = eml_pearsonCore.df
-    .p = eml_pearsonCore.p
-    .pGreater = eml_pearsonCore.pGreater
-    .pLess = eml_pearsonCore.pLess
-    .alternative$ = eml_pearsonCore.alternative$
-    .n = eml_pearsonCore.n
     .error$ = eml_pearsonCore.error$
-    .warning$ = eml_pearsonCore.warning$
-    .perfect = eml_pearsonCore.perfect
+    if .error$ = ""
+        .r = eml_pearsonCore.r
+        .t = eml_pearsonCore.t
+        .df = eml_pearsonCore.df
+        .p = eml_pearsonCore.p
+        .pGreater = eml_pearsonCore.pGreater
+        .pLess = eml_pearsonCore.pLess
+        .alternative$ = eml_pearsonCore.alternative$
+        .n = eml_pearsonCore.n
+        .warning$ = eml_pearsonCore.warning$
+        .perfect = eml_pearsonCore.perfect
+    endif
 endproc
 
 
@@ -945,6 +1070,605 @@ endproc
 
 
 # ============================================================================
+# INTERNAL HELPER: @eml_prho — R's prho() (AS 89), ported
+# ============================================================================
+# A statement-for-statement port of R 4.3.3's C routine `prho`,
+# src/library/stats/src/prho.c, itself AS 89 (Best & Roberts, Appl.
+# Statist. (1975) Vol. 24, No. 3, p. 377). Read from
+# https://github.com/wch/r-source/blob/tags/R-4-3-3/src/library/stats/src/prho.c
+# on 27 August 2026 -- that mirror's `tags/R-4-3-3`, not trunk, is a
+# read of the exact release this container's installed R (4.3.3) is
+# built from, per item 3's finding that trunk had drifted from the
+# installed oracle for a sibling routine (wilcox.test.R's digits.rank
+# default). `Rscript -e 'print(stats:::C_pRho)'` confirms the compiled
+# routine this container's R actually calls is this same file's `pRho`
+# SEXP wrapper, and the whole port was checked, call for call, against
+# that installed routine directly (`.Call(stats:::C_pRho, is, n,
+# lower)`) -- not only against cor.test()'s reported p -- across
+# n = 2..2000, is at and around every branch boundary, and both
+# lower_tail values: 508 cases, max |difference| 5.6e-16 (double
+# rounding noise).
+#
+# Evaluates Pr[S >= is] when .lowerTail = 0, or Pr[S < is] when
+# .lowerTail = 1, where S = (n^3 - n) * (1 - R) / 6 is Spearman's
+# statistic (R the random variable; is = (n^3 - n) * (1 - r) / 6 for
+# an observed r). n_small = 9 in R's source: 2 <= n <= 9 is evaluated
+# by exact enumeration of all n! permutations (the same recurrence AS
+# 89 gives; it is not a distribution any faster method here would
+# replace, since this is the only place this plugin needs the exact
+# S null distribution and it is cheap to call once per test), n > 9 by
+# the Edgeworth series AS 89 gives for the tail. Both branches, and the
+# is <= 0 / is > n3 short-circuits ahead of them, are ported as R has
+# them -- nothing is simplified, reordered, or special-cased beyond
+# what the C already does, with one exception, noted where it happens:
+# Praat's exp() returns undefined on overflow instead of the C double's
+# +Inf, which the Edgeworth branch's own arithmetic depends on staying
+# finite-valued at extreme x. That single guard is the only place this
+# port adds anything prho.c does not have; it exists to give Praat's
+# arithmetic the same behaviour C's already has, not to change what
+# the formula computes.
+#
+# n <= 9 is slow by construction (AS 89's own algorithm, not this
+# port): n = 9 enumerates 362880 permutations and took ~10 s measured
+# on this container's Praat 6.6.30. A caller driving many n <= 9 exact
+# cases in one run should expect that; no cache is built here because
+# nothing in this plugin calls this helper more than once per test (unlike
+# @eml_mannWhitneyExactP and @eml_wilcoxonExactP's DP tables, which the
+# Hodges-Lehmann interval procedures re-read for the same n).
+#
+# Input:
+#   .n        - sample size, integer, matching R's `n` (caller guarantees
+#               n >= 2; the n <= 1 branch is ported for completeness --
+#               @emlSpearmanCorrelation already refuses n < 3 before any
+#               caller can reach this helper)
+#   .is       - the observed-or-shifted S value the tail is evaluated at
+#               (R's `is`; may be non-integer only through the caller's
+#               own rounding/offset, matching R's C signature which takes
+#               a double)
+#   .lowerTail - 1 for Pr[S < is], 0 for Pr[S >= is] (R's `lower_tail`)
+#
+# Output:
+#   .pv       - the tail probability, clamped to [0, 1] exactly where
+#               prho.c clamps it (the Edgeworth branch only)
+# ============================================================================
+
+procedure eml_prho: .n, .is, .lowerTail
+    # Edgeworth coefficients, verbatim from prho.c
+    .c1 = 0.2274
+    .c2 = 0.2531
+    .c3 = 0.1745
+    .c4 = 0.0758
+    .c5 = 0.1033
+    .c6 = 0.3932
+    .c7 = 0.0879
+    .c8 = 0.0151
+    .c9 = 0.0072
+    .c10 = 0.0831
+    .c11 = 0.0131
+    .c12 = 4.6e-4
+
+    .nSmall = 9
+
+    # "Test admissibility of arguments and initialize"
+    if .lowerTail = 1
+        .pv = 0
+    else
+        .pv = 1
+    endif
+
+    if .n <= 1
+        # R: ifault = 1, pv left at its init value. Unreachable from any
+        # caller in this plugin (see header); ported because the routine
+        # is ported whole, not only its reachable part.
+    elsif .is <= 0
+        # R: "if (is <= 0.) return" -- pv stays at its init value (p = 1
+        # for the upper tail, p = 0 for the lower tail: S is never < 0
+        # and always >= 0).
+    else
+        .n3 = .n
+        .n3 = .n3 * (.n3 * .n3 - 1) / 3
+        if .is > .n3
+            # Larger than the maximal value S can take.
+            .pv = 1 - .pv
+        elsif .n <= .nSmall
+            # --- Exact evaluation by permutation enumeration ---
+            .nfac = 1
+            .l# = zero# (.n)
+            for .i to .n
+                .nfac = .nfac * .i
+                .l#[.i] = .i
+            endfor
+
+            # "KH mod: was `!=` in the code but `.eq.` in the paper"
+            if .is = .n3
+                .ifr = 1
+            else
+                .ifr = 0
+                for .m to .nfac
+                    .ise = 0
+                    for .i to .n
+                        .n1 = .i - .l#[.i]
+                        .ise = .ise + .n1 * .n1
+                    endfor
+                    if .is <= .ise
+                        .ifr = .ifr + 1
+                    endif
+
+                    # Next permutation by rotation, exactly as prho.c's
+                    # do-while: n1 resets to n once per outer (.m) pass,
+                    # then the rotation repeats -- using the SAME shrinking
+                    # n1 -- for as long as the carry condition holds.
+                    .n1 = .n
+                    repeat
+                        .mt = .l#[1]
+                        for .i from 2 to .n1
+                            .l#[.i - 1] = .l#[.i]
+                        endfor
+                        .n1 = .n1 - 1
+                        .l#[.n1 + 1] = .mt
+                    until not (.mt = .n1 + 1 and .n1 > 1)
+                endfor
+            endif
+
+            if .lowerTail = 1
+                .pv = (.nfac - .ifr) / .nfac
+            else
+                .pv = .ifr / .nfac
+            endif
+        else
+            # --- Evaluation by Edgeworth series expansion (n > 9) ---
+            .y = .n
+            .b = 1 / .y
+            .x = (6 * (.is - 1) * .b / (.y * .y - 1) - 1) * sqrt (.y - 1)
+            # = rho * sqrt(n - 1) == rho / sqrt(var(rho)) ~ (0,1)
+            .y = .x * .x
+            .u = .x * .b * (.c1 + .b * (.c2 + .c3 * .b) +
+                ... .y * (- .c4 + .b * (.c5 + .c6 * .b) -
+                ... .y * .b * (.c7 + .c8 * .b -
+                ... .y * (.c9 - .c10 * .b + .y * .b * (.c11 - .c12 * .y)))))
+
+            # y = u / exp(y / 2) in prho.c. C's double overflows exp() to
+            # +Inf here once y / 2 exceeds ~709.78, and u / Inf is then 0;
+            # Praat's exp() instead returns undefined past that point, and
+            # undefined / anything stays undefined. Measured: n = 2000 at
+            # is = n3 (rho -> -1) hits exactly this (y = x^2 ~ 1999,
+            # exp(999.5) overflows), turning a valid pv = 1 into undefined
+            # with no guard. The guard below gives Praat the same
+            # zero-in-the-limit behaviour the C already has -- it changes
+            # no in-range value (verified across the 508-case grid above,
+            # all of which fall inside n <= 9 or ordinary n > 9 magnitudes:
+            # max difference from R's own C routine was 5.6e-16 with the
+            # guard in place) and only fires where C's arithmetic would
+            # have silently carried an infinity through the same division.
+            .expHalfY = exp (.y / 2)
+            if .expHalfY = undefined
+                .y = 0
+            else
+                .y = .u / .expHalfY
+            endif
+
+            if .lowerTail = 1
+                .pv = - .y + gaussP (.x)
+            else
+                .pv = .y + gaussQ (.x)
+            endif
+            # gaussP/gaussQ are Praat's normal CDF/upper tail, standing in
+            # for prho.c's call to pnorm(x, 0, 1, lower_tail, FALSE).
+            if .pv < 0
+                .pv = 0
+            endif
+            if .pv > 1
+                .pv = 1
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# INTERNAL HELPER: @eml_spearmanExactEligible — the one copy of the cutoff
+# ============================================================================
+# R reaches the exact Spearman branch only when n <= 1290 ("n*(n^2-1) does
+# not overflow" at that size -- see @eml_spearmanPspearman below, which is
+# the only caller that used to carry this literal). Pulled out to its own
+# predicate so @emlSpearmanCorrelationDispatch can ask the SAME question
+# on the ties-present path -- where it never reaches the kernel and so
+# never learns on its own whether n is ALSO past the cutoff -- without
+# re-testing n against a second copy of the constant. Fable's branch-law
+# ruling, 27 August 2026: exactly one executable 1290 in this module, and
+# this is it.
+#
+# Input:
+#   .n  - sample size
+#
+# Output:
+#   .ok - 1 if n qualifies for the exact branch (n <= 1290), else 0
+# ============================================================================
+
+procedure eml_spearmanExactEligible: .n
+    .ok = 0
+    if .n <= 1290
+        .ok = 1
+    endif
+endproc
+
+
+# ============================================================================
+# INTERNAL HELPER: @eml_spearmanPspearman — R's pspearman(), ported
+# ============================================================================
+# The closure cor.test.default (src/library/stats/R/cor.test.R, same
+# R-4-3-3 tag as @eml_prho above) builds around C_pRho:
+#
+#     pspearman <- function(q, n, lower.tail = TRUE) {
+#         if (n <= 1290 && exact)
+#             .Call(C_pRho, round(q) + 2*lower.tail, n, lower.tail)
+#         else {
+#             den <- (n*(n^2-1))/6
+#             if (continuity) den <- den + 1
+#             r <- 1 - q/den
+#             pt(r/sqrt((1-r^2)/(n-2)), df = n-2, lower.tail = !lower.tail)
+#         }
+#     }
+#
+# `exact` is TRUE on every call this plugin's kernel makes (the branch
+# law already sent ties-present cases to the t-approximation before
+# this is ever reached, and this plugin never sets cor.test's `exact`
+# argument itself), so that half of the `if` is omitted here -- there is
+# no second copy of it to disagree with. `continuity` is FALSE by
+# default in cor.test.default and this kernel does not take a
+# continuity argument, so that term is omitted too, not silently
+# defaulted somewhere else.
+#
+# n > 1290 (R's own guard: "n*(n^2-1) does not overflow" at that size)
+# is ROUTED TO THE SAME r THE ASYMPTOTIC BRANCH ALREADY USES: with no
+# ties, r = 1 - q/den reduces algebraically to rho itself, and the t it
+# builds, t = r / sqrt((1-r^2)/(n-2)), is the same t
+# @emlSpearmanCorrelation's eml_pearsonCore already forms; pt(t, n-2,
+# lower.tail = !lower.tail) is studentQ(t, n-2) when the caller's
+# .lowerTail = 1 and studentP(t, n-2) when .lowerTail = 0 (the `!`
+# inverts it). This plugin's grid (n = 5..50) never reaches this
+# branch -- ported for the same reason the n <= 1 branch of @eml_prho
+# is: the routine is ported whole. Not exercised by this item's proof
+# below; flagged in the report as outside the pinned grid's coverage.
+#
+# Input:
+#   .q         - R's q: (n^3 - n) * (1 - rho) / 6
+#   .n         - sample size
+#   .lowerTail - 1 for Pr[S < q]'s tail (R's lower.tail = TRUE),
+#                0 for Pr[S >= q]'s tail (R's lower.tail = FALSE)
+#
+# Output:
+#   .pv        - pspearman(q, n, lower.tail)
+# ============================================================================
+
+procedure eml_spearmanPspearman: .q, .n, .lowerTail
+    ; The kernel owns the branch and is the ONLY place the constant used
+    ; to appear; it now reads @eml_spearmanExactEligible rather than
+    ; testing .n itself, so the dispatch can ask the identical question
+    ; without a second copy of 1290 -- Fable's branch-law ruling, 27
+    ; August 2026. R 4.3.3's guard is n <= 1290, so 1290 itself is exact
+    ; and 1291 is the first asymptotic n.
+    @eml_spearmanExactEligible: .n
+    if eml_spearmanExactEligible.ok = 1
+        .method$ = "exact"
+        @eml_prho: .n, round (.q) + 2 * .lowerTail, .lowerTail
+        .pv = eml_prho.pv
+    else
+        .method$ = "t approximation"
+        ; continuity = FALSE is cor.test.default's default and this
+        ; kernel takes no continuity argument, so den carries no +1.
+        .den = (.n * (.n ^ 2 - 1)) / 6
+        .r = 1 - .q / .den
+        .rSquared = .r * .r
+        if .rSquared >= 1
+            # r = +-1 in the n > 1290 regime: t is infinite, as
+            # @eml_pearsonCore already discloses for the ordinary
+            # asymptotic path. Not reachable by this item's grid
+            # (n <= 50); see the header note above.
+            if .lowerTail = 1
+                if .r > 0
+                    .pv = 0
+                else
+                    .pv = 1
+                endif
+            else
+                if .r > 0
+                    .pv = 1
+                else
+                    .pv = 0
+                endif
+            endif
+        else
+            .t = .r / sqrt ((1 - .rSquared) / (.n - 2))
+            if .lowerTail = 1
+                .pv = studentQ (.t, .n - 2)
+            else
+                .pv = studentP (.t, .n - 2)
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlSpearmanExactP
+# ============================================================================
+# The exact-method Spearman p, given the rho and n an existing
+# @emlSpearmanCorrelation call already computed. AS 89 (via @eml_prho and
+# @eml_spearmanPspearman above), matching cor.test.default(method =
+# "spearman")'s default (exact = TRUE) dispatch exactly, including its
+# own tail selection -- ported from the same PVAL switch cor.test.R
+# builds around pspearman():
+#
+#     q <- (n^3 - n) * (1 - r) / 6
+#     PVAL <- switch(alternative,
+#         two.sided = {
+#             p <- if (q > (n^3-n)/6) pspearman(q, n, lower.tail=FALSE)
+#                  else pspearman(q, n, lower.tail=TRUE)
+#             min(2 * p, 1)
+#         },
+#         greater = pspearman(q, n, lower.tail = TRUE),
+#         less    = pspearman(q, n, lower.tail = FALSE))
+#
+# Read closely: the two-sided branch's `p` is exactly the SAME call as
+# "greater" when q is on the rho > 0 side of its null mean (n^3-n)/6, and
+# exactly the SAME call as "less" when q is on the rho < 0 side -- q > mean
+# iff rho < 0, since q = (n^3-n)(1-rho)/6. So this kernel computes
+# .pGreater = pspearman(q, n, TRUE) and .pLess = pspearman(q, n, FALSE)
+# once each, and the two-sided p reuses whichever of the two the sign of
+# q - mean selects, rather than a third call -- one fewer than a literal
+# transcription would need, and not a paraphrase: it is the identity R's
+# own two.sided branch already relies on.
+#
+# THE BRANCH LAW belongs to the caller, not this kernel: Fable's 27
+# August work order copies cor.test.default's own tie test --
+# `TIES <- (min(length(unique(x)), length(unique(y))) < n)` -- for
+# "ties present," and routes ties-present cases to the existing t-
+# approximation instead of calling this procedure at all. This kernel
+# does not re-derive or re-check that test; it assumes it has already
+# been asked for the no-ties case, exactly as @eml_prho and
+# @eml_spearmanPspearman above assume `exact` is TRUE.
+#
+# ONE-TAILED VARIANTS SELECT THE TAIL INSIDE THIS SAME PROCEDURE: both
+# .pGreater and .pLess are always computed, so a caller building the
+# Alt (named-alternative) entry point reads .pLess for "less" off THIS
+# call, the same way @emlSpearmanCorrelationAlt already reads .pLess off
+# @emlSpearmanCorrelation -- there is no separate one-tailed procedure
+# to keep in step with this one.
+#
+# Input:
+#   .rho   - Spearman's rho, already computed (e.g. by
+#            @emlSpearmanCorrelation.rho). NOT recomputed here.
+#   .n     - the number of pairs rho was computed from
+#   .tails - 1 or 2, same convention as @emlSpearmanCorrelation: 2 is
+#            two-sided; 1 fixes the one-tailed alternative to "greater"
+#            (H1: rho > 0), matching the base (non-Alt) entry point's
+#            existing convention. A caller wanting "less" reads .pLess
+#            directly regardless of .tails, as above.
+#
+# Output:
+#   .p           - the p-value for .tails and .alternative$
+#   .pGreater    - pspearman(q, n, lower.tail = TRUE): the one-tailed
+#                  p for H1: rho > 0
+#   .pLess       - pspearman(q, n, lower.tail = FALSE): the one-tailed
+#                  p for H1: rho < 0
+#   .alternative$ - "two-sided" or "greater"
+#   .method$      - "exact" (an internal tag for a caller's own
+#                   branching, not the disclosed report sentence --
+#                   Fable's work order holds the printed wording for
+#                   the language batch)
+#   .error$       - "" if valid, else the reason .p is undefined
+# ============================================================================
+
+procedure emlSpearmanExactP: .rho, .n, .tails
+    .p = undefined
+    .pGreater = undefined
+    .pLess = undefined
+    .alternative$ = ""
+    .method$ = ""
+    .error$ = ""
+
+    if .n < 2
+        .error$ = "Need at least 2 pairs"
+    elsif .tails < 1 or .tails > 2
+        .error$ = "tails must be 1 or 2"
+    else
+        .q = (.n ^ 3 - .n) * (1 - .rho) / 6
+        .qMean = (.n ^ 3 - .n) / 6
+
+        @eml_spearmanPspearman: .q, .n, 1
+        .pGreater = eml_spearmanPspearman.pv
+        @eml_spearmanPspearman: .q, .n, 0
+        .pLess = eml_spearmanPspearman.pv
+        ; Both calls carry the same .n, so both took the same branch.
+        .method$ = eml_spearmanPspearman.method$
+
+        if .q > .qMean
+            .pTwoSided = min (1, 2 * .pLess)
+        else
+            .pTwoSided = min (1, 2 * .pGreater)
+        endif
+
+        if .tails = 2
+            .alternative$ = "two-sided"
+            .p = .pTwoSided
+        else
+            .alternative$ = "greater"
+            .p = .pGreater
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlSpearmanCorrelationDispatch
+# ============================================================================
+# THE ONE COMPUTATION SITE for a Spearman p (Fable's 27 August work order,
+# docs/WORK_ORDER_SPEARMAN_EXACT_2026-08-27.md, "One computation site").
+# Every door that reports a Spearman p -- the correlation orchestrator
+# (@emlRunCorrelationAnalysis), the per-group correlation (both the
+# Correlate dialog and the wizard's own per-group loop), and the scatter's
+# draw-time annotation (ungrouped, per-group and overall/pooled) -- calls
+# THIS procedure where it used to call @emlSpearmanCorrelation directly, so
+# there is exactly one place the branch law is decided, and the
+# door-agreement census (v127) sees one answer from every door.
+#
+# NEITHER existing kernel is modified or paraphrased here. This procedure
+# only ROUTES between two numbers each of them already computes:
+#   @emlSpearmanCorrelation  - rho, t, df, and its own (asymptotic, t-based)
+#                              p -- UNTOUCHED, called exactly as before.
+#   @emlSpearmanExactP       - the AS 89 port -- UNTOUCHED, called with the
+#                              rho and n the line above just produced.
+#
+# THE BRANCH LAW, copied verbatim from cor.test.default's own tie test:
+#     TIES <- (min(length(unique(x)), length(unique(y))) < n)
+# @emlRankVector's own .hasTies flag on a single vector IS that test:
+# .hasTies = 1 exactly when the vector holds a repeated value, which is
+# exactly unique(v) < n for that vector. Ties in EITHER variable route to
+# the existing t-approximation; no ties routes to the AS 89 exact p.
+#
+# Arguments: identical to @emlSpearmanCorrelation -- .x#, .y#, .tails --
+# every call site is a one-line drop-in swap.
+#
+# Output:
+#   .rho, .t, .df, .n, .error$, .warning$, .perfect
+#                - forwarded UNCHANGED from @emlSpearmanCorrelation.
+#   .p           - the p-value this dispatch reports: the AS 89 exact p
+#                  when there are no ties, @emlSpearmanCorrelation's own
+#                  t-approximation p when there are. ALSO written back
+#                  into emlSpearmanCorrelation.p (the qualified global),
+#                  the same way @emlRunCorrelationAnalysis already
+#                  restores captured outputs into that name -- so every
+#                  existing reader of emlSpearmanCorrelation.p (the
+#                  report layer, the CSV export) sees the routed value
+#                  without itself being touched.
+#   .pAsymptotic - @emlSpearmanCorrelation's own p, ALWAYS computed
+#                  regardless of which branch .p took. Read by the
+#                  validate check building its red demonstrations; never
+#                  printed by this procedure or any caller.
+#   .hasTies     - 1 if either variable has a repeated value, else 0.
+#   .method$     - "exact" or "t approximation" -- the same shape as
+#                  @emlMannWhitneyU.method$ ("exact" / "normal
+#                  approximation"). Read by the "p method" report row
+#                  (item 22 of the language batch, Fable's ruling 27
+#                  August 2026): "exact" prints bare, "t approximation"
+#                  prints with .methodReason$ parenthesized.
+#   .methodReason$ - "" when .method$ is "exact" (no parenthetical).
+#                  Otherwise every condition that made the exact branch
+#                  unavailable, comma-separated in the fixed order "ties
+#                  present, large sample" -- there is no precedence, both
+#                  are named when both hold. On the ties-present path this
+#                  dispatch never calls the kernel, so it asks
+#                  @eml_spearmanExactEligible directly to learn whether n
+#                  is ALSO past the cutoff, rather than re-testing n
+#                  against a second copy of 1290.
+# ============================================================================
+
+procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
+    @emlSpearmanCorrelation: .x#, .y#, .tails
+    .rho = emlSpearmanCorrelation.rho
+    .t = emlSpearmanCorrelation.t
+    .df = emlSpearmanCorrelation.df
+    .n = emlSpearmanCorrelation.n
+    .error$ = emlSpearmanCorrelation.error$
+    .warning$ = emlSpearmanCorrelation.warning$
+    .perfect = emlSpearmanCorrelation.perfect
+    .pAsymptotic = emlSpearmanCorrelation.p
+    .p = emlSpearmanCorrelation.p
+    .hasTies = 0
+    .method$ = ""
+    .methodReason$ = ""
+
+    if .error$ = ""
+        @emlRankVector: .x#
+        .hasTiesX = emlRankVector.hasTies
+        @emlRankVector: .y#
+        .hasTiesY = emlRankVector.hasTies
+        .hasTies = 0
+        if .hasTiesX = 1
+            .hasTies = 1
+        endif
+        if .hasTiesY = 1
+            .hasTies = 1
+        endif
+
+        ; Two reasons an approximation is returned, and they are not the
+        ; same fact: ties make the exact null distribution wrong, while a
+        ; large n makes it unreachable. .method$ names what was computed,
+        ; .methodReason$ why -- EVERY condition that applied, comma-
+        ; separated, "ties present, large sample" in that fixed order,
+        ; with no precedence between them (Fable's item 22 ruling, 27
+        ; August 2026).
+        ;
+        ; THE COLLISION: on the ties-present path this dispatch never
+        ; calls the kernel, so it never learns on its own whether n is
+        ; ALSO past the exact cutoff -- yet both conditions must be named
+        ; when both hold. Asking @eml_spearmanExactEligible directly
+        ; answers that without re-testing n against a second copy of
+        ; 1290 (the branch-law ruling forbids exactly that copy).
+        if .hasTies = 1
+            .method$ = "t approximation"
+            .methodReason$ = "ties present"
+            @eml_spearmanExactEligible: .n
+            if eml_spearmanExactEligible.ok = 0
+                .methodReason$ = .methodReason$ + ", large sample"
+            endif
+            .p = .pAsymptotic
+        else
+            @emlSpearmanExactP: .rho, .n, .tails
+            .method$ = emlSpearmanExactP.method$
+            ; EXHAUSTIVE DISPATCH. Every label is matched positively and
+            ; none is left as the implicit default. A single positive test
+            ; is not enough: whichever label goes untested becomes the
+            ; caption an unset .method$ silently claims, which is the same
+            ; defect with a different victim. An unset or unknown label
+            ; here is an impossible state -- @emlSpearmanExactP sets
+            ; .method$ on every path that returns without an error -- and
+            ; impossible states fail loudly rather than captioning
+            ; themselves. Fable's ruling, 27 August 2026.
+            ;
+            ; The shape is @emlTTestAlt's (.error$ set, numerics left
+            ; undefined) rather than @emlRMPostHoc's disclosed fallback.
+            ; RMPostHoc validates an adjustment method a CALLER supplied,
+            ; where substituting Holm and saying so is a defensible
+            ; repair. This label is produced inside the module, so there
+            ; is no substitute to defend: the only honest output is a
+            ; refusal.
+            if .method$ = "exact"
+                .methodReason$ = ""
+                .p = emlSpearmanExactP.p
+            elsif .method$ = "t approximation"
+                .methodReason$ = "large sample"
+                .p = emlSpearmanExactP.p
+            else
+                .error$ = "Internal: unrecognised Spearman method label from @emlSpearmanExactP: " + .method$
+                .methodReason$ = ""
+                .p = undefined
+            endif
+        endif
+
+        ; Written back so every EXISTING reader of emlSpearmanCorrelation.p
+        ; -- the report layer, the CSV export, anything that has not been
+        ; touched by this work order -- sees the routed value. The same
+        ; qualified-global restoration @emlRunCorrelationAnalysis already
+        ; does at its own capture site, one level up.
+        ; The refusal is propagated to the SAME qualified globals every
+        ; existing reader already checks. Without this the dispatch would
+        ; decline to publish while @emlSpearmanCorrelation.p still held
+        ; its own untouched value and .error$ still read empty -- a stale
+        ; number presented as a live one, which is the failure the
+        ; exhaustive dispatch above exists to prevent.
+        if .error$ = ""
+            emlSpearmanCorrelation.p = .p
+        else
+            emlSpearmanCorrelation.p = undefined
+            emlSpearmanCorrelation.error$ = .error$
+        endif
+    endif
+endproc
+
+
+# ============================================================================
 # INTERNAL HELPER: Exact p-value for Mann-Whitney U via DP
 # ============================================================================
 # Computes the exact null distribution of U1 using dynamic programming.
@@ -972,47 +1696,117 @@ endproc
 # Output:
 #   .pLeft    - P(U <= floor(u1)) under the null
 #   .pRight   - P(U >= ceiling(u1)) under the null
+#   .dp##     - the null distribution ITSELF, not merely its tails:
+#               .dp## [.n1 + 1, u + 1] is the NUMBER of arrangements
+#               giving U = u, for u = 0 .. .n1 * .n2. Row .n1 + 1 is the
+#               only row a caller may read; the lower rows are the
+#               recurrence's scaffolding for m < n1 and are not a
+#               distribution of anything.
+#   .total    - C(n1 + n2, n1), the sum of that row -- the denominator
+#               every probability above is formed with.
+#
+# .dp## AND .total ARE PART OF THE CONTRACT, not incidental internals.
+# @emlHodgesLehmannTwoSample needs a QUANTILE of this same null
+# distribution (the critical rank k behind the exact confidence
+# interval), which no pair of tail probabilities can supply, and Fable's
+# 26 August work order forbids building a second copy of the
+# distribution to get it. So this procedure is the one place the U null
+# distribution is computed, and the row and its total are readable.
+# Like every Praat procedure output they survive only until the next
+# call: copy them on the following line.
 # ============================================================================
 
 procedure eml_mannWhitneyExactP: .u1, .n1, .n2
     .maxU = .n1 * .n2
-    .vecSize = .maxU + 1
 
-    # DP table: dp##[m + 1, u + 1] = count(u, m, current_n)
-    # Iterate n from 0 to .n2 as outer loop
-    .dp## = zero## (.n1 + 1, .vecSize)
+    # --- Cache: the DP table is keyed by (.n1, .n2) alone (Fable's 26
+    # August ruling, item 4). @emlMannWhitneyU (p-value) and
+    # @emlHodgesLehmannTwoSample (critical rank) are two reads of the
+    # SAME object for the same pair, and a balanced multi-group design
+    # calls this procedure again, with the same (n1, n2), once per
+    # remaining pair. One build must serve all of them.
+    #
+    # Praat has no hash map. The shape already in this plugin for "several
+    # of the same kind of matrix, told apart by an index" is
+    # eml-lmm.praat's .varContrast'.i'## / .rMat'.i'## family: a linear
+    # array of named matrices addressed by an interpolated integer
+    # suffix. This cache is that same shape -- a small linear-scan table
+    # of (n1, n2) keys, each slot's matrix at .cacheDp'.slot'##.
+    #
+    # The cache lives in THIS procedure's own dotted namespace, so it
+    # persists the same way .dp##/.total already do (survives until this
+    # procedure runs again) -- except the slots ACCUMULATE across calls
+    # rather than being overwritten by the next one. .cacheCount is
+    # guarded with variableExists because the first call in a run has
+    # never set it; that guard is the same one this plugin already uses
+    # to default a persistent flag cleanly on its first read (e.g.
+    # eml-analysis.praat's variableExists ("emlRMPostHoc.nPairs")) --
+    # there just checking a DIFFERENT procedure's namespace from outside
+    # it, rather than a procedure's own namespace from inside.
+    if variableExists ("eml_mannWhitneyExactP.cacheCount") = 0
+        .cacheCount = 0
+    endif
+    .cacheMax = 64
 
-    # Base case: n = 0 → count(0, m, 0) = 1 for all m
-    for .m from 0 to .n1
-        .dp##[.m + 1, 1] = 1
+    .cacheHit = 0
+    for .slot from 1 to .cacheCount
+        if .cacheN1[.slot] = .n1 and .cacheN2[.slot] = .n2
+            .cacheHit = .slot
+        endif
     endfor
 
-    # Fill DP: iterate n from 1 to .n2
-    for .n from 1 to .n2
-        .new## = zero## (.n1 + 1, .vecSize)
-        # m = 0: count(u, 0, n) = 1 if u = 0, else 0
-        .new##[1, 1] = 1
+    if .cacheHit > 0
+        # --- Cache hit: this (n1, n2) distribution was already built ---
+        .total = .cacheTotal[.cacheHit]
+        .dp## = .cacheDp'.cacheHit'##
+    else
+        .vecSize = .maxU + 1
 
-        for .m from 1 to .n1
-            for .u from 0 to .m * .n
-                # count(u, m, n) = count(u - n, m - 1, n) + count(u, m, n - 1)
-                .term1 = 0
-                if .u >= .n
-                    .term1 = .new##[.m, .u - .n + 1]
-                endif
-                .term2 = .dp##[.m + 1, .u + 1]
-                .new##[.m + 1, .u + 1] = .term1 + .term2
-            endfor
+        # DP table: dp##[m + 1, u + 1] = count(u, m, current_n)
+        # Iterate n from 0 to .n2 as outer loop
+        .dp## = zero## (.n1 + 1, .vecSize)
+
+        # Base case: n = 0 → count(0, m, 0) = 1 for all m
+        for .m from 0 to .n1
+            .dp##[.m + 1, 1] = 1
         endfor
 
-        .dp## = .new##
-    endfor
+        # Fill DP: iterate n from 1 to .n2
+        for .n from 1 to .n2
+            .new## = zero## (.n1 + 1, .vecSize)
+            # m = 0: count(u, 0, n) = 1 if u = 0, else 0
+            .new##[1, 1] = 1
 
-    # Total configurations = C(n1 + n2, n1)
-    .total = 0
-    for .u from 0 to .maxU
-        .total = .total + .dp##[.n1 + 1, .u + 1]
-    endfor
+            for .m from 1 to .n1
+                for .u from 0 to .m * .n
+                    # count(u, m, n) = count(u - n, m - 1, n) + count(u, m, n - 1)
+                    .term1 = 0
+                    if .u >= .n
+                        .term1 = .new##[.m, .u - .n + 1]
+                    endif
+                    .term2 = .dp##[.m + 1, .u + 1]
+                    .new##[.m + 1, .u + 1] = .term1 + .term2
+                endfor
+            endfor
+
+            .dp## = .new##
+        endfor
+
+        # Total configurations = C(n1 + n2, n1)
+        .total = 0
+        for .u from 0 to .maxU
+            .total = .total + .dp##[.n1 + 1, .u + 1]
+        endfor
+
+        # --- Store for the next call sharing this (n1, n2) ---
+        if .cacheCount < .cacheMax
+            .cacheCount = .cacheCount + 1
+            .cacheN1[.cacheCount] = .n1
+            .cacheN2[.cacheCount] = .n2
+            .cacheTotal[.cacheCount] = .total
+            .cacheDp'.cacheCount'## = .dp##
+        endif
+    endif
 
     # Cumulative left tail: P(U <= floor(u1))
     .uFloor = floor (.u1)
@@ -1079,6 +1873,12 @@ endproc
 #   .r2          - rank sum of group 2
 #   .hasTies     - 1 if the combined sample contains tied values, else 0
 #   .method$     - "exact" or "normal approximation"
+#   .methodReason$ - "" when .method$ is "exact" (no parenthetical).
+#                  Otherwise every condition that ruled out the exact
+#                  branch, comma-separated in the fixed order "ties
+#                  present, large sample" -- there is no precedence, both
+#                  are named when both hold (Fable's item 22 ruling, 27
+#                  August 2026).
 #   .z           - z statistic (approximation path only; undefined for exact)
 #   .error$      - error message, or "" if valid
 #
@@ -1101,6 +1901,7 @@ procedure emlMannWhitneyU: .v1#, .v2#, .tails
     .r2 = undefined
     .hasTies = 0
     .method$ = ""
+    .methodReason$ = ""
     .z = undefined
     .error$ = ""
 
@@ -1160,6 +1961,31 @@ procedure emlMannWhitneyU: .v1#, .v2#, .tails
             if .n2 < 50
                 if .hasTies = 0
                     .useExact = 1
+                endif
+            endif
+        endif
+
+        ; .methodReason$ names EVERY condition that ruled out the exact
+        ; branch, not just the first one tested -- ties present and a
+        ; large sample are independent facts and both are named when both
+        ; hold. Fixed order "ties present, large sample", no precedence
+        ; between them. Fable's item 22 ruling, 27 August 2026.
+        .methodReason$ = ""
+        if .useExact = 0
+            if .hasTies = 1
+                .methodReason$ = "ties present"
+            endif
+            .largeSample = 0
+            if .n1 >= 50
+                .largeSample = 1
+            elsif .n2 >= 50
+                .largeSample = 1
+            endif
+            if .largeSample = 1
+                if .methodReason$ <> ""
+                    .methodReason$ = .methodReason$ + ", large sample"
+                else
+                    .methodReason$ = "large sample"
                 endif
             endif
         endif
@@ -1269,6 +2095,558 @@ procedure emlMannWhitneyU: .v1#, .v2#, .tails
     endif
 endproc
 
+# ============================================================================
+# INTERNAL HELPER: @eml_hlTwoSampleW  — R's W(d), ported
+# ============================================================================
+# The standardised, continuity-corrected two-sample rank statistic that
+# R's wilcox.test inverts to build its asymptotic confidence interval,
+# ported line for line from R 4.3.3, src/library/stats/R/wilcox.test.R,
+# the "Asymptotic confidence interval for the location parameter" block
+# of wilcox.test.default:
+#
+#     W <- function(d) {
+#         dr <- rank(c(x - d, y))
+#         NTIES.CI <- table(dr)
+#         dz <- sum(dr[seq_along(x)]) - n.x * (n.x + 1) / 2 - n.x * n.y / 2
+#         CORRECTION.CI <- if (correct) sign(dz) * 0.5 else 0
+#         SIGMA.CI <- sqrt((n.x * n.y / 12) *
+#                          ((n.x + n.y + 1)
+#                           - sum(NTIES.CI^3 - NTIES.CI)
+#                           / ((n.x + n.y) * (n.x + n.y - 1))))
+#         (dz - CORRECTION.CI) / SIGMA.CI
+#     }
+#
+# Every piece above has a counterpart below and nothing is folded or
+# simplified on the way: dz is the shifted sample's U statistic measured
+# from its own null mean, the correction is the two-sided
+# sign(dz) * 0.5, and SIGMA.CI carries the TIE CORRECTION RECOMPUTED AT
+# THE SHIFTED DATA -- shifting group 1 by d creates and destroys ties, so
+# the variance is not the variance of the unshifted sample and cannot be
+# hoisted out of the loop. sum(NTIES^3 - NTIES) is exactly
+# @emlRankVector's .tieCorrectionSum, which is why the ranking is done
+# through that procedure rather than a second ranker written here.
+#
+# .correct exists because R's own code turns it off for ONE call: after
+# the interval is built, R sets correct <- FALSE and root-finds W for its
+# point estimate. This plugin does not take that path -- Fable's work
+# order pins the estimate to the median of the cross-differences on both
+# branches -- so every call from this file passes .correct = 1. The
+# parameter is kept so the ported shape is the shape R has.
+#
+# Input:
+#   .v1#     - group 1 (R's x)
+#   .v2#     - group 2 (R's y)
+#   .d       - the shift being tested
+#   .correct - 1 to apply the continuity correction, 0 not to
+#
+# Output:
+#   .value  - W(d), or undefined when SIGMA.CI is zero (every observation
+#             in the combined sample tied, where R warns and returns NaN)
+# ============================================================================
+
+procedure eml_hlTwoSampleW: .v1#, .v2#, .d, .correct
+    .n1 = size (.v1#)
+    .n2 = size (.v2#)
+    .nTotal = .n1 + .n2
+
+    # dr <- rank(c(x - d, y))
+    .shifted# = zero# (.nTotal)
+    for .i from 1 to .n1
+        .shifted#[.i] = .v1#[.i] - .d
+    endfor
+    for .i from 1 to .n2
+        .shifted#[.n1 + .i] = .v2#[.i]
+    endfor
+
+    @emlRankVector: .shifted#
+    .ranks# = emlRankVector.ranks#
+    .tieSum = emlRankVector.tieCorrectionSum
+
+    # dz <- sum(dr[seq_along(x)]) - n.x * (n.x + 1) / 2 - n.x * n.y / 2
+    .rankSum = 0
+    for .i from 1 to .n1
+        .rankSum = .rankSum + .ranks#[.i]
+    endfor
+    .dz = .rankSum - .n1 * (.n1 + 1) / 2 - .n1 * .n2 / 2
+
+    # CORRECTION.CI <- sign(dz) * 0.5   (two-sided; sign(0) is 0 in R)
+    .correction = 0
+    if .correct = 1
+        if .dz > 0
+            .correction = 0.5
+        elsif .dz < 0
+            .correction = -0.5
+        endif
+    endif
+
+    .sigma = sqrt ((.n1 * .n2 / 12) * ((.nTotal + 1)
+    ... - .tieSum / (.nTotal * (.nTotal - 1))))
+
+    if .sigma = 0
+        .value = undefined
+    else
+        .value = (.dz - .correction) / .sigma
+    endif
+endproc
+
+
+# ============================================================================
+# INTERNAL HELPER: @eml_hlZeroin  — R's uniroot, ported ONCE
+# ============================================================================
+# Brent's zeroin, ported from R 4.3.3's src/library/stats/src/zeroin.c,
+# function R_zeroin2 -- the routine R's uniroot() actually calls (through
+# .External2(C_zeroin2, ...)), given the two endpoint values it already
+# has. wilcox.test's interval is the root of wdiff(d) = W(d) - zq, and
+# ROOT-FINDING IS PART OF THE ALGORITHM, not an implementation detail
+# that may be swapped for another solver: W is a STEP function, so its
+# "root" is a jump location and WHICH point inside the jump comes back
+# is decided by the iteration path. A bisection written from scratch
+# would agree with R only to the width of a step. This one follows
+# R_zeroin2's iterates -- the swap, the inverse-quadratic branch, the
+# 0.75 * cb * q acceptance test, the tol_act floor on the step -- so the
+# two implementations share the sequence and not merely the vicinity.
+#
+# Praat has no function values, so the function under investigation is
+# not a parameter. R calls (*f)(b, info) at exactly one site inside the
+# loop; here that site is a two-arm switch on .form, and .form is the
+# ONLY thing in this procedure that knows which problem is being solved.
+#
+# WHY THE SWITCH RATHER THAN A SECOND COPY. The first draft of this
+# helper (item 3) was two-sample-specific and its header said the paired
+# form "needs its own W and therefore its own copy of this loop". Fable's
+# item 4 overrules that in terms -- "THE ZEROIN PORT IS GENERAL ...
+# REUSE, do not re-port ... re-porting R's zeroin a second time would be
+# the clearest possible violation" -- and the order governs where it and
+# the code disagree. It is also the better reading of the C: R has ONE
+# zeroin.c and hands it a function pointer; two-sample and one-sample
+# wilcox.test both reach the identical iteration through uniroot(). The
+# thing that differs between them is W, not Brent's method, and W is
+# already two procedures. So Brent's iteration -- the swap, the
+# inverse-quadratic branch, the 0.75 * cb * q acceptance test, the
+# tol_act floor on the step -- exists once in this tree and a drift in it
+# cannot reach one branch without reaching the other.
+#
+# Input:
+#   .form      - 1: the two-sample W, @eml_hlTwoSampleW (.v1#, .v2#)
+#                2: the one-sample/paired W, @eml_hlPairedW (.v1# only,
+#                   .v2# ignored -- pass an empty vector)
+#   .v1#, .v2# - the sample(s), passed through to W
+#   .ax, .bx   - the bracketing interval [a, b]
+#   .fa, .fb   - wdiff at those endpoints, already known to the caller
+#   .zq        - the quantile W is being inverted at (wdiff = W(d) - zq)
+#   .tol       - acceptable tolerance (R's tol.root = 1e-4)
+#   .maxit     - iteration ceiling (R's uniroot maxiter = 1000)
+#   .correct   - passed through to W
+#
+# Output:
+#   .root - the abscissa where wdiff changes sign
+# ============================================================================
+
+procedure eml_hlZeroin: .form, .v1#, .v2#, .ax, .bx, .fa, .fb, .zq, .tol, .maxit, .correct
+    # EPSILON is C's DBL_EPSILON, 2^-52, which Praat has no name for.
+    .epsilon = 2.220446049250313e-16
+
+    .a = .ax
+    .b = .bx
+    .c = .a
+    .fc = .fa
+    .iter = .maxit + 1
+    .root = undefined
+    .done = 0
+
+    # First test if we have found a root at an endpoint
+    if .fa = 0
+        .root = .a
+        .done = 1
+    elsif .fb = 0
+        .root = .b
+        .done = 1
+    endif
+
+    while .done = 0 and .iter > 0
+        .iter = .iter - 1
+        # Distance from the last but one to the last approximation
+        .prevStep = .b - .a
+
+        # Swap data for b to be the best approximation. Transcribed in
+        # C's order: a = b, b = c, c = a leaves c holding the OLD b,
+        # because a has already been overwritten.
+        if abs (.fc) < abs (.fb)
+            .a = .b
+            .b = .c
+            .c = .a
+            .fa = .fb
+            .fb = .fc
+            .fc = .fa
+        endif
+
+        .tolAct = 2 * .epsilon * abs (.b) + .tol / 2
+        .newStep = (.c - .b) / 2
+
+        if abs (.newStep) <= .tolAct or .fb = 0
+            # Acceptable approximation is found
+            .root = .b
+            .done = 1
+        else
+            # Decide if the interpolation can be tried
+            if abs (.prevStep) >= .tolAct and abs (.fa) > abs (.fb)
+                .cb = .c - .b
+                if .a = .c
+                    # Only two distinct points: linear interpolation
+                    .t1 = .fb / .fa
+                    .p = .cb * .t1
+                    .q = 1 - .t1
+                else
+                    # Quadric inverse interpolation
+                    .q = .fa / .fc
+                    .t1 = .fb / .fc
+                    .t2 = .fb / .fa
+                    .p = .t2 * (.cb * .q * (.q - .t1) - (.b - .a) * (.t1 - 1))
+                    .q = (.q - 1) * (.t1 - 1) * (.t2 - 1)
+                endif
+                # p was calculated with the opposite sign; make p
+                # positive and assign the possible minus to q
+                if .p > 0
+                    .q = - .q
+                else
+                    .p = - .p
+                endif
+                # If b + p/q falls in [b, c] and is not too large
+                if .p < (0.75 * .cb * .q - abs (.tolAct * .q) / 2)
+                ... and .p < abs (.prevStep * .q / 2)
+                    .newStep = .p / .q
+                endif
+            endif
+
+            # Adjust the step to be not less than the tolerance
+            if abs (.newStep) < .tolAct
+                if .newStep > 0
+                    .newStep = .tolAct
+                else
+                    .newStep = - .tolAct
+                endif
+            endif
+
+            # Save the previous approximation, step to a new one
+            .a = .b
+            .fa = .fb
+            .b = .b + .newStep
+            # R's (*f)(b, info), the one function-pointer call in
+            # zeroin.c. Praat has no function values, so the pointer is
+            # a switch and .form is what was passed in its place.
+            if .form = 1
+                @eml_hlTwoSampleW: .v1#, .v2#, .b, .correct
+                .fb = eml_hlTwoSampleW.value - .zq
+            else
+                @eml_hlPairedW: .v1#, .b, .correct
+                .fb = eml_hlPairedW.value - .zq
+            endif
+
+            # Adjust c for it to have a sign opposite to that of b
+            if (.fb > 0 and .fc > 0) or (.fb < 0 and .fc < 0)
+                .c = .a
+                .fc = .fa
+            endif
+        endif
+    endwhile
+
+    if .done = 0
+        # Iterations exhausted. R returns b and flags Maxit = -1; there
+        # is no flag to return here and 1000 iterations of a bracketed
+        # Brent step is not a case this reaches, but the value returned
+        # is R's value returned.
+        .root = .b
+    endif
+endproc
+
+
+# ============================================================================
+# INTERNAL HELPER: @eml_hlTwoSampleRoot  — R's root(zq), ported
+# ============================================================================
+# R 4.3.3, wilcox.test.default, asymptotic two-sample branch:
+#
+#     root <- function(zq) {
+#         f.lower <- Wmumin - zq
+#         if (f.lower <= 0) return(mumin)
+#         f.upper <- Wmumax - zq
+#         if (f.upper >= 0) return(mumax)
+#         uniroot(wdiff, lower = mumin, upper = mumax,
+#                 f.lower = f.lower, f.upper = f.upper,
+#                 tol = tol.root, zq = zq)$root
+#     }
+#
+# THE TWO EARLY RETURNS ARE NOT GUARDS AGAINST BAD INPUT, they are part
+# of the answer: R's own comment says "in extreme cases we need to
+# return endpoints, e.g. wilcox.test(1, 2:60, conf.int = TRUE)". When
+# the sample cannot push the statistic past zq anywhere in
+# [mumin, mumax], the bound IS the endpoint, and a root finder called
+# on an unbracketed interval would instead fail. Dropping them turns a
+# legitimate wide interval into an error.
+#
+# Input:
+#   .v1#, .v2#      - the two groups
+#   .zq             - the quantile to invert at
+#   .mumin, .mumax  - min(x) - max(y) and max(x) - min(y)
+#   .wmin, .wmax    - W at those two endpoints, computed once by the caller
+#   .correct        - passed through to W
+#
+# Output:
+#   .result - the bound
+# ============================================================================
+
+procedure eml_hlTwoSampleRoot: .v1#, .v2#, .zq, .mumin, .mumax, .wmin, .wmax, .correct
+    .fLower = .wmin - .zq
+    if .fLower <= 0
+        .result = .mumin
+    else
+        .fUpper = .wmax - .zq
+        if .fUpper >= 0
+            .result = .mumax
+        else
+            @eml_hlZeroin: 1, .v1#, .v2#, .mumin, .mumax, .fLower,
+            ... .fUpper, .zq, 1e-4, 1000, .correct
+            .result = eml_hlZeroin.root
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlHodgesLehmannTwoSample
+# ============================================================================
+# The Hodges-Lehmann shift estimate for two independent samples, and its
+# confidence interval -- the location counterpart of the Mann-Whitney U
+# test, the way a mean difference and its t interval are the counterpart
+# of the t test. Specified by Fable's 26 August work order
+# (docs/WORK_ORDER_INTERVALS_2026-08-26.md).
+#
+# THE ESTIMATE is the median of all n1 * n2 cross-differences
+# v1[i] - v2[j]. On an even count it is the mean of the middle two, as
+# R's median() is. The differences are ordered with Praat's NATIVE
+# sort#, never a script sort: n1 * n2 is the one shape in this file
+# where a per-element sorting loop is measured in seconds rather than
+# milliseconds (CLAUDE.md, "Vectorize").
+#
+# THE BRANCH IS THE p-VALUE'S BRANCH. The gate below -- n1 < 50 AND
+# n2 < 50 AND no ties in the combined sample, as three nested ifs
+# because Praat's "and" does not short-circuit -- is copied verbatim
+# from @emlMannWhitneyU above, which copied it from R's wilcox.test. It
+# is not re-derived here and it must not drift: an interval computed on
+# the exact null distribution printed beside a p-value computed on the
+# normal approximation is a report that contradicts itself, and neither
+# number looks wrong on its own.
+#
+#   exact:  the critical rank k is a QUANTILE of the U null
+#           distribution, taken from the DP in @eml_mannWhitneyExactP --
+#           the same distribution the exact p-value is read off, read
+#           once, never rebuilt. The bounds are the k-th smallest and
+#           k-th largest cross-differences, which is R's
+#           c(diffs[qu], diffs[ql + 1]).
+#
+#   normal approximation: R's continuity-corrected z inversion, ported.
+#           See @eml_hlTwoSampleW, @eml_hlTwoSampleRoot and
+#           @eml_hlZeroin above; the port is line-for-line and
+#           carries R's own step and tolerance, so the two share the
+#           method and not merely the answer.
+#
+# THE CRITICAL RANK, in full, from R 4.3.3's exact two-sided branch:
+#
+#     qu <- qwilcox(alpha/2, n.x, n.y)
+#     if (qu == 0) qu <- 1
+#     ql <- n.x * n.y - qu
+#     c(diffs[qu], diffs[ql + 1])
+#
+# and qwilcox itself (R 4.3.3, src/nmath/wilcox.c) is a cumulative scan
+# over the null distribution with a fuzz applied to the PROBABILITY:
+#
+#     c = choose(m + n, n);
+#     p = 0; q = 0;
+#     if (x <= 0.5) {
+#         x = x - 10 * DBL_EPSILON;
+#         for(;;) { p += cwilcox(q, mm, nn) / c; if (p >= x) break; q++; }
+#     } else { ...the mirror... }
+#
+# Both the fuzz and the "if qu == 0 then 1" bump are ported below. The
+# bump is the whole difference between a coverage-bearing interval and
+# an off-by-one: at qu = 0 the lower bound would index diffs[0], and one
+# step either side of the correct k gives an interval that reads as
+# perfectly reasonable. It is the first red demonstration in v145.
+#
+# Arguments:
+#   .v1#   - numeric vector, group 1
+#   .v2#   - numeric vector, group 2
+#   .level - confidence level as a proportion (e.g. 0.95, or a
+#            correction's own level such as 1 - alpha/m)
+#
+# Output:
+#   .estimate - median of the n1 * n2 cross-differences (v1 minus v2)
+#   .low      - lower confidence bound, or undefined on refusal
+#   .high     - upper confidence bound, or undefined on refusal
+#   .method$  - "exact" or "normal approximation"; the SAME branch
+#               @emlMannWhitneyU takes on the same two vectors
+#   .error$   - error message, or "" if valid
+#
+# DEPENDENCY: @emlRankVector from eml-core-utilities.praat, as
+# @emlMannWhitneyU has.
+# ============================================================================
+
+procedure emlHodgesLehmannTwoSample: .v1#, .v2#, .level
+    .estimate = undefined
+    .low = undefined
+    .high = undefined
+    .method$ = ""
+    .error$ = ""
+
+    .n1 = size (.v1#)
+    .n2 = size (.v2#)
+    .nTotal = .n1 + .n2
+    .nDiff = .n1 * .n2
+
+    if .n1 < 1
+        .error$ = "Group 1 must have at least 1 observation"
+    elsif .n2 < 1
+        .error$ = "Group 2 must have at least 1 observation"
+    elsif .level <= 0 or .level >= 1
+        .error$ = "Confidence level must be between 0 and 1"
+    else
+        # --- The n1 * n2 cross-differences, ordered ---
+        #
+        # The fill is a pair loop because a vector this size has to be
+        # built one product-index at a time -- Praat has no slice
+        # assignment and no outer-difference primitive (probed: "w# [1..3]
+        # = v#" does not parse on 6.6.30). The ORDERING, which is the
+        # part that costs, is sort#.
+        .diffs# = zero# (.nDiff)
+        for .i from 1 to .n1
+            .base = (.i - 1) * .n2
+            for .j from 1 to .n2
+                .diffs#[.base + .j] = .v1#[.i] - .v2#[.j]
+            endfor
+        endfor
+        .sortedDiffs# = sort# (.diffs#)
+
+        # --- The estimate: median of those differences ---
+        if .nDiff mod 2 = 1
+            .estimate = .sortedDiffs#[(.nDiff + 1) / 2]
+        else
+            .mid = .nDiff / 2
+            .estimate = (.sortedDiffs#[.mid] + .sortedDiffs#[.mid + 1]) / 2
+        endif
+
+        # --- The branch gate, verbatim from @emlMannWhitneyU ---
+        .combined# = zero# (.nTotal)
+        for .i from 1 to .n1
+            .combined#[.i] = .v1#[.i]
+        endfor
+        for .i from 1 to .n2
+            .combined#[.n1 + .i] = .v2#[.i]
+        endfor
+
+        @emlRankVector: .combined#
+        .hasTies = emlRankVector.hasTies
+
+        # Exact iff n1 < 50 AND n2 < 50 AND no ties. R's wilcox.test uses
+        # per-group sizes (not the combined total) and falls back to the
+        # normal approximation whenever ties are present, because the
+        # exact null distribution assumes untied integer ranks.
+        # Nested ifs: Praat's "and" does not short-circuit.
+        .useExact = 0
+        if .n1 < 50
+            if .n2 < 50
+                if .hasTies = 0
+                    .useExact = 1
+                endif
+            endif
+        endif
+
+        .alpha = 1 - .level
+
+        if .useExact = 1
+            # --- Exact path: a quantile of the DP null distribution ---
+            .method$ = "exact"
+
+            # ONE call, for the distribution, not for its tails. The .u1
+            # argument is irrelevant to the counts: the DP is built over
+            # every u regardless, and 0 is passed to say plainly that no
+            # tail probability is being asked for here.
+            @eml_mannWhitneyExactP: 0, .n1, .n2
+            .total = eml_mannWhitneyExactP.total
+
+            # qwilcox(alpha/2, n1, n2), ported with R's own fuzz and R's
+            # own accumulation: 10 DBL_EPSILON subtracted from the
+            # PROBABILITY, and the cumulative sum built in probability --
+            # each count divided by the total as it is added, which is
+            # what "p += cwilcox(q, mm, nn) / c" does and is not the same
+            # rounding as summing counts and dividing once.
+            #
+            # Only R's "x <= 0.5" branch is ported because only it is
+            # reachable: .level is validated into (0, 1) above, so
+            # .alpha / 2 is strictly inside (0, 0.5) and the mirror
+            # branch cannot be entered from here. .total stands for R's
+            # choose(m + n, n) -- the same number by a different route,
+            # and for n1 = n2 near 50 the count exceeds 2^53, so the two
+            # agree to rounding rather than exactly. That matters only if
+            # the cumulative probability lands within an ulp or two of
+            # alpha/2, which is the same knife-edge R's own fuzz exists
+            # for.
+            .x = .alpha / 2 - 10 * 2.220446049250313e-16
+            .k = 0
+            .p = eml_mannWhitneyExactP.dp##[.n1 + 1, 1] / .total
+            while .p < .x and .k < .nDiff
+                .k = .k + 1
+                .p = .p
+                ... + eml_mannWhitneyExactP.dp##[.n1 + 1, .k + 1] / .total
+            endwhile
+
+            # if (qu == 0) qu <- 1
+            if .k = 0
+                .k = 1
+            endif
+
+            .low = .sortedDiffs#[.k]
+            .high = .sortedDiffs#[.nDiff + 1 - .k]
+        else
+            # --- Normal approximation: R's z inversion, ported ---
+            .method$ = "normal approximation"
+
+            # mumin = min(x) - max(y) and mumax = max(x) - min(y) are the
+            # smallest and largest cross-differences -- the same two
+            # subtractions R performs, already in hand and already
+            # ordered.
+            .mumin = .sortedDiffs#[1]
+            .mumax = .sortedDiffs#[.nDiff]
+
+            @eml_hlTwoSampleW: .v1#, .v2#, .mumin, 1
+            .wmin = eml_hlTwoSampleW.value
+            @eml_hlTwoSampleW: .v1#, .v2#, .mumax, 1
+            .wmax = eml_hlTwoSampleW.value
+
+            if .wmin = undefined or .wmax = undefined
+                # SIGMA.CI = 0: every observation in the combined sample
+                # is tied, and there is no variance to standardise by. R
+                # warns here and hands NaN to its own root finder, which
+                # then fails on a missing value; this refuses in the
+                # shape @emlTTestInterval refuses, with the outputs left
+                # undefined and a reason given.
+                .error$ = "Cannot compute a confidence interval when "
+                ... + "every observation is tied"
+            else
+                # qnorm(alpha/2, lower.tail = FALSE) is invGaussQ(alpha/2);
+                # qnorm(alpha/2) is its negation.
+                .zq = invGaussQ (.alpha / 2)
+
+                @eml_hlTwoSampleRoot: .v1#, .v2#, .zq, .mumin, .mumax,
+                ... .wmin, .wmax, 1
+                .low = eml_hlTwoSampleRoot.result
+
+                @eml_hlTwoSampleRoot: .v1#, .v2#, - .zq, .mumin, .mumax,
+                ... .wmin, .wmax, 1
+                .high = eml_hlTwoSampleRoot.result
+            endif
+        endif
+    endif
+endproc
+
 
 # ============================================================================
 # INTERNAL HELPER: Exact p-value for Wilcoxon Signed-Rank via Subset-Sum DP
@@ -1287,6 +2665,28 @@ endproc
 # Output:
 #   .pLeft    - P(T+ <= floor(tPlus)) under no-tie null
 #   .pRight   - P(T+ >= ceiling(tPlus)) under no-tie null
+#   .dp#      - the null distribution ITSELF, not merely its tails:
+#               .dp# [s + 1] is the NUMBER of subsets of {1, ..., n}
+#               summing to s, for s = 0 .. n(n+1)/2 -- R's csignrank(s, n)
+#               at every s, in one vector.
+#   .total    - 2^n, the number of sign patterns and the sum of that
+#               vector. R's qsignrank does NOT divide by this; it
+#               multiplies each count by f = exp(-n * M_LN2), which is a
+#               DIFFERENT double from 1/2^n for most n (measured: they
+#               differ for 51 of the first 60 n). A caller inverting this
+#               distribution against R must use R's f, not this .total;
+#               .total is exposed because the p-values above are formed
+#               with it and a reader of one needs the other.
+#
+# .dp# AND .total ARE PART OF THE CONTRACT, not incidental internals.
+# @emlHodgesLehmannPaired needs a QUANTILE of this same null distribution
+# (the critical rank k behind the exact paired confidence interval),
+# which no pair of tail probabilities can supply, and Fable's 26 August
+# work order forbids building a second copy of the distribution to get
+# it. So this procedure is the one place the T+ null distribution is
+# computed, and the counts and their total are readable. Like every
+# Praat procedure output they survive only until the next call: copy
+# them on the following line.
 #
 # Note: The no-tie null distribution is standard (matches R wilcox.test
 # and scipy wilcoxon exact). When ties exist in the absolute differences,
@@ -1296,27 +2696,67 @@ endproc
 procedure eml_wilcoxonExactP: .tPlus, .n
     .maxT = .n * (.n + 1) / 2
     .total = 2 ^ .n
-    .vecSize = floor (.maxT) + 1
 
-    # DP: .dp#[s + 1] = number of subsets of {1,...,processed} with sum = s
-    .dp# = zero# (.vecSize)
-    .dp#[1] = 1
+    # --- Cache: the DP table is keyed by .n alone (Fable's 26 August
+    # ruling, item 4 -- the signed-rank half). @emlWilcoxonSignedRank
+    # (p-value) and @emlHodgesLehmannPaired (critical rank) are two reads
+    # of the SAME object for the same pair-of-conditions, and a
+    # repeated-measures design with a common complete-case n calls this
+    # again, with the same n, for every remaining pair. One build must
+    # serve all of them.
+    #
+    # Same cache shape as @eml_mannWhitneyExactP above (see its comment
+    # for the precedent this follows: eml-lmm.praat's indexed-matrix
+    # family, and this plugin's existing variableExists guard idiom for a
+    # persistent value's first read) -- keyed on one integer instead of
+    # two, so the slot table is a single array rather than a pair of
+    # them, and each slot's null-distribution vector sits at
+    # .cacheDp'.slot'#.
+    if variableExists ("eml_wilcoxonExactP.cacheCount") = 0
+        .cacheCount = 0
+    endif
+    .cacheMax = 64
 
-    for .rank from 1 to .n
-        .newDp# = zero# (.vecSize)
-        for .s from 0 to floor (.maxT)
-            if .dp#[.s + 1] > 0
-                # Exclude this rank
-                .newDp#[.s + 1] = .newDp#[.s + 1] + .dp#[.s + 1]
-                # Include this rank
-                .sNew = .s + .rank
-                if .sNew <= floor (.maxT)
-                    .newDp#[.sNew + 1] = .newDp#[.sNew + 1] + .dp#[.s + 1]
-                endif
-            endif
-        endfor
-        .dp# = .newDp#
+    .cacheHit = 0
+    for .slot from 1 to .cacheCount
+        if .cacheN[.slot] = .n
+            .cacheHit = .slot
+        endif
     endfor
+
+    if .cacheHit > 0
+        # --- Cache hit: this n's distribution was already built ---
+        .dp# = .cacheDp'.cacheHit'#
+    else
+        .vecSize = floor (.maxT) + 1
+
+        # DP: .dp#[s + 1] = number of subsets of {1,...,processed} with sum = s
+        .dp# = zero# (.vecSize)
+        .dp#[1] = 1
+
+        for .rank from 1 to .n
+            .newDp# = zero# (.vecSize)
+            for .s from 0 to floor (.maxT)
+                if .dp#[.s + 1] > 0
+                    # Exclude this rank
+                    .newDp#[.s + 1] = .newDp#[.s + 1] + .dp#[.s + 1]
+                    # Include this rank
+                    .sNew = .s + .rank
+                    if .sNew <= floor (.maxT)
+                        .newDp#[.sNew + 1] = .newDp#[.sNew + 1] + .dp#[.s + 1]
+                    endif
+                endif
+            endfor
+            .dp# = .newDp#
+        endfor
+
+        # --- Store for the next call sharing this n ---
+        if .cacheCount < .cacheMax
+            .cacheCount = .cacheCount + 1
+            .cacheN[.cacheCount] = .n
+            .cacheDp'.cacheCount'# = .dp#
+        endif
+    endif
 
     # Left tail: P(T+ <= floor(tPlus))
     .tFloor = floor (.tPlus)
@@ -1444,6 +2884,12 @@ endproc
 #   .nZero       - number of zero differences (excluded)
 #   .hasTies     - 1 if the absolute differences contain ties, else 0
 #   .method$     - "exact" or "normal approximation"
+#   .methodReason$ - "" when .method$ is "exact" (no parenthetical).
+#                  Otherwise every condition that ruled out the exact
+#                  branch, comma-separated in the fixed order "ties
+#                  present, large sample, zero differences" -- there is
+#                  no precedence, every condition that held is named
+#                  (Fable's item 22 ruling, 27 August 2026).
 #   .z           - z statistic (approximation path only; undefined for exact)
 #   .error$      - error message, or "" if valid
 #
@@ -1466,6 +2912,7 @@ procedure emlWilcoxonSignedRank: .v1#, .v2#, .tails
     .nZero = 0
     .hasTies = 0
     .method$ = ""
+    .methodReason$ = ""
     .z = undefined
     .error$ = ""
 
@@ -1550,6 +2997,33 @@ procedure emlWilcoxonSignedRank: .v1#, .v2#, .tails
                 if .hasTies = 0
                     if .nZero = 0
                         .useExact = 1
+                    endif
+                endif
+            endif
+
+            ; .methodReason$ names EVERY condition that ruled out the
+            ; exact branch -- ties present, a large non-zero sample, and
+            ; zero differences are three independent facts, so all that
+            ; held are named, comma-separated in that fixed order, with
+            ; no precedence among them. Fable's item 22 ruling, 27 August
+            ; 2026.
+            .methodReason$ = ""
+            if .useExact = 0
+                if .hasTies = 1
+                    .methodReason$ = "ties present"
+                endif
+                if .nNonzero >= 50
+                    if .methodReason$ <> ""
+                        .methodReason$ = .methodReason$ + ", large sample"
+                    else
+                        .methodReason$ = "large sample"
+                    endif
+                endif
+                if .nZero > 0
+                    if .methodReason$ <> ""
+                        .methodReason$ = .methodReason$ + ", zero differences"
+                    else
+                        .methodReason$ = "zero differences"
                     endif
                 endif
             endif
@@ -1658,6 +3132,485 @@ procedure emlWilcoxonSignedRank: .v1#, .v2#, .tails
         endif
     endif
 endproc
+
+
+# ============================================================================
+# INTERNAL HELPER: @eml_hlPairedW  — R's one-sample W(d), ported
+# ============================================================================
+# R 4.3.3, src/library/stats/R/wilcox.test.R, wilcox.test.default,
+# ONE-SAMPLE (and therefore paired) asymptotic branch:
+#
+#     W <- function(d) {
+#         xd <- x - d
+#         xd <- xd[xd != 0]
+#         nx <- length(xd)
+#         dr <- rank(abs(xd))
+#         zd <- sum(dr[xd > 0]) - nx * (nx + 1)/4
+#         NTIES.CI <- table(dr)
+#         SIGMA.CI <- sqrt(nx * (nx + 1) * (2 * nx + 1) / 24
+#                          - sum(NTIES.CI^3 - NTIES.CI) / 48)
+#         if (SIGMA.CI == 0) warning(...)
+#         CORRECTION.CI <- sign(zd) * 0.5
+#         (zd - CORRECTION.CI) / SIGMA.CI
+#     }
+#
+# THIS IS NOT @eml_hlTwoSampleW IN ONE-SAMPLE CLOTHES, and the three
+# differences are each capable of producing a plausible wrong number:
+#
+#   * THE ZEROS ARE DROPPED AGAIN AT EVERY d. `xd <- xd[xd != 0]` runs
+#     inside W, not once outside it, so nx is a function of d: at
+#     d = min(x) the smallest observation becomes an exact zero and
+#     leaves, and nx is one smaller there than it is in the middle of
+#     the interval. Hoisting the strip out of the loop would change
+#     Wmumin and Wmumax, which are the two values the bracket and the
+#     alpha-doubling loop are decided on.
+#   * THE RANKS ARE RANKS OF |xd|, not of xd, and only the positive
+#     xd contribute to the rank sum. That is the signed-rank statistic
+#     T+, not a rank sum over a combined sample.
+#   * SIGMA.CI DIVIDES THE TIE CORRECTION BY 48, where the two-sample
+#     form divides by n(n-1) inside a different expression entirely.
+#
+# sum(NTIES.CI^3 - NTIES.CI) is exactly @emlRankVector's
+# .tieCorrectionSum (singleton groups contribute t^3 - t = 0), which is
+# why the ranking is done through that procedure rather than a second
+# ranker written here -- the same reason @eml_hlTwoSampleW gives.
+#
+# .correct exists for the same reason it exists on the two-sample
+# helper: R turns the continuity correction off for ONE call, the
+# uniroot that produces its own point estimate. This plugin does not
+# take that path -- Fable's work order pins the estimate to the median
+# of the Walsh averages on both branches -- so every call from this
+# file passes .correct = 1, and the parameter is kept so the ported
+# shape is the shape R has.
+#
+# Input:
+#   .x#      - the sample (here: the non-zero paired differences, R's x)
+#   .d       - the shift being tested
+#   .correct - 1 to apply the continuity correction, 0 not to
+#
+# Output:
+#   .value  - W(d), or undefined when SIGMA.CI is zero or every
+#             observation equals .d (R warns and returns NaN)
+# ============================================================================
+
+procedure eml_hlPairedW: .x#, .d, .correct
+    .n = size (.x#)
+
+    # xd <- x - d;  xd <- xd[xd != 0]
+    .keep# = zero# (.n)
+    .nx = 0
+    for .i from 1 to .n
+        .shift = .x#[.i] - .d
+        if .shift <> 0
+            .nx = .nx + 1
+            .keep#[.nx] = .shift
+        endif
+    endfor
+
+    if .nx = 0
+        # Every observation equals d. R's nx is 0, SIGMA.CI is sqrt(0),
+        # and the division is 0/0.
+        .value = undefined
+    else
+        .xd# = zero# (.nx)
+        .absXd# = zero# (.nx)
+        for .i from 1 to .nx
+            .xd#[.i] = .keep#[.i]
+            .absXd#[.i] = abs (.keep#[.i])
+        endfor
+
+        @emlRankVector: .absXd#
+        .ranks# = emlRankVector.ranks#
+        .tieSum = emlRankVector.tieCorrectionSum
+
+        # zd <- sum(dr[xd > 0]) - nx * (nx + 1)/4
+        .rankSum = 0
+        for .i from 1 to .nx
+            if .xd#[.i] > 0
+                .rankSum = .rankSum + .ranks#[.i]
+            endif
+        endfor
+        .zd = .rankSum - .nx * (.nx + 1) / 4
+
+        # CORRECTION.CI <- sign(zd) * 0.5   (two-sided; sign(0) is 0 in R)
+        .correction = 0
+        if .correct = 1
+            if .zd > 0
+                .correction = 0.5
+            elsif .zd < 0
+                .correction = -0.5
+            endif
+        endif
+
+        .sigma = sqrt (.nx * (.nx + 1) * (2 * .nx + 1) / 24 - .tieSum / 48)
+
+        if .sigma = 0
+            .value = undefined
+        else
+            .value = (.zd - .correction) / .sigma
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @emlHodgesLehmannPaired
+# ============================================================================
+# The Hodges-Lehmann shift estimate for two PAIRED samples, and its
+# confidence interval -- the location counterpart of the Wilcoxon
+# signed-rank test, the way a mean difference and its t interval are the
+# counterpart of the paired t test. Specified by Fable's 26 August work
+# order (docs/WORK_ORDER_INTERVALS_2026-08-26.md, item 4).
+#
+# THE ESTIMATE IS THE MEDIAN OF THE WALSH AVERAGES, and Walsh averages
+# are not cross-differences. For the n paired differences
+# d[i] = v1[i] - v2[i], they are (d[i] + d[j]) / 2 for every i <= j --
+# n(n+1)/2 values, INCLUDING the n cases i = j, which are the d[i]
+# themselves. The two-sample form of this procedure takes n1 * n2
+# differences ACROSS two samples; this one takes n(n+1)/2 averages
+# WITHIN one derived sample. Substituting either set for the other
+# yields a number of the right magnitude and the wrong value, which is
+# why the order names the set rather than the estimator. On an even
+# count the median is the mean of the middle two, as R's median() is,
+# and the ordering is Praat's NATIVE sort#, never a script sort.
+#
+# THE BRANCH IS THE p-VALUE'S BRANCH. The gate below -- n_nonzero < 50
+# AND no ties AND no zero differences, as three nested ifs because
+# Praat's "and" does not short-circuit -- is copied verbatim from
+# @emlWilcoxonSignedRank above, which copied it from R's wilcox.test.
+# It is not re-derived here and it must not drift: an interval computed
+# on the exact null distribution printed beside a p-value computed on
+# the normal approximation is a report that contradicts itself, and
+# neither number looks wrong on its own. v145 asserts the two copies
+# are one text.
+#
+#   exact:  the critical rank k is a QUANTILE of the T+ null
+#           distribution, taken from the DP in @eml_wilcoxonExactP --
+#           the same distribution the exact p-value is read off, read
+#           once, never rebuilt. The bounds are the k-th smallest and
+#           k-th largest Walsh averages, which is R's
+#           c(diffs[qu], diffs[ql + 1]).
+#
+#   normal approximation: R's continuity-corrected z inversion in its
+#           ONE-SAMPLE form. See @eml_hlPairedW above and @eml_hlZeroin,
+#           which is the two-sample port's zeroin reused rather than a
+#           second copy of Brent's method.
+#
+# THE CRITICAL RANK, in full, from R 4.3.3's exact one-sample branch:
+#
+#     diffs <- outer(x, x, `+`)
+#     diffs <- sort(diffs[!lower.tri(diffs)]) / 2
+#     qu <- qsignrank(alpha / 2, n)
+#     if (qu == 0) qu <- 1
+#     ql <- n*(n+1)/2 - qu
+#     c(diffs[qu], diffs[ql+1])
+#
+# QSIGNRANK IS NOT QWILCOX WITH DIFFERENT COUNTS, and the difference is
+# in the arithmetic, not only in the distribution. R 4.3.3,
+# src/nmath/signrank.c:
+#
+#     f = exp(- n * M_LN2);
+#     p = 0; q = 0;
+#     if (x <= 0.5) {
+#         x = x - 10 * DBL_EPSILON;
+#         for(;;) { p += csignrank(q, nn) * f; if (p >= x) break; q++; }
+#     } else { ...the mirror... }
+#
+# qwilcox divides each count by choose(m+n, n); qsignrank MULTIPLIES
+# each count by f = exp(-n * M_LN2). Those are different roundings, and
+# f is not the same double as 1/2^n: measured here, exp(-n*ln 2) differs
+# from 2^-n for 51 of the first 60 n. The port below multiplies by f,
+# with M_LN2 written as the literal C uses, so the accumulation is R's
+# accumulation and not an algebraic equivalent of it. The fuzz -- ten
+# DBL_EPSILON subtracted from the PROBABILITY, not from a count -- is
+# the same in both, and only R's "x <= 0.5" branch is ported because
+# .level is validated into (0, 1) and alpha/2 is therefore strictly
+# inside (0, 0.5).
+#
+# The "if qu == 0 then 1" bump is ported for the reason it is on the
+# two-sample side: at qu = 0 the lower bound would index diffs[0], and
+# one step either side of the correct k gives an interval that reads as
+# perfectly reasonable. It is a red demonstration in v145.
+#
+# WHAT THE APPROXIMATION BRANCH DOES THAT THE TWO-SAMPLE ONE DOES NOT.
+# R's one-sample root() has NO endpoint early-returns; in their place,
+# before any root-finding, it WIDENS alpha until the requested interval
+# is bracketable:
+#
+#     repeat {
+#         mindiff <- Wmumin - qnorm(alpha/2, lower.tail = FALSE)
+#         maxdiff <- Wmumax - qnorm(alpha/2)
+#         if (mindiff < 0 || maxdiff > 0) alpha <- alpha*2 else break
+#     }
+#     if (alpha >= 1 || 1 - conf.level < alpha*0.75) warning(...)
+#     if (alpha < 1) { l <- root(...); u <- root(...) } else rep(median(x), 2)
+#
+# That loop is part of the ANSWER, not a guard: when it fires, both
+# bounds come back at a wider level than was asked for, and when alpha
+# reaches 1 the "interval" is the median of the differences twice. The
+# two-sample form has no such loop and this one has no early returns;
+# reusing @eml_hlTwoSampleRoot here would silently substitute one
+# structure for the other.
+#
+# Arguments:
+#   .v1#   - numeric vector, condition 1
+#   .v2#   - numeric vector, condition 2 (same length as v1#)
+#   .level - confidence level as a proportion (e.g. 0.95, or a
+#            correction's own level such as 1 - alpha/m)
+#
+# Output:
+#   .estimate - median of the n(n+1)/2 Walsh averages of v1 - v2
+#   .low      - lower confidence bound, or undefined on refusal
+#   .high     - upper confidence bound, or undefined on refusal
+#   .method$  - "exact" or "normal approximation"; the SAME branch
+#               @emlWilcoxonSignedRank takes on the same two vectors
+#   .error$   - error message, or "" if valid
+#
+# DEPENDENCY: @emlRankVector from eml-core-utilities.praat, as
+# @emlWilcoxonSignedRank has.
+# ============================================================================
+
+procedure emlHodgesLehmannPaired: .v1#, .v2#, .level
+    .estimate = undefined
+    .low = undefined
+    .high = undefined
+    .method$ = ""
+    .error$ = ""
+
+    .n1 = size (.v1#)
+    .n2 = size (.v2#)
+    .n = .n1
+
+    # --- Input validation, in @emlWilcoxonSignedRank's own words ---
+    if .n1 <> .n2
+        .error$ = "Vectors must have equal length for paired test"
+        .n = 0
+    elsif .n < 1
+        .error$ = "Need at least 1 pair"
+    elsif .level <= 0 or .level >= 1
+        .error$ = "Confidence level must be between 0 and 1"
+    else
+        # --- The differences, and the Walsh averages over ALL of them ---
+        #
+        # THE ESTIMATE IS COMPUTED BEFORE ANY BRANCH AND SURVIVES EVERY
+        # REFUSAL BELOW, the way the two-sample procedure's median
+        # cross-difference does: a sample whose interval cannot be built
+        # still HAS a median Walsh average, and returning it with the
+        # bounds undefined says more than returning nothing.
+        .allDiffs# = zero# (.n)
+        for .i from 1 to .n
+            .allDiffs#[.i] = .v1#[.i] - .v2#[.i]
+        endfor
+
+        # The fill is a pair loop because Praat has no outer-sum
+        # primitive and no slice assignment (probed on 6.6.30). The
+        # ORDERING, which is the part that costs, is sort#.
+        .nWalsh = .n * (.n + 1) / 2
+        .walsh# = zero# (.nWalsh)
+        .w = 0
+        for .i from 1 to .n
+            for .j from .i to .n
+                .w = .w + 1
+                .walsh#[.w] = (.allDiffs#[.i] + .allDiffs#[.j]) / 2
+            endfor
+        endfor
+        .sortedWalsh# = sort# (.walsh#)
+
+        if .nWalsh mod 2 = 1
+            .estimate = .sortedWalsh#[(.nWalsh + 1) / 2]
+        else
+            .mid = .nWalsh / 2
+            .estimate = (.sortedWalsh#[.mid] + .sortedWalsh#[.mid + 1]) / 2
+        endif
+
+        # Count non-zero diffs
+        .nNonzero = 0
+        for .i from 1 to .n
+            if .allDiffs#[.i] <> 0
+                .nNonzero = .nNonzero + 1
+            endif
+        endfor
+        .nZero = .n - .nNonzero
+
+        if .nNonzero = 0
+            .error$ = "All differences are zero; cannot compute an interval"
+        else
+            # Extract non-zero diffs. R strips the zeroes ONCE, before
+            # n is taken, and every later use of "x" in its confidence
+            # interval means this stripped vector -- the branch gate's
+            # n, qsignrank's n, mumin, mumax and median(x) alike.
+            .nonzeroDiffs# = zero# (.nNonzero)
+            .idx = 0
+            for .i from 1 to .n
+                if .allDiffs#[.i] <> 0
+                    .idx = .idx + 1
+                    .nonzeroDiffs#[.idx] = .allDiffs#[.i]
+                endif
+            endfor
+
+            .absDiffs# = zero# (.nNonzero)
+            for .i from 1 to .nNonzero
+                .absDiffs#[.i] = abs (.nonzeroDiffs#[.i])
+            endfor
+
+            @emlRankVector: .absDiffs#
+            .hasTies = emlRankVector.hasTies
+
+            # Exact iff n_nonzero < 50 AND no ties AND no zero differences.
+            # R's wilcox.test falls back to the normal approximation as soon
+            # as ties or zeroes are present, because the exact null
+            # distribution assumes untied integer ranks over all n pairs.
+            # Nested ifs: Praat's "and" does not short-circuit.
+            .useExact = 0
+            if .nNonzero < 50
+                if .hasTies = 0
+                    if .nZero = 0
+                        .useExact = 1
+                    endif
+                endif
+            endif
+
+            .alpha = 1 - .level
+
+            if .useExact = 1
+                # --- Exact path: a quantile of the DP null distribution ---
+                .method$ = "exact"
+
+                # The gate above guarantees .nZero = 0 on this branch, so
+                # the Walsh set built over ALL n differences IS R's
+                # `diffs` over its zero-stripped x, element for element,
+                # and .nWalsh = .nNonzero * (.nNonzero + 1) / 2. The
+                # bounds may therefore index .sortedWalsh# directly.
+                #
+                # ONE call, for the distribution, not for its tails. The
+                # .tPlus argument is irrelevant to the counts: the DP is
+                # built over every sum regardless, and 0 is passed to say
+                # plainly that no tail probability is being asked for.
+                @eml_wilcoxonExactP: 0, .nNonzero
+                .counts# = eml_wilcoxonExactP.dp#
+                .maxT = .nNonzero * (.nNonzero + 1) / 2
+
+                # qsignrank(alpha/2, n), ported with R's own fuzz and R's
+                # own accumulation: 10 DBL_EPSILON subtracted from the
+                # PROBABILITY, and each count MULTIPLIED by
+                # f = exp(-n * M_LN2). M_LN2 is written as the literal C
+                # uses rather than as ln (2) so the factor does not
+                # depend on which library computed the logarithm.
+                .f = exp (- .nNonzero * 0.69314718055994530942)
+                .x = .alpha / 2 - 10 * 2.220446049250313e-16
+                .k = 0
+                .p = .counts#[1] * .f
+                while .p < .x and .k < .maxT
+                    .k = .k + 1
+                    .p = .p + .counts#[.k + 1] * .f
+                endwhile
+
+                # if (qu == 0) qu <- 1
+                if .k = 0
+                    .k = 1
+                endif
+
+                .low = .sortedWalsh#[.k]
+                .high = .sortedWalsh#[.nWalsh + 1 - .k]
+            else
+                # --- Normal approximation: R's z inversion, ported ---
+                .method$ = "normal approximation"
+
+                # mumin = min(x) and mumax = max(x) over the ZERO-STRIPPED
+                # differences -- the raw endpoints of the sample, not of
+                # the Walsh set. One native sort supplies both, and the
+                # median R falls back on when alpha reaches 1.
+                .sortedNz# = sort# (.nonzeroDiffs#)
+                .mumin = .sortedNz#[1]
+                .mumax = .sortedNz#[.nNonzero]
+
+                @eml_hlPairedW: .nonzeroDiffs#, .mumin, 1
+                .wmin = eml_hlPairedW.value
+                # R computes W(mumax) only when W(mumin) is finite, so
+                # that its "all zero or tied" warning is issued once.
+                .wmax = undefined
+                if .wmin <> undefined
+                    @eml_hlPairedW: .nonzeroDiffs#, .mumax, 1
+                    .wmax = eml_hlPairedW.value
+                endif
+
+                if .wmin = undefined or .wmax = undefined
+                    # SIGMA.CI = 0: every non-zero difference has the same
+                    # magnitude and the statistic has no variance to
+                    # standardise by. R warns and hands NaN to its own
+                    # root finder; this refuses in the shape
+                    # @emlHodgesLehmannTwoSample refuses, with the bounds
+                    # left undefined, a reason given, and the estimate
+                    # above still returned.
+                    .error$ = "Cannot compute a confidence interval when "
+                    ... + "every difference is zero or tied"
+                else
+                    # R's alpha-widening loop, ported. qnorm(a/2,
+                    # lower.tail = FALSE) is invGaussQ(a/2) and qnorm(a/2)
+                    # is its negation, so maxdiff is .wmax + that same
+                    # quantile.
+                    #
+                    # THE LOOP TERMINATES AT alpha = 2 IN R, where
+                    # qnorm(1, lower.tail = FALSE) is -infinity and both
+                    # comparisons stop being satisfied. It is stopped at
+                    # the same place here rather than evaluating
+                    # invGaussQ at 1. A sample that would double PAST 2
+                    # (possible only when a single non-zero difference
+                    # survives) makes R evaluate qnorm above 1, which is
+                    # NaN, and R then fails on `if (NA)`; this returns
+                    # R's alpha >= 1 answer instead of failing, and the
+                    # divergence is recorded because R has no answer
+                    # there to agree with.
+                    .alphaUsed = .alpha
+                    .bracketed = 0
+                    while .bracketed = 0 and .alphaUsed < 2
+                        .zTry = invGaussQ (.alphaUsed / 2)
+                        .minDiff = .wmin - .zTry
+                        .maxDiff = .wmax + .zTry
+                        if .minDiff < 0 or .maxDiff > 0
+                            .alphaUsed = .alphaUsed * 2
+                        else
+                            .bracketed = 1
+                        endif
+                    endwhile
+
+                    if .alphaUsed < 1
+                        .zq = invGaussQ (.alphaUsed / 2)
+
+                        # root(zq): a plain uniroot over [mumin, mumax]
+                        # with the endpoint values already in hand. No
+                        # early returns -- see the header.
+                        .empty# = zero# (0)
+                        @eml_hlZeroin: 2, .nonzeroDiffs#, .empty#, .mumin,
+                        ... .mumax, .wmin - .zq, .wmax - .zq, .zq,
+                        ... 1e-4, 1000, 1
+                        .low = eml_hlZeroin.root
+
+                        @eml_hlZeroin: 2, .nonzeroDiffs#, .empty#, .mumin,
+                        ... .mumax, .wmin + .zq, .wmax + .zq, - .zq,
+                        ... 1e-4, 1000, 1
+                        .high = eml_hlZeroin.root
+                    else
+                        # rep(median(x), 2): the requested level cannot be
+                        # achieved at all, and R returns the median of the
+                        # differences -- NOT of the Walsh averages -- as
+                        # both bounds.
+                        if .nNonzero mod 2 = 1
+                            .medNz = .sortedNz#[(.nNonzero + 1) / 2]
+                        else
+                            .midNz = .nNonzero / 2
+                            .medNz = (.sortedNz#[.midNz]
+                            ... + .sortedNz#[.midNz + 1]) / 2
+                        endif
+                        .low = .medNz
+                        .high = .medNz
+                    endif
+                endif
+            endif
+        endif
+    endif
+endproc
+
 
 
 # ============================================================================
@@ -2097,157 +4050,14 @@ procedure emlBenjaminiHochberg: .pValues#
     endif
 endproc
 
-# ============================================================================
-# @eml_parseAnovaLine (INTERNAL)
-# ============================================================================
-# Parses a single row from Praat's ANOVA Info window output.
-#
-# The built-in Report one-way anova / Report two-way anova commands write
-# a whitespace-aligned table to the Info window. Each row has a label
-# (e.g., "Between", "Within", "Total", factor name) followed by numeric
-# fields: SS, df, MS, F, p. Not all rows have all fields — "Within" and
-# "Error" rows have SS, df, MS only; "Total" rows have SS, df only.
-#
-# Arguments:
-#   .info$     - full Info window text (captured via info$() after Report)
-#   .rowLabel$ - exact text of the row label to find (e.g., "Between")
-#
-# Output:
-#   .ss  - sum of squares (or undefined if not found)
-#   .df  - degrees of freedom (or undefined if not found)
-#   .ms  - mean square (or undefined if row has < 3 numeric fields)
-#   .f   - F statistic (or undefined if row has < 4 numeric fields)
-#   .p   - p-value (or undefined if row has < 5 numeric fields)
-#   .error$ - "" on success, diagnostic message on failure
-#
-# Notes:
-#   - Matches .rowLabel$ EXACTLY against the first tab-delimited field
-#     of each line (after trimming the alignment padding), then
-#     tokenizes the remaining fields by whitespace. Substring matching
-#     is deliberately NOT used: it collides when one label is contained
-#     in another (e.g. factor "dose" inside factor "dose_time", or
-#     "Error" inside a factor named "ErrorRate").
-#   - number() handles scientific notation (e.g., 8.24e-195)
-# ============================================================================
-
-procedure eml_parseAnovaLine: .info$, .rowLabel$
-    .ss = undefined
-    .df = undefined
-    .ms = undefined
-    .f = undefined
-    .p = undefined
-    .error$ = ""
-
-    # Locate the row by EXACT match on its first tab-delimited field.
-    # The previous version used extractLine$, which returns the tail of
-    # the first line CONTAINING the label as a substring. That matched
-    # the wrong row whenever one label was a substring of another
-    # (factor "dose" matching the row for factor "dose_time", or the
-    # literal "Error" matching a factor named "ErrorRate" before it
-    # reached the residual row).
-    .remainder$ = ""
-    .found = 0
-    .lines$# = splitBy$# (.info$, newline$)
-
-    for .li from 1 to size (.lines$#)
-        if .found = 0
-            .line$ = .lines$#[.li]
-            .tabPos = index (.line$, tab$)
-            if .tabPos > 0
-                .label$ = left$ (.line$, .tabPos - 1)
-
-                # Trim leading spaces from the label field
-                while left$ (.label$, 1) = " "
-                    .label$ = mid$ (.label$, 2, length (.label$) - 1)
-                endwhile
-
-                # Trim trailing spaces from the label field
-                while length (.label$) > 0 and right$ (.label$, 1) = " "
-                    .label$ = left$ (.label$, length (.label$) - 1)
-                endwhile
-
-                if .label$ = .rowLabel$
-                    .found = 1
-                    .remainder$ = mid$ (.line$, .tabPos + 1,
-                    ... length (.line$) - .tabPos)
-                endif
-            endif
-        endif
-    endfor
-
-    if .found = 0
-        .error$ = "The ANOVA table has no row labelled """
-        ... + .rowLabel$ + """."
-    else
-        # Replace tabs with spaces for consistent tokenization
-        .remainder$ = replace$ (.remainder$, tab$, " ", 0)
-
-        # Collapse multiple spaces to single space
-        .prev$ = .remainder$
-        .remainder$ = replace$ (.remainder$, "  ", " ", 0)
-        while .remainder$ <> .prev$
-            .prev$ = .remainder$
-            .remainder$ = replace$ (.remainder$, "  ", " ", 0)
-        endwhile
-
-        # Trim leading spaces
-        while left$ (.remainder$, 1) = " "
-            .len = length (.remainder$)
-            if .len > 1
-                .remainder$ = mid$ (.remainder$, 2, .len - 1)
-            else
-                .remainder$ = ""
-            endif
-        endwhile
-
-        # Trim trailing spaces
-        while length (.remainder$) > 0 and right$ (.remainder$, 1) = " "
-            .remainder$ = left$ (.remainder$, length (.remainder$) - 1)
-        endwhile
-
-        if .remainder$ = ""
-            .error$ = "The ANOVA table row labelled """ + .rowLabel$
-            ... + """ has no numeric values after the label."
-        else
-            # Tokenize by single spaces
-            .nTokens = 0
-            .work$ = .remainder$
-
-            while length (.work$) > 0
-                .nTokens = .nTokens + 1
-                .spacePos = index (.work$, " ")
-                if .spacePos > 0
-                    .token$[.nTokens] = left$ (.work$, .spacePos - 1)
-                    .work$ = mid$ (.work$, .spacePos + 1,
-                    ... length (.work$) - .spacePos)
-                else
-                    .token$[.nTokens] = .work$
-                    .work$ = ""
-                endif
-            endwhile
-
-            # Map positional tokens to output fields
-            # Full row (source with F and p): SS df MS F p
-            # Partial row (residual): SS df MS
-            # Minimal row (total): SS df
-            if .nTokens >= 1
-                .ss = number (.token$[1])
-            endif
-            if .nTokens >= 2
-                .df = number (.token$[2])
-            endif
-            if .nTokens >= 3
-                .ms = number (.token$[3])
-            endif
-            if .nTokens >= 4
-                .f = number (.token$[4])
-            endif
-            if .nTokens >= 5
-                .p = number (.token$[5])
-            endif
-        endif
-    endif
-endproc
+# @eml_parseAnovaLine (the Info-window row parser this file once shared
+# between the one-way and two-way ANOVA paths) is RETIRED. @emlOneWayAnova
+# never called the built-in Report command in the first place (see its own
+# header note), and @emlTwoWayAnova's rewrite above -- routing through
+# @emlAnovaKernelTwoWay instead of `Report two-way anova` -- removed its
+# only caller. Per RULING_CONSOLIDATED_KERNELS_2026-09-01.md Class C
+# ("the parse-and-repair path goes"), the procedure itself goes with it
+# rather than being kept as dead code.
 
 
 # ============================================================================
@@ -2376,6 +4186,16 @@ endproc
 #                      undefined; such cells hold undefined, not 1
 #   .warning$        - non-fatal disclosure, or "" if none
 #   .error$          - "" on success, diagnostic message on failure
+#   .groupData'g'#   - ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS
+#                      _2026-09-01.md §5): group g's data vector, cached at
+#                      the single @eml_getGroupData call this procedure
+#                      makes for that group. A caller that needs a group's
+#                      raw values after this procedure returns (e.g. a
+#                      reporter printing per-group descriptives) reads
+#                      emlTukeyHSD.groupData'g'# rather than re-extracting
+#                      from the table -- but only in the SAME turn: like
+#                      every other procedure-local output in this codebase,
+#                      it survives only until @emlTukeyHSD runs again.
 #
 # Access pattern:
 #   p-value for group 2 vs group 4: emlTukeyHSD.pMatrix##[2, 4]
@@ -2455,36 +4275,146 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
         endfor
     endif
 
-    # --- Compute group means, sizes, and pooled MSE ---
+    # --- Extract every group once, then hand the pairwise math to the one
+    # shared kernel ---
+    #
+    # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
+    # 09-01.md §5). Every group's vector is fetched here exactly once and
+    # cached under this procedure's own namespace as .groupData'.s'#
+    # (Praat's interpolated-name array idiom, already used this way
+    # elsewhere in this tree -- see eml-anova-kernel.praat's .gVals'.g'#).
+    # The old code called @eml_getGroupData again inside the pairwise loop,
+    # twice per (i, j) pair, which is the defect that ruling names as the
+    # reason an 18,009-row NIST case did not return in twelve minutes.
+    #
+    # The actual pooled-MSE / SE / q / p / mean-difference / Cohen's-d
+    # arithmetic now lives in exactly one place, @eml_tukeyPairwiseFromGroups
+    # below, which takes already-extracted data and never touches the
+    # table. This procedure builds that one flat vector and calls it.
+    # @emlOneWayAnova's own Tukey branch calls the SAME procedure, directly
+    # from vectors IT already extracted for the F-test, instead of calling
+    # @emlTukeyHSD (which would re-extract every group a second time) --
+    # so a nested ANOVA + Tukey run performs exactly one extraction pass
+    # per group, not two, and both callers execute identical code, so
+    # their numbers cannot drift apart.
+    #
+    # Safe to reuse: @eml_getGroupData is a pure read of an unmutated
+    # Table, so the cached vector is bit-identical to whatever a fresh call
+    # would return. Safe across CASES: a later call to this same procedure
+    # with fewer groups only reads indices 1..nGroups of THAT call, so a
+    # stale .groupData'.s'# left over from a larger previous case is never
+    # read -- the same bounded-index convention .groupN[.s] already relies
+    # on in this procedure.
 
     if .error$ = ""
         .totalN = 0
-        .ssWithin = 0
-
         for .s from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
             ... .groupName$[.s]
             .groupN[.s] = eml_getGroupData.n
-            .groupMean[.s] = mean (eml_getGroupData.data#)
+            .groupData'.s'# = eml_getGroupData.data#
             .totalN = .totalN + .groupN[.s]
-
-            # SS within for this group (vectorized)
-            .centered# = eml_getGroupData.data# - .groupMean[.s]
-            .ssWithin = .ssWithin + sum (.centered# * .centered#)
         endfor
 
-        .dfWithin = .totalN - .nGroups
-        if .dfWithin < 1
-            .error$ = string$ (.totalN) + " observations across "
-            ... + string$ (.nGroups) + " groups leave no within-groups "
-            ... + "degrees of freedom. There must be more observations "
-            ... + "than groups."
-        else
-            .msWithin = .ssWithin / .dfWithin
+        .allData# = zero# (.totalN)
+        .groupNVec# = zero# (.nGroups)
+        .offset = 0
+        for .s from 1 to .nGroups
+            .groupNVec#[.s] = .groupN[.s]
+            for .k from 1 to .groupN[.s]
+                .allData#[.offset + .k] = .groupData'.s'#[.k]
+            endfor
+            .offset = .offset + .groupN[.s]
+        endfor
+
+        @eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupNVec#, .alpha
+        .error$ = eml_tukeyPairwiseFromGroups.error$
+        .warning$ = eml_tukeyPairwiseFromGroups.warning$
+        .nUndefined = eml_tukeyPairwiseFromGroups.nUndefined
+        .nPairs = eml_tukeyPairwiseFromGroups.nPairs
+        .msWithin = eml_tukeyPairwiseFromGroups.msWithin
+        .dfWithin = eml_tukeyPairwiseFromGroups.dfWithin
+        .qCritical = eml_tukeyPairwiseFromGroups.qCritical
+        if .error$ = ""
+            .pMatrix## = eml_tukeyPairwiseFromGroups.pMatrix##
+            .qMatrix## = eml_tukeyPairwiseFromGroups.qMatrix##
+            .meanDiff## = eml_tukeyPairwiseFromGroups.meanDiff##
+            .dMatrix## = eml_tukeyPairwiseFromGroups.dMatrix##
         endif
     endif
 
-    # --- Compute pairwise q statistics and p-values ---
+    # --- Restore selection ---
+
+    selectObject: .tableId
+endproc
+
+
+# ============================================================================
+# @eml_tukeyPairwiseFromGroups
+# ============================================================================
+# THE canonical Tukey HSD pairwise computation -- pooled MSE, pairwise SE,
+# q, p, mean difference and Cohen's d for every pair -- taking group data
+# that has ALREADY been extracted. It never touches a Table.
+#
+# Built for RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5,
+# ONE-EXTRACTION-PER-CASE: this is what lets @emlOneWayAnova run its own
+# Tukey post-hoc from the vectors it already extracted for the F-test,
+# without a second call into @emlTukeyHSD re-extracting the same groups.
+# @emlTukeyHSD (above) extracts once and calls here; @emlOneWayAnova's
+# Tukey branch (below) calls here directly from its own cache. There is
+# exactly one implementation of the pairwise math, so the two callers'
+# numbers cannot drift apart -- and this procedure being unreachable from
+# a Table at all is what makes a repeated call here free.
+#
+# Arguments:
+#   .nGroups   - number of groups (k)
+#   .allData#  - every group's values, concatenated in group order:
+#                group 1's .groupN#[1] values, then group 2's, and so on
+#   .groupN#   - group sizes, length .nGroups, same group order
+#   .alpha     - significance level for the critical q
+#
+# Output (same shape as @emlTukeyHSD's, and copied into it verbatim):
+#   .pMatrix##, .qMatrix##, .meanDiff##, .dMatrix##, .qCritical,
+#   .msWithin, .dfWithin, .nPairs, .nUndefined, .warning$, .error$
+# ============================================================================
+procedure eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupN#, .alpha
+    .error$ = ""
+    .warning$ = ""
+    .nUndefined = 0
+    .nPairs = 0
+    .msWithin = undefined
+    .dfWithin = undefined
+    .qCritical = undefined
+
+    .totalN = 0
+    .ssWithin = 0
+    .offset = 0
+    for .s from 1 to .nGroups
+        .n[.s] = .groupN#[.s]
+        .gData'.s'# = zero# (.n[.s])
+        for .k from 1 to .n[.s]
+            .gData'.s'#[.k] = .allData#[.offset + .k]
+        endfor
+        .offset = .offset + .n[.s]
+
+        .gMean[.s] = mean (.gData'.s'#)
+        .totalN = .totalN + .n[.s]
+
+        # SS within for this group (vectorized) -- same formula and
+        # summation order as @emlTukeyHSD used before this split.
+        .centered# = .gData'.s'# - .gMean[.s]
+        .ssWithin = .ssWithin + sum (.centered# * .centered#)
+    endfor
+
+    .dfWithin = .totalN - .nGroups
+    if .dfWithin < 1
+        .error$ = string$ (.totalN) + " observations across "
+        ... + string$ (.nGroups) + " groups leave no within-groups "
+        ... + "degrees of freedom. There must be more observations "
+        ... + "than groups."
+    else
+        .msWithin = .ssWithin / .dfWithin
+    endif
 
     if .error$ = ""
         .pMatrix## = zero## (.nGroups, .nGroups)
@@ -2501,9 +4431,9 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
 
         for .i from 1 to .nGroups
             for .j from .i + 1 to .nGroups
-                .diff = .groupMean[.i] - .groupMean[.j]
+                .diff = .gMean[.i] - .gMean[.j]
                 .se = sqrt (.msWithin
-                ... * (1 / .groupN[.i] + 1 / .groupN[.j]) / 2)
+                ... * (1 / .n[.i] + 1 / .n[.j]) / 2)
                 # Guard the degenerate SE explicitly. A zero or
                 # undefined SE (zero pooled within-group variance, or
                 # an undefined MSE) makes q undefined; the old code
@@ -2533,13 +4463,10 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
                 .meanDiff##[.i, .j] = .diff
                 .meanDiff##[.j, .i] = -.diff
 
-                # Cohen's d per pair (two-group pooled SD)
-                @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
-                ... .groupName$[.i]
-                .vI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
-                ... .groupName$[.j]
-                @emlCohenD: .vI#, eml_getGroupData.data#
+                # Cohen's d per pair (two-group pooled SD). Reads the
+                # reconstructed group vectors above -- no extraction here
+                # at all, this procedure never sees a table.
+                @emlCohenD: .gData'.i'#, .gData'.j'#
                 if emlCohenD.error$ = ""
                     .dMatrix##[.i, .j] = emlCohenD.d
                     .dMatrix##[.j, .i] = -emlCohenD.d
@@ -2560,10 +4487,6 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
             ... + "error); their p-values are undefined, not 1"
         endif
     endif
-
-    # --- Restore selection ---
-
-    selectObject: .tableId
 endproc
 
 
@@ -2602,6 +4525,16 @@ endproc
 #   .groupMean[g] - mean of group g (1..nGroups, alphabetical order)
 #   .groupN[g]    - size of group g
 #   .groupLabel$[g] - label of group g
+#   .groupData'g'# - ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS
+#                  _2026-09-01.md §5): group g's data vector, cached at the
+#                  single @eml_getGroupData call this procedure makes for
+#                  that group. Populated whether or not .tukey = 1. A
+#                  caller needing a group's raw values after this
+#                  procedure returns (e.g. the Cohen's d fallback in
+#                  @emlRunAnovaAnalysis) reads emlOneWayAnova.groupData'g'#
+#                  rather than re-extracting -- valid only until
+#                  @emlOneWayAnova runs again, like every other
+#                  procedure-local output in this codebase.
 #   .warning$  - non-fatal disclosure (degenerate variance), or ""
 #   .error$    - "" on success, diagnostic message on failure
 #
@@ -2609,7 +4542,9 @@ endproc
 #   .pMatrix##     - k × k symmetric matrix of Tukey pairwise p-values
 #   .qMatrix##     - k × k symmetric matrix of Tukey q statistics
 #   .meanDiff##    - k × k antisymmetric mean differences
-#   .dMatrix##     - k × k antisymmetric Cohen's d (from @emlTukeyHSD)
+#   .dMatrix##     - k × k antisymmetric Cohen's d (from
+#                    @eml_tukeyPairwiseFromGroups, called directly on this
+#                    procedure's own cache -- see the Tukey branch below)
 #   .qCritical     - critical q at alpha = 0.05
 #   .groupName$[i] - group label for row/column i (1..nGroups, alphabetical)
 #   .nPairs        - number of unique pairwise comparisons
@@ -2685,9 +4620,22 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     if .error$ = ""
         .nSingleton = 0
         .singletonList$ = ""
+
+        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
+        # 2026-09-01.md §5). This loop used to run a second time, right
+        # below, purely to re-fetch what it had already fetched here to
+        # check group sizes -- and then a THIRD time again lower down to
+        # centre the shifted deviations. All three needed nothing but this
+        # group's vector, so the vector is now cached once, as
+        # .groupData'.g'#, and every later pass in this procedure (the
+        # sum in "pass 1" and the shifted centering in "pass 2") reads it
+        # instead of calling @eml_getGroupData again. Cross-case safety is
+        # the same bounded-index argument as everywhere else in this file:
+        # a later, smaller-nGroups case never reads a stale higher index.
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
             ... emlCountGroups.groupLabel$[.g]
+            .groupData'.g'# = eml_getGroupData.data#
             if eml_getGroupData.n < 2
                 .nSingleton = .nSingleton + 1
                 if .nSingleton <= 5
@@ -2733,14 +4681,16 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
         .totalN = 0
         .sumOfRawScores = 0
 
+        # Reads the cache the loop above built -- no extraction here.
+        # (.groupMean[.g] set here is provisional and overwritten by the
+        # shift-corrected value below; kept, unchanged, for anyone reading
+        # it between the two passes.)
         for .g from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
-            ... emlCountGroups.groupLabel$[.g]
-            .gN = eml_getGroupData.n
-            .gData# = eml_getGroupData.data#
+            .gData# = .groupData'.g'#
 
             # Group sizes were validated above, so every group here has
             # at least 2 observations.
+            .gN = size (.gData#)
             .gSum = sum (.gData#)
 
             .totalN = .totalN + .gN
@@ -2784,9 +4734,7 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
         .weightedShiftedSum = 0
 
         for .g from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
-            ... .groupLabel$[.g]
-            .shifted# = eml_getGroupData.data# - .shift
+            .shifted# = .groupData'.g'# - .shift
             .shiftedMean[.g] = mean (.shifted#)
             .centered# = .shifted# - .shiftedMean[.g]
 
@@ -2850,19 +4798,47 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
     # --- Tukey HSD post-hoc (optional, chained) ---
 
     if .error$ = "" and .tukey = 1
-        @emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, 0.05
-        if emlTukeyHSD.error$ <> ""
-            .error$ = "Tukey HSD: " + emlTukeyHSD.error$
-        else
-            .nPairs = emlTukeyHSD.nPairs
-            .pMatrix## = emlTukeyHSD.pMatrix##
-            .qMatrix## = emlTukeyHSD.qMatrix##
-            .meanDiff## = emlTukeyHSD.meanDiff##
-            .dMatrix## = emlTukeyHSD.dMatrix##
-            .qCritical = emlTukeyHSD.qCritical
-            for .g from 1 to emlTukeyHSD.nGroups
-                .groupName$[.g] = emlTukeyHSD.groupName$[.g]
+        ; THE ALPHA THIS PASSES FIXES .qCritical, AND NOTHING ELSE. The
+        ; pairwise adjusted p-values in .pMatrix## and the q statistics in
+        ; .qMatrix## are computed from the data and do not depend on it; only
+        ; the critical q does, and the only readers of .qCritical are the
+        ; family-wise interval the ANOVA report prints and the conf.low /
+        ; conf.high pair the Tukey export frame carries. Both of those are
+        ; labelled 95%, which is the level this line sets. A caller wanting
+        ; another level calls @emlTukeyHSD directly, which takes .alpha.
+        ;
+        ; CALLS @eml_tukeyPairwiseFromGroups DIRECTLY, NOT @emlTukeyHSD.
+        ; @emlTukeyHSD would re-extract every group from the table a second
+        ; time -- it has no way to know the vectors above were already
+        ; pulled for the F-test. Building the flat .allData# / .groupNVec#
+        ; from THIS procedure's own .groupData'.g'# cache and calling the
+        ; shared kernel directly means a tukey=1 ANOVA case extracts each
+        ; group exactly once, not twice (RULING_CONSOLIDATED_KERNELS_2026-
+        ; 09-01.md §5). The kernel is the same code @emlTukeyHSD itself
+        ; calls, so the numbers are identical to what a standalone
+        ; @emlTukeyHSD call on the same table would produce.
+        .allData# = zero# (.totalN)
+        .groupNVec# = zero# (.nGroups)
+        .offset = 0
+        for .g from 1 to .nGroups
+            .groupNVec#[.g] = .groupN[.g]
+            for .k from 1 to .groupN[.g]
+                .allData#[.offset + .k] = .groupData'.g'#[.k]
             endfor
+            .offset = .offset + .groupN[.g]
+            .groupName$[.g] = .groupLabel$[.g]
+        endfor
+
+        @eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupNVec#, 0.05
+        if eml_tukeyPairwiseFromGroups.error$ <> ""
+            .error$ = "Tukey HSD: " + eml_tukeyPairwiseFromGroups.error$
+        else
+            .nPairs = eml_tukeyPairwiseFromGroups.nPairs
+            .pMatrix## = eml_tukeyPairwiseFromGroups.pMatrix##
+            .qMatrix## = eml_tukeyPairwiseFromGroups.qMatrix##
+            .meanDiff## = eml_tukeyPairwiseFromGroups.meanDiff##
+            .dMatrix## = eml_tukeyPairwiseFromGroups.dMatrix##
+            .qCritical = eml_tukeyPairwiseFromGroups.qCritical
         endif
     endif
 
@@ -3067,6 +5043,16 @@ procedure emlRequireNumericColumn: .tableId, .role$, .columnName$, .strict
                 endif
             endif
         endif
+    else
+        ; A COLUMN THAT DOES NOT EXIST FAILS THE GATE. Without this branch
+        ; .error$ stays "" from the top of the procedure and the gate reports
+        ; success, which is the opposite of its own name. Every caller in this
+        ; file asks @emlRequireColumnPresent first and so never reaches here;
+        ; the caller this branch is for is the future one that trusts
+        ; "Numeric" in the name to also mean "Present". Quotes
+        ; @emlAuditColumn's own message verbatim -- the missing-column
+        ; diagnosis is made in ONE place, and it is not this one.
+        .error$ = emlAuditColumn.error$
     endif
 endproc
 
@@ -3076,24 +5062,39 @@ endproc
 # ============================================================================
 # Performs two-way ANOVA on a Table.
 #
-# SUM-OF-SQUARES TYPE: TYPE III (partial). The main-effect and
-# interaction sums of squares come from Praat's built-in
-# Report two-way anova (hidden command), which computes Type III SS;
-# these agree with R (car::Anova type 3) to full printed precision on
-# both balanced and unbalanced designs.
+# SUM-OF-SQUARES TYPE: TYPE III (partial), computed directly by this
+# plugin's own kernel (@emlAnovaKernelTwoWay, eml-anova-kernel.praat) --
+# NOT by Praat's built-in `Report two-way anova`, which this procedure no
+# longer calls at all. That built-in computes Khuri's (1998) unweighted-
+# means SS, not Type III: measured on Praat's own manual example
+# (Peterson-Barney 1952, a proportional but unbalanced design) it reports
+# SS_Error = 1,600,534 where the correct within-cell value is 914,449, and
+# a Vowel F of 7.625 where the correct value is 13.346. The two figures
+# happen to agree on a BALANCED design (where Type I, II, III and Khuri
+# all coincide) and diverge on an unbalanced one -- see
+# mailbox/to-opus/RULING_CONSOLIDATED_KERNELS_2026-09-01.md section 1
+# (Class C) for the measurement and the ruling this rewrite answers.
 #
-# The error and total terms are NOT taken from that report. Praat's
-# Error and Total rows are incorrect on unbalanced designs (verified:
-# an unbalanced 2x2 reported SS_Error = 499.322 / SS_Total = 1838.599
-# where the true within-cell residual SS is 29.9167 and the true
-# centred total SS is 1804.545). SS_Error is recomputed here from
-# within-cell deviations, SS_Total from centred deviations about the
-# grand mean, and F/P for all three effects are re-derived from the
-# corrected MS_Error.
+# The kernel computes Types I, II and III directly from the raw data (RSS
+# differences on a sum-coded design for I/II; a Wald quadratic form on the
+# unweighted cell means, solved with `solve#`, for III) and is oracled
+# against real car::Anova at machine precision (124/124, worst relative
+# error 4.5e-12, across four fixtures including an unbalanced three-level
+# one). This procedure asks it for Type III (the default) and reports its
+# SS/df/MS/F/p, Error, Total and partial eta-squared unchanged; no parsing
+# of any Info-window text happens anywhere in this procedure.
 #
 # On an unbalanced design the Type III effect sums of squares do NOT
 # add up to SS_Total. This is a property of Type III SS, not an error;
 # .balanced is set to 0 and .warning$ says so.
+#
+# COMPLETE DESIGNS ONLY, per the kernel: every factor-level combination
+# must have at least one observation, or this procedure REFUSES with
+# .error$ rather than producing a table. Type III on an incomplete design
+# is not estimable in the ordinary sense; the kernel treats that as a
+# refusal, not a warning. (The pre-kernel version of this procedure did
+# not check for this and would have handed an incomplete design to
+# Praat's built-in with unverified results.)
 #
 # Arguments:
 #   .tableId   - ID of a Table object (must be in object list)
@@ -3108,36 +5109,54 @@ endproc
 #     .fB, .pB, .dfB, .ssB, .msB
 #   Interaction (A × B):
 #     .fAB, .pAB, .dfAB, .ssAB, .msAB
-#   Error (recomputed from within-cell deviations):
+#   Error (within-cell deviations, from the kernel):
 #     .ssError, .dfError, .msError
-#   Total (recomputed as the centred total sum of squares):
+#   Total (centred sum of squares, from the kernel):
 #     .ssTotal, .dfTotal
-#   As reported by Praat (traceability only, not used):
+#   Vestigial (no longer distinct from the corrected figures above, now
+#   that there is no separate "as reported by the built-in" value to keep
+#   apart from the corrected one -- kept only so a caller reading these
+#   five fields by name does not hit "Procedure attribute not found"):
 #     .ssErrorReported, .dfErrorReported, .msErrorReported
-#     .ssTotalReported, .dfTotalReported
+#     .ssTotalReported, .dfTotalReported (always undefined)
+#   Which SS type produced the table above (always Type III here; the
+#   kernel itself can produce any of the three, see @emlAnovaKernelTwoWay):
+#     .ssType (= 3), .ssTypeLabel$ (= "Type III")
 #   Design:
-#     .nCells   - number of non-empty factor-level combinations
+#     .nCells   - number of factor-level combinations (= .nLev1 * .nLev2;
+#                 the kernel refuses rather than reaching here with fewer)
 #     .nLev1    - number of distinct levels of factor 1
 #     .nLev2    - number of distinct levels of factor 2
 #     .minCellN - smallest cell size
 #     .maxCellN - largest cell size
 #     .balanced - 1 if every cell is present and equally sized, else 0
+#   Per-cell / per-row detail, for callers that build a cell-means table
+#   or augment residuals onto the original rows (@emlReportTwoWayAnova,
+#   @emlDeclareTwoWayResult): gathered here directly from the Table in the
+#   same shape this procedure has always exposed it in -- keyed strings
+#   and index-addressed scalars, not the kernel's own vectors, because
+#   that is the shape those two callers already read:
+#     .nObs, .nRows      - row count (both names, historical duplicate)
+#     .lev1$[1..nLev1], .lev2$[1..nLev2] - level names, first-seen order
+#     .cellLabel$[1..nCells]  - lev1$ + newline$ + lev2$, one per cell
+#     .cellN[1..nCells], .cellMean[1..nCells]
+#     .cellOf[1..nObs]   - which cell (1..nCells) each row belongs to
+#     .yValue[1..nObs]   - that row's data value
 #   Effect sizes:
 #     .partialEtaSqA  - partial eta-squared for factor 1
 #     .partialEtaSqB  - partial eta-squared for factor 2
 #     .partialEtaSqAB - partial eta-squared for interaction
 #   Status:
-#     .warning$ - non-fatal disclosure (unbalanced, empty cells,
-#                 degenerate variance), or "" if none
+#     .warning$ - non-fatal disclosure (unbalanced, degenerate variance,
+#                 zero error df), or "" if none
 #     .error$ - "" on success, diagnostic message on failure
 #
 # Notes:
-#   - The built-in Report two-way anova is a hidden command (stable since ~2006)
-#   - Info window output row order: factor1, factor2, interaction, Error, Total
-#   - Interaction row label is "factor1 x factor2" (constructed internally)
-#   - Parsing isolates the data section (after "Source" header) to avoid
-#     matching factor names in the header line
-#   - Original Table selection is restored on return
+#   - No Praat statistical Report command is called anywhere in this
+#     procedure; every number above comes from @emlAnovaKernelTwoWay.
+#   - Interaction is keyed "factor1 x factor2" in .cellLabel$ callers'
+#     own construction, matching the pre-kernel convention.
+#   - Original Table selection is restored on return.
 # ============================================================================
 
 procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
@@ -3172,6 +5191,8 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     .minCellN = undefined
     .maxCellN = undefined
     .balanced = 1
+    .ssType = 3
+    .ssTypeLabel$ = "Type III"
     .partialEtaSqA = undefined
     .partialEtaSqB = undefined
     .partialEtaSqAB = undefined
@@ -3205,166 +5226,86 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     # --- The data column must be a column of numbers ---
     #
     # STRICT, uniquely among the tests in this file. Every other path reads
-    # the data column row by row and can drop an unusable cell; the built-in
-    # below numericises the whole column in one go and silently substitutes
-    # alphabetical ranks when any cell fails, so there is no partial answer
-    # to give.
+    # the data column row by row and can drop an unusable cell; the kernel
+    # this procedure now calls (@emlAnovaKernelTwoWay, via @eml_ak2_gather)
+    # reads the column the same row-wise way, but does not itself AUDIT its
+    # type -- a non-numeric cell there returns Praat's `undefined` and
+    # poisons every downstream sum silently, with .error$ never set. This
+    # guard is what stands between a mistyped column and that silent
+    # `undefined` propagation; it must run before the kernel is called.
 
     if .error$ = ""
         @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 1
         .error$ = emlRequireNumericColumn.error$
     endif
 
-    # --- Run Report two-way anova ---
+    # --- The two-way ANOVA kernel ---
     #
-    # ASSIGNED, NOT RUN BARE, AND THE DIFFERENCE IS NOT COSMETIC (12 Aug 2026).
+    # No Praat statistical Report command anywhere in this procedure. The
+    # kernel (@emlAnovaKernelTwoWay, eml-anova-kernel.praat) computes Types
+    # I, II and III directly from the raw data; ssTypeRequested = 3 asks
+    # for Type III as the headline table, the plugin's default and the
+    # type this procedure has always documented itself as reporting -- see
+    # the module header there for the oracle results this rests on.
     #
-    # `Report two-way anova: ...` on its own line CLEARS the Info window and
-    # writes the report into it, so the only way to read the report was
-    # info$ () -- and the caller then had to put the user's Info window back,
-    # which @emlRunTwoWayAnalysis did by snapshotting info$ () beforehand and
-    # replaying it with writeInfo:.
+    # The kernel REFUSES (its own .error$) on an incomplete design (any
+    # factor-level combination with zero observations), on fewer than 4
+    # rows, or on fewer than 2 levels of either factor -- conditions the
+    # pre-kernel version of this procedure either did not check at all or
+    # handed silently to the built-in. That refusal is propagated as this
+    # procedure's own .error$ and nothing below it runs.
+
+    if .error$ = ""
+        @emlAnovaKernelTwoWay: .tableId, .dataCol$, .factor1$, .factor2$, 3
+        .error$ = emlAnovaKernelTwoWay.error$
+    endif
+
+    if .error$ = ""
+        .fA = emlAnovaKernelTwoWay.fA
+        .pA = emlAnovaKernelTwoWay.pA
+        .dfA = emlAnovaKernelTwoWay.dfA
+        .ssA = emlAnovaKernelTwoWay.ssA
+        .msA = emlAnovaKernelTwoWay.msA
+        .fB = emlAnovaKernelTwoWay.fB
+        .pB = emlAnovaKernelTwoWay.pB
+        .dfB = emlAnovaKernelTwoWay.dfB
+        .ssB = emlAnovaKernelTwoWay.ssB
+        .msB = emlAnovaKernelTwoWay.msB
+        .fAB = emlAnovaKernelTwoWay.fAB
+        .pAB = emlAnovaKernelTwoWay.pAB
+        .dfAB = emlAnovaKernelTwoWay.dfAB
+        .ssAB = emlAnovaKernelTwoWay.ssAB
+        .msAB = emlAnovaKernelTwoWay.msAB
+        .ssError = emlAnovaKernelTwoWay.ssError
+        .dfError = emlAnovaKernelTwoWay.dfError
+        .msError = emlAnovaKernelTwoWay.msError
+        .ssTotal = emlAnovaKernelTwoWay.ssTotal
+        .dfTotal = emlAnovaKernelTwoWay.dfTotal
+        .ssType = emlAnovaKernelTwoWay.ssType
+        .ssTypeLabel$ = emlAnovaKernelTwoWay.ssTypeLabel$
+        .minCellN = emlAnovaKernelTwoWay.minCellN
+        .maxCellN = emlAnovaKernelTwoWay.maxCellN
+        .balanced = emlAnovaKernelTwoWay.balanced
+        .partialEtaSqA = emlAnovaKernelTwoWay.partialEtaSqA
+        .partialEtaSqB = emlAnovaKernelTwoWay.partialEtaSqB
+        .partialEtaSqAB = emlAnovaKernelTwoWay.partialEtaSqAB
+        .warning$ = emlAnovaKernelTwoWay.warning$
+    endif
+
+    # --- Per-cell / per-row detail, in the shape this procedure has
+    #     always exposed it in ---
     #
-    # That replay is correct in the GUI and WRONG IN BATCH. Under `praat
-    # --run`, Info output is streamed to stdout as it is produced; nothing can
-    # be un-printed, so writeInfo: does not restore anything -- it emits the
-    # entire preceding transcript a SECOND time. Measured on 6.6.30: a
-    # 27-operation driver whose ninth operation was a two-way ANOVA printed 35
-    # operation lines, the first eight twice. Anything reading a batch run's
-    # stdout -- a harness, a log parser, a user piping to a file -- saw
-    # duplicated history and no error.
-    #
-    # Assigning the command's result captures the report into a string and
-    # leaves the Info window untouched, so there is nothing to restore and the
-    # save/restore pair is gone from the orchestrator entirely.
-
-    if .error$ = ""
-        selectObject: .tableId
-        .anovaInfo$ = Report two-way anova: .dataCol$, .factor1$, .factor2$,
-        ... "no"
-    endif
-
-    # --- Isolate data section (after "Source" header line) ---
-    # Factor names appear both in the header sentence and in the data
-    # rows. Trimming to the data section prevents false matches.
-
-    if .error$ = ""
-        .sourcePos = index (.anovaInfo$, "Source")
-        if .sourcePos = 0
-            .error$ = "Praat's two-way ANOVA report could not be read: "
-            ... + "no Source header was found in its output."
-        endif
-    endif
-
-    if .error$ = ""
-        # Get substring from "Source" onward
-        .fromSource$ = mid$ (.anovaInfo$, .sourcePos,
-        ... length (.anovaInfo$) - .sourcePos + 1)
-
-        # Find the first newline to skip the "Source SS Df MS F P" header
-        .nlPos = index (.fromSource$, newline$)
-        if .nlPos = 0
-            .error$ = "Praat's two-way ANOVA report could not be read: "
-            ... + "nothing follows the Source header line."
-        else
-            .dataSection$ = mid$ (.fromSource$, .nlPos + 1,
-            ... length (.fromSource$) - .nlPos)
-        endif
-    endif
-
-    # --- Parse factor 1 row: SS, df, MS, F, p ---
-
-    if .error$ = ""
-        @eml_parseAnovaLine: .dataSection$, .factor1$
-        if eml_parseAnovaLine.error$ <> ""
-            .error$ = "Could not read the row for the first factor. "
-            ... + eml_parseAnovaLine.error$
-        else
-            .ssA = eml_parseAnovaLine.ss
-            .dfA = eml_parseAnovaLine.df
-            .msA = eml_parseAnovaLine.ms
-            .fA = eml_parseAnovaLine.f
-            .pA = eml_parseAnovaLine.p
-        endif
-    endif
-
-    # --- Parse factor 2 row: SS, df, MS, F, p ---
-
-    if .error$ = ""
-        @eml_parseAnovaLine: .dataSection$, .factor2$
-        if eml_parseAnovaLine.error$ <> ""
-            .error$ = "Could not read the row for the second factor. "
-            ... + eml_parseAnovaLine.error$
-        else
-            .ssB = eml_parseAnovaLine.ss
-            .dfB = eml_parseAnovaLine.df
-            .msB = eml_parseAnovaLine.ms
-            .fB = eml_parseAnovaLine.f
-            .pB = eml_parseAnovaLine.p
-        endif
-    endif
-
-    # --- Parse interaction row: SS, df, MS, F, p ---
-
-    if .error$ = ""
-        .interactionLabel$ = .factor1$ + " x " + .factor2$
-        @eml_parseAnovaLine: .dataSection$, .interactionLabel$
-        if eml_parseAnovaLine.error$ <> ""
-            .error$ = "Could not read the interaction row. "
-            ... + eml_parseAnovaLine.error$
-        else
-            .ssAB = eml_parseAnovaLine.ss
-            .dfAB = eml_parseAnovaLine.df
-            .msAB = eml_parseAnovaLine.ms
-            .fAB = eml_parseAnovaLine.f
-            .pAB = eml_parseAnovaLine.p
-        endif
-    endif
-
-    # --- Parse Error row: SS, df, MS (reported values, retained only
-    #     for traceability — they are NOT used, see below) ---
-
-    if .error$ = ""
-        @eml_parseAnovaLine: .dataSection$, "Error"
-        if eml_parseAnovaLine.error$ <> ""
-            .error$ = "Could not read the Error row. "
-            ... + eml_parseAnovaLine.error$
-        else
-            .ssErrorReported = eml_parseAnovaLine.ss
-            .dfErrorReported = eml_parseAnovaLine.df
-            .msErrorReported = eml_parseAnovaLine.ms
-        endif
-    endif
-
-    # --- Parse Total row: SS, df (reported values, traceability only) ---
-
-    if .error$ = ""
-        @eml_parseAnovaLine: .dataSection$, "Total"
-        if eml_parseAnovaLine.error$ <> ""
-            .error$ = "Could not read the Total row. "
-            ... + eml_parseAnovaLine.error$
-        else
-            .ssTotalReported = eml_parseAnovaLine.ss
-            .dfTotalReported = eml_parseAnovaLine.df
-        endif
-    endif
-
-    # --- Recompute the error and total terms from the raw data ---
-    #
-    # Praat's Report two-way anova reports Type III sums of squares for
-    # the two main effects and the interaction, and those agree with R
-    # (car::Anova type 3) to full printed precision. Its Error and Total
-    # rows do NOT: on an unbalanced 2x2 it reported SS_Error = 499.322
-    # (df 7) where the true within-cell residual sum of squares is
-    # 29.9167, and SS_Total = 1838.599 where the true centred total is
-    # 1804.545. Because F and P in that report are formed from the bad
-    # MS_Error, they are wrong too.
-    #
-    # SS_Error is therefore recomputed here as the sum over cells of the
-    # within-cell squared deviations, SS_Total as the centred total sum
-    # of squares, and F/P for each effect are re-derived from the
-    # corrected MS_Error. The Type III effect sums of squares parsed
-    # from Praat are used unchanged.
+    # @emlAnovaKernelTwoWay computes cell means and counts internally (as
+    # `#` vectors, inside its own private @eml_ak2_gather) but does not
+    # publish them -- callers of THIS procedure, though, have always read
+    # them as index-addressed scalars keyed by a lev1$+newline$+lev2$
+    # string (@emlReportTwoWayAnova's cell-means and marginal-means
+    # tables; @emlDeclareTwoWayResult's residual augmentation). Rather
+    # than reach into the kernel's own private state -- a second file's
+    # internals, in a shape those two callers do not use anyway -- this
+    # gathers the same detail directly, exactly as this procedure always
+    # has. The kernel has already refused on any design this scan would
+    # find incomplete, so .nCells here is always .nLev1 * .nLev2.
 
     if .error$ = ""
         selectObject: .tableId
@@ -3372,7 +5313,6 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
         .nCells = 0
         .nLev1 = 0
         .nLev2 = 0
-        .sumAll = 0
 
         for .r from 1 to .nObs
             .l1$ = Get value: .r, .factor1$
@@ -3398,9 +5338,10 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
             .cellSum[.cellIdx] = .cellSum[.cellIdx] + .yv
             .cellOf[.r] = .cellIdx
             .yValue[.r] = .yv
-            .sumAll = .sumAll + .yv
 
-            # Track distinct levels of each factor for the balance check
+            # Track distinct levels of each factor, first-seen order --
+            # the same order @eml_ak2_gather discovers them in, since both
+            # scan the same rows the same way.
             .seen1 = 0
             for .c from 1 to .nLev1
                 if .lev1$[.c] = .l1$
@@ -3424,107 +5365,10 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
             endif
         endfor
 
-        .grandMean = .sumAll / .nObs
         for .c from 1 to .nCells
             .cellMean[.c] = .cellSum[.c] / .cellN[.c]
         endfor
-
-        # Two-pass (centred) accumulation — numerically stable
-        .ssError = 0
-        .ssTotal = 0
-        for .r from 1 to .nObs
-            .ci = .cellOf[.r]
-            .dev = .yValue[.r] - .cellMean[.ci]
-            .ssError = .ssError + .dev * .dev
-            .devTotal = .yValue[.r] - .grandMean
-            .ssTotal = .ssTotal + .devTotal * .devTotal
-        endfor
-
-        .dfError = .nObs - .nCells
-        .dfTotal = .nObs - 1
-
-        # --- Negative sum-of-squares guard ---
-        if .ssError < 0
-            .warning$ = "The computed error sum of squares was negative "
-            ... + "(" + fixed$ (.ssError, 10) + "); it was clamped to 0."
-            .ssError = 0
-        endif
-        if .ssTotal < 0
-            .warning$ = "The computed total sum of squares was negative "
-            ... + "(" + fixed$ (.ssTotal, 10) + "); it was clamped to 0."
-            .ssTotal = 0
-        endif
-        if .ssA < 0 or .ssB < 0 or .ssAB < 0
-            .warning$ = "At least one Type III effect sum of squares is "
-            ... + "negative; the model is degenerate."
-        endif
-
-        # --- Design balance check ---
-        .balanced = 1
-        .minCellN = .cellN[1]
-        .maxCellN = .cellN[1]
-        for .c from 2 to .nCells
-            if .cellN[.c] < .minCellN
-                .minCellN = .cellN[.c]
-            endif
-            if .cellN[.c] > .maxCellN
-                .maxCellN = .cellN[.c]
-            endif
-        endfor
-        if .nCells <> .nLev1 * .nLev2
-            .balanced = 0
-            .warning$ = "The design has empty cells ("
-            ... + string$ (.nCells) + " of " + string$ (.nLev1 * .nLev2)
-            ... + " factor combinations present); Type III sums of "
-            ... + "squares are not estimable for this design."
-        elsif .minCellN <> .maxCellN
-            .balanced = 0
-            .warning$ = "The design is unbalanced (cell sizes "
-            ... + string$ (.minCellN) + " to " + string$ (.maxCellN)
-            ... + "); Type III sums of squares do not add up to the "
-            ... + "total sum of squares."
-        endif
-
-        if .dfError > 0
-            .msError = .ssError / .dfError
-        else
-            .msError = undefined
-            .warning$ = "The error degrees of freedom is "
-            ... + string$ (.dfError) + ", so the error mean square, F "
-            ... + "and p are undefined."
-        endif
-
-        # --- Re-derive F and P from the corrected MS_Error ---
-        .fA = undefined
-        .pA = undefined
-        .fB = undefined
-        .pB = undefined
-        .fAB = undefined
-        .pAB = undefined
-        if .msError <> undefined
-            if .msError > 0
-                .msA = .ssA / .dfA
-                .msB = .ssB / .dfB
-                .msAB = .ssAB / .dfAB
-                .fA = .msA / .msError
-                .fB = .msB / .msError
-                .fAB = .msAB / .msError
-                .pA = fisherQ (.fA, .dfA, .dfError)
-                .pB = fisherQ (.fB, .dfB, .dfError)
-                .pAB = fisherQ (.fAB, .dfAB, .dfError)
-            else
-                .warning$ = "The error mean square is zero (no "
-                ... + "within-cell variance), so F and p are undefined."
-            endif
-        endif
-    endif
-
-    # --- Compute partial eta-squared effect sizes ---
-
-    if .error$ = ""
-        .partialEtaSqA = .ssA / (.ssA + .ssError)
-        .partialEtaSqB = .ssB / (.ssB + .ssError)
-        .partialEtaSqAB = .ssAB / (.ssAB + .ssError)
+        .nRows = .nObs
     endif
 
     # --- Restore selection ---
@@ -3625,6 +5469,14 @@ endproc
 #   .nGroups       - number of groups (k)
 #   .groupName$[i] - group label for group i (1..nGroups)
 #   .groupN[i]     - sample size for group i
+#   .groupData'i'# - group i's data vector, cached at the single
+#                    @eml_getGroupData call this procedure makes for it
+#                    (RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5). A
+#                    caller needing the raw values after this procedure
+#                    returns (e.g. the rank-biserial-r fallback in
+#                    @emlRunKruskalWallisAnalysis) reads this instead of
+#                    re-extracting. Valid only until @emlKruskalWallis
+#                    runs again.
 #   .meanRank[i]   - mean rank for group i
 #   .epsilonSq     - epsilon-squared effect size
 #   .tieCorrection - tie correction factor C (1.0 if no ties)
@@ -3680,13 +5532,19 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
     endif
 
     if .error$ = ""
-        # Get per-group sizes
+        # Get per-group sizes AND cache each group's vector -- ONE
+        # EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
+        # 09-01.md §5). A second loop used to sit right below this one,
+        # calling @eml_getGroupData again for every group purely to build
+        # the flat ranking vector; it now reads .groupData'g'#, the cache
+        # this loop leaves behind.
         .n = 0
         for .g from 1 to .nGroups
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
             .groupN[.g] = eml_getGroupData.n
+            .groupData'.g'# = eml_getGroupData.data#
             if .groupN[.g] = 0
                 .error$ = "Group """ + .groupName$[.g]
                 ... + """ has 0 observations. Every group needs at "
@@ -3697,15 +5555,14 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
     endif
 
     if .error$ = ""
-        # Build flat data vector in group order
+        # Build flat data vector in group order, from the cache above --
+        # no extraction here, a pure in-memory copy.
         .allData# = zero# (.n)
         .idx = 0
         for .g from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-            ... .groupName$[.g]
-            for .j from 1 to eml_getGroupData.n
+            for .j from 1 to .groupN[.g]
                 .idx = .idx + 1
-                .allData#[.idx] = eml_getGroupData.data#[.j]
+                .allData#[.idx] = .groupData'.g'#[.j]
             endfor
         endfor
     endif
@@ -3906,13 +5763,19 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
     endif
 
     if .error$ = ""
-        # Get per-group sizes
+        # Get per-group sizes AND cache each group's vector -- ONE
+        # EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
+        # 09-01.md §5). A second loop used to sit right below this one,
+        # calling @eml_getGroupData again for every group purely to build
+        # the flat ranking vector; it now reads .groupData'g'#, the cache
+        # this loop leaves behind.
         .n = 0
         for .g from 1 to .nGroups
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
             .groupN[.g] = eml_getGroupData.n
+            .groupData'.g'# = eml_getGroupData.data#
             if .groupN[.g] = 0
                 .error$ = "Group """ + .groupName$[.g]
                 ... + """ has 0 observations. Every group needs at "
@@ -3923,15 +5786,14 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
     endif
 
     if .error$ = ""
-        # Build flat data vector in group order
+        # Build flat data vector in group order, from the cache above --
+        # no extraction here, a pure in-memory copy.
         .allData# = zero# (.n)
         .idx = 0
         for .g from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-            ... .groupName$[.g]
-            for .j from 1 to eml_getGroupData.n
+            for .j from 1 to .groupN[.g]
                 .idx = .idx + 1
-                .allData#[.idx] = eml_getGroupData.data#[.j]
+                .allData#[.idx] = .groupData'.g'#[.j]
             endfor
         endfor
     endif
@@ -4047,16 +5909,16 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
         endfor
 
         # --- Pairwise rank-biserial r (independently ranked per pair) ---
+        # Reads the .groupData'g'# cache the first loop above built --
+        # no extraction here. Both groups were already extracted
+        # successfully to reach this point (@eml_getGroupData's only
+        # failure mode is a missing column, refused before that loop
+        # ever ran), so there is no error branch left to preserve.
 
         .rMatrix## = zero## (.nGroups, .nGroups)
         for .i from 1 to .nGroups - 1
             for .j from .i + 1 to .nGroups
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.i]
-                .vI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.j]
-                @emlRankBiserialR: .vI#, eml_getGroupData.data#, 2
+                @emlRankBiserialR: .groupData'.i'#, .groupData'.j'#, 2
                 if emlRankBiserialR.error$ = ""
                     .rMatrix##[.i, .j] = emlRankBiserialR.r
                     .rMatrix##[.j, .i] = -emlRankBiserialR.r
@@ -4105,9 +5967,23 @@ endproc
 #                    .pMatrix## was computed from, so a report can
 #                    print t(df). Undefined wherever .tMatrix## is.
 #   .dMatrix##     - k x k Cohen's d (antisymmetric, diagonal = 0)
+#   .diffMatrix##  - k x k mean difference (antisymmetric, diagonal = 0),
+#                    the point estimate every row states regardless of
+#                    which correction is in force -- descriptive footing,
+#                    the same as .dMatrix##. Captured from @emlTTest's own
+#                    .meanDiff, never recomputed. Undefined wherever
+#                    .tMatrix## is.
 #   .rawP#         - unadjusted p-values, C(k,2) length
 #   .adjustedP#    - adjusted p-values, C(k,2) length
 #   .groupName$[i] - group label for group i
+#   .groupN[i]     - complete-case size of group i. ONE EXTRACTION PER
+#                    CASE (RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5):
+#                    a caller summing N across the k groups this run used
+#                    (e.g. the store's .stN) reads this instead of
+#                    re-extracting each group to count it.
+#   .groupData'i'# - group i's data vector, cached at the single
+#                    @eml_getGroupData call this procedure makes for it.
+#                    Valid only until @emlPairwiseT runs again.
 #   .nGroups       - k
 #   .nPairs        - C(k,2)
 #   .method$       - the TEST that was run: "Welch t-test" or
@@ -4227,8 +6103,19 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
     endif
 
     if .error$ = ""
+        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
+        # 2026-09-01.md §5). The pairwise loop below used to call
+        # @eml_getGroupData twice EVERY iteration -- group i re-extracted
+        # for every j it was paired with, group j re-extracted for every
+        # pair -- which is 2*C(k,2) extractions where one pass per group
+        # (k) suffices. Both vectors and each group's complete-case n are
+        # cached here, once, and the pairwise loop below reads them.
         for .g from 1 to .nGroups
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
+            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
+            ... .groupName$[.g]
+            .groupN[.g] = eml_getGroupData.n
+            .groupData'.g'# = eml_getGroupData.data#
         endfor
 
         # --- Determine equalVariances flag ---
@@ -4244,6 +6131,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
         .tFlat# = zero# (.nPairs)
         .dfFlat# = zero# (.nPairs)
         .dFlat# = zero# (.nPairs)
+        .diffFlat# = zero# (.nPairs)
 
         .pairIdx = 0
         .pairError$ = ""
@@ -4251,13 +6139,9 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
             for .j from .i + 1 to .nGroups
                 .pairIdx = .pairIdx + 1
 
-                # Get group vectors
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.i]
-                .vI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.j]
-                .vJ# = eml_getGroupData.data#
+                # Group vectors, read from the cache above.
+                .vI# = .groupData'.i'#
+                .vJ# = .groupData'.j'#
 
                 # t-test
                 @emlTTest: .vI#, .vJ#, 2, .eqVar
@@ -4270,6 +6154,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                     .tFlat#[.pairIdx] = undefined
                     .dfFlat#[.pairIdx] = undefined
                     .rawP#[.pairIdx] = undefined
+                    .diffFlat#[.pairIdx] = undefined
                     .nSkipped = .nSkipped + 1
                     if .skipReason$ = ""
                         .skipReason$ = emlTTest.error$
@@ -4285,6 +6170,10 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                     # from .eqVar, so no branch is needed here.
                     .dfFlat#[.pairIdx] = emlTTest.df
                     .rawP#[.pairIdx] = emlTTest.p
+                    # The point estimate every row states regardless of
+                    # correction -- captured from @emlTTest's own
+                    # .meanDiff, not recomputed.
+                    .diffFlat#[.pairIdx] = emlTTest.meanDiff
                 endif
 
                 # Cohen's d
@@ -4316,6 +6205,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
         .tMatrix## = zero## (.nGroups, .nGroups)
         .dfMatrix## = zero## (.nGroups, .nGroups)
         .dMatrix## = zero## (.nGroups, .nGroups)
+        .diffMatrix## = zero## (.nGroups, .nGroups)
 
         for .g from 1 to .nGroups
             .pMatrix##[.g, .g] = 1
@@ -4335,6 +6225,10 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                 .dfMatrix##[.j, .i] = .dfFlat#[.pairIdx]
                 .dMatrix##[.i, .j] = .dFlat#[.pairIdx]
                 .dMatrix##[.j, .i] = -.dFlat#[.pairIdx]
+                # Point estimate, same antisymmetric convention as t and
+                # d: [row, col] is row's mean minus col's.
+                .diffMatrix##[.i, .j] = .diffFlat#[.pairIdx]
+                .diffMatrix##[.j, .i] = -.diffFlat#[.pairIdx]
             endfor
         endfor
     endif
@@ -4368,6 +6262,15 @@ endproc
 #   .rawP#         - unadjusted p-values, C(k,2) length
 #   .adjustedP#    - adjusted p-values, C(k,2) length
 #   .groupName$[i] - group label for group i
+#   .groupN[i]     - complete-case size of group i
+#   .groupData'i'# - group i's data vector, cached at the single
+#                    @eml_getGroupData call this procedure makes for it
+#                    (RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5). A
+#                    caller needing the raw values after this procedure
+#                    returns (e.g. the Hodges-Lehmann interval loop in
+#                    @emlReportPairwiseComparison) reads this instead of
+#                    re-extracting. Valid only until @emlPairwiseWilcoxon
+#                    runs again.
 #   .nGroups       - k
 #   .nPairs        - C(k,2)
 #   .method$       - adjustment method used (echoed back)
@@ -4457,11 +6360,17 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
         endfor
 
-        # Cache per-group sizes (avoids redundant extraction in matrix fill)
+        # Cache per-group sizes AND vectors -- ONE EXTRACTION PER GROUP
+        # PER CASE (RULING_CONSOLIDATED_KERNELS_2026-09-01.md §5). The
+        # size cache already avoided a redundant extraction for U2 in the
+        # matrix-fill loop below; the pairwise loop itself still called
+        # @eml_getGroupData twice every iteration to get the vectors --
+        # now it reads .groupData'g'#, cached here instead.
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
             .groupN[.g] = eml_getGroupData.n
+            .groupData'.g'# = eml_getGroupData.data#
         endfor
 
         # --- Pairwise tests ---
@@ -4476,12 +6385,8 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
             for .j from .i + 1 to .nGroups
                 .pairIdx = .pairIdx + 1
 
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.i]
-                .vI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.j]
-                .vJ# = eml_getGroupData.data#
+                .vI# = .groupData'.i'#
+                .vJ# = .groupData'.j'#
 
                 # MWU + rank-biserial r
                 @emlRankBiserialR: .vI#, .vJ#, 2
@@ -4583,6 +6488,17 @@ endproc
 #   .pMatrix##     - k x k Scheffe p-values (symmetric, diagonal = 1)
 #   .fMatrix##     - k x k F-Scheffe statistics (symmetric, diagonal = 0)
 #   .diffMatrix##  - k x k mean differences (antisymmetric, diagonal = 0)
+#   .seMatrix##    - k x k pairwise standard errors, sqrt(MSE * (1/n_i +
+#                    1/n_j)) (SYMMETRIC -- an SE has no sign -- diagonal =
+#                    0). Added for @emlScheffeInterval (item 5, 26 August
+#                    interval work order): the per-pair SE was computed
+#                    here already, to build .fMatrix##, but discarded
+#                    rather than published. This header amendment makes it
+#                    a contractual output rather than an internal the
+#                    interval procedure would otherwise have to recompute
+#                    (and, computed a second time from .diffMatrix##/.fMatrix##
+#                    alone, could not be, since the sign of the diff is
+#                    lost from F).
 #   .groupName$[i] - group label for group i
 #   .nGroups       - k
 #   .nPairs        - C(k,2)
@@ -4688,6 +6604,7 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
         .pMatrix## = zero## (.nGroups, .nGroups)
         .fMatrix## = zero## (.nGroups, .nGroups)
         .diffMatrix## = zero## (.nGroups, .nGroups)
+        .seMatrix## = zero## (.nGroups, .nGroups)
 
         for .g from 1 to .nGroups
             .pMatrix##[.g, .g] = 1
@@ -4714,6 +6631,9 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
                 .fMatrix##[.j, .i] = .fScheffe
                 .diffMatrix##[.i, .j] = .diff
                 .diffMatrix##[.j, .i] = -.diff
+                # SE has no sign -- symmetric, unlike .diffMatrix##.
+                .seMatrix##[.i, .j] = .se
+                .seMatrix##[.j, .i] = .se
             endfor
         endfor
     endif
@@ -4721,6 +6641,90 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
     # --- Restore selection ---
 
     selectObject: .tableId
+endproc
+
+
+# ============================================================================
+# @emlScheffeInterval
+# ============================================================================
+# Simultaneous confidence interval for one Scheffe pairwise mean
+# difference (item 5, 26 August 2026 interval work order,
+# docs/WORK_ORDER_INTERVALS_2026-08-26.md).
+#
+# NO ALGORITHM IS PORTED HERE. Half-width = sqrt((k-1) * F_crit) * SE,
+# F_crit = invFisherQ(alpha, k-1, dfWithin) -- the textbook Scheffe
+# multiplier applied to the pairwise SE @emlScheffe already computes.
+#
+# THE ALPHA POINT IS THE WHOLE PROCEDURE. .level is never formed here --
+# there is no .level parameter at all, on purpose. Every other interval in
+# this file (@emlTTestInterval, @emlHodgesLehmannTwoSample,
+# @emlHodgesLehmannPaired) takes a caller-computed LEVEL, typically
+# 1 - alpha/m for Bonferroni. Scheffe does not: sqrt((k-1) * F_crit) IS the
+# simultaneity correction across all C(k,2) pairwise contrasts (indeed
+# across every possible linear contrast, not only pairwise ones), so the
+# multiplier already spends the family-wise budget. Dividing .alpha by the
+# pair count on top, as the Bonferroni call sites do, would correct twice
+# and return an interval narrower than the true simultaneous one while
+# looking exactly as reasonable -- Fable's red demo 1 for this check names
+# this exact mistake.
+#
+# invFisherQ(p, df1, df2) driven on Praat 6.6.30 (see the check's own
+# fixture, and eml-psychometrics.praat's existing invFisherQ(0.025/0.975,
+# .df1, .df2) call, which established the name and argument order first):
+# it returns the F critical value whose UPPER tail probability is p,
+# df1 first (between/numerator), df2 second (within/denominator) -- the
+# same order @emlScheffe's own fisherQ(.fScheffe, .nGroups - 1, .dfWithin)
+# call already uses for the p-value the other direction. Unlike
+# invStudentQ, which hangs on invStudentQ(0, df) (@emlTTestInterval's own
+# comment), invFisherQ degrades to --undefined-- at p = 0 or at either df
+# <= 0 or undefined, and to 0 at p = 1 -- measured directly, no hang at any
+# of those boundaries. The guard below is therefore not a hang guard; it
+# exists so a caller gets a named refusal instead of a silent undefined,
+# matching the family's estimate-is-descriptive / refusal-is-a-result
+# convention (docs/RULING_ITEM3_CASES_2026-08-26.md, case 1).
+#
+# Arguments:
+#   .meanDiff  - the pairwise mean difference (group i minus group j),
+#                @emlScheffe's own .diffMatrix##[i, j]. Descriptive: it is
+#                not corrected by anything below and survives even where
+#                the interval cannot be computed, provided it is itself a
+#                defined number.
+#   .se        - the pairwise standard error, @emlScheffe's own
+#                .seMatrix##[i, j] (sqrt(MSE * (1/n_i + 1/n_j))).
+#   .k         - number of groups, @emlScheffe's .nGroups. Feeds both the
+#                multiplier's (k - 1) and invFisherQ's df1 = k - 1.
+#   .dfWithin  - error term degrees of freedom, @emlScheffe's own
+#                .dfWithin (N - k). NEVER RECOMPUTED HERE, same rule as
+#                @emlTTestInterval's df: it is the caller's variant, taken
+#                as given.
+#   .alpha     - THE ANALYSIS ALPHA, DIRECTLY. Never alpha/m. The
+#                simultaneity correction is the multiplier above, not a
+#                divided alpha.
+#
+# Output:
+#   .low, .high - the interval bounds, or undefined if .error$ <> ""
+#   .error$     - error message, or "" if valid
+# ============================================================================
+
+procedure emlScheffeInterval: .meanDiff, .se, .k, .dfWithin, .alpha
+    .low = undefined
+    .high = undefined
+    .error$ = ""
+
+    if .dfWithin = undefined or .dfWithin <= 0
+        .error$ = "Degrees of freedom are undefined"
+    elsif .k = undefined or .k < 2
+        .error$ = "This test compares 2 or more groups"
+    elsif .se = undefined
+        .error$ = "Standard error is undefined"
+    elsif .alpha = undefined
+        .error$ = "Alpha is undefined"
+    else
+        .fCrit = invFisherQ (.alpha, .k - 1, .dfWithin)
+        .halfWidth = sqrt ((.k - 1) * .fCrit) * .se
+        .low = .meanDiff - .halfWidth
+        .high = .meanDiff + .halfWidth
+    endif
 endproc
 
 
@@ -4838,9 +6842,16 @@ procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
     if .error$ = ""
         .nSingleton = 0
         .singletonList$ = ""
+
+        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
+        # 2026-09-01.md §5). This used to be followed by a second loop,
+        # below, that re-fetched every group's vector purely to compute
+        # its median and deviations. Cached here instead, as
+        # .groupData'g'#, and read from there in pass 1.
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... emlCountGroups.groupLabel$[.g]
+            .groupData'.g'# = eml_getGroupData.data#
             if eml_getGroupData.n < 2
                 .nSingleton = .nSingleton + 1
                 if .nSingleton <= 5
@@ -4881,10 +6892,8 @@ procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
         .sumOfDeviations = 0
 
         for .g from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-            ... emlCountGroups.groupLabel$[.g]
-            .gN = eml_getGroupData.n
-            .gData# = eml_getGroupData.data#
+            .gData# = .groupData'.g'#
+            .gN = size (.gData#)
 
             ; Median of the group. Sizes were validated above, so .gN >= 2.
             .sorted# = sort# (.gData#)
@@ -5366,11 +7375,15 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
         .nSingleton = 0
         .singletonList$ = ""
 
+        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
+        # 2026-09-01.md §5): .groupData'g'# below is what the Cohen's d
+        # loop further down reads instead of re-extracting.
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
             .gN = eml_getGroupData.n
             .groupN[.g] = .gN
+            .groupData'.g'# = eml_getGroupData.data#
 
             if .gN < 2
                 .groupMean[.g] = undefined
@@ -5494,19 +7507,15 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
     endif
 
     # --- Cohen's d per pair (two-group pooled SD, as in @emlTukeyHSD) ---
-    # Separated from the loop above so that the studentized-range calls
-    # are not interleaved with the object create/remove @eml_getGroupData
-    # performs.
+    # Reads the .groupData'g'# cache the descriptives loop above built --
+    # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
+    # 09-01.md §5). This loop used to call @eml_getGroupData twice per
+    # pair; it no longer touches the table at all.
 
     if .error$ = ""
         for .i from 1 to .nGroups
             for .j from .i + 1 to .nGroups
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.i]
-                .vI# = eml_getGroupData.data#
-                @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
-                ... .groupName$[.j]
-                @emlCohenD: .vI#, eml_getGroupData.data#
+                @emlCohenD: .groupData'.i'#, .groupData'.j'#
                 if emlCohenD.error$ = ""
                     .dMatrix##[.i, .j] = emlCohenD.d
                     .dMatrix##[.j, .i] = -emlCohenD.d

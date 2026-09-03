@@ -18,51 +18,51 @@ emlGroupSortAlphabetical	1	res.nGroups	2.000000
 emlGroupSortAlphabetical	1	res.p.Alpha-Zebra	0.0000002
 emlGroupSortAlphabetical	1	res.absd.Alpha-Zebra	7.071068
 emlGroupSortAlphabetical	1	obs.signedd.Alpha-Zebra	-7.071068
-emlGroupSortAlphabetical	1	dis.label.Alpha-Zebra	*** (p < .001), d = -7.07
+emlGroupSortAlphabetical	1	dis.label.Alpha-Zebra	*** (p < .001), d = 7.07
 emlGroupSortAlphabetical	1	res.posthoc	Comparison: Welch t-test
 emlGroupSortAlphabetical	1	res.adjust	one comparison; no adjustment applied
 emlGroupSortAlphabetical	1	dis.bracketN	1.000000
 emlGroupSortAlphabetical	1	dis.matrixN	0
-emlBridgeGroupComparison.testType$	parametric	res.error	
-emlBridgeGroupComparison.testType$	parametric	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
-emlBridgeGroupComparison.testType$	parametric	res.labels	Zebra|Mid|Alpha
-emlBridgeGroupComparison.testType$	parametric	res.nGroups	3.000000
-emlBridgeGroupComparison.testType$	parametric	res.p.Zebra-Mid	0.000000006
-emlBridgeGroupComparison.testType$	parametric	res.absd.Zebra-Mid	6.934761
-emlBridgeGroupComparison.testType$	parametric	obs.signedd.Zebra-Mid	6.934761
-emlBridgeGroupComparison.testType$	parametric	dis.label.Zebra-Mid	p < .001, d = 6.93
-emlBridgeGroupComparison.testType$	parametric	res.p.Zebra-Alpha	0.0000000000004
-emlBridgeGroupComparison.testType$	parametric	res.absd.Zebra-Alpha	12.964988
-emlBridgeGroupComparison.testType$	parametric	obs.signedd.Zebra-Alpha	12.964988
-emlBridgeGroupComparison.testType$	parametric	dis.label.Zebra-Alpha	p < .001, d = 12.96
-emlBridgeGroupComparison.testType$	parametric	res.p.Mid-Alpha	0.00000004
-emlBridgeGroupComparison.testType$	parametric	res.absd.Mid-Alpha	7.071068
-emlBridgeGroupComparison.testType$	parametric	obs.signedd.Mid-Alpha	7.071068
-emlBridgeGroupComparison.testType$	parametric	dis.label.Mid-Alpha	p < .001, d = 7.07
-emlBridgeGroupComparison.testType$	parametric	res.posthoc	Pairwise comparisons: Tukey HSD
-emlBridgeGroupComparison.testType$	parametric	res.adjust	already family-wise; no further adjustment applied
-emlBridgeGroupComparison.testType$	parametric	dis.bracketN	3.000000
-emlBridgeGroupComparison.testType$	parametric	dis.matrixN	0
-emlBridgeGroupComparison.testType$	nonparametric	res.error	
-emlBridgeGroupComparison.testType$	nonparametric	res.omnibus	Kruskal-Wallis: H(2) = 15.19, p < .001, \ep^2 = 0.893
-emlBridgeGroupComparison.testType$	nonparametric	res.labels	Zebra|Mid|Alpha
-emlBridgeGroupComparison.testType$	nonparametric	res.nGroups	3.000000
-emlBridgeGroupComparison.testType$	nonparametric	res.p.Zebra-Mid	0.102670
-emlBridgeGroupComparison.testType$	nonparametric	res.absd.Zebra-Mid	1.000000
-emlBridgeGroupComparison.testType$	nonparametric	obs.signedd.Zebra-Mid	1.000000
-emlBridgeGroupComparison.testType$	nonparametric	dis.label.Zebra-Mid	p = .103, r = 1.00
-emlBridgeGroupComparison.testType$	nonparametric	res.p.Zebra-Alpha	0.000292
-emlBridgeGroupComparison.testType$	nonparametric	res.absd.Zebra-Alpha	1.000000
-emlBridgeGroupComparison.testType$	nonparametric	obs.signedd.Zebra-Alpha	1.000000
-emlBridgeGroupComparison.testType$	nonparametric	dis.label.Zebra-Alpha	p < .001, r = 1.00
-emlBridgeGroupComparison.testType$	nonparametric	res.p.Mid-Alpha	0.102670
-emlBridgeGroupComparison.testType$	nonparametric	res.absd.Mid-Alpha	1.000000
-emlBridgeGroupComparison.testType$	nonparametric	obs.signedd.Mid-Alpha	1.000000
-emlBridgeGroupComparison.testType$	nonparametric	dis.label.Mid-Alpha	p = .103, r = 1.00
-emlBridgeGroupComparison.testType$	nonparametric	res.posthoc	Pairwise comparisons: Dunn's test
-emlBridgeGroupComparison.testType$	nonparametric	res.adjust	adjustment for multiple comparisons: holm
-emlBridgeGroupComparison.testType$	nonparametric	dis.bracketN	3.000000
-emlBridgeGroupComparison.testType$	nonparametric	dis.matrixN	0
+emlRunAnnotationComparison.testType$	parametric	res.error	
+emlRunAnnotationComparison.testType$	parametric	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
+emlRunAnnotationComparison.testType$	parametric	res.labels	Zebra|Mid|Alpha
+emlRunAnnotationComparison.testType$	parametric	res.nGroups	3.000000
+emlRunAnnotationComparison.testType$	parametric	res.p.Zebra-Mid	0.000000006
+emlRunAnnotationComparison.testType$	parametric	res.absd.Zebra-Mid	6.934761
+emlRunAnnotationComparison.testType$	parametric	obs.signedd.Zebra-Mid	6.934761
+emlRunAnnotationComparison.testType$	parametric	dis.label.Zebra-Mid	p < .001, d = 6.93
+emlRunAnnotationComparison.testType$	parametric	res.p.Zebra-Alpha	0.0000000000004
+emlRunAnnotationComparison.testType$	parametric	res.absd.Zebra-Alpha	12.964988
+emlRunAnnotationComparison.testType$	parametric	obs.signedd.Zebra-Alpha	12.964988
+emlRunAnnotationComparison.testType$	parametric	dis.label.Zebra-Alpha	p < .001, d = 12.96
+emlRunAnnotationComparison.testType$	parametric	res.p.Mid-Alpha	0.00000004
+emlRunAnnotationComparison.testType$	parametric	res.absd.Mid-Alpha	7.071068
+emlRunAnnotationComparison.testType$	parametric	obs.signedd.Mid-Alpha	7.071068
+emlRunAnnotationComparison.testType$	parametric	dis.label.Mid-Alpha	p < .001, d = 7.07
+emlRunAnnotationComparison.testType$	parametric	res.posthoc	Pairwise comparisons: Tukey HSD
+emlRunAnnotationComparison.testType$	parametric	res.adjust	already family-wise; no further adjustment applied
+emlRunAnnotationComparison.testType$	parametric	dis.bracketN	3.000000
+emlRunAnnotationComparison.testType$	parametric	dis.matrixN	0
+emlRunAnnotationComparison.testType$	nonparametric	res.error	
+emlRunAnnotationComparison.testType$	nonparametric	res.omnibus	Kruskal-Wallis: H(2) = 15.19, p < .001, \ep^2 = 0.893
+emlRunAnnotationComparison.testType$	nonparametric	res.labels	Zebra|Mid|Alpha
+emlRunAnnotationComparison.testType$	nonparametric	res.nGroups	3.000000
+emlRunAnnotationComparison.testType$	nonparametric	res.p.Zebra-Mid	0.102670
+emlRunAnnotationComparison.testType$	nonparametric	res.absd.Zebra-Mid	1.000000
+emlRunAnnotationComparison.testType$	nonparametric	obs.signedd.Zebra-Mid	1.000000
+emlRunAnnotationComparison.testType$	nonparametric	dis.label.Zebra-Mid	p = .103, r = 1.00
+emlRunAnnotationComparison.testType$	nonparametric	res.p.Zebra-Alpha	0.000292
+emlRunAnnotationComparison.testType$	nonparametric	res.absd.Zebra-Alpha	1.000000
+emlRunAnnotationComparison.testType$	nonparametric	obs.signedd.Zebra-Alpha	1.000000
+emlRunAnnotationComparison.testType$	nonparametric	dis.label.Zebra-Alpha	p < .001, r = 1.00
+emlRunAnnotationComparison.testType$	nonparametric	res.p.Mid-Alpha	0.102670
+emlRunAnnotationComparison.testType$	nonparametric	res.absd.Mid-Alpha	1.000000
+emlRunAnnotationComparison.testType$	nonparametric	obs.signedd.Mid-Alpha	1.000000
+emlRunAnnotationComparison.testType$	nonparametric	dis.label.Mid-Alpha	p = .103, r = 1.00
+emlRunAnnotationComparison.testType$	nonparametric	res.posthoc	Pairwise comparisons: Dunn's test
+emlRunAnnotationComparison.testType$	nonparametric	res.adjust	adjustment for multiple comparisons: holm
+emlRunAnnotationComparison.testType$	nonparametric	dis.bracketN	3.000000
+emlRunAnnotationComparison.testType$	nonparametric	dis.matrixN	0
 annotCorrectionMethod$	holm	res.error	
 annotCorrectionMethod$	holm	res.omnibus	Kruskal-Wallis: H(2) = 15.19, p < .001, \ep^2 = 0.893
 annotCorrectionMethod$	holm	res.labels	Zebra|Mid|Alpha
@@ -103,26 +103,26 @@ annotCorrectionMethod$	bonferroni	res.posthoc	Pairwise comparisons: Dunn's test
 annotCorrectionMethod$	bonferroni	res.adjust	adjustment for multiple comparisons: bonferroni
 annotCorrectionMethod$	bonferroni	dis.bracketN	3.000000
 annotCorrectionMethod$	bonferroni	dis.matrixN	0
-emlBridgeGroupComparison.alpha	0.05	res.error	
-emlBridgeGroupComparison.alpha	0.05	res.omnibus	Welch t: t(10.0) = 2.37, p = .039, d = 1.37
-emlBridgeGroupComparison.alpha	0.05	res.labels	Zebra|Alpha
-emlBridgeGroupComparison.alpha	0.05	res.nGroups	2.000000
-emlBridgeGroupComparison.alpha	0.05	dis.cell.Zebra-Alpha	*
-emlBridgeGroupComparison.alpha	0.05	res.sig.Zebra-Alpha	1.000000
-emlBridgeGroupComparison.alpha	0.05	res.posthoc	Comparison: Welch t-test
-emlBridgeGroupComparison.alpha	0.05	res.adjust	one comparison; no adjustment applied
-emlBridgeGroupComparison.alpha	0.05	dis.bracketN	0
-emlBridgeGroupComparison.alpha	0.05	dis.matrixN	2.000000
-emlBridgeGroupComparison.alpha	0.01	res.error	
-emlBridgeGroupComparison.alpha	0.01	res.omnibus	Welch t: t(10.0) = 2.37, p = .039, d = 1.37
-emlBridgeGroupComparison.alpha	0.01	res.labels	Zebra|Alpha
-emlBridgeGroupComparison.alpha	0.01	res.nGroups	2.000000
-emlBridgeGroupComparison.alpha	0.01	dis.cell.Zebra-Alpha	n.s.
-emlBridgeGroupComparison.alpha	0.01	res.sig.Zebra-Alpha	0
-emlBridgeGroupComparison.alpha	0.01	res.posthoc	Comparison: Welch t-test
-emlBridgeGroupComparison.alpha	0.01	res.adjust	one comparison; no adjustment applied
-emlBridgeGroupComparison.alpha	0.01	dis.bracketN	0
-emlBridgeGroupComparison.alpha	0.01	dis.matrixN	2.000000
+emlRunAnnotationComparison.alpha	0.05	res.error	
+emlRunAnnotationComparison.alpha	0.05	res.omnibus	Welch t: t(10.0) = 2.37, p = .039, d = 1.37
+emlRunAnnotationComparison.alpha	0.05	res.labels	Zebra|Alpha
+emlRunAnnotationComparison.alpha	0.05	res.nGroups	2.000000
+emlRunAnnotationComparison.alpha	0.05	dis.cell.Zebra-Alpha	*
+emlRunAnnotationComparison.alpha	0.05	res.sig.Zebra-Alpha	1.000000
+emlRunAnnotationComparison.alpha	0.05	res.posthoc	Comparison: Welch t-test
+emlRunAnnotationComparison.alpha	0.05	res.adjust	one comparison; no adjustment applied
+emlRunAnnotationComparison.alpha	0.05	dis.bracketN	0
+emlRunAnnotationComparison.alpha	0.05	dis.matrixN	2.000000
+emlRunAnnotationComparison.alpha	0.01	res.error	
+emlRunAnnotationComparison.alpha	0.01	res.omnibus	Welch t: t(10.0) = 2.37, p = .039, d = 1.37
+emlRunAnnotationComparison.alpha	0.01	res.labels	Zebra|Alpha
+emlRunAnnotationComparison.alpha	0.01	res.nGroups	2.000000
+emlRunAnnotationComparison.alpha	0.01	dis.cell.Zebra-Alpha	n.s.
+emlRunAnnotationComparison.alpha	0.01	res.sig.Zebra-Alpha	0
+emlRunAnnotationComparison.alpha	0.01	res.posthoc	Comparison: Welch t-test
+emlRunAnnotationComparison.alpha	0.01	res.adjust	one comparison; no adjustment applied
+emlRunAnnotationComparison.alpha	0.01	dis.bracketN	0
+emlRunAnnotationComparison.alpha	0.01	dis.matrixN	2.000000
 obs.alphaChannels	argument 0.01, global 0.05	res.error	
 obs.alphaChannels	argument 0.01, global 0.05	res.omnibus	Welch t: t(10.0) = 2.37, p = .039, d = 1.37
 obs.alphaChannels	argument 0.01, global 0.05	res.labels	Zebra|Alpha
@@ -143,149 +143,149 @@ obs.alphaChannels	argument 0.05, global 0.05	res.posthoc	Comparison: Welch t-tes
 obs.alphaChannels	argument 0.05, global 0.05	res.adjust	one comparison; no adjustment applied
 obs.alphaChannels	argument 0.05, global 0.05	dis.bracketN	0
 obs.alphaChannels	argument 0.05, global 0.05	dis.matrixN	2.000000
-emlBridgeGroupComparison.style$	p-value	res.error	
-emlBridgeGroupComparison.style$	p-value	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
-emlBridgeGroupComparison.style$	p-value	res.labels	Zebra|Mid|Alpha
-emlBridgeGroupComparison.style$	p-value	res.nGroups	3.000000
-emlBridgeGroupComparison.style$	p-value	res.p.Zebra-Mid	0.000000006
-emlBridgeGroupComparison.style$	p-value	res.absd.Zebra-Mid	6.934761
-emlBridgeGroupComparison.style$	p-value	obs.signedd.Zebra-Mid	6.934761
-emlBridgeGroupComparison.style$	p-value	dis.label.Zebra-Mid	p < .001, d = 6.93
-emlBridgeGroupComparison.style$	p-value	res.p.Zebra-Alpha	0.0000000000004
-emlBridgeGroupComparison.style$	p-value	res.absd.Zebra-Alpha	12.964988
-emlBridgeGroupComparison.style$	p-value	obs.signedd.Zebra-Alpha	12.964988
-emlBridgeGroupComparison.style$	p-value	dis.label.Zebra-Alpha	p < .001, d = 12.96
-emlBridgeGroupComparison.style$	p-value	res.p.Mid-Alpha	0.00000004
-emlBridgeGroupComparison.style$	p-value	res.absd.Mid-Alpha	7.071068
-emlBridgeGroupComparison.style$	p-value	obs.signedd.Mid-Alpha	7.071068
-emlBridgeGroupComparison.style$	p-value	dis.label.Mid-Alpha	p < .001, d = 7.07
-emlBridgeGroupComparison.style$	p-value	res.posthoc	Pairwise comparisons: Tukey HSD
-emlBridgeGroupComparison.style$	p-value	res.adjust	already family-wise; no further adjustment applied
-emlBridgeGroupComparison.style$	p-value	dis.bracketN	3.000000
-emlBridgeGroupComparison.style$	p-value	dis.matrixN	0
-emlBridgeGroupComparison.style$	stars	res.error	
-emlBridgeGroupComparison.style$	stars	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
-emlBridgeGroupComparison.style$	stars	res.labels	Zebra|Mid|Alpha
-emlBridgeGroupComparison.style$	stars	res.nGroups	3.000000
-emlBridgeGroupComparison.style$	stars	res.p.Zebra-Mid	0.000000006
-emlBridgeGroupComparison.style$	stars	res.absd.Zebra-Mid	6.934761
-emlBridgeGroupComparison.style$	stars	obs.signedd.Zebra-Mid	6.934761
-emlBridgeGroupComparison.style$	stars	dis.label.Zebra-Mid	***, d = 6.93
-emlBridgeGroupComparison.style$	stars	res.p.Zebra-Alpha	0.0000000000004
-emlBridgeGroupComparison.style$	stars	res.absd.Zebra-Alpha	12.964988
-emlBridgeGroupComparison.style$	stars	obs.signedd.Zebra-Alpha	12.964988
-emlBridgeGroupComparison.style$	stars	dis.label.Zebra-Alpha	***, d = 12.96
-emlBridgeGroupComparison.style$	stars	res.p.Mid-Alpha	0.00000004
-emlBridgeGroupComparison.style$	stars	res.absd.Mid-Alpha	7.071068
-emlBridgeGroupComparison.style$	stars	obs.signedd.Mid-Alpha	7.071068
-emlBridgeGroupComparison.style$	stars	dis.label.Mid-Alpha	***, d = 7.07
-emlBridgeGroupComparison.style$	stars	res.posthoc	Pairwise comparisons: Tukey HSD
-emlBridgeGroupComparison.style$	stars	res.adjust	already family-wise; no further adjustment applied
-emlBridgeGroupComparison.style$	stars	dis.bracketN	3.000000
-emlBridgeGroupComparison.style$	stars	dis.matrixN	0
-emlBridgeGroupComparison.showNS	0	res.error	
-emlBridgeGroupComparison.showNS	0	res.omnibus	Kruskal-Wallis: H(2) = 15.19, p < .001, \ep^2 = 0.893
-emlBridgeGroupComparison.showNS	0	res.labels	Zebra|Mid|Alpha
-emlBridgeGroupComparison.showNS	0	res.nGroups	3.000000
-emlBridgeGroupComparison.showNS	0	res.p.Zebra-Alpha	0.000292
-emlBridgeGroupComparison.showNS	0	res.absd.Zebra-Alpha	1.000000
-emlBridgeGroupComparison.showNS	0	obs.signedd.Zebra-Alpha	1.000000
-emlBridgeGroupComparison.showNS	0	dis.label.Zebra-Alpha	p < .001, r = 1.00
-emlBridgeGroupComparison.showNS	0	res.posthoc	Pairwise comparisons: Dunn's test
-emlBridgeGroupComparison.showNS	0	res.adjust	adjustment for multiple comparisons: holm
-emlBridgeGroupComparison.showNS	0	dis.bracketN	1.000000
-emlBridgeGroupComparison.showNS	0	dis.matrixN	0
-emlBridgeGroupComparison.showNS	1	res.error	
-emlBridgeGroupComparison.showNS	1	res.omnibus	Kruskal-Wallis: H(2) = 15.19, p < .001, \ep^2 = 0.893
-emlBridgeGroupComparison.showNS	1	res.labels	Zebra|Mid|Alpha
-emlBridgeGroupComparison.showNS	1	res.nGroups	3.000000
-emlBridgeGroupComparison.showNS	1	res.p.Zebra-Mid	0.102670
-emlBridgeGroupComparison.showNS	1	res.absd.Zebra-Mid	1.000000
-emlBridgeGroupComparison.showNS	1	obs.signedd.Zebra-Mid	1.000000
-emlBridgeGroupComparison.showNS	1	dis.label.Zebra-Mid	p = .103, r = 1.00
-emlBridgeGroupComparison.showNS	1	res.p.Zebra-Alpha	0.000292
-emlBridgeGroupComparison.showNS	1	res.absd.Zebra-Alpha	1.000000
-emlBridgeGroupComparison.showNS	1	obs.signedd.Zebra-Alpha	1.000000
-emlBridgeGroupComparison.showNS	1	dis.label.Zebra-Alpha	p < .001, r = 1.00
-emlBridgeGroupComparison.showNS	1	res.p.Mid-Alpha	0.102670
-emlBridgeGroupComparison.showNS	1	res.absd.Mid-Alpha	1.000000
-emlBridgeGroupComparison.showNS	1	obs.signedd.Mid-Alpha	1.000000
-emlBridgeGroupComparison.showNS	1	dis.label.Mid-Alpha	p = .103, r = 1.00
-emlBridgeGroupComparison.showNS	1	res.posthoc	Pairwise comparisons: Dunn's test
-emlBridgeGroupComparison.showNS	1	res.adjust	adjustment for multiple comparisons: holm
-emlBridgeGroupComparison.showNS	1	dis.bracketN	3.000000
-emlBridgeGroupComparison.showNS	1	dis.matrixN	0
-emlBridgeGroupComparison.showEffect	0	res.error	
-emlBridgeGroupComparison.showEffect	0	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
-emlBridgeGroupComparison.showEffect	0	res.labels	Zebra|Mid|Alpha
-emlBridgeGroupComparison.showEffect	0	res.nGroups	3.000000
-emlBridgeGroupComparison.showEffect	0	res.p.Zebra-Mid	0.000000006
-emlBridgeGroupComparison.showEffect	0	res.absd.Zebra-Mid	undefined
-emlBridgeGroupComparison.showEffect	0	obs.signedd.Zebra-Mid	undefined
-emlBridgeGroupComparison.showEffect	0	dis.label.Zebra-Mid	p < .001
-emlBridgeGroupComparison.showEffect	0	res.p.Zebra-Alpha	0.0000000000004
-emlBridgeGroupComparison.showEffect	0	res.absd.Zebra-Alpha	undefined
-emlBridgeGroupComparison.showEffect	0	obs.signedd.Zebra-Alpha	undefined
-emlBridgeGroupComparison.showEffect	0	dis.label.Zebra-Alpha	p < .001
-emlBridgeGroupComparison.showEffect	0	res.p.Mid-Alpha	0.00000004
-emlBridgeGroupComparison.showEffect	0	res.absd.Mid-Alpha	undefined
-emlBridgeGroupComparison.showEffect	0	obs.signedd.Mid-Alpha	undefined
-emlBridgeGroupComparison.showEffect	0	dis.label.Mid-Alpha	p < .001
-emlBridgeGroupComparison.showEffect	0	res.posthoc	Pairwise comparisons: Tukey HSD
-emlBridgeGroupComparison.showEffect	0	res.adjust	already family-wise; no further adjustment applied
-emlBridgeGroupComparison.showEffect	0	dis.bracketN	3.000000
-emlBridgeGroupComparison.showEffect	0	dis.matrixN	0
-emlBridgeGroupComparison.showEffect	1	res.error	
-emlBridgeGroupComparison.showEffect	1	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
-emlBridgeGroupComparison.showEffect	1	res.labels	Zebra|Mid|Alpha
-emlBridgeGroupComparison.showEffect	1	res.nGroups	3.000000
-emlBridgeGroupComparison.showEffect	1	res.p.Zebra-Mid	0.000000006
-emlBridgeGroupComparison.showEffect	1	res.absd.Zebra-Mid	6.934761
-emlBridgeGroupComparison.showEffect	1	obs.signedd.Zebra-Mid	6.934761
-emlBridgeGroupComparison.showEffect	1	dis.label.Zebra-Mid	p < .001, d = 6.93
-emlBridgeGroupComparison.showEffect	1	res.p.Zebra-Alpha	0.0000000000004
-emlBridgeGroupComparison.showEffect	1	res.absd.Zebra-Alpha	12.964988
-emlBridgeGroupComparison.showEffect	1	obs.signedd.Zebra-Alpha	12.964988
-emlBridgeGroupComparison.showEffect	1	dis.label.Zebra-Alpha	p < .001, d = 12.96
-emlBridgeGroupComparison.showEffect	1	res.p.Mid-Alpha	0.00000004
-emlBridgeGroupComparison.showEffect	1	res.absd.Mid-Alpha	7.071068
-emlBridgeGroupComparison.showEffect	1	obs.signedd.Mid-Alpha	7.071068
-emlBridgeGroupComparison.showEffect	1	dis.label.Mid-Alpha	p < .001, d = 7.07
-emlBridgeGroupComparison.showEffect	1	res.posthoc	Pairwise comparisons: Tukey HSD
-emlBridgeGroupComparison.showEffect	1	res.adjust	already family-wise; no further adjustment applied
-emlBridgeGroupComparison.showEffect	1	dis.bracketN	3.000000
-emlBridgeGroupComparison.showEffect	1	dis.matrixN	0
-emlBridgeGroupComparison.layoutMode	2	res.error	
-emlBridgeGroupComparison.layoutMode	2	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
-emlBridgeGroupComparison.layoutMode	2	res.labels	Zebra|Mid|Alpha
-emlBridgeGroupComparison.layoutMode	2	res.nGroups	3.000000
-emlBridgeGroupComparison.layoutMode	2	res.p.Zebra-Mid	0.000000006
-emlBridgeGroupComparison.layoutMode	2	res.absd.Zebra-Mid	6.934761
-emlBridgeGroupComparison.layoutMode	2	obs.signedd.Zebra-Mid	6.934761
-emlBridgeGroupComparison.layoutMode	2	dis.label.Zebra-Mid	p < .001, d = 6.93
-emlBridgeGroupComparison.layoutMode	2	res.p.Zebra-Alpha	0.0000000000004
-emlBridgeGroupComparison.layoutMode	2	res.absd.Zebra-Alpha	12.964988
-emlBridgeGroupComparison.layoutMode	2	obs.signedd.Zebra-Alpha	12.964988
-emlBridgeGroupComparison.layoutMode	2	dis.label.Zebra-Alpha	p < .001, d = 12.96
-emlBridgeGroupComparison.layoutMode	2	res.p.Mid-Alpha	0.00000004
-emlBridgeGroupComparison.layoutMode	2	res.absd.Mid-Alpha	7.071068
-emlBridgeGroupComparison.layoutMode	2	obs.signedd.Mid-Alpha	7.071068
-emlBridgeGroupComparison.layoutMode	2	dis.label.Mid-Alpha	p < .001, d = 7.07
-emlBridgeGroupComparison.layoutMode	2	res.posthoc	Pairwise comparisons: Tukey HSD
-emlBridgeGroupComparison.layoutMode	2	res.adjust	already family-wise; no further adjustment applied
-emlBridgeGroupComparison.layoutMode	2	dis.bracketN	3.000000
-emlBridgeGroupComparison.layoutMode	2	dis.matrixN	0
-emlBridgeGroupComparison.layoutMode	3	res.error	
-emlBridgeGroupComparison.layoutMode	3	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
-emlBridgeGroupComparison.layoutMode	3	res.labels	Zebra|Mid|Alpha
-emlBridgeGroupComparison.layoutMode	3	res.nGroups	3.000000
-emlBridgeGroupComparison.layoutMode	3	dis.cell.Zebra-Mid	p < .001
-emlBridgeGroupComparison.layoutMode	3	res.sig.Zebra-Mid	1.000000
-emlBridgeGroupComparison.layoutMode	3	dis.cell.Zebra-Alpha	p < .001
-emlBridgeGroupComparison.layoutMode	3	res.sig.Zebra-Alpha	1.000000
-emlBridgeGroupComparison.layoutMode	3	dis.cell.Mid-Alpha	p < .001
-emlBridgeGroupComparison.layoutMode	3	res.sig.Mid-Alpha	1.000000
-emlBridgeGroupComparison.layoutMode	3	res.posthoc	Pairwise comparisons: Tukey HSD
-emlBridgeGroupComparison.layoutMode	3	res.adjust	already family-wise; no further adjustment applied
-emlBridgeGroupComparison.layoutMode	3	dis.bracketN	0
-emlBridgeGroupComparison.layoutMode	3	dis.matrixN	3.000000
+emlRunAnnotationComparison.style$	p-value	res.error	
+emlRunAnnotationComparison.style$	p-value	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
+emlRunAnnotationComparison.style$	p-value	res.labels	Zebra|Mid|Alpha
+emlRunAnnotationComparison.style$	p-value	res.nGroups	3.000000
+emlRunAnnotationComparison.style$	p-value	res.p.Zebra-Mid	0.000000006
+emlRunAnnotationComparison.style$	p-value	res.absd.Zebra-Mid	6.934761
+emlRunAnnotationComparison.style$	p-value	obs.signedd.Zebra-Mid	6.934761
+emlRunAnnotationComparison.style$	p-value	dis.label.Zebra-Mid	p < .001, d = 6.93
+emlRunAnnotationComparison.style$	p-value	res.p.Zebra-Alpha	0.0000000000004
+emlRunAnnotationComparison.style$	p-value	res.absd.Zebra-Alpha	12.964988
+emlRunAnnotationComparison.style$	p-value	obs.signedd.Zebra-Alpha	12.964988
+emlRunAnnotationComparison.style$	p-value	dis.label.Zebra-Alpha	p < .001, d = 12.96
+emlRunAnnotationComparison.style$	p-value	res.p.Mid-Alpha	0.00000004
+emlRunAnnotationComparison.style$	p-value	res.absd.Mid-Alpha	7.071068
+emlRunAnnotationComparison.style$	p-value	obs.signedd.Mid-Alpha	7.071068
+emlRunAnnotationComparison.style$	p-value	dis.label.Mid-Alpha	p < .001, d = 7.07
+emlRunAnnotationComparison.style$	p-value	res.posthoc	Pairwise comparisons: Tukey HSD
+emlRunAnnotationComparison.style$	p-value	res.adjust	already family-wise; no further adjustment applied
+emlRunAnnotationComparison.style$	p-value	dis.bracketN	3.000000
+emlRunAnnotationComparison.style$	p-value	dis.matrixN	0
+emlRunAnnotationComparison.style$	stars	res.error	
+emlRunAnnotationComparison.style$	stars	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
+emlRunAnnotationComparison.style$	stars	res.labels	Zebra|Mid|Alpha
+emlRunAnnotationComparison.style$	stars	res.nGroups	3.000000
+emlRunAnnotationComparison.style$	stars	res.p.Zebra-Mid	0.000000006
+emlRunAnnotationComparison.style$	stars	res.absd.Zebra-Mid	6.934761
+emlRunAnnotationComparison.style$	stars	obs.signedd.Zebra-Mid	6.934761
+emlRunAnnotationComparison.style$	stars	dis.label.Zebra-Mid	***, d = 6.93
+emlRunAnnotationComparison.style$	stars	res.p.Zebra-Alpha	0.0000000000004
+emlRunAnnotationComparison.style$	stars	res.absd.Zebra-Alpha	12.964988
+emlRunAnnotationComparison.style$	stars	obs.signedd.Zebra-Alpha	12.964988
+emlRunAnnotationComparison.style$	stars	dis.label.Zebra-Alpha	***, d = 12.96
+emlRunAnnotationComparison.style$	stars	res.p.Mid-Alpha	0.00000004
+emlRunAnnotationComparison.style$	stars	res.absd.Mid-Alpha	7.071068
+emlRunAnnotationComparison.style$	stars	obs.signedd.Mid-Alpha	7.071068
+emlRunAnnotationComparison.style$	stars	dis.label.Mid-Alpha	***, d = 7.07
+emlRunAnnotationComparison.style$	stars	res.posthoc	Pairwise comparisons: Tukey HSD
+emlRunAnnotationComparison.style$	stars	res.adjust	already family-wise; no further adjustment applied
+emlRunAnnotationComparison.style$	stars	dis.bracketN	3.000000
+emlRunAnnotationComparison.style$	stars	dis.matrixN	0
+emlRunAnnotationComparison.showNS	0	res.error	
+emlRunAnnotationComparison.showNS	0	res.omnibus	Kruskal-Wallis: H(2) = 15.19, p < .001, \ep^2 = 0.893
+emlRunAnnotationComparison.showNS	0	res.labels	Zebra|Mid|Alpha
+emlRunAnnotationComparison.showNS	0	res.nGroups	3.000000
+emlRunAnnotationComparison.showNS	0	res.p.Zebra-Alpha	0.000292
+emlRunAnnotationComparison.showNS	0	res.absd.Zebra-Alpha	1.000000
+emlRunAnnotationComparison.showNS	0	obs.signedd.Zebra-Alpha	1.000000
+emlRunAnnotationComparison.showNS	0	dis.label.Zebra-Alpha	p < .001, r = 1.00
+emlRunAnnotationComparison.showNS	0	res.posthoc	Pairwise comparisons: Dunn's test
+emlRunAnnotationComparison.showNS	0	res.adjust	adjustment for multiple comparisons: holm
+emlRunAnnotationComparison.showNS	0	dis.bracketN	1.000000
+emlRunAnnotationComparison.showNS	0	dis.matrixN	0
+emlRunAnnotationComparison.showNS	1	res.error	
+emlRunAnnotationComparison.showNS	1	res.omnibus	Kruskal-Wallis: H(2) = 15.19, p < .001, \ep^2 = 0.893
+emlRunAnnotationComparison.showNS	1	res.labels	Zebra|Mid|Alpha
+emlRunAnnotationComparison.showNS	1	res.nGroups	3.000000
+emlRunAnnotationComparison.showNS	1	res.p.Zebra-Mid	0.102670
+emlRunAnnotationComparison.showNS	1	res.absd.Zebra-Mid	1.000000
+emlRunAnnotationComparison.showNS	1	obs.signedd.Zebra-Mid	1.000000
+emlRunAnnotationComparison.showNS	1	dis.label.Zebra-Mid	p = .103, r = 1.00
+emlRunAnnotationComparison.showNS	1	res.p.Zebra-Alpha	0.000292
+emlRunAnnotationComparison.showNS	1	res.absd.Zebra-Alpha	1.000000
+emlRunAnnotationComparison.showNS	1	obs.signedd.Zebra-Alpha	1.000000
+emlRunAnnotationComparison.showNS	1	dis.label.Zebra-Alpha	p < .001, r = 1.00
+emlRunAnnotationComparison.showNS	1	res.p.Mid-Alpha	0.102670
+emlRunAnnotationComparison.showNS	1	res.absd.Mid-Alpha	1.000000
+emlRunAnnotationComparison.showNS	1	obs.signedd.Mid-Alpha	1.000000
+emlRunAnnotationComparison.showNS	1	dis.label.Mid-Alpha	p = .103, r = 1.00
+emlRunAnnotationComparison.showNS	1	res.posthoc	Pairwise comparisons: Dunn's test
+emlRunAnnotationComparison.showNS	1	res.adjust	adjustment for multiple comparisons: holm
+emlRunAnnotationComparison.showNS	1	dis.bracketN	3.000000
+emlRunAnnotationComparison.showNS	1	dis.matrixN	0
+emlRunAnnotationComparison.showEffect	0	res.error	
+emlRunAnnotationComparison.showEffect	0	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
+emlRunAnnotationComparison.showEffect	0	res.labels	Zebra|Mid|Alpha
+emlRunAnnotationComparison.showEffect	0	res.nGroups	3.000000
+emlRunAnnotationComparison.showEffect	0	res.p.Zebra-Mid	0.000000006
+emlRunAnnotationComparison.showEffect	0	res.absd.Zebra-Mid	undefined
+emlRunAnnotationComparison.showEffect	0	obs.signedd.Zebra-Mid	undefined
+emlRunAnnotationComparison.showEffect	0	dis.label.Zebra-Mid	p < .001
+emlRunAnnotationComparison.showEffect	0	res.p.Zebra-Alpha	0.0000000000004
+emlRunAnnotationComparison.showEffect	0	res.absd.Zebra-Alpha	undefined
+emlRunAnnotationComparison.showEffect	0	obs.signedd.Zebra-Alpha	undefined
+emlRunAnnotationComparison.showEffect	0	dis.label.Zebra-Alpha	p < .001
+emlRunAnnotationComparison.showEffect	0	res.p.Mid-Alpha	0.00000004
+emlRunAnnotationComparison.showEffect	0	res.absd.Mid-Alpha	undefined
+emlRunAnnotationComparison.showEffect	0	obs.signedd.Mid-Alpha	undefined
+emlRunAnnotationComparison.showEffect	0	dis.label.Mid-Alpha	p < .001
+emlRunAnnotationComparison.showEffect	0	res.posthoc	Pairwise comparisons: Tukey HSD
+emlRunAnnotationComparison.showEffect	0	res.adjust	already family-wise; no further adjustment applied
+emlRunAnnotationComparison.showEffect	0	dis.bracketN	3.000000
+emlRunAnnotationComparison.showEffect	0	dis.matrixN	0
+emlRunAnnotationComparison.showEffect	1	res.error	
+emlRunAnnotationComparison.showEffect	1	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
+emlRunAnnotationComparison.showEffect	1	res.labels	Zebra|Mid|Alpha
+emlRunAnnotationComparison.showEffect	1	res.nGroups	3.000000
+emlRunAnnotationComparison.showEffect	1	res.p.Zebra-Mid	0.000000006
+emlRunAnnotationComparison.showEffect	1	res.absd.Zebra-Mid	6.934761
+emlRunAnnotationComparison.showEffect	1	obs.signedd.Zebra-Mid	6.934761
+emlRunAnnotationComparison.showEffect	1	dis.label.Zebra-Mid	p < .001, d = 6.93
+emlRunAnnotationComparison.showEffect	1	res.p.Zebra-Alpha	0.0000000000004
+emlRunAnnotationComparison.showEffect	1	res.absd.Zebra-Alpha	12.964988
+emlRunAnnotationComparison.showEffect	1	obs.signedd.Zebra-Alpha	12.964988
+emlRunAnnotationComparison.showEffect	1	dis.label.Zebra-Alpha	p < .001, d = 12.96
+emlRunAnnotationComparison.showEffect	1	res.p.Mid-Alpha	0.00000004
+emlRunAnnotationComparison.showEffect	1	res.absd.Mid-Alpha	7.071068
+emlRunAnnotationComparison.showEffect	1	obs.signedd.Mid-Alpha	7.071068
+emlRunAnnotationComparison.showEffect	1	dis.label.Mid-Alpha	p < .001, d = 7.07
+emlRunAnnotationComparison.showEffect	1	res.posthoc	Pairwise comparisons: Tukey HSD
+emlRunAnnotationComparison.showEffect	1	res.adjust	already family-wise; no further adjustment applied
+emlRunAnnotationComparison.showEffect	1	dis.bracketN	3.000000
+emlRunAnnotationComparison.showEffect	1	dis.matrixN	0
+emlRunAnnotationComparison.layoutMode	2	res.error	
+emlRunAnnotationComparison.layoutMode	2	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
+emlRunAnnotationComparison.layoutMode	2	res.labels	Zebra|Mid|Alpha
+emlRunAnnotationComparison.layoutMode	2	res.nGroups	3.000000
+emlRunAnnotationComparison.layoutMode	2	res.p.Zebra-Mid	0.000000006
+emlRunAnnotationComparison.layoutMode	2	res.absd.Zebra-Mid	6.934761
+emlRunAnnotationComparison.layoutMode	2	obs.signedd.Zebra-Mid	6.934761
+emlRunAnnotationComparison.layoutMode	2	dis.label.Zebra-Mid	p < .001, d = 6.93
+emlRunAnnotationComparison.layoutMode	2	res.p.Zebra-Alpha	0.0000000000004
+emlRunAnnotationComparison.layoutMode	2	res.absd.Zebra-Alpha	12.964988
+emlRunAnnotationComparison.layoutMode	2	obs.signedd.Zebra-Alpha	12.964988
+emlRunAnnotationComparison.layoutMode	2	dis.label.Zebra-Alpha	p < .001, d = 12.96
+emlRunAnnotationComparison.layoutMode	2	res.p.Mid-Alpha	0.00000004
+emlRunAnnotationComparison.layoutMode	2	res.absd.Mid-Alpha	7.071068
+emlRunAnnotationComparison.layoutMode	2	obs.signedd.Mid-Alpha	7.071068
+emlRunAnnotationComparison.layoutMode	2	dis.label.Mid-Alpha	p < .001, d = 7.07
+emlRunAnnotationComparison.layoutMode	2	res.posthoc	Pairwise comparisons: Tukey HSD
+emlRunAnnotationComparison.layoutMode	2	res.adjust	already family-wise; no further adjustment applied
+emlRunAnnotationComparison.layoutMode	2	dis.bracketN	3.000000
+emlRunAnnotationComparison.layoutMode	2	dis.matrixN	0
+emlRunAnnotationComparison.layoutMode	3	res.error	
+emlRunAnnotationComparison.layoutMode	3	res.omnibus	One-way ANOVA: F(2, 15) = 277.80, p < .001
+emlRunAnnotationComparison.layoutMode	3	res.labels	Zebra|Mid|Alpha
+emlRunAnnotationComparison.layoutMode	3	res.nGroups	3.000000
+emlRunAnnotationComparison.layoutMode	3	dis.cell.Zebra-Mid	p < .001
+emlRunAnnotationComparison.layoutMode	3	res.sig.Zebra-Mid	1.000000
+emlRunAnnotationComparison.layoutMode	3	dis.cell.Zebra-Alpha	p < .001
+emlRunAnnotationComparison.layoutMode	3	res.sig.Zebra-Alpha	1.000000
+emlRunAnnotationComparison.layoutMode	3	dis.cell.Mid-Alpha	p < .001
+emlRunAnnotationComparison.layoutMode	3	res.sig.Mid-Alpha	1.000000
+emlRunAnnotationComparison.layoutMode	3	res.posthoc	Pairwise comparisons: Tukey HSD
+emlRunAnnotationComparison.layoutMode	3	res.adjust	already family-wise; no further adjustment applied
+emlRunAnnotationComparison.layoutMode	3	dis.bracketN	0
+emlRunAnnotationComparison.layoutMode	3	dis.matrixN	3.000000

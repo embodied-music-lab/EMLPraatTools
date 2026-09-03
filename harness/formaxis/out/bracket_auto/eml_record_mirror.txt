@@ -1,10 +1,2 @@
 # EML record workflow -- crash mirror. Rows are appended as they
 # are recorded, so a session lost to a crash is still readable.
---- step 1 (analysis), run 1
-Group comparison on a figure: val by grp, auto, 4 groups
-Reached through the figure's annotation rather than the stats menu; the test and the correction are the same.
-@emlBridgeGroupComparison: data, "val", "grp", 0.05, "stars", 0, 0, "auto", 2
---- step 2 (draw), run 1
-Violin plot of val, grouped by grp, 4 groups.
-Violin width is a kernel density estimate, not a count.
-@emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "val", 0, 0

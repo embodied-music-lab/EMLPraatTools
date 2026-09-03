@@ -33,7 +33,7 @@ DLG|anv|1|visit=1|clicked=2
 
 ==============================================
   EML Stats : One-Way ANOVA
-  Fri Aug 21 05:05:36 2026
+  Thu Sep  3 04:07:50 2026
   from: analysis dialog
 ==============================================
 
@@ -41,20 +41,19 @@ DLG|anv|1|visit=1|clicked=2
   Data column         f0 Hz
   Group column        cohort
   Groups              3
+  Group order: table order (alpha, bravo, charlie).
 
 
   -- ANOVA Table -----------------------------
-  Why: Tests whether group means differ when normality and equal variances hold.
 
 Source              SS              df    MS              F           p
 Between             1441680.33      2     720840.17       1.0103      .381
 Within              14982775.50     21    713465.50       
 Total               16424455.83     23    
 
-  F                   1.0103		Ratio of mean squares: the between-group mean square is 1.0 times the within-group mean square. With no real effect, this ratio tends to be near 1
-  p                   .381		Not statistically significant at the 5% level
-  Effect size         eta-squared = 0.0878		Effect size: medium by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 9% of the total variance
-  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  F                   1.0103
+  p                   .381
+  Effect size         eta-squared = 0.0878
   Equal spread        Brown-Forsythe F(2, 21) = 0.9992
   Equal-spread p      p = .385
 
@@ -88,9 +87,13 @@ bravo - charlie           -600.0000     [-1664.5236, 464.5236]
 alpha         ---         0.307       -0.273      
 bravo         -0.307      ---         -244.949    
 charlie       0.273       244.949     ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
 
   Conventions: quartiles R type 7 - SD & variance n-1
   - rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ==============================================
 RT|draw|1|passes=1|ymin=0|ymax=0
 RT|drawn_extent|0|6.0000|0|4.0000

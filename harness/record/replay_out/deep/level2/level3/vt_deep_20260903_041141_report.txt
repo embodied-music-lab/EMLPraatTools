@@ -1,0 +1,38 @@
+
+==============================================
+  EML Stats : Two-Group Comparison
+  Thu Sep  3 04:11:41 2026
+==============================================
+
+  Table               vt
+  Data column         val
+  Group column        grp
+
+  Group         N     Mean      SD        Median    
+  Cohort 1      20    2.21      0.32      2.20      
+  Cohort 2      20    3.31      0.48      3.40      
+  Sign: every difference below is Cohort 1 minus Cohort 2, and t, z
+  and the effect sizes carry that direction.
+
+
+  -- Welch -----------------------------------
+  t                   -8.571
+  df                  33.0
+  p                   < .001  (6.62e-10)
+  Mean diff (Cohort 1 - Cohort 2) -1.0979
+  95% CI of diff      [-1.3584, -0.8373]
+
+
+  -- Effect Size -----------------------------
+  Cohen's d           -2.710
+  Hedges' g           -2.657
+  Magnitude           large by Cohen's convention
+
+  Conventions: quartiles R type 7 - SD & variance n-1
+  - rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
+==============================================
+
+
+Note: characters outside plain ASCII were replaced with ASCII equivalents in this file (chi^2 for the chi-square symbol, "-" for a rule) so it stays readable to every text tool. Praat writes a whole file as UTF-16 as soon as one such character is in it. The Info window shows the original.

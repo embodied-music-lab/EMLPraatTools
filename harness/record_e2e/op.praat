@@ -72,9 +72,21 @@ elsif op$ = "twoway"
 elsif op$ = "paired"
     @emlRunPairedAnalysis: id, "spl", "spl2", "t"
 elsif op$ = "reliability"
-    ; Still a Phase 4 stub that refuses by design; the separator is corrected
-    ; anyway so the refusal is the stub's and not a mis-parsed argument list.
-    @emlRunReliabilityAnalysis: id, "subj", "r1|r2|r3", "icc", "agreement"
+    ; REWRITTEN 3 September 2026 for the frozen signature
+    ; (RULING_SURVEY_ROWS_ACCEPTED_2026-09-03). This passed five arguments --
+    ; id, "subj", "r1|r2|r3", "icc", "agreement" -- to the Phase 4 stub, and
+    ; its comment said the refusal was by design. The stub is now a working
+    ; doorway taking four, so the call died on arity before reaching the
+    ; procedure: no OPDONE marker, nothing in the buffer, and this harness
+    ; reported "1 operation never completed" without saying which. A doorway
+    ; that changes shape breaks its drivers silently, which is the whole
+    ; reason this file drives the real thing rather than a copy of it.
+    ;
+    ; The items are the three condition columns the repeated-measures and
+    ; Friedman operations below already use -- the fixture has no separate
+    ; rater block, and three columns is enough for alpha-if-item-deleted to
+    ; be defined (k >= 3).
+    @emlRunReliabilityAnalysis: id, { "c1", "c2", "c3" }, 0.95, 1
 elsif op$ = "rm"
     ; PIPE-SEPARATED, not comma. @emlExtractConditionMatrix splits on "|";
     ; a comma-separated list parses as ONE column name and the path refuses

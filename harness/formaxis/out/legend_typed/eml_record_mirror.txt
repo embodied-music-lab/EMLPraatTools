@@ -3,9 +3,27 @@
 --- step 1 (draw), run 1
 Grouped violin: f0 by cohort
 Violin width is a kernel density estimate, not a count.
+emlEraseFirst = 1
+emlPanelOriginX = 0
+emlPanelOriginY = 0
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = 1
+emlSecondAxisOn = 0
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawGroupedViolin: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "sub", "val", 100, 300
 --- discarded 1 step(s): a pass that was measured and then thrown away. The steps above this line are NOT in the recording.
 --- step 1 (draw), run 1
 Grouped violin: f0 by cohort
 Violin width is a kernel density estimate, not a count.
+emlEraseFirst = 1
+emlPanelOriginX = 0
+emlPanelOriginY = 0
+@emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
+emlLineStyle = 1
+emlSecondAxisOn = 0
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawGroupedViolin: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, "grp", "sub", "val", 100, 300

@@ -138,7 +138,7 @@ Closes D91 and completes the D88 propagation. **All 16 `@emlComputeAxisRange`
 call sites now derive their granularity from the data.** No literal remains.
 
 New global `emlYAxisMinStep`: 0 means unconstrained, a positive value is the
-smallest step the y-axis may take. Declared in `@emlInitDrawingDefaults`,
+smallest step the y-axis may take. Declared in `@emlInitializeDrawingDefaults`,
 guarded in `@emlSetAdaptiveTheme`, honoured by the four procedures that turn
 a range into a step — `@emlDrawGridlines` (y only),
 `@emlDrawHorizontalGridlines`, `@emlDrawAlignedMarksLeft` and
@@ -159,7 +159,7 @@ code:**
   unconditional reset clears the constraint immediately before the ticks are
   drawn. The figure then comes out unchanged with no clue why.
 - The global must be guarded with `variableExists`. A draw procedure can be
-  entered without `@emlInitDrawingDefaults` having run, and Praat aborts the
+  entered without `@emlInitializeDrawingDefaults` having run, and Praat aborts the
   whole figure at the first comparison against an undefined global.
 
 Both were caught by driving, not by reading the diff.

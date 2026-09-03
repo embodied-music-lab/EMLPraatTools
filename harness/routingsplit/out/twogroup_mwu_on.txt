@@ -2,7 +2,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Two-Group Comparison
-  Tue Aug 25 20:36:15 2026
+  Thu Sep  3 04:08:09 2026
   from: analysis dialog
 ══════════════════════════════════════════════
 
@@ -22,7 +22,7 @@
   U1                  0.0		U: how often a value from one group exceeds a value from the other, out of n1 x n2 possible pairs
   U2                  36.0
   p                   .002		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 1% of the time
-  Method              exact		P-value computed by exact enumeration (used when both groups have n < 50 and there are no ties)
+  p method            exact
 
 
   ── Nonparametric Effect Size ───────────────
@@ -37,5 +37,7 @@
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 == END twogroup_mwu_on ==

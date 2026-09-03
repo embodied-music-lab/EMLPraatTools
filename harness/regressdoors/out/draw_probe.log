@@ -1,7 +1,7 @@
 
 ══════════════════════════════════════════════
   EML Stats : Simple Linear Regression
-  Wed Aug 26 04:11:56 2026
+  Thu Sep  3 04:06:58 2026
 ══════════════════════════════════════════════
 
   Table               leg5 -- A
@@ -11,19 +11,16 @@
 
 
   ── Model ───────────────────────────────────
-  Why: Tests whether the predictor linearly predicts the response.
   Equation            y = 1.9842x + 5.0667
-  y = 1.9842 x x + 5.0667
-  For each 1-unit increase in x, predicted y is 1.9842 units higher.
-  R                   0.9991		Very strong positive relationship (range: -1 to 1)
-  R-squared           0.9983		The fitted model accounts for 100% of the variance in Y in this sample
-  Adj. R-squared      0.9981		R-squared adjusted for number of predictors — penalizes model complexity
-  Residual SE         0.2635		Typical prediction error — points deviate from the line by +/-0.26 units on average
+  R                   0.9991
+  R-squared           0.9983
+  Adj. R-squared      0.9981
+  Residual SE         0.2635
 
 
   ── Overall Model Test (F) ──────────────────
-  F(1,8)              4677.7552		Ratio of the mean square accounted for by the model to the mean square left over. With no real association, this ratio tends to be near 1
-  p                   < .001  (2.32e-12)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  F(1,8)              4677.7552
+  p                   < .001  (2.32e-12)
 
 
   ── Coefficients ────────────────────────────
@@ -37,12 +34,14 @@
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
   A: OLS fitted line: y = 1.9842x + 5.0667  (R² = 0.998)
 
 ══════════════════════════════════════════════
   EML Stats : Simple Linear Regression
-  Wed Aug 26 04:11:56 2026
+  Thu Sep  3 04:06:58 2026
 ══════════════════════════════════════════════
 
   Table               leg5 -- B
@@ -52,19 +51,16 @@
 
 
   ── Model ───────────────────────────────────
-  Why: Tests whether the predictor linearly predicts the response.
   Equation            y = -1.9855x + 99.9400
-  y = -1.9855 x x + 99.9400
-  For each 1-unit increase in x, predicted y is 1.9855 units lower.
-  R                   -0.9993		Very strong negative relationship (range: -1 to 1)
-  R-squared           0.9987		The fitted model accounts for 100% of the variance in Y in this sample
-  Adj. R-squared      0.9985		R-squared adjusted for number of predictors — penalizes model complexity
-  Residual SE         0.2341		Typical prediction error — points deviate from the line by +/-0.23 units on average
+  R                   -0.9993
+  R-squared           0.9987
+  Adj. R-squared      0.9985
+  Residual SE         0.2341
 
 
   ── Overall Model Test (F) ──────────────────
-  F(1,8)              5932.6567		Ratio of the mean square accounted for by the model to the mean square left over. With no real association, this ratio tends to be near 1
-  p                   < .001  (9.00e-13)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  F(1,8)              5932.6567
+  p                   < .001  (9.00e-13)
 
 
   ── Coefficients ────────────────────────────
@@ -78,6 +74,8 @@
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
   B: OLS fitted line: y = -1.9855x + 99.9400  (R² = 0.999)
 NOTE: on-figure box backgrounds are drawn as a stipple screen on this platform — Praat draws no image here, so the 70% white sprite macOS and Windows use is replaced by a white lattice of about the same coverage. Data under the box shows through the gaps instead of being erased.

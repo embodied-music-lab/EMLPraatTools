@@ -39,7 +39,7 @@ include ~/repo/plugin/graphs/eml-draw-procedures.praat
 include ~/repo/plugin/stats/eml-analysis.praat
 include ~/repo/plugin/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -143,6 +143,8 @@ data = selected ()
 # Normality was NOT tested on this path.
 
 @emlReportContext: "recorded script (recorded 21 August 2026, originally analysis dialog)", ""
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlRunAnovaAnalysis: data, valueCol4$, groupCol4$, 1
 
 # F(2, 21) = 1.0103, p = 0.3811, eta-squared = 0.0878
@@ -166,6 +168,9 @@ emlPanelOriginY = panelOriginY4
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 emlLineStyle = lineStyle4
 emlSecondAxisOn = secondAxisOn4
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawViolinPlot: data, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4, "color", 1, groupCol4$, valueCol4$, axisYMin4, axisYMax4
 
 # Axis resolved to -2000.0000 .. 6000.0000 over 3 groups on the recorded data; auto adapts to other data.

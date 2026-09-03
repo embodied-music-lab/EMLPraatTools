@@ -39,7 +39,7 @@ include /home/claude/repo/plugin/graphs/eml-draw-procedures.praat
 include /home/claude/repo/plugin/stats/eml-analysis.praat
 include /home/claude/repo/plugin/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -82,6 +82,7 @@ data = selected ()
 annotCorrectionMethod$ = "holm"
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlRunTwoGroupAnalysis: data, valueCol$, groupCol$, "parametric", 0
 
 # zulu: n = 14, mean = 210.5256, SD = 3.2416

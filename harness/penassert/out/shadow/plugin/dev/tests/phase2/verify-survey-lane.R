@@ -10,6 +10,17 @@
 # ===========================================================================
 
 fails <- 0L
+
+# Feldt (1965): the interval on alpha from the F distribution on
+# (n - 1, (n - 1)(k - 1)) df, at any two-sided level. At conf = 0.95 this
+# is the .025 / .975 pair every reference states, and psych::alpha's
+# fixed-level output below is asserted against it.
+base_feldt <- function(a, n, k, conf) {
+    df1 <- n - 1; df2 <- (n - 1) * (k - 1); tl <- (1 - conf) / 2
+    c(1 - (1 - a) * stats::qf(1 - tl, df1, df2),
+      1 - (1 - a) * stats::qf(tl, df1, df2))
+}
+
 expect <- function(what, literal, computed, tol = 5e-11) {
     ok <- is.finite(computed) && abs(literal - computed) <= tol
     cat(sprintf("%-4s  %-58s  literal=%.10f  R=%.10f\n",
@@ -32,6 +43,15 @@ if (!requireNamespace("psych", quietly = TRUE)) {
     expect("alpha (10x5 clean)", 0.9491763761, a$total$raw_alpha)
     expect("Feldt CI lower", 0.8733351023, a$feldt$lower.ci[[1]])
     expect("Feldt CI upper", 0.9855775272, a$feldt$upper.ci[[1]])
+
+    # psych::alpha fixes its own level, so the general form is pinned
+    # against psych's numbers at 0.95 here; the 0.99 literals below then
+    # rest on a function psych has vouched for at the level it does report.
+    f95 <- base_feldt(a$total$raw_alpha, nrow(d), ncol(d), 0.95)
+    expect("Feldt general form vs psych at 0.95, lower",
+           f95[1], a$feldt$lower.ci[[1]])
+    expect("Feldt general form vs psych at 0.95, upper",
+           f95[2], a$feldt$upper.ci[[1]])
     drop_lit <- c(0.9209039548, 0.9375000000, 0.9580922322,
                   0.9237002026, 0.9393183707)
     for (j in 1:5) {
@@ -60,6 +80,15 @@ d <- matrix(c(2,3,3,3,2, 4,4,3,4,4, 3,4,4,3,3, 5,5,4,5,5, 1,2,2,1,2,
               4,3,3,4,4, 2,2,3,2,2, 5,4,5,5,4, 3,3,3,3,4, 4,5,4,4,5),
             ncol = 5, byrow = TRUE)
 full <- base_alpha(d)
+
+# --- the Feldt interval at a level psych::alpha does not offer ------------
+# The general form, in base R, so the 0.99 literals are verifiable on a
+# stock installation. The block above pins this same function against
+# psych's own 0.95 numbers whenever psych is present, which is what stops
+# it being a restatement of the plugin's arithmetic.
+f99 <- base_feldt(full, nrow(d), ncol(d), 0.99)
+expect("Feldt 0.99 lower", 0.8324624444, f99[1])
+expect("Feldt 0.99 upper", 0.9908495094, f99[2])
 aw <- vapply(1:10, function(i) base_alpha(d[-i, , drop = FALSE]), numeric(1))
 dl <- aw - full
 expect("influence alphaFull", 0.9491763761, full)

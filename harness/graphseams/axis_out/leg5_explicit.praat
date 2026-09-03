@@ -1,20 +1,20 @@
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-output.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/plugin/stats/eml-record.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/plugin/graphs/eml-draw-procedures.praat
+include /home/claude/repo/plugin/stats/eml-core-utilities.praat
+include /home/claude/repo/plugin/stats/eml-core-descriptive.praat
+include /home/claude/repo/plugin/stats/eml-extract.praat
+include /home/claude/repo/plugin/stats/eml-output.praat
+include /home/claude/repo/plugin/stats/eml-inferential.praat
+include /home/claude/repo/plugin/stats/eml-result-writer.praat
+include /home/claude/repo/plugin/stats/eml-record.praat
+include /home/claude/repo/plugin/graphs/eml-graph-procedures.praat
+include /home/claude/repo/plugin/graphs/eml-annotation-procedures.praat
+include /home/claude/repo/plugin/graphs/eml-draw-procedures.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlRecordInit
-emlRecordPluginRoot$ = "/home/claude/EMLPraatTools/plugin"
-@emlRecordBegin: "/home/claude/EMLPraatTools/harness/graphseams/axis_out"
-emlRecordPluginRoot$ = "/home/claude/EMLPraatTools/plugin"
-@emlRecordLoadPhrases: "/home/claude/EMLPraatTools/plugin/data/eml-record-phrases.csv"
+emlRecordPluginRoot$ = "/home/claude/repo/plugin"
+@emlRecordBegin: "/home/claude/repo/harness/graphseams/axis_out"
+emlRecordPluginRoot$ = "/home/claude/repo/plugin"
+@emlRecordLoadPhrases: "/home/claude/repo/plugin/data/eml-record-phrases.csv"
 @emlRecordHeader: "vt", 100, 2, "axis choice explicit"
 
 Create Table with column names: "vt", 0, "grp val"
@@ -36,9 +36,9 @@ Erase all
 @emlDrawViolinPlot: table, "f0 by cohort", "Cohort", "f0 (Hz)", 6, 4,
 ... "color", 1, "grp", "val", 150, 300
 @emlAssertFullViewport
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/graphseams/axis_out/leg5.png"
+Save as 300-dpi PNG file: "/home/claude/repo/harness/graphseams/axis_out/leg5.png"
 appendInfoLine: "AXISLO=", fixed$ (emlDrawViolinPlot.axisYMin, 6)
 appendInfoLine: "AXISHI=", fixed$ (emlDrawViolinPlot.axisYMax, 6)
 
-@emlRecordFlush: "/home/claude/EMLPraatTools/harness/graphseams/axis_out/expl_emitted.praat"
+@emlRecordFlush: "/home/claude/repo/harness/graphseams/axis_out/expl_emitted.praat"
 @emlRecordDiscard

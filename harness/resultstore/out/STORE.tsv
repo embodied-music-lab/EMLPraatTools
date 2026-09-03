@@ -173,7 +173,7 @@ kw_dunn_holm	schema	eRS1
 kw_dunn_holm	run	5
 kw_dunn_holm	valid	1
 kw_dunn_holm	error	
-kw_dunn_holm	producer	emlRunKWAnalysis
+kw_dunn_holm	producer	emlRunKruskalWallisAnalysis
 kw_dunn_holm	door	menu
 kw_dunn_holm	kind	group
 kw_dunn_holm	key	eTF2|r=12|c=2|n=126|s=2|d=809119209_355023251_1475169559
@@ -218,7 +218,7 @@ kw_dunn_bonferroni	schema	eRS1
 kw_dunn_bonferroni	run	6
 kw_dunn_bonferroni	valid	1
 kw_dunn_bonferroni	error	
-kw_dunn_bonferroni	producer	emlRunKWAnalysis
+kw_dunn_bonferroni	producer	emlRunKruskalWallisAnalysis
 kw_dunn_bonferroni	door	menu
 kw_dunn_bonferroni	kind	group
 kw_dunn_bonferroni	key	eTF2|r=12|c=2|n=126|s=2|d=809119209_355023251_1475169559
@@ -263,7 +263,7 @@ kw_only	schema	eRS1
 kw_only	run	7
 kw_only	valid	1
 kw_only	error	
-kw_only	producer	emlRunKWAnalysis
+kw_only	producer	emlRunKruskalWallisAnalysis
 kw_only	door	menu
 kw_only	kind	group
 kw_only	key	eTF2|r=12|c=2|n=126|s=2|d=809119209_355023251_1475169559
@@ -329,7 +329,7 @@ pairwise_welch_holm	df2	--undefined--
 pairwise_welch_holm	omnibusP	--undefined--
 pairwise_welch_holm	effectLabel	
 pairwise_welch_holm	effect	--undefined--
-pairwise_welch_holm	n	--undefined--
+pairwise_welch_holm	n	12
 pairwise_welch_holm	secondLabel	
 pairwise_welch_holm	secondStat	--undefined--
 pairwise_welch_holm	secondDf1	--undefined--
@@ -374,7 +374,7 @@ pairwise_wilcoxon_bh	df2	--undefined--
 pairwise_wilcoxon_bh	omnibusP	--undefined--
 pairwise_wilcoxon_bh	effectLabel	
 pairwise_wilcoxon_bh	effect	--undefined--
-pairwise_wilcoxon_bh	n	--undefined--
+pairwise_wilcoxon_bh	n	12
 pairwise_wilcoxon_bh	secondLabel	
 pairwise_wilcoxon_bh	secondStat	--undefined--
 pairwise_wilcoxon_bh	secondDf1	--undefined--
@@ -419,7 +419,7 @@ pairwise_scheffe	df2	--undefined--
 pairwise_scheffe	omnibusP	--undefined--
 pairwise_scheffe	effectLabel	
 pairwise_scheffe	effect	--undefined--
-pairwise_scheffe	n	--undefined--
+pairwise_scheffe	n	12
 pairwise_scheffe	secondLabel	
 pairwise_scheffe	secondStat	--undefined--
 pairwise_scheffe	secondDf1	--undefined--

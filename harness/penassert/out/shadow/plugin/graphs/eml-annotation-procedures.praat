@@ -47,7 +47,7 @@
 #   @emlDrawAnnotationBlock      — render the multi-line corner text box
 #   @emlMeasureMatrixLayout      — measure matrix panel geometry (rotate, truncate, stack)
 #   @emlDrawMatrixPanel          — render the comparison matrix panel
-#   @emlBridgeGroupComparison    — run group test, populate brackets
+#   @emlRunAnnotationComparison    — run group test, populate brackets
 #   @emlBridgeCorrelation        — run correlation, populate regression (UNUSED)
 #   @emlReportBridgeStats        — thin dispatcher: graphs tool → shared reporter
 #   @emlReportTwoGroupComparison — shared reporter: two-group comparison
@@ -119,6 +119,13 @@
 #                                  "Tukey HSD", "Dunn's test (holm)")
 #   annotCorrectionMethod$       — p-value correction for Dunn's test
 #                                  (default "holm", set by stats callers)
+#   annotPostHoc                 — ITEM 3.5. 1 = run the pairwise post-hoc,
+#                                  0 = omnibus only. The Comparison menu's
+#                                  own row, committed by the six
+#                                  column-mapping pages in
+#                                  graphs/eml-graphs-form.praat. Absent in a
+#                                  tree that never opened that form, and
+#                                  every read of it defaults to 1.
 #
 # Multi-line annotation block (scatter stats + formula):
 #   annotBlockN                  — number of lines in block
@@ -252,11 +259,61 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlCIAlphaInForce
+# The alpha every confidence interval in this module is built at.
+#
+# ONE ANSWER, SO THE FIGURE AND ITS REPORT CANNOT DISAGREE. The stars, the
+# error bars, the mean intervals and every bracket a report prints all read
+# the alpha the user set on the graph dialog, and they read it from here, so
+# a figure cannot carry a 99% error bar beside a 95% correlation band.
+#
+# annotAlpha is a graphs-layer global and an API or headless caller can reach
+# these reporters without one, so the guard is the same shape @emlFormatStars
+# uses and falls back to the same documented default of 0.05. A value outside
+# the open interval (0, 1) is refused for the same reason: invStudentQ (0, df)
+# never converges and invGaussQ is undefined above 1, so a quantile taken
+# from one is a hang or a garbage bracket rather than a wrong number.
+#
+# Arguments: none (reads the global)
+# Output:
+#   .alpha  — the two-sided tail probability in force, strictly in (0, 1)
+# ----------------------------------------------------------------------------
+procedure emlCIAlphaInForce
+    .alpha = 0.05
+    if variableExists ("annotAlpha")
+        if annotAlpha <> undefined
+            if annotAlpha > 0 and annotAlpha < 1
+                .alpha = annotAlpha
+            endif
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlFormatAnnotLabel
 # Format the display label for a bracket annotation.
+#
+# THE EFFECT SIZE IS PRINTED AS A MAGNITUDE, and the reason is that a bracket
+# is the figure's COMPACT surface. A signed effect size is readable only
+# beside a statement of which member of the pair the subtraction starts from;
+# the bracket has room for the number and not for the sentence. The sign here
+# is always left member minus right member, because the bridge only ever
+# builds a bracket with annotBracketI < annotBracketJ and the groups draw left
+# to right -- but that is a rule the reader would have to arrive already
+# knowing, and it moves with the group ordering setting, since table order is
+# the default and the left group is therefore whichever one the spreadsheet
+# lists first. So the compact surface carries |d| and the Info report carries
+# the signed value under a line naming the subtraction.
+#
+# @emlDrawMatrixPanel treats its lower triangle the same way, to two decimals
+# through fixed$, and says "(magnitude)" in its subtitle; a bracket names its
+# quantity inline instead, "d = 0.83" beside its p.
+#
 # Arguments: .p, .d, .style$, .showEffect, .effectLabel$
 #   .p            — p-value
-#   .d            — effect size value (Cohen's d, rank-biserial r, etc.)
+#   .d            — effect size value (Cohen's d, rank-biserial r, etc.);
+#                   printed as its magnitude, sign discarded
 #   .style$       — "p-value", "stars", or "both"
 #   .showEffect   — 0 or 1
 #   .effectLabel$ — symbol to display (e.g., "d", "r", "ε²")
@@ -281,7 +338,10 @@ procedure emlFormatAnnotLabel: .p, .d, .style$, .showEffect, .effectLabel$
     endif
 
     if .showEffect = 1 and .d <> undefined
-        .dText$ = fixed$ (.d, 2)
+        ; abs, and two decimals through fixed$: the same treatment
+        ; @emlDrawMatrixPanel gives the effect size in its lower triangle, so
+        ; the two annotation layouts of one comparison print one number.
+        .dText$ = fixed$ (abs (.d), 2)
         .result$ = .result$ + ", " + .effectLabel$ + " = " + .dText$
     endif
 endproc
@@ -458,7 +518,7 @@ endproc
 # halves rather than trusting a character count — and why it leaves .widthMM
 # and .availMM behind for a harness to read.
 #
-# THE HALVES ARE NOT JOINED BY THIS PROCEDURE BY ACCIDENT. @emlBridgeGroupComparison
+# THE HALVES ARE NOT JOINED BY THIS PROCEDURE BY ACCIDENT. @emlRunAnnotationComparison
 # stores the test and the adjustment clause separately. Joining them here
 # means the wrap point is a seam that already exists in the data, so the
 # two-line form never splits a word or a clause, and it means the two arms'
@@ -1752,7 +1812,7 @@ endproc
 # anywhere, so:
 #   * any consumer that needs the raw label (e.g. a data lookup keyed on the
 #     group name) must read it BEFORE this procedure runs, or re-read it from
-#     the bridge (@emlBridgeGroupComparison.gLabel$[]);
+#     the bridge (@emlRunAnnotationComparison.gLabel$[]);
 #   * the procedure is not idempotent — calling it twice at a narrower width
 #     truncates an already-truncated (and already-sanitized) string;
 #   * @emlClearAnnotations therefore clears annotMatrixLabel$[] over the
@@ -2471,12 +2531,829 @@ endproc
 
 
 # ============================================================================
+# THE RESULT STORE — THE READ SIDE
+# ============================================================================
+# Provides: @emlConsumeGroupResult, @emlStoreGroupMap, @emlBridgeStoreIdentity
+#
+# WHAT THIS IS FOR. docs/RULING_RESULT_STORE.md, sections (c) and (d). Drawing
+# a figure that RE-RUNS the analysis it annotates puts a SECOND full report in
+# the Info window — the driven defect, Ian's Kruskal-Wallis to violin session
+# — and can produce different numbers from the ones the user was shown at the
+# analysis door, because nothing ties the two runs together. The figure
+# RECEIVES the result instead.
+#
+# THE VALIDITY TEST IS THE FINGERPRINT, NOT A CONSUMED-ONCE STAMP, and the
+# ruling is explicit about the difference: "unlike the axis request (ruling A,
+# consumed once by design), a result is legitimately consumed by many figures
+# until the data or a result-affecting setting changes." So there is NO spent
+# flag anywhere below, and one published result may serve a violin, a box plot
+# and a bar chart of the same comparison without a word in the Info window.
+#
+# ============================================================================
+# WHAT THIS SIDE READS, AND WHAT IT ASKS SOMEBODY ELSE
+# ============================================================================
+# Section (d) rules the store into published globals under a SINGLE WRITE
+# SITE. This file is the READ side and it WRITES NONE OF THEM. It also does
+# not re-implement either half of the validity test, because a second
+# comparison is a second opinion:
+#
+#   THE DATA HALF is @emlStoreKeyTake plus @emlFingerprintsAgree, both in
+#   stats/eml-extract.praat. @emlStoreKeyTake is the one place a group
+#   comparison's key is taken -- it picks the door (@emlGroupFingerprint, two
+#   column names, in that order) so that a publisher and a consumer cannot
+#   key the same comparison through two different doors and miss for ever
+#   without being wrong out loud. It hands back the group sort order in the
+#   same call, which is the other thing both sides need.
+#
+#   THE SETTINGS HALF is @emlStoreIdentityAgrees, also in eml-extract.praat.
+#   It compares the store's identity fields -- both columns, the test, the
+#   correction, alpha, the group order -- against a candidate analysis's, and
+#   NAMES THE FIRST THAT DIFFERS as a field key. Its own header says the
+#   sentence is not composed there: "whoever prints owns the wording."
+#
+#   THE WORDING is @emlRenderResultSettings and @emlSettingsChangeNote in
+#   stats/eml-output.praat. The store speaks in field keys and internal
+#   tokens; a reader needs "adjustment method holm -> bonferroni".
+#
+# So this file contributes three things and no fourth: it decides which
+# QUESTION to ask (is this publication even about this comparison?), it maps
+# the store's group order onto the figure's x axis, and it says the bridge's
+# analysis in the store's vocabulary so the identity comparison can be made
+# at all.
+#
+# THE PAYLOAD IT CONSUMES, all published by @emlPublishAnalysisResult:
+#
+#   emlStoreFormat$ / emlStoreValid / emlStoreKind$ / emlStoreKey$
+#   emlStoreTableName$ / emlStoreDataCol$ / emlStoreGroupCol$
+#   emlStoreNGroups / emlStoreGroupLabel$[i]
+#   emlStoreOmnibusStat / emlStoreDf1 / emlStoreDf2 / emlStoreOmnibusP
+#   emlStoreEffect / emlStorePairEffectLabel$
+#   emlStoreHasMatrix / emlStorePMatrix## / emlStoreEffectMatrix##
+#
+# A REFUSAL IS PUBLISHED TOO, and reading emlStoreValid before anything else
+# is what makes that discipline worth having: a run that refused leaves
+# emlStoreValid = 0 in the slot the run before it filled, so a figure drawn
+# after a failed analysis computes rather than quoting the analysis before the
+# failed one.
+#
+# ============================================================================
+# THE THREE THINGS THIS READER ASSUMES OF THE WRITE SITE
+# ============================================================================
+# Written down together because the read side and the write side were built in
+# parallel, and a reconciliation pass needs ONE block to check rather than two
+# files to read.
+#
+#   1. emlStorePMatrix## AND emlStoreEffectMatrix## ARE INDEXED BY
+#      emlStoreGroupLabel$[]. NOT by the figure's x axis -- the analysis door
+#      publishes Tukey's matrix in the ANOVA's alphabetical order and its
+#      labels in the same order, which is not the order @emlCountGroups
+#      discovers under the shipped default. @emlStoreGroupMap therefore maps
+#      LABEL BY LABEL rather than trusting either order, and a label the table
+#      does not carry is a miss. That is the assumption whose failure would be
+#      silent and worst -- annotBracketI[] and annotBracketJ[] are x-axis
+#      POSITIONS, so a mis-indexed matrix draws a real p-value over the wrong
+#      pair of violins.
+#   2. THE EFFECT MATRIX IS SIGNED. Each layout applies its own sign policy
+#      through @emlBridgeEffectPolicy, so a store publishing magnitudes would
+#      silently make the two-group and parametric-bracket arms lose a sign
+#      they have always carried in annotBracketD[]. The drawn ink is magnitude
+#      either way -- @emlFormatAnnotLabel and @emlDrawMatrixPanel each take
+#      abs() -- because R never puts a signed value in a compact annotation
+#      and Ian has ruled we follow R's convention.
+#   3. FOR TWO GROUPS THE OMNIBUS IS THE COMPARISON. emlStoreHasMatrix is 0,
+#      emlStoreOmnibusP is the pair's p and emlStoreEffect its effect size.
+#      The consume path builds the 2 x 2 from them.
+#
+# ============================================================================
+# WHAT A MISMATCH DOES, AND THE FOUR ANSWERS THIS READER GIVES
+# ============================================================================
+# Section (c), and the part that is most easily got wrong is the REPRINT:
+#
+#   "consume"   the data and every result-affecting setting agree. The figure
+#               draws from the store. EXACTLY ONE report exists in the Info
+#               window — the one the analysis door printed — and this path
+#               prints NOTHING. Never a second report; the duplicate report IS
+#               the defect.
+#   "settings"  the data agrees and a result-affecting setting has moved. The
+#               analysis re-runs and ONE line names the change, in the
+#               contract's form: "Recomputed: adjustment method holm ->
+#               bonferroni." Then the updated brackets. NO second report
+#               block.
+#   "data"      the key does not agree. The figure re-runs — it never quietly
+#               draws the stale one — and the report is reprinted under the
+#               24 August line, "Data changed since this analysis was last
+#               run; re-measured."
+#   "none"      nothing is published, or what is published cannot answer this
+#               figure's question: another table, another pair of columns,
+#               another kind, a refusal, an unknown schema, or an omnibus
+#               published with no post-hoc beside it. The bridge computes and
+#               reports exactly as it always did, and that report is the FIRST
+#               report, not a second one. A figure drawn without an analysis
+#               door in front of it is the common case and it must stay
+#               unchanged.
+#
+# A PUBLICATION ABOUT ANOTHER COMPARISON IS A MISS, NOT A CHANGED DATA SET,
+# and the difference is what the user is told. The key cannot tell them apart
+# -- it is one digest over the table's content AND the declared scope, so a
+# mismatch says only that something in either moved -- and a reader leaning on
+# it alone would answer a figure of a DIFFERENT table with "Data changed since
+# this analysis was last run", a sentence about an edit nobody made. Measured
+# before the guard existed, harness/bridgeconsume: a two-group figure drawn
+# while a three-group publication stood said exactly that.
+#
+# AN OMNIBUS WITHOUT A POST-HOC IS A MISS AND NOT A HALF-HIT. A user who ran
+# "One-way ANOVA, no post-hoc" from the menu and then asks a violin for its
+# brackets is asking for numbers that were never computed, and lane 3.1 of the
+# punch list rules that a post-hoc the user asked for is never withheld. So
+# the bridge computes them, and the report it prints is the first report OF
+# THAT analysis rather than a duplicate of the omnibus-only one above it.
+#
+# THE 24 AUGUST RULE IS ONLY HALF BUILT HERE, AND SAYING SO IS PART OF
+# BUILDING IT. That rule says a re-run which reproduces the stored report
+# EXACTLY should print nothing at all, and reprint only when the canonical
+# report text has moved. The comparison it needs is between two rendered
+# reports, and every reporter in this plugin PRINTS rather than returning
+# text, so the canonical rendering would have to be captured out of the Info
+# window and the reporters re-entered — which also re-runs @emlCSVInit and the
+# three-file declaration. That is punch item 1.2's remaining half and it is
+# not built here. What is built is the conservative direction: on a key
+# mismatch the report is printed WITH the line, so a reader is told too often
+# rather than too rarely. A figure never quietly draws a stale number either
+# way.
+# ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# @emlBridgeStoreIdentity: .nGroups, .testType$, .correction$
+# ----------------------------------------------------------------------------
+# THE GRAPH DOOR'S ANALYSIS, SAID IN THE STORE'S WORDS.
+#
+# The menu door publishes what it ran as a test token -- "welch t",
+# "mann-whitney", "one-way anova + tukey", "kruskal-wallis + dunn" -- and an
+# adjustment token that is EMPTY where nothing was applied. The graph door
+# knows the same thing as a test TYPE plus a group count. Two vocabularies for
+# one fact, and the identity comparison needs one, so the translation happens
+# here and in one direction only.
+#
+# WHY THIS IS NOT A HACK BUT THE POINT OF THE WHOLE ITEM. A figure and a menu
+# report are supposed to be the same analysis when they are the same analysis;
+# that is the unification. This procedure is where the graph door states which
+# analysis it is about to run, in the words the store already uses, so the two
+# doors can be asked whether they agree. Get it wrong in the loose direction
+# and a figure quotes a menu run of a different test; get it wrong in the
+# strict direction and the cache simply never hits.
+#
+# THE TOKENS ARE THE MENU DOOR'S, AND v142 HOLDS THE COPIES TOGETHER. Every
+# token written below must occur as a `.stTest$ =` or `.stPostHoc$` literal in
+# stats/eml-analysis.praat, which is the DRY rule this repository works to: a
+# procedure records the canon and a text check enforces that the copies agree.
+#
+# WHAT THE BRIDGE RUNS, and it is not a choice made here -- it is read off the
+# arms of @emlRunAnnotationComparison:
+#
+#   two groups, parametric      @emlTTest with equal variances OFF -> Welch
+#   two groups, nonparametric   @emlRankBiserialR, which runs Mann-Whitney
+#   k groups, parametric        @emlOneWayAnova with tukey = 1, ALWAYS
+#   k groups, nonparametric     @emlKruskalWallis then @emlDunnTest, ALWAYS
+#
+# The two "ALWAYS" are lane 3.1's ruling that a post-hoc is never gated on the
+# omnibus, so the graph door has no arm that runs an omnibus alone -- which is
+# why no token below names one.
+#
+# THE ADJUSTMENT IS EMPTY EXCEPT ON DUNN'S. Two groups is one comparison and
+# nothing is corrected; Tukey's p comes from the studentized range
+# distribution and is already family-wise, and the menu door publishes ""
+# there for the same reason. Publishing "holm" on a Tukey figure because the
+# form's menu happened to hold it would make every Tukey figure miss against
+# its own menu run.
+#
+# Outputs:
+#   .test$        - the store's test token for what this bridge will run
+#   .correction$  - the store's adjustment token, "" where none applies
+# ----------------------------------------------------------------------------
+procedure emlBridgeStoreIdentity: .nGroups, .testType$, .correction$
+    if .nGroups <= 2
+        if .testType$ = "nonparametric"
+            .test$ = "mann-whitney"
+        else
+            .test$ = "welch t"
+        endif
+        .correction$ = ""
+    elsif .testType$ = "nonparametric"
+        .test$ = "kruskal-wallis + dunn"
+    else
+        .test$ = "one-way anova + tukey"
+        .correction$ = ""
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlStoreGroupMap: .tableId, .factorCol$
+# ----------------------------------------------------------------------------
+# WHERE EACH OF THE FIGURE'S GROUPS SITS IN THE STORE'S MATRICES.
+#
+# THIS IS THE PROCEDURE THAT STOPS A p-VALUE BEING DRAWN OVER THE WRONG PAIR
+# OF VIOLINS, which is the worst failure this mechanism has and the only
+# silent one. annotBracketI[] and annotBracketJ[] are POSITIONS ON THE X AXIS,
+# in @emlCountGroups' order. The store's matrices are indexed by
+# emlStoreGroupLabel$[], which is the ANALYSIS's order -- and for a one-way
+# ANOVA that is Tukey's alphabetical sort, not the table's. The bridge's own
+# compute path has always had to remap for exactly this reason (.sortMap[]);
+# the consume path needs the same map against the store.
+#
+# IT MAPS BY LABEL, NOT BY ORDER, so it makes no assumption about either
+# side's sort at all: for each x-axis position, which stored index carries
+# that level's label? A level the store does not name, a level named twice, or
+# a count that does not match is a MISS -- the figure re-runs rather than
+# guessing.
+#
+# @emlCountGroups IS A READ OF THE GROUPING COLUMN AND RUNS NO TEST, so this
+# is not a recomputation of the analysis in the sense section (c) forbids: it
+# prints nothing and computes no statistic.
+#
+# Output:
+#   .ok        - 1 when every displayed level was found exactly once
+#   .n         - the number of levels the table has now
+#   .map[i]    - for x-axis position i, its index in the store's arrays
+#   .label$[i] - the level's label, in x-axis order
+#   .error$    - @emlCountGroups' error, passed through
+# ----------------------------------------------------------------------------
+procedure emlStoreGroupMap: .tableId, .factorCol$
+    .ok = 0
+    @emlCountGroups: .tableId, .factorCol$
+    .error$ = emlCountGroups.error$
+    .n = emlCountGroups.nGroups
+
+    ; Captured immediately: @emlCountGroups' outputs live only until it runs
+    ; again, and this procedure's caller goes on to call other things.
+    for .g from 1 to .n
+        .label$[.g] = emlCountGroups.groupLabel$[.g]
+    endfor
+
+    if .error$ <> ""
+        goto END_GROUP_MAP
+    endif
+    if .n <> emlStoreNGroups
+        goto END_GROUP_MAP
+    endif
+
+    .ok = 1
+    for .g from 1 to .n
+        .map[.g] = 0
+        .hits = 0
+        for .k from 1 to emlStoreNGroups
+            if emlStoreGroupLabel$[.k] = .label$[.g]
+                .map[.g] = .k
+                .hits = .hits + 1
+            endif
+        endfor
+        ; ZERO IS A LEVEL THE STORE NEVER SAW. MORE THAN ONE IS TWO STORED
+        ; LEVELS SHARING A LABEL, which no analysis should produce and which
+        ; would make the map a coin toss. Both are misses.
+        if .hits <> 1
+            .ok = 0
+        endif
+    endfor
+
+    label END_GROUP_MAP
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlConsumeGroupResult
+#
+# THE READ SIDE'S ONE DOOR. Asks whether the published result answers the
+# question this figure is about to ask, and hands back the payload when it
+# does.
+#
+# Arguments — the question the FIGURE is asking, in the settings in force now:
+#   .tableId, .dataCol$, .factorCol$
+#   .testType$        "parametric" / "nonparametric"
+#   .correction$      the RESOLVED adjustment token, never the raw global
+#   .alpha            the threshold the verdicts will be taken at
+#   .key$             the caller's fingerprint of the data, ALREADY TAKEN, in
+#                     the pass that read it. Not taken here; see the note in
+#                     the body.
+#   .sort$            the store's group-order token, from the same call
+#
+# Outputs:
+#   .verdict$   "consume" / "settings" / "data" / "none" — see WHAT A MISMATCH
+#               DOES above
+#   .note$      the one line to print, or "" when there is nothing to say.
+#               NOT printed here: this procedure decides, the bridge speaks,
+#               so that every line about one draw leaves one place.
+#   .test$ / .storeCorrection$
+#               this figure's analysis in the store's vocabulary, for the
+#               identity comparison and for the publication
+#   on "consume" only, the payload, IN X-AXIS ORDER:
+#     .nGroups, .gLabel$[], .pMatrix##, .eMatrix##, .effectLabel$,
+#     .omnibusStat, .df1, .df2, .omnibusP, .effect
+# ----------------------------------------------------------------------------
+procedure emlConsumeGroupResult: .tableId, .dataCol$, .factorCol$, .testType$, .correction$, .alpha, .key$, .sort$
+    .verdict$ = "none"
+    .note$ = ""
+    .nGroups = 0
+
+    ; THE KEY IS THE CALLER'S, TAKEN BEFORE IT READ A SINGLE VALUE. It is an
+    ; ARGUMENT and not something taken here, and that is a rule rather than a
+    ; convenience: the fingerprint's header names the one failure the module
+    ; cannot see -- "a caller that computes a result, lets the table change,
+    ; and only then stamps a key has stamped a truthful key on a result the
+    ; table may not support" -- and the rule that closes it is that the
+    ; PUBLISHER takes the key in the pass that reads the data. A reader that
+    ; took its own key would take a second one, at a second moment, and the
+    ; publisher's would still be the one that mattered. So there is one key
+    ; per draw and the publisher owns it; validate/v138 asserts the order in
+    ; every publishing procedure by text.
+
+    ; THIS FIGURE'S ANALYSIS, IN THE STORE'S WORDS. Needed whatever the
+    ; verdict: the identity comparison takes it, and so does the publication
+    ; the bridge makes when it re-runs.
+    @emlBridgeStoreIdentity: 0, .testType$, .correction$
+    .test$ = emlBridgeStoreIdentity.test$
+    .storeCorrection$ = emlBridgeStoreIdentity.correction$
+
+    ; NOTHING PUBLISHED, OR PUBLISHED UNDER ANOTHER SCHEMA, ANOTHER KIND, OR
+    ; AS A REFUSAL. Every read below a test is of a name that test has just
+    ; established, which is why these are separate ifs and not one condition:
+    ; Praat evaluates both sides of an `and`.
+    if not variableExists ("emlStoreFormat$")
+        goto END_CONSUME
+    endif
+    if emlStoreFormat$ <> "eRS1"
+        goto END_CONSUME
+    endif
+    if emlStoreValid <> 1
+        goto END_CONSUME
+    endif
+    if emlStoreKind$ <> "group"
+        goto END_CONSUME
+    endif
+
+    ; ---- is the publication even ABOUT this comparison? -------------------
+    ; See A PUBLICATION ABOUT ANOTHER COMPARISON above. TWO TABLES MAY SHARE A
+    ; NAME -- Praat rewrites a space, a bar, a comma or a slash to an
+    ; underscore, so "a b" and "a_b" are one name (the fingerprint's header
+    ; measures it). A shared name here costs a "data" verdict where "none" was
+    ; meant, which is a re-run either way and only ever the wrong SENTENCE.
+    if emlStoreDataCol$ <> .dataCol$
+        goto END_CONSUME
+    endif
+    if emlStoreGroupCol$ <> .factorCol$
+        goto END_CONSUME
+    endif
+    selectObject: .tableId
+    .tableName$ = selected$ ("Table")
+    if emlStoreTableName$ <> .tableName$
+        goto END_CONSUME
+    endif
+
+    ; A KEY THAT COULD NOT BE TAKEN IS NOT KNOWLEDGE OF A CHANGE. The
+    ; fingerprint refuses a table ID that is not a positive number, which is
+    ; what an uninitialised caller variable looks like, and returns "". The
+    ; figure must re-run -- not known never agrees -- but it must not announce
+    ; an edit it did not observe.
+    if .key$ = ""
+        goto END_CONSUME
+    endif
+
+    ; ---- the data half ----------------------------------------------------
+    @emlFingerprintsAgree: emlStoreKey$, .key$
+    if emlFingerprintsAgree.same = 0
+        .verdict$ = "data"
+        .note$ = "Data changed since this analysis was last run; re-measured."
+        goto END_CONSUME
+    endif
+
+    ; ---- how many groups is this figure drawing? --------------------------
+    ; Needed before the identity comparison, because the analysis a two-group
+    ; figure runs is not the analysis a three-group figure runs even at the
+    ; same test type -- Welch against one-way ANOVA. @emlStoreGroupMap reads
+    ; the column once and the count comes back with the map.
+    @emlStoreGroupMap: .tableId, .factorCol$
+    if emlStoreGroupMap.error$ <> ""
+        goto END_CONSUME
+    endif
+    @emlBridgeStoreIdentity: emlStoreGroupMap.n, .testType$, .correction$
+    .test$ = emlBridgeStoreIdentity.test$
+    .storeCorrection$ = emlBridgeStoreIdentity.correction$
+
+    ; ---- the settings half, decided by the STORE'S OWN comparison ---------
+    @emlStoreIdentityAgrees: .dataCol$, .factorCol$, .test$,
+    ... .storeCorrection$, .alpha, .sort$
+    if emlStoreIdentityAgrees.same = 0
+        .verdict$ = "settings"
+        ; The wording, from the one place the settings vocabulary lives. The
+        ; rendering is asked for the CANDIDATE analysis; only its field NAMES
+        ; are read, and the two values come from the comparison itself.
+        @emlRenderResultSettings: "group", .dataCol$, .factorCol$, .test$,
+        ... .storeCorrection$, .alpha, .sort$
+        @emlSettingsVocabulary
+        @emlSettingsChangeNote: emlStoreIdentityAgrees.field$,
+        ... emlStoreIdentityAgrees.was$, emlStoreIdentityAgrees.now$
+        .note$ = emlSettingsChangeNote.note$
+        goto END_CONSUME
+    endif
+
+    ; ---- is there a pairwise result to draw? ------------------------------
+    ; See AN OMNIBUS WITHOUT A POST-HOC IS A MISS. For two groups the omnibus
+    ; IS the comparison and no matrix is published; for three or more, a
+    ; figure needs the post-hoc the store may not have been asked for.
+    if emlStoreNGroups > 2 and emlStoreHasMatrix <> 1
+        goto END_CONSUME
+    endif
+
+    ; ---- the map from the x axis into the store's matrices ----------------
+    if emlStoreGroupMap.ok = 0
+        .verdict$ = "data"
+        .note$ = "Data changed since this analysis was last run; re-measured."
+        goto END_CONSUME
+    endif
+
+    ; ---- consume ----------------------------------------------------------
+    .verdict$ = "consume"
+    .nGroups = emlStoreGroupMap.n
+    for .g from 1 to .nGroups
+        .gLabel$[.g] = emlStoreGroupMap.label$[.g]
+    endfor
+
+    .omnibusStat = emlStoreOmnibusStat
+    .df1 = emlStoreDf1
+    .df2 = emlStoreDf2
+    .omnibusP = emlStoreOmnibusP
+    .effect = emlStoreEffect
+    .effectLabel$ = emlStorePairEffectLabel$
+
+    .pMatrix## = zero## (.nGroups, .nGroups)
+    .eMatrix## = zero## (.nGroups, .nGroups)
+    if .nGroups = 2 and emlStoreHasMatrix <> 1
+        ; TWO GROUPS: THE OMNIBUS IS THE COMPARISON. Assumption 3 above. The
+        ; effect size is the omnibus's, and its name is the omnibus's name --
+        ; there is no pairwise label because there is no pairwise table.
+        .pMatrix##[1, 2] = emlStoreOmnibusP
+        .eMatrix##[1, 2] = emlStoreEffect
+        .effectLabel$ = emlStoreEffectLabel$
+    else
+        ; INTO X-AXIS ORDER, THROUGH THE MAP, AND WITH NO SIGN ARITHMETIC.
+        ; The store's matrices are FULL rather than triangular: the pairwise
+        ; kernels fill [i,j] and [j,i] together, p symmetrically and the
+        ; effect size ANTI-symmetrically ("dMatrix##[.j, .i] = -emlCohenD.d",
+        ; stats/eml-inferential.praat). So the map may send an x-axis pair to
+        ; a stored pair in either direction and the cell read is already the
+        ; right number with the right sign. Negating one here to "correct" an
+        ; inverted pair would flip a sign that was never wrong -- which is the
+        ; mistake this note exists to stop somebody making later. The bridge's
+        ; own compute path has always read its Tukey matrix the same way, with
+        ; .sortMap[] and no ordering test.
+        for .i from 1 to .nGroups - 1
+            for .j from .i + 1 to .nGroups
+                .si = emlStoreGroupMap.map[.i]
+                .sj = emlStoreGroupMap.map[.j]
+                .pMatrix##[.i, .j] = emlStorePMatrix##[.si, .sj]
+                .eMatrix##[.i, .j] = emlStoreEffectMatrix##[.si, .sj]
+            endfor
+        endfor
+    endif
+
+    label END_CONSUME
+endproc
+
+
+# ============================================================================
 # BRIDGE PROCEDURES
 # ============================================================================
 
 
 # ----------------------------------------------------------------------------
-# @emlBridgeGroupComparison
+# @emlBridgeOmnibusLine: .nGroups, .testType$, .stat, .df1, .df2, .p, .effect
+# ----------------------------------------------------------------------------
+# THE OMNIBUS LINE THE FIGURE CARRIES, IN ONE PLACE.
+#
+# It is the string drawn in the figure's corner box and, on a matrix layout,
+# the panel's title; it is also the string the workflow recorder writes down
+# beside the step, deliberately, so the record carries exactly what the reader
+# saw on the plot. Four arms composed it in four places, and the store adds a
+# fifth path that has the numbers and no arm to compose it — which is how a
+# figure drawn from a stored result would come to describe its omnibus in
+# different words from the same figure drawn from a re-run.
+#
+# WHAT EACH ARGUMENT HOLDS FOLLOWS THE TEST, and this procedure is the one
+# place that knows the mapping. It is also the mapping the store's published
+# omnibus fields are read through, so the two cannot part company:
+#
+#   two groups, nonparametric   .stat = Mann-Whitney U, .effect = rank-
+#                               biserial r; .df1 and .df2 unused
+#   two groups, parametric      .stat = Welch's t, .df1 = its df (a REAL
+#                               number, printed to one decimal), .effect =
+#                               Cohen's d, which may be undefined and is then
+#                               left off the line
+#   k groups, nonparametric     .stat = H, .df1 = its df (an integer),
+#                               .effect = epsilon squared
+#   k groups, parametric        .stat = F, .df1 = df between, .df2 = df
+#                               within; .effect is not shown — the one-way
+#                               ANOVA line has never carried an effect size
+#                               and adding one here would change every
+#                               annotated ANOVA figure in the tree
+#
+# THE SYMBOL ESCAPES ARE PRAAT'S AND ARE DELIBERATE. This string is only ever
+# DRAWN, by Text or Text special, so "\ep" renders epsilon and "^2"
+# superscripts the 2. It reached the Info window as well by way of the
+# recorder's note, which is why nothing here is variable-derived text needing
+# @emlSanitizeLabel: every character is a literal or a number.
+#
+# Output:
+#   .result$ - the line
+# ----------------------------------------------------------------------------
+procedure emlBridgeOmnibusLine: .nGroups, .testType$, .stat, .df1, .df2, .p, .effect
+    @emlFormatP: .p
+    .pText$ = emlFormatP.formatted$
+
+    if .nGroups <= 2
+        if .testType$ = "nonparametric"
+            .result$ = "Mann-Whitney: U = " + fixed$ (.stat, 1)
+            ... + ", " + .pText$
+            ... + ", r = " + fixed$ (.effect, 2)
+        else
+            .result$ = "Welch t: t(" + fixed$ (.df1, 1) + ") = "
+            ... + fixed$ (.stat, 2)
+            ... + ", " + .pText$
+            if .effect <> undefined
+                .result$ = .result$ + ", d = " + fixed$ (.effect, 2)
+            endif
+        endif
+    else
+        if .testType$ = "nonparametric"
+            .result$ = "Kruskal-Wallis: H(" + string$ (.df1) + ") = "
+            ... + fixed$ (.stat, 2)
+            ... + ", " + .pText$
+            ... + ", \ep^2 = " + fixed$ (.effect, 3)
+        else
+            .result$ = "One-way ANOVA: F(" + string$ (.df1) + ", "
+            ... + string$ (.df2) + ") = "
+            ... + fixed$ (.stat, 2)
+            ... + ", " + .pText$
+        endif
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlBridgeEffectPolicy: .nGroups, .testType$
+# ----------------------------------------------------------------------------
+# WHICH EFFECT SIZE THIS COMPARISON HAS, WHAT IT IS CALLED, AND WHAT SIGN THE
+# STORED NUMBER CARRIES. Four arms of @emlRunAnnotationComparison answered these
+# three questions in four places; they are answered here once, so the arm that
+# COMPUTES the result and the path that CONSUMES a stored one cannot drift.
+#
+# THE SIGN POLICY IS PRESERVED, NOT TIDIED, AND THE ASYMMETRY IS REAL. The
+# four arms have always filled annotBracketD[] and annotMatrixD*_* with
+# different signs for the same kind of number:
+#
+#   two groups, either test    bracket SIGNED, matrix SIGNED
+#   k groups, nonparametric    bracket |r|,    matrix |r|
+#   k groups, parametric       bracket SIGNED, matrix |d|
+#
+# THE DRAWN INK IS MAGNITUDE IN EVERY ONE OF THEM, and that is the ruled
+# convention: @emlFormatAnnotLabel takes abs() of whatever effect size it is
+# handed before it writes a bracket label, and @emlDrawMatrixPanel takes abs()
+# again before it writes a cell — because R never puts a signed value in a
+# compact annotation and Ian has ruled we follow R's convention. So nothing
+# about a FIGURE depends on the table above.
+#
+# What does depend on it is the NUMBER LEFT BEHIND in annotBracketD[] and
+# annotMatrixD*_*, which the recorder emits and harness/settingspub reads. So
+# the table is reproduced exactly rather than unified: unifying it would move
+# recorded numbers for no ruled reason, and the place to settle it is the
+# store's own published effect matrix, which is SIGNED once and lets each
+# layout take what it needs (v112's census note on layoutMode says so).
+#
+# Outputs:
+#   .label$   - the effect size's name for the matrix legend
+#   .symbol$  - its short name for a bracket label ("d" / "r")
+#   .bracketAbs / .matrixAbs
+#             - 1 when that layout stores the magnitude, 0 when it stores the
+#               signed value
+# ----------------------------------------------------------------------------
+procedure emlBridgeEffectPolicy: .nGroups, .testType$
+    if .testType$ = "nonparametric"
+        .label$ = "rank-biserial r"
+        .symbol$ = "r"
+    else
+        .label$ = "Cohen's d"
+        .symbol$ = "d"
+    endif
+
+    if .nGroups <= 2
+        .bracketAbs = 0
+        .matrixAbs = 0
+    elsif .testType$ = "nonparametric"
+        .bracketAbs = 1
+        .matrixAbs = 1
+    else
+        .bracketAbs = 0
+        .matrixAbs = 1
+    endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlBridgeRenderAnnotations
+# ----------------------------------------------------------------------------
+# THE ONE PLACE A GROUP COMPARISON BECOMES AN ANNOTATION.
+#
+# WHY IT EXISTS. Before the result store, each of @emlRunAnnotationComparison's
+# four arms computed its statistics and then rendered them, inline, in its own
+# copy of the same two loops — four copies of the bracket loop and four of the
+# matrix loop, differing in which procedure supplied the numbers. The store
+# adds a FIFTH path that has the numbers already and must render them the same
+# way, and a fifth copy of a loop that exists four times is how a figure drawn
+# from the store starts disagreeing with the same figure drawn from a re-run.
+# So the rendering is one procedure and every path calls it: the arms build
+# the two matrices and hand them over, and the consume path hands over the
+# matrices the store published.
+#
+# THE SPLIT IS NUMBERS / DISPLAY, AND THAT IS THE STORE'S SPLIT TOO. What
+# arrives here is the result — p-values and effect sizes per pair, in display
+# order — and what is applied here is the display: the label style, whether
+# non-significant pairs are drawn, whether effect sizes are shown, alpha's
+# verdict, and brackets against a matrix. Those five are v112's DISPLAY_ONLY
+# list for this door, which is exactly why a stored result may be redrawn
+# under any of them without re-running anything.
+#
+# THE GROUP LABELS ARE READ FROM emlRunAnnotationComparison.gLabel$[]. Praat
+# cannot pass an array to a procedure, so the labels cannot be an argument;
+# and inventing a second global array to carry them would be a second place
+# the display order lives. The bridge captures those labels at entry
+# precisely because they must survive every procedure call underneath it, so
+# reading them here is reading the copy that was made to be read.
+#
+# ALPHA'S VERDICT IS GUARDED AGAINST AN UNDEFINED p ON EVERY CELL. An
+# undefined p is not a comparison, and without the guard the cell TEXT and the
+# cell STYLING can disagree — a cell reading "p = --undefined--" painted as
+# significant. The parametric k-group arm already carried this guard and
+# called it "the single, careful form of the check, applied uniformly to every
+# cell"; uniformly is what it now is.
+#
+# Arguments:
+#   .nGroups      - levels, and the order of both matrices
+#   .useMatrix    - 1 for the comparison-matrix panel, 0 for brackets
+#   .style$       - "p-value", "stars" or "both"
+#   .showNS       - 1 draws non-significant pairs, 0 suppresses them
+#   .showEffect   - 1 publishes effect sizes to the annotation, 0 does not
+#   .alpha        - the threshold the verdict is taken at
+#   .effectLabel$ / .effectSymbol$ / .bracketAbs / .matrixAbs
+#                 - from @emlBridgeEffectPolicy
+#   .omnibus$     - the omnibus line, drawn in the corner box in both layouts
+#   .p##          - pairwise p, [i,j] for i < j, in display order
+#   .e##          - pairwise SIGNED effect size, same shape and order.
+#                   undefined where none could be computed; a missing effect
+#                   size is a blank cell, never a failed annotation.
+#
+# Output: the annotBracket*, annotMatrix* and annotText* globals.
+# ----------------------------------------------------------------------------
+procedure emlBridgeRenderAnnotations: .nGroups, .useMatrix, .style$, .showNS, .showEffect, .alpha, .effectLabel$, .effectSymbol$, .bracketAbs, .matrixAbs, .omnibus$, .p##, .e##
+    if .useMatrix = 1
+        annotMatrixN = .nGroups
+        annotMatrixOmnibus$ = .omnibus$
+        if .showEffect = 1
+            annotMatrixEffectLabel$ = .effectLabel$
+        else
+            annotMatrixEffectLabel$ = ""
+        endif
+        for .i from 1 to .nGroups
+            annotMatrixLabel$[.i] = emlRunAnnotationComparison.gLabel$[.i]
+        endfor
+
+        for .i from 1 to .nGroups - 1
+            for .j from .i + 1 to .nGroups
+                .pairP = .p##[.i, .j]
+
+                @emlFormatAnnotLabel: .pairP, undefined, .style$, 0, ""
+                annotMatrixCell'.i'_'.j'$ = emlFormatAnnotLabel.result$
+
+                annotMatrixSig'.i'_'.j' = 0
+                if .pairP <> undefined
+                    if .pairP < .alpha
+                        annotMatrixSig'.i'_'.j' = 1
+                    endif
+                endif
+                if annotMatrixSig'.i'_'.j' = 0 and .showNS = 0
+                    annotMatrixCell'.i'_'.j'$ = "—"
+                endif
+
+                annotMatrixD'.i'_'.j' = undefined
+                if .showEffect = 1
+                    .cellD = .e##[.i, .j]
+                    if .cellD <> undefined and .matrixAbs = 1
+                        .cellD = abs (.cellD)
+                    endif
+                    annotMatrixD'.i'_'.j' = .cellD
+                endif
+            endfor
+        endfor
+    else
+        annotBracketN = 0
+        for .i from 1 to .nGroups - 1
+            for .j from .i + 1 to .nGroups
+                .pairP = .p##[.i, .j]
+
+                .pairD = undefined
+                if .showEffect = 1
+                    .pairD = .e##[.i, .j]
+                    if .pairD <> undefined and .bracketAbs = 1
+                        .pairD = abs (.pairD)
+                    endif
+                endif
+
+                .draw = 0
+                if .showNS = 1
+                    .draw = 1
+                elsif .pairP <> undefined
+                    if .pairP < .alpha
+                        .draw = 1
+                    endif
+                endif
+
+                if .draw = 1
+                    annotBracketN = annotBracketN + 1
+                    .bIdx = annotBracketN
+                    annotBracketI[.bIdx] = .i
+                    annotBracketJ[.bIdx] = .j
+                    annotBracketP[.bIdx] = .pairP
+                    annotBracketD[.bIdx] = .pairD
+                    @emlFormatAnnotLabel: .pairP, .pairD, .style$, .showEffect,
+                    ... .effectSymbol$
+                    annotBracketLabel$[.bIdx] = emlFormatAnnotLabel.result$
+                endif
+            endfor
+        endfor
+        @emlStackBrackets
+    endif
+
+    ; THE OMNIBUS IN THE CORNER BOX, IN BOTH LAYOUTS. Every arm set this and
+    ; every arm set it identically; the matrix panel draws its own omnibus as
+    ; a title line and the form's post-dispatch stage skips the corner block
+    ; whenever annotMatrixN > 0, so the matrix path is governed by the form's
+    ; gate rather than by a second rule here.
+    annotTextN = 1
+    annotTextX[1] = 0
+    annotTextY[1] = 0
+    annotTextLabel$[1] = .omnibus$
+    annotTextAnchor$[1] = "right"
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlBridgePairEffect: .tableId, .dataCol$, .factorCol$, .g1$, .g2$, .testType$
+# ----------------------------------------------------------------------------
+# ONE PAIR'S SIGNED EFFECT SIZE, for the matrix @emlBridgeRenderAnnotations
+# is handed. Cohen's d on the parametric arm, rank-biserial r on the
+# nonparametric one, always SIGNED — the sign policy is applied where the
+# annotation is built, not here.
+#
+# A PAIR THAT CANNOT BE MEASURED COMES BACK undefined AND IS NOT AN ERROR.
+# Before the store the effect sizes were computed inside the render loop and a
+# failure there set the bridge's .error$, which threw the WHOLE annotation
+# away — every bracket and every p-value — because one pair's effect size
+# could not be formed. The p-values do not depend on it, the matrix panel and
+# the bracket label both already skip an undefined effect size, and a figure
+# with one blank effect cell is a better answer than no figure. So the failure
+# is local and silent-by-construction rather than fatal.
+# ----------------------------------------------------------------------------
+procedure emlBridgePairEffect: .tableId, .dataCol$, .factorCol$, .g1$, .g2$, .testType$
+    .value = undefined
+
+    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .g1$
+    if eml_getGroupData.error$ <> ""
+        goto END_PAIR_EFFECT
+    endif
+    .v1# = eml_getGroupData.data#
+
+    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .g2$
+    if eml_getGroupData.error$ <> ""
+        goto END_PAIR_EFFECT
+    endif
+    .v2# = eml_getGroupData.data#
+
+    if .testType$ = "nonparametric"
+        @emlRankBiserialR: .v1#, .v2#, 2
+        if emlRankBiserialR.error$ = ""
+            .value = emlRankBiserialR.r
+        endif
+    else
+        @emlCohenD: .v1#, .v2#
+        if emlCohenD.error$ = ""
+            .value = emlCohenD.d
+        endif
+    endif
+
+    label END_PAIR_EFFECT
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlRunAnnotationComparison
 # For bar chart, violin, box plot, and grouped violin: detect number of
 # groups, run the appropriate statistical test, populate bracket or matrix
 # annotations.
@@ -2499,29 +3376,75 @@ endproc
 #   Also sets:
 #     .omnibus$  — formatted omnibus test result string (for Info window)
 #     .error$    — "" on success, diagnostic message on failure
+#
+#   AND THE READ SIDE'S ANSWER (docs/RULING_RESULT_STORE.md sections c and d):
+#     .verdict$      "consume" / "settings" / "data" / "none". What the store
+#                    said about the question this figure asked; see
+#                    @emlConsumeGroupResult.
+#     .consumed      1 when the figure was drawn FROM the store and no test
+#                    ran here at all.
+#     .printReport   what the caller must do about the Info-window report.
+#                    1 = print it, this is the first report of this result;
+#                    0 = do not, either it already exists or the only thing to
+#                    say was the one-line announcement. The caller obeys this
+#                    and adds no rule of its own; see
+#                    @emlGraphsReportBridgeIfNew.
+#     .note$         the one line, when there is one to say.
+#     .notePending   ITEM 1.2. 1 when .note$ still has to be PRINTED by the
+#                    caller, above the report. The settings line is printed
+#                    here, as it always was, because it is the whole of what
+#                    that path says; the 24 August data line is NOT, because
+#                    whether it is said at all depends on a comparison that
+#                    is not finished when that verdict is taken.
+#     .canonReport$  ITEM 1.2. The canonical rendering of the report this run
+#                    would print — factual and disclosure lines only, no
+#                    explanations, no timestamp — or "" when this run prints
+#                    no report. Published as emlStoreReport$.
+#     .key$          the data fingerprint, taken at the top of this procedure
+#                    and before it read one value by group.
+#     .hasPairwise   1 once a pairwise result exists to draw and to publish.
 # ----------------------------------------------------------------------------
-procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .style$, .showNS, .showEffect, .testType$, .layoutMode
+procedure emlRunAnnotationComparison: .tableId, .dataCol$, .factorCol$, .alpha, .style$, .showNS, .showEffect, .testType$, .layoutMode
     # .layoutMode: 1 = auto, 2 = force brackets, 3 = force matrix
     .omnibus$ = ""
     .error$ = ""
 
-    # --- Count groups ---
-    @emlCountGroups: .tableId, .factorCol$
-    if emlCountGroups.error$ <> ""
-        .error$ = emlCountGroups.error$
-    endif
+    ; ------------------------------------------------------------------
+    ; THE READ SIDE. docs/RULING_RESULT_STORE.md sections (c) and (d):
+    ; this procedure RECEIVES the analysis's result when the published one
+    ; still answers the question, and re-runs when it does not.
+    ;
+    ; .consumed     1 when the figure was drawn from the store and no test
+    ;               was run here at all.
+    ; .printReport  what the CALLER should do about the Info-window report.
+    ;               1 = print it (this is the first and only report for this
+    ;               result); 0 = do not (either the report already exists, or
+    ;               the only thing to say is the one-line announcement).
+    ;               The bridge decides and the caller obeys, because the
+    ;               caller is the one holding @emlReportBridgeStats.
+    ; .note$        the one line, already printed here if there was one. Kept
+    ;               as an output so a harness can read what was said.
+    ; .verdict$     "consume" / "settings" / "data" / "none"; see
+    ;               @emlConsumeGroupResult.
+    ; ------------------------------------------------------------------
+    .consumed = 0
+    .printReport = 1
+    .note$ = ""
+    ; ITEM 1.2 — see .notePending in the header above.
+    .notePending = 0
+    .verdict$ = "none"
+    ; 1 once a pairwise result exists in .pRes##/.eRes## -- which is not the
+    ; same as "no error". A Dunn's post-hoc that failed, and an ANOVA with no
+    ; pairs, both leave the omnibus on the figure and no matrix behind them,
+    ; and there is nothing for the store to publish in either case.
+    .hasPairwise = 0
 
-    .nGroups = emlCountGroups.nGroups
-
-    # Capture the group labels into procedure-locals IMMEDIATELY. Praat
-    # procedure outputs survive only until the same procedure runs again, and
-    # @emlCountGroups is re-invoked internally by @emlDunnTest,
-    # @emlOneWayAnova, @emlKruskalWallis and @emlTukeyHSD — so
-    # emlCountGroups.groupLabel$[] must not be read after any of those calls.
-    for .gi from 1 to .nGroups
-        .gLabel$[.gi] = emlCountGroups.groupLabel$[.gi]
-    endfor
-
+    ; RESOLVED BEFORE THE STORE IS ASKED, and that ordering is the point.
+    ; The store records the RESOLVED adjustment token, so two runs that both
+    ; fell back to holm are the same settings and must agree; comparing the
+    ; raw global would re-run an analysis because an unrecognised value had
+    ; been spelled two different wrong ways.
+    #
     # Resolve the p-value correction method for Dunn's post-hoc test.
     # annotCorrectionMethod$ is normally set by the graphs form, but this
     # bridge is also called directly by scripts that never touch that form.
@@ -2538,6 +3461,150 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 appendInfoLine: .warnHead$ + annotCorrectionMethod$ + .warnTail$
             endif
         endif
+    endif
+
+    ; ------------------------------------------------------------------
+    ; ITEM 3.5 -- THE POST-HOC CHOICE, RESOLVED FROM THE LAUNCHING DIALOG.
+    ;
+    ; THE RULE. A figure runs the post-hoc its user asked for, and only that
+    ; one. There are exactly two places in this file where that decision is
+    ; spent -- the @emlOneWayAnova call on the parametric k >= 3 arm below,
+    ; and @emlReportBridgeStats' report and declarations -- and NEITHER MAY
+    ; CARRY A LITERAL. A literal at either site draws a Tukey post-hoc onto
+    ; every parametric k >= 3 figure whatever the user asked for, which is a
+    ; silent disagreement between this door and the analysis door on the same
+    ; data: validate/v127's leg1 (the Pairwise dialog set to Student t with
+    ; Bonferroni) and leg3 (Compare k Groups with the post-hoc unticked). It
+    ; is Fable's 26 Aug ruling that both sites take THE LAUNCHING DIALOG'S
+    ; ACTUAL POST-HOC CHOICE, adding the field if none exists -- and a
+    ; different literal, or a default computed here, satisfies neither site.
+    ;
+    ; THE CHANNEL IS annotPostHoc, and it is the channel annotCorrectionMethod$
+    ; already uses a few lines above, for the same reason: this procedure's
+    ; argument list is fixed by four call sites in eml-graphs-form.praat and by
+    ; every user script that calls the bridge directly, so a tenth positional
+    ; argument would break all of them. The graphs form's Comparison menu now
+    ; carries an "ANOVA only, no pairwise tests" row and commits its answer to
+    ; annotPostHoc (graphs/eml-graphs-form.praat, @emlComparisonFromMenu and
+    ; the six column-mapping pages that read it). Search for the assignment,
+    ; not for a line number.
+    ;
+    ; DEFAULT 1, AND THAT IS NOT A DISGUISED LITERAL. A caller that never
+    ; touched the graphs form -- a user script, a harness probe -- has no
+    ; annotPostHoc to read, and the behaviour it is entitled to is the
+    ; behaviour it had before this item: run the post-hoc. What changed is
+    ; that a form which DOES state a choice can now be obeyed, which is the
+    ; whole of the item. Read through variableExists and in NESTED ifs, never
+    ; `and`: Praat evaluates both operands, so one condition would read a
+    ; global that a tree without the form has never set.
+    ; ------------------------------------------------------------------
+    .doTukey = 1
+    if variableExists ("annotPostHoc")
+        if annotPostHoc = 0
+            .doTukey = 0
+        endif
+    endif
+
+    ; THE KEY, TAKEN HERE AND BEFORE THIS PROCEDURE READS ONE VALUE BY GROUP.
+    ; That order is the whole of the rule: the fingerprint's header names "a
+    ; caller that computes a result, lets the table change, and only then
+    ; stamps a key" as the one failure it cannot see from the inside, and puts
+    ; the fix on the publisher -- take the key in the same pass that reads the
+    ; data. This procedure is a publisher, so it takes its own, once, at the
+    ; top, and both the consume check and the publication at the foot use that
+    ; one key. @emlStoreKeyTake is also the one place a group comparison's key
+    ; door is chosen, so a publisher and a consumer cannot key one comparison
+    ; two different ways and miss for ever without being wrong out loud.
+    ;
+    ; Copied out of the procedure's outputs immediately: the arms below call a
+    ; great deal of code before the publication reads them.
+    @emlStoreKeyTake: .tableId, .dataCol$, .factorCol$
+    .keyError$ = emlStoreKeyTake.error$
+    .key$ = emlStoreKeyTake.key$
+    .sort$ = emlStoreKeyTake.sort$
+
+    @emlConsumeGroupResult: .tableId, .dataCol$, .factorCol$, .testType$,
+    ... .correction$, .alpha, .key$, .sort$
+    .verdict$ = emlConsumeGroupResult.verdict$
+    .note$ = emlConsumeGroupResult.note$
+    .storeTest$ = emlConsumeGroupResult.test$
+    .storeCorrection$ = emlConsumeGroupResult.storeCorrection$
+
+    if .verdict$ = "consume"
+        ; NOTHING IS PRINTED ON THIS PATH. Exactly one report exists in the
+        ; Info window and the analysis door printed it; a second one is the
+        ; defect this whole mechanism was built to remove.
+        .consumed = 1
+        .printReport = 0
+        .nGroups = emlConsumeGroupResult.nGroups
+        for .gi from 1 to .nGroups
+            .gLabel$[.gi] = emlConsumeGroupResult.gLabel$[.gi]
+        endfor
+        .pRes## = emlConsumeGroupResult.pMatrix##
+        .eRes## = emlConsumeGroupResult.eMatrix##
+        .storeEffectLabel$ = emlConsumeGroupResult.effectLabel$
+        ; THE OMNIBUS LINE IS COMPOSED, NOT COPIED. The store publishes the
+        ; omnibus as NUMBERS -- the statistic, its degrees of freedom, its p
+        ; and its effect size -- and @emlBridgeOmnibusLine is the one place
+        ; that turns those into the sentence a figure carries. Copying a
+        ; pre-formatted string out of the store instead would put a second
+        ; formatter in the tree and let the two drift; composing it here
+        ; means a consumed figure and a recomputed figure are the same
+        ; characters.
+        .omniStat = emlConsumeGroupResult.omnibusStat
+        .omniDf1 = emlConsumeGroupResult.df1
+        .omniDf2 = emlConsumeGroupResult.df2
+        .omniP = emlConsumeGroupResult.omnibusP
+        .omniEffect = emlConsumeGroupResult.effect
+        @emlBridgeOmnibusLine: .nGroups, .testType$, .omniStat, .omniDf1,
+        ... .omniDf2, .omniP, .omniEffect
+        .omnibus$ = emlBridgeOmnibusLine.result$
+    elsif .verdict$ = "settings"
+        ; ONE LINE, NAMING THE CHANGE, AND THEN THE UPDATED BRACKETS. No
+        ; second report block: section (c) of the ruling is a contract about
+        ; this exact line.
+        .printReport = 0
+        appendInfoLine: .note$
+    elsif .verdict$ = "data"
+        ; THE KEY DOES NOT AGREE, SO THE FIGURE RE-RUNS. It never quietly
+        ; draws the stale one.
+        ;
+        ; ITEM 1.2 — AND THE LINE IS NOT PRINTED HERE ANY MORE. Ian's rule of
+        ; 24 August is that THE REPORT COMPARISON, NOT THE KEY, DECIDES WHAT
+        ; THE USER SEES, and "a re-run that reproduces the stored report
+        ; exactly prints nothing" means nothing at all — not the report and
+        ; not the line above it. The key has told us the data moved; it has
+        ; not told us anything the reader can see has changed. That is
+        ; settled a few hundred lines below, once this run has actually
+        ; computed and been rendered, so the line waits in .notePending and
+        ; @emlGraphsReportBridgeIfNew prints it if there turns out to be
+        ; something to print it above.
+        ;
+        ; THE DEFECT THIS CLOSES, driven: publish a Kruskal-Wallis result,
+        ; move one value from 10.1 to 10.2 — still the smallest value in its
+        ; group, still above every other point, so not one rank moves — and
+        ; the figure printed this line and a second complete 62-line report
+        ; identical to the first. See harness/reprintpins' third leg.
+        .notePending = 1
+    endif
+
+    if .consumed = 0
+        # --- Count groups ---
+        @emlCountGroups: .tableId, .factorCol$
+        if emlCountGroups.error$ <> ""
+            .error$ = emlCountGroups.error$
+        endif
+
+        .nGroups = emlCountGroups.nGroups
+
+        # Capture the group labels into procedure-locals IMMEDIATELY. Praat
+        # procedure outputs survive only until the same procedure runs again, and
+        # @emlCountGroups is re-invoked internally by @emlDunnTest,
+        # @emlOneWayAnova, @emlKruskalWallis and @emlTukeyHSD — so
+        # emlCountGroups.groupLabel$[] must not be read after any of those calls.
+        for .gi from 1 to .nGroups
+            .gLabel$[.gi] = emlCountGroups.groupLabel$[.gi]
+        endfor
     endif
 
     if .error$ = "" and .nGroups < 2
@@ -2562,11 +3629,135 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
         endif
     endif
 
+    ; ------------------------------------------------------------------
+    ; THE FIGURE'S DISCLOSURE — THE THREE CAPTION LINES, SET ON EVERY PATH.
+    ;
+    ; Per the 7 August unification ruling, carried into section (c) of
+    ; docs/RULING_RESULT_STORE.md: "the figure's disclosure and the recorded
+    ; script carry the settings the DRAWN statistics actually used, so a
+    ; reader of the figure never needs the Info window's history to know what
+    ; the brackets mean." These three lines are that disclosure — the pairwise
+    ; test that produced the p-values, and what was or was not done about
+    ; multiplicity — and they are drawn by @emlDrawBracketCaption under the
+    ; brackets and by @emlDrawMatrixPanel under the matrix.
+    ;
+    ; THEY ARE SET HERE, BEFORE THE ARMS, BECAUSE THE STORE ADDED A PATH THAT
+    ; RUNS NO ARM. An arm that wrote its own captions beside its own test
+    ; would leave a figure drawn from a stored result carrying whatever the
+    ; last figure left in these globals — a Tukey caption over Dunn's
+    ; brackets, which is precisely the disagreement the store exists to end.
+    ; The words, and which arm each belongs to, are the arm's; each arm keeps
+    ; the note explaining its own sentence, and this block is where the three
+    ; are set.
+    ;
+    ; WHAT THEY SAY IS DECIDED BY THE SETTINGS ACTUALLY IN FORCE: .testType$
+    ; as the figure was asked for it, .nGroups as the data has it, and
+    ; .correction$ as this procedure RESOLVED it — so a figure drawn after an
+    ; unrecognised annotCorrectionMethod$ says "holm" and means it. On the
+    ; consume path those three are the stored result's own settings, because
+    ; a difference in any of them would have forced a re-run before reaching
+    ; here.
+    ;
+    ; THE ADJUSTMENT SENTENCE IS DIFFERENT ON EVERY ARM AND THAT ASYMMETRY IS
+    ; THE POINT. Tukey's p is already family-wise over the set of pairwise
+    ; comparisons; Dunn's z-tests carry no family-wise control of their own
+    ; and name the method the user chose; two groups is one comparison and
+    ; there is no family at all. One sentence covering all three would be
+    ; false on two of them whichever way it was written.
+    ; ------------------------------------------------------------------
+    if .error$ = "" and .nGroups >= 2
+        if .nGroups = 2
+            if .testType$ = "nonparametric"
+                annotMatrixPosthoc$ = "Mann-Whitney U"
+                annotBracketPosthoc$ = "Comparison: Mann-Whitney U test"
+                annotBracketAdjust$ = "one comparison; no adjustment "
+                ... + "applied"
+            else
+                annotMatrixPosthoc$ = "Welch t-test"
+                annotBracketPosthoc$ = "Comparison: Welch t-test"
+                annotBracketAdjust$ = "one comparison; no adjustment "
+                ... + "applied"
+            endif
+        else
+            if .testType$ = "nonparametric"
+                annotMatrixPosthoc$ = "Dunn's test ("
+                ... + .correction$ + ")"
+                annotBracketPosthoc$ = "Pairwise comparisons: Dunn's test"
+                annotBracketAdjust$ = "adjustment for multiple "
+                ... + "comparisons: " + .correction$
+            else
+                annotMatrixPosthoc$ = "Tukey HSD (already family-wise)"
+                annotBracketPosthoc$ = "Pairwise comparisons: Tukey HSD"
+                annotBracketAdjust$ = "already family-wise; no further "
+                ... + "adjustment applied"
+            endif
+        endif
+    endif
+
+    ; ------------------------------------------------------------------
+    ; THE CONSUME PATH'S RENDERING. The store holds NUMBERS -- pairwise p
+    ; and pairwise signed effect size, in display order -- and every display
+    ; setting is applied here, at draw time, by the same procedure the
+    ; compute arms call. That is what lets one published result serve many
+    ; figures at different styles, layouts and effect-size settings without
+    ; re-running anything, which is exactly what section (d) means by "a
+    ; result is legitimately consumed by many figures".
+    ; ------------------------------------------------------------------
+    ; ------------------------------------------------------------------
+    ; ITEM 3.5 -- THE OPT-OUT HAS TO HOLD ON THE CONSUME PATH TOO, or the fix
+    ; is only half a fix. The store publishes a Tukey result whenever the
+    ; ANALYSIS door ran one, and that result is legitimately consumed by many
+    ; figures. Without this branch a user who ran Compare k Groups WITH the
+    ; post-hoc, then drew a figure having picked "ANOVA only, no pairwise
+    ; tests", would get Tukey brackets anyway -- drawn out of the store
+    ; instead of out of a fresh @emlOneWayAnova, but drawn all the same, and
+    ; that is v127's leg3 wearing the store as a costume.
+    ;
+    ; IT WITHHOLDS NOTHING AND RE-RUNS NOTHING. The stored result is not
+    ; discarded, not re-measured and not contradicted; the figure simply
+    ; carries the omnibus the user asked for. Two groups is untouched: there
+    ; the omnibus IS the comparison and there is no post-hoc to decline. The
+    ; nonparametric arm is untouched as well -- Dunn's is not a doTukey site
+    ; and its own opt-out is not this item.
+    ; ------------------------------------------------------------------
+    ;
+    ; The condition is built on its own line rather than continued with
+    ; `...`, which this file reserves for argument lists.
+    .optedOutOfPostHoc = 0
+    if .doTukey = 0 and .nGroups > 2 and .testType$ <> "nonparametric"
+        .optedOutOfPostHoc = 1
+    endif
+    if .consumed = 1 and .error$ = "" and .optedOutOfPostHoc = 1
+        annotTextN = 1
+        annotTextX[1] = 0
+        annotTextY[1] = 0
+        annotTextLabel$[1] = .omnibus$
+        annotTextAnchor$[1] = "right"
+    elsif .consumed = 1 and .error$ = "" and .nGroups >= 2
+        .hasPairwise = 1
+        @emlBridgeEffectPolicy: .nGroups, .testType$
+        ; The store's own name for the pairwise effect size, so the matrix
+        ; legend says what the analysis door said. A store that published no
+        ; name -- a two-group result, where the effect size is the omnibus's
+        ; -- falls back to the policy's name rather than to an empty legend.
+        .effLabel$ = .storeEffectLabel$
+        if .effLabel$ = ""
+            .effLabel$ = emlBridgeEffectPolicy.label$
+        endif
+        .effSymbol$ = emlBridgeEffectPolicy.symbol$
+        .effBracketAbs = emlBridgeEffectPolicy.bracketAbs
+        .effMatrixAbs = emlBridgeEffectPolicy.matrixAbs
+
+        @emlBridgeRenderAnnotations: .nGroups, .useMatrix, .style$,
+        ... .showNS, .showEffect, .alpha, .effLabel$, .effSymbol$,
+        ... .effBracketAbs, .effMatrixAbs, .omnibus$, .pRes##, .eRes##
+    endif
+
     # =================================================================
     # 2-GROUP COMPARISON
     # =================================================================
 
-    if .error$ = "" and .nGroups = 2
+    if .consumed = 0 and .error$ = "" and .nGroups = 2
         .label1$ = emlCountGroups.groupLabel$[1]
         .label2$ = emlCountGroups.groupLabel$[2]
 
@@ -2588,11 +3779,24 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                     .effectVal = emlRankBiserialR.r
                     .u1 = emlRankBiserialR.u1
 
-                    @emlFormatP: .pVal
-                    .omnibus$ = "Mann-Whitney: U = " + fixed$ (.u1, 1)
-                    ... + ", " + emlFormatP.formatted$
-                    ... + ", r = " + fixed$ (.effectVal, 2)
-                    annotMatrixPosthoc$ = "Mann-Whitney U"
+                    ; THE OMNIBUS LINE COMES FROM @emlBridgeOmnibusLine on
+                    ; every arm and on the consume path, so a figure drawn
+                    ; from a stored result describes its test in the same
+                    ; words as the same figure drawn from a re-run.
+                    ; THE OMNIBUS, AS FIVE NUMBERS. They are named once, on
+                    ; every arm, because two things read them: the line the
+                    ; figure carries, and the publication at the foot of this
+                    ; procedure. What each one holds follows the test; the
+                    ; mapping is written down in @emlBridgeOmnibusLine's
+                    ; header and nowhere else.
+                    .omniStat = .u1
+                    .omniDf1 = undefined
+                    .omniDf2 = undefined
+                    .omniP = .pVal
+                    .omniEffect = .effectVal
+                    @emlBridgeOmnibusLine: 2, .testType$, .omniStat, .omniDf1,
+                    ... .omniDf2, .omniP, .omniEffect
+                    .omnibus$ = emlBridgeOmnibusLine.result$
                     ; THE BRACKET CAPTION, TWO-GROUP NONPARAMETRIC ARM. One
                     ; invariant with no special case in it: EVERY
                     ; BRACKET-BEARING FIGURE NAMES ITS TEST. A reader taking
@@ -2608,69 +3812,70 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                     ; produced the p-values and then what was or was not done
                     ; about multiplicity, and this says the same two things
                     ; about a family of one.
-                    annotBracketPosthoc$ = "Comparison: Mann-Whitney U test"
-                    annotBracketAdjust$ = "one comparison; no adjustment "
-                    ... + "applied"
+                    ;
+                    ; THE THREE CAPTION LINES ARE SET IN ONE BLOCK NEAR THE
+                    ; TOP OF THIS PROCEDURE, not here, because the figure has
+                    ; to carry them whether the numbers came from a test run
+                    ; on this pass or from the store -- and a caption set on
+                    ; the compute path only is a stored result drawn under
+                    ; the PREVIOUS figure's caption. The wording, the arm it
+                    ; belongs to and the reason for it are unchanged; only
+                    ; the place is.
 
-                    if .useMatrix
-                        @emlFormatAnnotLabel: .pVal, undefined, .style$, 0, ""
-                        annotMatrixN = 2
-                        annotMatrixOmnibus$ = .omnibus$
-                        if .showEffect = 1
-                            annotMatrixEffectLabel$ = "rank-biserial r"
-                        else
-                            annotMatrixEffectLabel$ = ""
-                        endif
-                        annotMatrixLabel$[1] = .label1$
-                        annotMatrixLabel$[2] = .label2$
-                        annotMatrixCell1_2$ = emlFormatAnnotLabel.result$
-                        annotMatrixD1_2 = undefined
-                        if .showEffect = 1
-                            annotMatrixD1_2 = .effectVal
-                        endif
-                        if .pVal < .alpha
-                            annotMatrixSig1_2 = 1
-                        else
-                            annotMatrixSig1_2 = 0
-                        endif
-                        if annotMatrixSig1_2 = 0 and .showNS = 0
-                            annotMatrixCell1_2$ = "—"
-                        endif
-                    else
-                        annotBracketN = 1
-                        annotBracketI[1] = 1
-                        annotBracketJ[1] = 2
-                        annotBracketP[1] = .pVal
-                        annotBracketD[1] = .effectVal
-                        @emlFormatAnnotLabel: .pVal, .effectVal, .style$, .showEffect, "r"
-                        annotBracketLabel$[1] = emlFormatAnnotLabel.result$
-                        annotBracketTier[1] = 1
+                    ; THE RESULT, IN THE ONE SHAPE EVERY PATH RENDERS FROM:
+                    ; pairwise p and pairwise SIGNED effect size, indexed in
+                    ; display order. One pair here, and the 2 x 2 is not
+                    ; ceremony -- it is what lets this arm, the k-group arms
+                    ; and the path that consumes a STORED result share
+                    ; @emlBridgeRenderAnnotations instead of carrying five
+                    ; copies of one loop between them.
+                    ;
+                    ; THE EFFECT SIZE IS STORED SIGNED AND RENDERED PER THE
+                    ; ARM'S OWN SIGN POLICY. @emlBridgeEffectPolicy holds that
+                    ; policy for all four arms; the drawn ink is magnitude on
+                    ; every one of them either way, which is R's convention
+                    ; and Ian's ruling.
+                    .pRes## = zero## (2, 2)
+                    .eRes## = zero## (2, 2)
+                    .pRes##[1, 2] = .pVal
+                    .eRes##[1, 2] = .effectVal
 
-                        if .pVal >= .alpha and .showNS = 0
-                            annotBracketN = 0
-                        endif
-                    endif
+                    @emlBridgeEffectPolicy: 2, .testType$
+                    .effLabel$ = emlBridgeEffectPolicy.label$
+                    .effSymbol$ = emlBridgeEffectPolicy.symbol$
+                    .effBracketAbs = emlBridgeEffectPolicy.bracketAbs
+                    .effMatrixAbs = emlBridgeEffectPolicy.matrixAbs
 
-                    # THE TEST, IN THE CORNER BOX (both modes). Written
-                    # exactly as the k >= 3 arms write it and for the same
-                    # reason: .omnibus$ is composed on this arm and handed
-                    # back for the Info window, and @emlGraphsPostDispatch-
-                    # Annotations routes it into the corner block. Without
-                    # this the figure would leave the session carrying a
-                    # bracket, stars and a rank-biserial r with nothing
-                    # saying what produced them.
-                    #
-                    # Set in BOTH modes, again as the k >= 3 arms do. The
-                    # matrix panel draws its own omnibus as its title line
-                    # and the form's post-dispatch stage skips the corner
-                    # block whenever annotMatrixN > 0, so the matrix path is
-                    # governed by the form's gate rather than by a second
-                    # rule here.
-                    annotTextN = 1
-                    annotTextX[1] = 0
-                    annotTextY[1] = 0
-                    annotTextLabel$[1] = .omnibus$
-                    annotTextAnchor$[1] = "right"
+                    ; THE TEST, IN THE CORNER BOX, IS SET BY THE RENDERER in
+                    ; both layouts -- .omnibus$ is composed on this arm and
+                    ; handed to it, and @emlGraphsPostDispatchAnnotations
+                    ; routes it into the corner block. Without it the figure
+                    ; would leave the session carrying a bracket, stars and
+                    ; an effect size with nothing saying what produced them.
+                    ; WHAT THE PUBLICATION NEEDS BESIDES THE FIGURE'S OWN
+                    ; NUMBERS. The store states the WHOLE result on every run
+                    ; (section d), so a field this arm does not compute is
+                    ; published as an ABSENCE rather than left standing from
+                    ; the run before it. Two groups is one comparison: there
+                    ; is no post-hoc, no pairwise test statistic and no
+                    ; mean-difference table, and @emlPublishAbsentMatrix is
+                    ; the shape the write site takes for a k x k quantity
+                    ; nobody computed -- undefined in every cell, never zeros.
+                    .omniLabel$ = "U"
+                    .omniEffectLabel$ = "rank-biserial r"
+                    .omniN = size (.v1#) + size (.v2#)
+                    .postHoc$ = ""
+                    .statLabel$ = ""
+                    @emlPublishAbsentMatrix: 2
+                    .statRes## = emlPublishAbsentMatrix.m##
+                    @emlPublishAbsentMatrix: 2
+                    .diffRes## = emlPublishAbsentMatrix.m##
+
+                    .hasPairwise = 1
+                    @emlBridgeRenderAnnotations: 2, .useMatrix, .style$,
+                    ... .showNS, .showEffect, .alpha, .effLabel$,
+                    ... .effSymbol$, .effBracketAbs, .effMatrixAbs,
+                    ... .omnibus$, .pRes##, .eRes##
                 endif
             else
                 # Welch t-test + Cohen's d
@@ -2688,15 +3893,14 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                         .effectVal = emlCohenD.d
                     endif
 
-                    @emlFormatP: .pVal
-                    .omnibus$ = "Welch t: t(" + fixed$ (.dfVal, 1) + ") = "
-                    ... + fixed$ (.tVal, 2)
-                    ... + ", " + emlFormatP.formatted$
-                    if .effectVal <> undefined
-                        .omnibus$ = .omnibus$
-                        ... + ", d = " + fixed$ (.effectVal, 2)
-                    endif
-                    annotMatrixPosthoc$ = "Welch t-test"
+                    .omniStat = .tVal
+                    .omniDf1 = .dfVal
+                    .omniDf2 = undefined
+                    .omniP = .pVal
+                    .omniEffect = .effectVal
+                    @emlBridgeOmnibusLine: 2, .testType$, .omniStat, .omniDf1,
+                    ... .omniDf2, .omniP, .omniEffect
+                    .omnibus$ = emlBridgeOmnibusLine.result$
                     ; THE BRACKET CAPTION, TWO-GROUP PARAMETRIC ARM. It says
                     ; the same two things as the Mann-Whitney arm above about
                     ; a different test: the comparison is named, and the
@@ -2706,57 +3910,49 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                     ; family-wise" is a claim about the studentized range
                     ; distribution and a Welch t makes no such claim; here
                     ; there is simply no family. See the note on the
-                    ; Mann-Whitney arm.
-                    annotBracketPosthoc$ = "Comparison: Welch t-test"
-                    annotBracketAdjust$ = "one comparison; no adjustment "
-                    ... + "applied"
+                    ; Mann-Whitney arm. Set with the other two in the
+                    ; caption block near the top of this procedure; see the
+                    ; note on the Mann-Whitney arm for why.
 
-                    if .useMatrix
-                        @emlFormatAnnotLabel: .pVal, undefined, .style$, 0, ""
-                        annotMatrixN = 2
-                        annotMatrixOmnibus$ = .omnibus$
-                        if .showEffect = 1
-                            annotMatrixEffectLabel$ = "Cohen's d"
-                        else
-                            annotMatrixEffectLabel$ = ""
-                        endif
-                        annotMatrixLabel$[1] = .label1$
-                        annotMatrixLabel$[2] = .label2$
-                        annotMatrixCell1_2$ = emlFormatAnnotLabel.result$
-                        annotMatrixD1_2 = undefined
-                        if .showEffect = 1
-                            annotMatrixD1_2 = .effectVal
-                        endif
-                        if .pVal < .alpha
-                            annotMatrixSig1_2 = 1
-                        else
-                            annotMatrixSig1_2 = 0
-                        endif
-                        if annotMatrixSig1_2 = 0 and .showNS = 0
-                            annotMatrixCell1_2$ = "—"
-                        endif
-                    else
-                        annotBracketN = 1
-                        annotBracketI[1] = 1
-                        annotBracketJ[1] = 2
-                        annotBracketP[1] = .pVal
-                        annotBracketD[1] = .effectVal
-                        @emlFormatAnnotLabel: .pVal, .effectVal, .style$, .showEffect, "d"
-                        annotBracketLabel$[1] = emlFormatAnnotLabel.result$
-                        annotBracketTier[1] = 1
+                    ; THE RESULT, IN THE ONE SHAPE EVERY PATH RENDERS FROM.
+                    ; The twin of the block on the Mann-Whitney arm; see the
+                    ; note there, and @emlBridgeRenderAnnotations' header for
+                    ; why the rendering is one procedure.
+                    .pRes## = zero## (2, 2)
+                    .eRes## = zero## (2, 2)
+                    .pRes##[1, 2] = .pVal
+                    .eRes##[1, 2] = .effectVal
 
-                        if .pVal >= .alpha and .showNS = 0
-                            annotBracketN = 0
-                        endif
-                    endif
+                    @emlBridgeEffectPolicy: 2, .testType$
+                    .effLabel$ = emlBridgeEffectPolicy.label$
+                    .effSymbol$ = emlBridgeEffectPolicy.symbol$
+                    .effBracketAbs = emlBridgeEffectPolicy.bracketAbs
+                    .effMatrixAbs = emlBridgeEffectPolicy.matrixAbs
 
-                    # THE TEST, IN THE CORNER BOX (both modes). The twin of
-                    # the block on the Mann-Whitney arm; see the note there.
-                    annotTextN = 1
-                    annotTextX[1] = 0
-                    annotTextY[1] = 0
-                    annotTextLabel$[1] = .omnibus$
-                    annotTextAnchor$[1] = "right"
+                    ; WHAT THE PUBLICATION NEEDS BESIDES THE FIGURE'S OWN
+                    ; NUMBERS. The store states the WHOLE result on every run
+                    ; (section d), so a field this arm does not compute is
+                    ; published as an ABSENCE rather than left standing from
+                    ; the run before it. Two groups is one comparison: there
+                    ; is no post-hoc, no pairwise test statistic and no
+                    ; mean-difference table, and @emlPublishAbsentMatrix is
+                    ; the shape the write site takes for a k x k quantity
+                    ; nobody computed -- undefined in every cell, never zeros.
+                    .omniLabel$ = "t"
+                    .omniEffectLabel$ = "Cohen's d"
+                    .omniN = size (.v1#) + size (.v2#)
+                    .postHoc$ = ""
+                    .statLabel$ = ""
+                    @emlPublishAbsentMatrix: 2
+                    .statRes## = emlPublishAbsentMatrix.m##
+                    @emlPublishAbsentMatrix: 2
+                    .diffRes## = emlPublishAbsentMatrix.m##
+
+                    .hasPairwise = 1
+                    @emlBridgeRenderAnnotations: 2, .useMatrix, .style$,
+                    ... .showNS, .showEffect, .alpha, .effLabel$,
+                    ... .effSymbol$, .effBracketAbs, .effMatrixAbs,
+                    ... .omnibus$, .pRes##, .eRes##
                 endif
             endif
         endif
@@ -2766,7 +3962,7 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
     # K-GROUP COMPARISON (3-10 groups)
     # =================================================================
 
-    if .error$ = "" and .nGroups >= 3
+    if .consumed = 0 and .error$ = "" and .nGroups >= 3
 
         if .testType$ = "nonparametric"
             # --- Kruskal-Wallis + Dunn's post-hoc ---
@@ -2780,214 +3976,179 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 .totalN = emlKruskalWallis.n
                 .epsilonSq = .hVal / (.totalN - 1)
 
-                @emlFormatP: .pOmnibus
                 # The caption read ", e2 = 0.272". "e2" is not notation
                 # for epsilon-squared. This string is only ever drawn by
                 # Text special / Text in the Picture window — as the matrix
                 # panel title or as the corner annotation block — so Praat's
                 # symbol escapes apply: \ep is epsilon, ^ superscripts the
-                # character after it.
-                .omnibus$ = "Kruskal-Wallis: H(" + string$ (.dfOmnibus) + ") = "
-                ... + fixed$ (.hVal, 2)
-                ... + ", " + emlFormatP.formatted$
-                ... + ", \ep^2 = " + fixed$ (.epsilonSq, 3)
+                # character after it. The line itself is composed by
+                # @emlBridgeOmnibusLine, which is the one place every arm and
+                # the consume path share.
+                .omniStat = .hVal
+                .omniDf1 = .dfOmnibus
+                .omniDf2 = undefined
+                .omniP = .pOmnibus
+                .omniEffect = .epsilonSq
+                @emlBridgeOmnibusLine: .nGroups, .testType$, .omniStat,
+                ... .omniDf1, .omniDf2, .omniP, .omniEffect
+                .omnibus$ = emlBridgeOmnibusLine.result$
 
-                # Pairwise post-hoc
-                if .pOmnibus < .alpha
-                    @emlDunnTest: .tableId, .dataCol$, .factorCol$, .correction$
-                    # Capture Dunn's outputs into locals immediately — the
-                    # loops below call other procedures between reads.
-                    .dunnError$ = emlDunnTest.error$
-                    if .dunnError$ = ""
-                        .pMat## = emlDunnTest.pMatrix##
-                        # THE PAIRWISE MATRIX IS DECLARED HERE, on the
-                        # significant branch, because this is the branch that
-                        # takes it away. @emlReportKWComparison prints the
-                        # rank-biserial matrix UNCONDITIONALLY and computes it
-                        # itself only when .doDunn = 0; with .doDunn = 1 it
-                        # reads emlKruskalWallis.rMatrix## and its header says
-                        # that value is "guaranteed by orchestrator". The
-                        # orchestrator in stats/eml-analysis.praat does
-                        # guarantee it -- it makes exactly this copy after
-                        # exactly this call. THIS PROCEDURE IS THE SECOND
-                        # ORCHESTRATOR and never made it, so a graphs-side
-                        # annotated Kruskal-Wallis draw died with "Unknown
-                        # variable: emlKruskalWallis.rMatrix##" -- and only
-                        # when the omnibus was SIGNIFICANT, since a
-                        # non-significant one leaves .doDunn = 0 and the
-                        # reporter computes the matrix for itself. The crash
-                        # therefore fired precisely when the user had a result
-                        # worth annotating.
-                        #
-                        # THE COPY, NOT A RECOMPUTE. @emlDunnTest has already
-                        # built this matrix from the same ranks its z-scores
-                        # came from; recomputing here would be a second engine
-                        # for one number and the two could drift. It is also
-                        # what makes the graphs figure agree with the wrapper
-                        # report to the last digit, which is the property this
-                        # whole layer is being held to.
-                        emlKruskalWallis.rMatrix## = emlDunnTest.rMatrix##
-                    endif
-                    if .dunnError$ = ""
-                        annotMatrixPosthoc$ = "Dunn's test ("
-                        ... + .correction$ + ")"
-                        ; THE BRACKET CAPTION, NONPARAMETRIC ARM. It NAMES the
-                        ; method and claims nothing about what the method
-                        ; achieves, because Dunn's z-tests carry no family-wise
-                        ; control of their own — the correction is whatever the
-                        ; user asked for and this sentence is a record of that
-                        ; choice, not an endorsement of it. .correction$ is the
-                        ; resolved token, so a figure drawn after an
-                        ; unrecognised annotCorrectionMethod$ says "holm" and
-                        ; means it. It is the same token the Info-window report
-                        ; prints in "-- Dunn's Post-Hoc (adjusted p, holm) --",
-                        ; and printing anything else here would put the figure
-                        ; and the report into disagreement about the same run.
-                        annotBracketPosthoc$ = "Pairwise comparisons: Dunn's test"
-                        annotBracketAdjust$ = "adjustment for multiple "
-                        ... + "comparisons: " + .correction$
-                        # Group order from @emlCountGroups (no remapping needed)
-                        if .useMatrix
-                            # --- MATRIX OUTPUT (split triangle) ---
-                            # Upper triangle: p-values only (text)
-                            # Lower triangle: rank-biserial |r| (numeric, rendered by panel)
-                            annotMatrixN = .nGroups
-                            annotMatrixOmnibus$ = .omnibus$
-                            if .showEffect = 1
-                                annotMatrixEffectLabel$ = "rank-biserial r"
-                            else
-                                annotMatrixEffectLabel$ = ""
-                            endif
-                            for .i from 1 to .nGroups
-                                annotMatrixLabel$[.i] = .gLabel$[.i]
-                            endfor
-                            for .i from 1 to .nGroups - 1
-                                for .j from .i + 1 to .nGroups
-                                    .pairP = .pMat##[.i, .j]
+                # PAIRWISE POST-HOC — ALWAYS, whatever the omnibus said.
+                # This `if .pOmnibus < .alpha` was the graph door's half of
+                # the gate the 25 Aug punch list removed (lane 3.1): the
+                # user asked a figure for its statistical annotation, the
+                # Kruskal-Wallis came back quiet, and Dunn's never ran. What
+                # the reader got was not an empty figure — it was a MATRIX OF
+                # FABRICATED CELLS. The branch below this one filled every
+                # cell from @emlFormatStars on a p of exactly 1, so a figure
+                # drawn on a non-significant omnibus said "n.s." about pairs
+                # that had never been tested. Measured on this tree before the
+                # removal: harness/posthocgate/out/bridge_kw_matrix.txt, three
+                # cells, all "n.s.", no Dunn's table anywhere in the report.
+                #
+                # With the gate gone the cells carry Dunn's own adjusted
+                # p-values and the branch that invented them is deleted, not
+                # merely unreachable.
+                @emlDunnTest: .tableId, .dataCol$, .factorCol$, .correction$
+                # Capture Dunn's outputs into locals immediately — the
+                # loops below call other procedures between reads.
+                .dunnError$ = emlDunnTest.error$
+                if .dunnError$ = ""
+                    .pMat## = emlDunnTest.pMatrix##
+                    ; THE PAIRWISE TEST STATISTIC, captured in the same breath
+                    ; as the p it belongs to. The store publishes both, so a
+                    ; later reader of a graph-door run is not short of the z
+                    ; the menu door's run would have carried.
+                    .zMat## = emlDunnTest.zMatrix##
+                    # THE PAIRWISE MATRIX IS DECLARED HERE, where Dunn's
+                    # succeeded, because that is the only state in which it
+                    # exists. @emlReportKWComparison prints the rank-biserial
+                    # matrix UNCONDITIONALLY and computes it itself only when
+                    # .doDunn = 0; with .doDunn = 1 it reads
+                    # emlKruskalWallis.rMatrix## and its header says that
+                    # value is "guaranteed by orchestrator". The orchestrator
+                    # in stats/eml-analysis.praat does guarantee it -- it
+                    # makes exactly this copy after exactly this call. THIS
+                    # PROCEDURE IS THE SECOND ORCHESTRATOR and never made it,
+                    # so a graphs-side annotated Kruskal-Wallis draw died with
+                    # "Unknown variable: emlKruskalWallis.rMatrix##". The
+                    # matching guarantee on the reporting side is
+                    # @emlReportBridgeStats, which asks whether Dunn's
+                    # SUCCEEDED before it says .doDunn = 1, so a failed
+                    # post-hoc leaves the reporter to build the matrix for
+                    # itself rather than to read one that was never copied.
+                    #
+                    # THE COPY, NOT A RECOMPUTE. @emlDunnTest has already
+                    # built this matrix from the same ranks its z-scores
+                    # came from; recomputing here would be a second engine
+                    # for one number and the two could drift. It is also
+                    # what makes the graphs figure agree with the wrapper
+                    # report to the last digit, which is the property this
+                    # whole layer is being held to.
+                    emlKruskalWallis.rMatrix## = emlDunnTest.rMatrix##
+                endif
+                if .dunnError$ = ""
+                    ; THE BRACKET CAPTION, NONPARAMETRIC ARM. It NAMES the
+                    ; method and claims nothing about what the method
+                    ; achieves, because Dunn's z-tests carry no family-wise
+                    ; control of their own — the correction is whatever the
+                    ; user asked for and this sentence is a record of that
+                    ; choice, not an endorsement of it. .correction$ is the
+                    ; resolved token, so a figure drawn after an
+                    ; unrecognised annotCorrectionMethod$ says "holm" and
+                    ; means it. It is the same token the Info-window report
+                    ; prints in "-- Dunn's Post-Hoc (adjusted p, holm) --",
+                    ; and printing anything else here would put the figure
+                    ; and the report into disagreement about the same run.
+                    ; Set with the other two in the caption block near the top
+                    ; of this procedure; see the note on the Mann-Whitney arm.
+                    # Group order from @emlCountGroups (no remapping needed)
+                    #
+                    # THE RESULT, IN THE ONE SHAPE EVERY PATH RENDERS FROM:
+                    # Dunn's adjusted p per pair, and the SIGNED rank-biserial
+                    # r per pair, both indexed in DISPLAY order so a bracket's
+                    # i and j are x-axis positions and nothing has to remap on
+                    # the way to the picture. The rendering itself is
+                    # @emlBridgeRenderAnnotations, which the two-group arms,
+                    # the parametric arm and the path that consumes a STORED
+                    # result all call -- see its header for why one procedure
+                    # and not five copies of one loop.
+                    .eRes## = zero## (.nGroups, .nGroups)
+                    for .i from 1 to .nGroups - 1
+                        for .j from .i + 1 to .nGroups
+                            @emlBridgePairEffect: .tableId, .dataCol$,
+                            ... .factorCol$, .gLabel$[.i], .gLabel$[.j],
+                            ... .testType$
+                            .eRes##[.i, .j] = emlBridgePairEffect.value
+                        endfor
+                    endfor
 
-                                    # p-value text only (no effect in cell)
-                                    @emlFormatAnnotLabel: .pairP, undefined, .style$, 0, ""
-                                    annotMatrixCell'.i'_'.j'$ = emlFormatAnnotLabel.result$
-                                    if .pairP < .alpha
-                                        annotMatrixSig'.i'_'.j' = 1
-                                    else
-                                        annotMatrixSig'.i'_'.j' = 0
-                                    endif
-                                    if annotMatrixSig'.i'_'.j' = 0 and .showNS = 0
-                                        annotMatrixCell'.i'_'.j'$ = "—"
-                                    endif
+                    ; THE EFFECT SIZES ARE COMPUTED WHETHER OR NOT THEY ARE
+                    ; SHOWN, and that is what makes showEffect a display
+                    ; setting rather than a result setting. v112's census
+                    ; classifies it DISPLAY_ONLY with a condition attached:
+                    ; "In the bridge as it stands showEffect = 0 means Cohen's
+                    ; d is never computed, so a result published under it
+                    ; cannot serve a later figure that wants effect sizes."
+                    ; Section (d) requires the store to state the WHOLE result
+                    ; on every run, so the condition is discharged here: the
+                    ; numbers are always formed, and .showEffect decides only
+                    ; whether the annotation carries them.
+                    @emlBridgeEffectPolicy: .nGroups, .testType$
+                    .effLabel$ = emlBridgeEffectPolicy.label$
+                    .effSymbol$ = emlBridgeEffectPolicy.symbol$
+                    .effBracketAbs = emlBridgeEffectPolicy.bracketAbs
+                    .effMatrixAbs = emlBridgeEffectPolicy.matrixAbs
 
-                                    # Rank-biserial r stored numerically for lower triangle
-                                    annotMatrixD'.i'_'.j' = undefined
-                                    if .showEffect = 1
-                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
-                                        .v1# = eml_getGroupData.data#
-                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
-                                        @emlRankBiserialR: .v1#, eml_getGroupData.data#, 2
-                                        if emlRankBiserialR.error$ = ""
-                                            annotMatrixD'.i'_'.j' = abs (emlRankBiserialR.r)
-                                        endif
-                                    endif
-                                endfor
-                            endfor
-                        else
-                            # --- BRACKET OUTPUT ---
-                            annotBracketN = 0
-                            for .i from 1 to .nGroups - 1
-                                for .j from .i + 1 to .nGroups
-                                    .pairP = .pMat##[.i, .j]
+                    ; WHAT THE PUBLICATION NEEDS BESIDES THE FIGURE'S OWN
+                    ; NUMBERS -- see the note on the two-group arm. Dunn's has
+                    ; a test statistic and no mean-difference table, so the z
+                    ; matrix is published and the difference matrix is
+                    ; published as an ABSENCE rather than as zeros.
+                    .omniLabel$ = "H"
+                    .omniEffectLabel$ = "epsilon squared"
+                    .omniN = .totalN
+                    .postHoc$ = "dunn"
+                    .statLabel$ = "z"
+                    .statRes## = .zMat##
+                    @emlPublishAbsentMatrix: .nGroups
+                    .diffRes## = emlPublishAbsentMatrix.m##
 
-                                    # Rank-biserial r per pair if effect display requested
-                                    # (labels come from the locals captured at
-                                    # entry — annotMatrixLabel$[] is never
-                                    # written on the bracket path)
-                                    .pairD = undefined
-                                    if .showEffect = 1
-                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
-                                        .v1# = eml_getGroupData.data#
-                                        @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
-                                        @emlRankBiserialR: .v1#, eml_getGroupData.data#, 2
-                                        if emlRankBiserialR.error$ = ""
-                                            .pairD = abs (emlRankBiserialR.r)
-                                        endif
-                                    endif
+                    ; One name for the display-ordered p matrix on every
+                    ; arm, so the publication at the foot of this procedure
+                    ; reads one thing. Dunn's is already in display order --
+                    ; see "no remapping needed" above -- so this is a copy and
+                    ; not a remap.
+                    .pRes## = .pMat##
 
-                                    if .pairP < .alpha or .showNS = 1
-                                        annotBracketN = annotBracketN + 1
-                                        .bIdx = annotBracketN
-                                        annotBracketI[.bIdx] = .i
-                                        annotBracketJ[.bIdx] = .j
-                                        annotBracketP[.bIdx] = .pairP
-                                        annotBracketD[.bIdx] = .pairD
-                                        @emlFormatAnnotLabel: .pairP, .pairD, .style$, .showEffect, "r"
-                                        annotBracketLabel$[.bIdx] = emlFormatAnnotLabel.result$
-                                    endif
-                                endfor
-                            endfor
-                            @emlStackBrackets
-                        endif
-
-                        # Omnibus as text annotation (both modes)
-                        annotTextN = 1
-                        annotTextX[1] = 0
-                        annotTextY[1] = 0
-                        annotTextLabel$[1] = .omnibus$
-                        annotTextAnchor$[1] = "right"
-                    endif
+                    .hasPairwise = 1
+                    @emlBridgeRenderAnnotations: .nGroups, .useMatrix,
+                    ... .style$, .showNS, .showEffect, .alpha, .effLabel$,
+                    ... .effSymbol$, .effBracketAbs, .effMatrixAbs,
+                    ... .omnibus$, .pRes##, .eRes##
                 else
-                    # Omnibus not significant
-                    if .useMatrix
-                        annotMatrixN = .nGroups
-                        annotMatrixOmnibus$ = .omnibus$
-                        if .showEffect = 1
-                            annotMatrixEffectLabel$ = "rank-biserial r"
-                        else
-                            annotMatrixEffectLabel$ = ""
-                        endif
-                        for .i from 1 to .nGroups
-                            annotMatrixLabel$[.i] = .gLabel$[.i]
-                        endfor
-                        # The omnibus was not significant, so Dunn's test was
-                        # never run and no pairwise p exists. Take the
-                        # non-significant marker from the shared formatter
-                        # (p = 1 is non-significant at any alpha) instead of
-                        # hardcoding a literal, so this path stays consistent
-                        # with every other cell in the figure.
-                        @emlFormatStars: 1
-                        .nsMark$ = emlFormatStars.result$
-                        for .i from 1 to .nGroups - 1
-                            for .j from .i + 1 to .nGroups
-                                annotMatrixCell'.i'_'.j'$ = .nsMark$
-                                annotMatrixSig'.i'_'.j' = 0
-                                if .showNS = 0
-                                    annotMatrixCell'.i'_'.j'$ = "—"
-                                endif
-                                annotMatrixD'.i'_'.j' = undefined
-                                if .showEffect = 1
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
-                                    .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
-                                    @emlRankBiserialR: .v1#, eml_getGroupData.data#, 2
-                                    if emlRankBiserialR.error$ = ""
-                                        annotMatrixD'.i'_'.j' = abs (emlRankBiserialR.r)
-                                    endif
-                                endif
-                            endfor
-                        endfor
-                    else
-                        annotTextN = 1
-                        annotTextX[1] = 0
-                        annotTextY[1] = 0
-                        annotTextLabel$[1] = .omnibus$
-                        annotTextAnchor$[1] = "right"
-                    endif
+                    # DUNN'S COULD NOT RUN. Not a policy branch — the
+                    # post-hoc is never withheld — but a figure whose
+                    # post-hoc failed still has an omnibus to show, and this
+                    # arm is the only place that sets it. Both layouts take
+                    # it: the corner box is set on both, exactly as the
+                    # success path sets it.
+                    annotTextN = 1
+                    annotTextX[1] = 0
+                    annotTextY[1] = 0
+                    annotTextLabel$[1] = .omnibus$
+                    annotTextAnchor$[1] = "right"
                 endif
             endif
 
 
         else
-            # --- One-way ANOVA + Tukey HSD ---
-            @emlOneWayAnova: .tableId, .dataCol$, .factorCol$, 1
+            # --- One-way ANOVA, post-hoc as the dialog asked for it ---
+            ; ITEM 3.5 -- SITE 1 OF 2. This argument was the literal 1. It is
+            ; now the choice resolved from annotPostHoc at the top of this
+            ; procedure; see THE POST-HOC CHOICE there for the channel and for
+            ; why the default is 1.
+            @emlOneWayAnova: .tableId, .dataCol$, .factorCol$, .doTukey
             if emlOneWayAnova.error$ <> ""
                 .error$ = emlOneWayAnova.error$
             else
@@ -2998,16 +4159,42 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 # Capture the pairwise outputs into locals immediately — the
                 # loops below call other procedures between reads.
                 .anovaPairs = emlOneWayAnova.nPairs
-                .pMat## = emlOneWayAnova.pMatrix##
-                for .g from 1 to .nGroups
-                    .statName$[.g] = emlOneWayAnova.groupName$[.g]
-                endfor
+                ; ITEM 3.5 -- THE CAPTURES ARE GUARDED BECAUSE THE OUTPUTS ARE
+                ; CONDITIONAL. @emlOneWayAnova's header says so in as many
+                ; words: .pMatrix##, .qMatrix##, .meanDiff##, .dMatrix## and
+                ; .groupName$[] are "Output (when .tukey = 1)", and .nPairs is
+                ; 0 otherwise. Reading them after a .tukey = 0 run does not
+                ; return an empty matrix, it stops Praat dead -- which is why
+                ; this guard is part of item 3.5 and not a tidy-up: the literal
+                ; could not be removed without it. Same shape as
+                ; @emlDeclareAnovaEffectSizes' own .doTukey <> 1 guard.
+                if .doTukey = 1
+                    .pMat## = emlOneWayAnova.pMatrix##
+                    ; THE PAIRWISE TEST STATISTIC AND THE MEAN DIFFERENCES,
+                    ; captured in the same breath as the p they belong to, so
+                    ; the store's publication of a graph-door run states the
+                    ; same whole result the menu door's does.
+                    .qMat## = emlOneWayAnova.qMatrix##
+                    .diffMat## = emlOneWayAnova.meanDiff##
+                    for .g from 1 to .nGroups
+                        .statName$[.g] = emlOneWayAnova.groupName$[.g]
+                    endfor
+                endif
 
-                @emlFormatP: .pOmnibus
-                .omnibus$ = "One-way ANOVA: F(" + string$ (.dfB) + ", "
-                ... + string$ (.dfW) + ") = "
-                ... + fixed$ (.fVal, 2)
-                ... + ", " + emlFormatP.formatted$
+                .omniStat = .fVal
+                .omniDf1 = .dfB
+                .omniDf2 = .dfW
+                .omniP = .pOmnibus
+                ; THE ONE-WAY ANOVA LINE CARRIES NO EFFECT SIZE, and never
+                ; has; eta squared is published to the store all the same, so
+                ; that a later consumer is not short of it.
+                .omniEffect = undefined
+                if variableExists ("emlOneWayAnova.etaSquared")
+                    .omniEffect = emlOneWayAnova.etaSquared
+                endif
+                @emlBridgeOmnibusLine: .nGroups, .testType$, .omniStat,
+                ... .omniDf1, .omniDf2, .omniP, undefined
+                .omnibus$ = emlBridgeOmnibusLine.result$
                 # THE FIGURE SAYS WHERE ITS
                 # FAMILY-WISE CONTROL COMES FROM, and it says a different
                 # thing on each arm because the two arms do a different thing.
@@ -3032,7 +4219,6 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 # string that arm writes still NAMES the method the user
                 # chose -- "Dunn's test (holm)". One claim covering both arms
                 # would be false on one of them whichever way it was written.
-                annotMatrixPosthoc$ = "Tukey HSD (already family-wise)"
                 # THE BRACKET CAPTION, PARAMETRIC ARM — the same disclosure
                 # carried to the other layout. The sub-line above only ever
                 # reaches a MATRIX figure, and the bracket layout is the one
@@ -3044,9 +4230,8 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 # pairwise comparisons, so there is nothing further to apply
                 # and the figure says so outright. The Dunn arm's caption is
                 # a different sentence for a different reason; see its note.
-                annotBracketPosthoc$ = "Pairwise comparisons: Tukey HSD"
-                annotBracketAdjust$ = "already family-wise; no further "
-                ... + "adjustment applied"
+                # Set with the other two in the caption block near the top of
+                # this procedure; see the note on the Mann-Whitney arm.
 
                 # --------------------------------------------------------
                 # Index mapping: encounter order → ANOVA alphabetical order
@@ -3056,157 +4241,255 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
                 # Build map from display position to stats-procedure
                 # position for matrix access.
                 # Build map from display order to stats order
-                for .i from 1 to .nGroups
-                    .sortMap[.i] = 0
-                    for .g from 1 to .nGroups
-                        if .gLabel$[.i] = .statName$[.g]
-                            .sortMap[.i] = .g
-                        endif
+                ; ITEM 3.5 -- UNDER THE SAME GUARD AS THE CAPTURES ABOVE, and
+                ; for the same reason: .statName$[] is @emlOneWayAnova's
+                ; .groupName$[], a Tukey-only output. The map is read only
+                ; inside the `.anovaPairs > 0` branch below, which a post-hoc
+                ; off run never enters, so nothing downstream loses a value.
+                if .doTukey = 1
+                    for .i from 1 to .nGroups
+                        .sortMap[.i] = 0
+                        for .g from 1 to .nGroups
+                            if .gLabel$[.i] = .statName$[.g]
+                                .sortMap[.i] = .g
+                            endif
+                        endfor
                     endfor
-                endfor
+                endif
 
-                # Pairwise from Tukey
-                if .error$ = "" and .pOmnibus < .alpha and .anovaPairs > 0
-                    if .useMatrix
-                        # --- MATRIX OUTPUT (split triangle) ---
-                        # Upper triangle: p-values only (text)
-                        # Lower triangle: Cohen's d (numeric, rendered by panel)
-                        annotMatrixN = .nGroups
-                        annotMatrixOmnibus$ = .omnibus$
-                        if .showEffect = 1
-                            annotMatrixEffectLabel$ = "Cohen's d"
-                        else
-                            annotMatrixEffectLabel$ = ""
-                        endif
-                        for .i from 1 to .nGroups
-                            annotMatrixLabel$[.i] = .gLabel$[.i]
+                # PAIRWISE FROM TUKEY — ALWAYS, whatever the omnibus said.
+                # The removed conjunct was `.pOmnibus < .alpha`, the parametric
+                # half of the graph door's gate (punch list 2026-08-25, lane
+                # 3.1). Tukey itself was never gated here — @emlOneWayAnova
+                # ran it unconditionally a few lines up — so what the gate
+                # withheld was the DRAWING of a post-hoc that had already run:
+                # on the bracket layout a non-significant F produced a figure
+                # with no bracket on it at all. Measured before the removal,
+                # harness/posthocgate/out/bridge_anova_brackets.txt:
+                # bracketN = 0 on a fixture whose Tukey p-values exist and are
+                # printed by the report beside it.
+                #
+                # ITEM 3.5 DOES NOT REOPEN THAT GATE, and the distinction is
+                # the whole of lane 3.1. A GATE is this code deciding, from a
+                # number it has just computed, that the user may not see the
+                # post-hoc — the omnibus p withholding the pairwise result.
+                # What .doTukey carries is the USER'S OWN ANSWER, given at the
+                # dialog before any number existed, to the question "do you
+                # want a post-hoc at all". No p-value, no effect size and no
+                # count of groups is consulted anywhere on its path from the
+                # Comparison menu to @emlOneWayAnova. The post-hoc is still
+                # never withheld from a user who asked for one.
+                #
+                # WHAT REMAINS IN THE CONDITION IS STRUCTURAL, not policy:
+                # `.anovaPairs > 0` is "there is a matrix to read". The branch
+                # this replaces drew the same matrix cells from the same
+                # @emlOneWayAnova.pMatrix##, so no cell VALUE moves; what moves
+                # is that the bracket layout now draws them.
+                if .error$ = "" and .anovaPairs > 0
+                    # THE RESULT, IN THE ONE SHAPE EVERY PATH RENDERS FROM,
+                    # AND THE REMAP HAPPENS HERE AND NOWHERE ELSE. Tukey's
+                    # matrix is indexed in the ANOVA's alphabetical order and
+                    # the figure's x axis is in @emlCountGroups' order, so the
+                    # display-ordered matrix is built once through .sortMap[]
+                    # and everything downstream -- brackets, matrix cells, the
+                    # store -- reads positions rather than remapping again.
+                    # A second remap somewhere downstream is how a p-value
+                    # ends up drawn over the wrong pair of bars.
+                    .pRes## = zero## (.nGroups, .nGroups)
+                    .eRes## = zero## (.nGroups, .nGroups)
+                    .statRes## = zero## (.nGroups, .nGroups)
+                    .diffRes## = zero## (.nGroups, .nGroups)
+                    for .i from 1 to .nGroups - 1
+                        for .j from .i + 1 to .nGroups
+                            .pRes##[.i, .j] = .pMat##[.sortMap[.i],
+                            ... .sortMap[.j]]
+                            .statRes##[.i, .j] = .qMat##[.sortMap[.i],
+                            ... .sortMap[.j]]
+                            .diffRes##[.i, .j] = .diffMat##[.sortMap[.i],
+                            ... .sortMap[.j]]
+                            @emlBridgePairEffect: .tableId, .dataCol$,
+                            ... .factorCol$, .gLabel$[.i], .gLabel$[.j],
+                            ... .testType$
+                            .eRes##[.i, .j] = emlBridgePairEffect.value
                         endfor
-                        for .i from 1 to .nGroups - 1
-                            for .j from .i + 1 to .nGroups
-                                .pairP = .pMat##[.sortMap[.i], .sortMap[.j]]
+                    endfor
 
-                                # p-value text only (no effect in cell)
-                                @emlFormatAnnotLabel: .pairP, undefined, .style$, 0, ""
-                                annotMatrixCell'.i'_'.j'$ = emlFormatAnnotLabel.result$
-                                if .pairP < .alpha
-                                    annotMatrixSig'.i'_'.j' = 1
-                                else
-                                    annotMatrixSig'.i'_'.j' = 0
-                                endif
-                                if annotMatrixSig'.i'_'.j' = 0 and .showNS = 0
-                                    annotMatrixCell'.i'_'.j'$ = "—"
-                                endif
+                    ; WHAT THE PUBLICATION NEEDS BESIDES THE FIGURE'S OWN
+                    ; NUMBERS -- see the note on the two-group arm. Tukey has
+                    ; both a test statistic and a mean-difference table, and
+                    ; both are remapped into x-axis order above with the
+                    ; p-values, because the store's matrices and its labels
+                    ; must be indexed the same way.
+                    .omniLabel$ = "F"
+                    .omniEffectLabel$ = "eta squared"
+                    .omniN = .dfB + .dfW + 1
+                    .postHoc$ = "tukey"
+                    .statLabel$ = "q"
 
-                                # Cohen's d stored numerically for lower triangle
-                                annotMatrixD'.i'_'.j' = undefined
-                                if .showEffect = 1
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
-                                    .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
-                                    @emlCohenD: .v1#, eml_getGroupData.data#
-                                    if emlCohenD.error$ = ""
-                                        annotMatrixD'.i'_'.j' = abs (emlCohenD.d)
-                                    endif
-                                endif
-                            endfor
-                        endfor
-                    else
-                        # --- BRACKET OUTPUT ---
-                        annotBracketN = 0
-                        for .i from 1 to .nGroups - 1
-                            for .j from .i + 1 to .nGroups
-                                .pairP = .pMat##[.sortMap[.i], .sortMap[.j]]
+                    ; THE EFFECT SIZES ARE COMPUTED WHETHER OR NOT THEY ARE
+                    ; SHOWN; see the note on the Kruskal-Wallis arm for why
+                    ; that is what makes showEffect a display setting.
+                    @emlBridgeEffectPolicy: .nGroups, .testType$
+                    .effLabel$ = emlBridgeEffectPolicy.label$
+                    .effSymbol$ = emlBridgeEffectPolicy.symbol$
+                    .effBracketAbs = emlBridgeEffectPolicy.bracketAbs
+                    .effMatrixAbs = emlBridgeEffectPolicy.matrixAbs
 
-                                # Cohen's d per pair if effect display requested
-                                # (labels come from the locals captured at
-                                # entry — annotMatrixLabel$[] is never
-                                # written on the bracket path)
-                                .pairD = undefined
-                                if .showEffect = 1
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
-                                    .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
-                                    @emlCohenD: .v1#, eml_getGroupData.data#
-                                    if emlCohenD.error$ = ""
-                                        .pairD = emlCohenD.d
-                                    endif
-                                endif
-
-                                if .pairP < .alpha or .showNS = 1
-                                    annotBracketN = annotBracketN + 1
-                                    .bIdx = annotBracketN
-                                    annotBracketI[.bIdx] = .i
-                                    annotBracketJ[.bIdx] = .j
-                                    annotBracketP[.bIdx] = .pairP
-                                    annotBracketD[.bIdx] = .pairD
-                                    @emlFormatAnnotLabel: .pairP, .pairD, .style$, .showEffect, "d"
-                                    annotBracketLabel$[.bIdx] = emlFormatAnnotLabel.result$
-                                endif
-                            endfor
-                        endfor
-                        @emlStackBrackets
-                    endif
-
-                    # Omnibus as text annotation (both modes)
+                    .hasPairwise = 1
+                    @emlBridgeRenderAnnotations: .nGroups, .useMatrix,
+                    ... .style$, .showNS, .showEffect, .alpha, .effLabel$,
+                    ... .effSymbol$, .effBracketAbs, .effMatrixAbs,
+                    ... .omnibus$, .pRes##, .eRes##
+                else
+                    # NO PAIRS TO DRAW. Not a policy branch — this code
+                    # withholds no post-hoc from anyone who asked for one —
+                    # but with no Tukey matrix there is nothing pairwise to
+                    # put on the figure, and the omnibus still belongs on it.
+                    # Both layouts take the corner box, exactly as the branch
+                    # above sets it.
+                    #
+                    # ITEM 3.5 GIVES THIS BRANCH ITS SECOND ENTRANCE, and it
+                    # is the entrance the ruling asked for: .anovaPairs is
+                    # @emlOneWayAnova's .nPairs, which that procedure sets to
+                    # 0 when it is called with .tukey = 0. So a user who
+                    # picked "ANOVA only, no pairwise tests" at the Comparison
+                    # menu arrives here and gets a figure carrying the omnibus
+                    # and nothing else — the same figure the Compare k Groups
+                    # dialog's own post-hoc opt-out produces, which is what
+                    # v127's leg3 asks these two doors to agree about.
                     annotTextN = 1
                     annotTextX[1] = 0
                     annotTextY[1] = 0
                     annotTextLabel$[1] = .omnibus$
                     annotTextAnchor$[1] = "right"
-                else
-                    # Omnibus not significant or no pairs
-                    if .useMatrix
-                        annotMatrixN = .nGroups
-                        annotMatrixOmnibus$ = .omnibus$
-                        if .showEffect = 1
-                            annotMatrixEffectLabel$ = "Cohen's d"
-                        else
-                            annotMatrixEffectLabel$ = ""
+                endif
+            endif
+        endif
+    endif
+    ; ------------------------------------------------------------------
+    ; ITEM 1.2 — THE CANONICAL RENDERING, AND THE PRE-PRINT COMPARISON.
+    ;
+    ; Fable's ruling of 26 August, amending punch item 1.2: "Canonical text is
+    ; the buffer; the pre-print comparison runs buffer-only." This is that
+    ; comparison, and it is HERE rather than in @emlGraphsReportBridgeIfNew
+    ; for the reason that procedure's own header gives — the bridge decides
+    ; and the caller obeys, because a second rule in the caller is how the
+    ; bridge and the form come to disagree about one draw.
+    ;
+    ; WHAT BUFFER-ONLY MEANS. @emlEmitMode: 0 puts the minimal renderer into
+    ; its second mode: @emlReportBridgeStats runs in full — same reporter,
+    ; same numbers, same declarations — and NOTHING reaches the Info window.
+    ; What comes back in emlEmitText$ is the factual and disclosure lines
+    ; alone: no explanation line, no two-tab gloss, no timestamp, no
+    ; provenance. That is what makes it comparable with a rendering made at
+    ; another door under another explanations setting, and it is why the
+    ; capture approach could not do this job — under capture the text exists
+    ; only by being printed, so "identical -> print nothing" is unreachable.
+    ;
+    ; THE COMPARISON IS AGAINST THE STORE AS IT STANDS RIGHT NOW, before the
+    ; publication below overwrites it. emlStoreReport$ is the text of the
+    ; report the reader is looking at for this result, and "" means no report
+    ; was printed for it — the changed-setting path publishes "" precisely so
+    ; that this comparison cannot fall silent by matching a report nobody has
+    ; seen.
+    ;
+    ; ONLY THE "data" VERDICT CAN GO SILENT HERE, and that is deliberate.
+    ; Reaching it means @emlConsumeGroupResult has already established that
+    ; the publication is about THIS table and THIS pair of columns, and that
+    ; the only thing that moved was the data key. A "none" verdict has no
+    ; such guarantee — nothing published, another comparison, another schema
+    ; — so the stored text is not about this result and must not be compared
+    ; with it. Silence has to be earned; this is what earns it.
+    ;
+    ; THE REPORTER RUNS TWICE ON THE PATH THAT PRINTS, once here and once in
+    ; @emlGraphsReportBridgeIfNew, and that is the price of the shape rather
+    ; than an oversight. The buffer cannot simply be flushed to the Info
+    ; window instead: it holds no explanation lines by construction, so
+    ; printing it would silently drop every gloss for a user who asked for
+    ; them. Both renderings are deterministic reads of the same finished
+    ; result, so they agree character for character. On the path that stays
+    ; silent — the one the ruling expects to be the common one — the reporter
+    ; runs once and nothing is printed at all.
+    ; ------------------------------------------------------------------
+    .canonReport$ = ""
+    .priorReport$ = ""
+    if variableExists ("emlStoreReport$")
+        .priorReport$ = emlStoreReport$
+    endif
+    if .printReport = 1
+        if .consumed = 0
+            if .error$ = ""
+                @emlEmitMode: 0
+                @emlReportBridgeStats: .tableId, .dataCol$, .factorCol$
+                @emlEmitMode: 1
+                .canonReport$ = emlEmitText$
+                if .verdict$ = "data"
+                    if .priorReport$ <> ""
+                        if .canonReport$ = .priorReport$
+                            .printReport = 0
+                            .notePending = 0
                         endif
-                        for .i from 1 to .nGroups
-                            annotMatrixLabel$[.i] = .gLabel$[.i]
-                        endfor
-                        for .i from 1 to .nGroups - 1
-                            for .j from .i + 1 to .nGroups
-                                .pairP = .pMat##[.sortMap[.i], .sortMap[.j]]
-                                @emlFormatAnnotLabel: .pairP, undefined, .style$, 0, ""
-                                annotMatrixCell'.i'_'.j'$ = emlFormatAnnotLabel.result$
-                                # Significance flag must follow the Tukey
-                                # p-value actually printed in the cell, not a
-                                # blanket 0 — otherwise the cell text and the
-                                # cell styling disagree.
-                                annotMatrixSig'.i'_'.j' = 0
-                                if .pairP <> undefined
-                                    if .pairP < .alpha
-                                        annotMatrixSig'.i'_'.j' = 1
-                                    endif
-                                endif
-                                if annotMatrixSig'.i'_'.j' = 0 and .showNS = 0
-                                    annotMatrixCell'.i'_'.j'$ = "—"
-                                endif
-                                annotMatrixD'.i'_'.j' = undefined
-                                if .showEffect = 1
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.i]
-                                    .v1# = eml_getGroupData.data#
-                                    @eml_getGroupData: .tableId, .dataCol$, .factorCol$, .gLabel$[.j]
-                                    @emlCohenD: .v1#, eml_getGroupData.data#
-                                    if emlCohenD.error$ = ""
-                                        annotMatrixD'.i'_'.j' = abs (emlCohenD.d)
-                                    endif
-                                endif
-                            endfor
-                        endfor
-                    else
-                        annotTextN = 1
-                        annotTextX[1] = 0
-                        annotTextY[1] = 0
-                        annotTextLabel$[1] = .omnibus$
-                        annotTextAnchor$[1] = "right"
                     endif
                 endif
             endif
         endif
     endif
+
+    ; ------------------------------------------------------------------
+    ; THE RECOMPUTE PUBLISHES THROUGH THE ONE WRITE SITE.
+    ;
+    ; Section (d) of the ruling allows the store exactly one writer, which
+    ; states the whole result on EVERY analysis run. This bridge is an
+    ; analysis run -- it is the second door, and the whole reason the store
+    ; exists is that two doors were computing one comparison -- so a re-run
+    ; here has to reach that writer too. Without it, two figures drawn one
+    ; after another with no analysis door between them would each recompute
+    ; and each report, which is the duplicate report in a different costume.
+    ;
+    ; THE KEY IS THE ONE @emlConsumeGroupResult ALREADY TOOK, and that is
+    ; deliberate. The fingerprint's header names the failure it closes: "a
+    ; caller that computes a result, lets the table change, and only then
+    ; stamps a key has stamped a truthful key on a result the table does not
+    ; support ... take the key in the same pass that reads the data". The key
+    ; passed here was taken before a single test ran.
+    ;
+    ; THE CALL IS GUARDED ON THE STORE'S OWN FORMAT GLOBAL, which the write
+    ; site declares when it is loaded, because this file must keep working in
+    ; a tree that has the read side and not yet the writer -- and because a
+    ; reader that assigned the published names itself would BE a second
+    ; writer, which is the one thing section (d) forbids.
+    if .consumed = 0 and .error$ = "" and .hasPairwise = 1
+        if variableExists ("emlStoreFormat$")
+            ; THE LABELS TRAVEL IN A PUBLISHED ARRAY BECAUSE PRAAT CANNOT
+            ; PASS ONE. emlPublishInLabel$[1..n] is the write site's declared
+            ; hand-off, filled immediately before the call so nothing can run
+            ; between the fill and the read, and it carries the DISPLAY order
+            ; -- the order both matrices are indexed by and the order the
+            ; figure's x axis is in.
+            for .gi from 1 to .nGroups
+                emlPublishInLabel$[.gi] = .gLabel$[.gi]
+            endfor
+            selectObject: .tableId
+            .tableName$ = selected$ ("Table")
+            @emlBridgeStoreIdentity: .nGroups, .testType$, .correction$
+            ; ITEM 1.2 — THE CANONICAL TEXT TRAVELS IN THE DECLARED HAND-OFF,
+            ; the same way the level labels do, and for the same reason: the
+            ; write site's argument list is already thirty-seven long. It is
+            ; "" on every path that prints no report, which is what the
+            ; changed-setting path is and what "" means at the write site.
+            emlPublishInReport$ = .canonReport$
+            @emlPublishAnalysisResult: "emlRunAnnotationComparison", "graph",
+            ... "group", .error$, .key$, .keyError$, .tableId, .tableName$,
+            ... .dataCol$, .factorCol$, emlBridgeStoreIdentity.test$,
+            ... emlBridgeStoreIdentity.correction$, .alpha, .sort$,
+            ... .nGroups, .omniLabel$, .omniStat, .omniDf1, .omniDf2, .omniP,
+            ... .omniEffectLabel$, .omniEffect, .omniN,
+            ... "", undefined, undefined, undefined, "", undefined,
+            ... .postHoc$, 1, .statLabel$, .effLabel$,
+            ... .pRes##, .diffRes##, .statRes##, .eRes##
+        endif
+    endif
+
     ; THE OMNIBUS RESULT IS ALREADY BUILT. .omnibus$ is the string this
     ; procedure puts on the figure -- "F(2, 21) = 4.31, p = .027" or the
     ; Kruskal-Wallis equivalent -- so the record carries exactly what the
@@ -3243,7 +4526,7 @@ procedure emlBridgeGroupComparison: .tableId, .dataCol$, .factorCol$, .alpha, .s
             ... + ", " + string$ (.nGroups) + " groups",
             ... "Reached through the figure's annotation rather than the "
             ... + "stats menu; the test and the correction are the same.",
-            ... "@emlBridgeGroupComparison: data, """ + .dataCol$ + """, """
+            ... "@emlRunAnnotationComparison: data, """ + .dataCol$ + """, """
             ... + .factorCol$ + """, " + string$ (.alpha) + ", """ + .style$
             ... + """, " + string$ (.showNS) + ", " + string$ (.showEffect)
             ... + ", """ + .testType$ + """, " + string$ (.layoutMode),
@@ -3310,7 +4593,17 @@ procedure emlBridgeCorrelation: .tableId, .colX$, .colY$, .alpha, .style$, .corr
 
     if .error$ = ""
         if .corrType$ = "spearman"
-            @emlSpearmanCorrelation: .xData#, .yData#, 2
+            ; ONE COMPUTATION SITE (docs/WORK_ORDER_SPEARMAN_EXACT_2026-08-27.md):
+            ; routed through the dispatch rather than @emlSpearmanCorrelation
+            ; directly, so that if this UNUSED procedure is ever wired to a
+            ; caller it cannot come back onto the raw kernel and bypass the
+            ; branch law. The dispatch writes its .p (and .error$, on
+            ; failure) back into emlSpearmanCorrelation.p / .error$ itself,
+            ; the same qualified-global contract every other call site
+            ; already relies on -- .rho below is untouched by that write-
+            ; back and still the value @emlSpearmanCorrelation set inside
+            ; the dispatch's own call.
+            @emlSpearmanCorrelationDispatch: .xData#, .yData#, 2
             if emlSpearmanCorrelation.error$ <> ""
                 .error$ = emlSpearmanCorrelation.error$
             else
@@ -3417,7 +4710,7 @@ endproc
 #                 which @emlReportLine appends as the explanation column.
 #                 69 calls in 42 statements. ALL ROUTED THROUGH @eml_fixed.
 #
-#   recorded   -> @emlBridgeGroupComparison's .recResult$, which is neither.
+#   recorded   -> @emlRunAnnotationComparison's .recResult$, which is neither.
 #                 It is the workflow record's note beside a recorded call, and
 #                 it is built from .omnibus$ ON PURPOSE so that the record
 #                 carries the string the reader saw on the plot, character for
@@ -3450,17 +4743,133 @@ endproc
 # ============================================================================
 
 # ============================================================================
+# @emlGraphsReportBridgeIfNew — the reprint gate
+# ============================================================================
+# THE ONE PLACE THAT DECIDES WHETHER A FIGURE'S ANALYSIS REPORT IS PRINTED.
+#
+# docs/RULING_RESULT_STORE.md section (c), and the sentence the whole store
+# was built around: "Never a second full report -- the duplicate report IS the
+# driven defect." @emlRunAnnotationComparison has already decided, because it is
+# the only thing that knows whether it computed anything, and it leaves the
+# decision in .printReport. This procedure obeys it. It adds no rule of its
+# own: a second rule is how the bridge and the form come to disagree about
+# one draw.
+#
+#   printReport = 1   nothing was published, or the DATA moved, the analysis
+#                     was re-measured, and the re-measured report is not the
+#                     report already in the window. This report is the first
+#                     report of THAT result and it prints -- preceded, on the
+#                     re-measured path, by the one line this procedure prints
+#                     above it.
+#   printReport = 0   the figure drew from the store (the analysis door's
+#                     report is already in the window, and it is still true);
+#                     or a result-affecting SETTING changed and the bridge
+#                     has already said so in one line above the brackets;
+#                     or -- ITEM 1.2, Fable's amendment of 26 August -- the
+#                     data moved, the figure re-ran, and the re-run rendered
+#                     THE SAME REPORT, character for character, as the one
+#                     the reader already has. Ian's rule of 24 August: "a
+#                     re-run that reproduces the stored report exactly prints
+#                     nothing." Nothing means nothing: not a second report,
+#                     and not the line above it either.
+#
+# THE ONE LINE IS PRINTED HERE ON THE DATA PATH, AND IN THE BRIDGE ON THE
+# SETTINGS PATH, and that is not an inconsistency. On the settings path the
+# line is the whole of what that draw says, so it is said where it is
+# decided. On the data path whether it is said AT ALL depends on the
+# canonical report comparison, which is not finished when that verdict is
+# taken -- so the bridge leaves it in .note$ with .notePending raised and
+# lowers the flag itself if the comparison comes back identical. This
+# procedure still adds no rule: it prints what it is handed, or nothing.
+#
+# READ THROUGH variableExists. A caller that reaches this without a bridge
+# run in front of it -- an error path, a user script -- has no .printReport,
+# and the safe answer there is the old one: print. Silence is the answer that
+# has to be earned.
+#
+# WHAT SUPPRESSION ALSO SUPPRESSES, said out loud because it is a real cost
+# and not a detail. @emlReportBridgeStats opens with @emlCSVInit and closes by
+# DECLARING the three export files, so a suppressed report is also a
+# suppressed export declaration.
+#
+#   On the consume path that is CORRECT and is part of the point: the
+#   analysis door ran this very comparison and declared it, the store proved
+#   the two are the same result, and re-declaring would overwrite a correct
+#   buffer with an identical one.
+#
+#   On the changed-setting path it is a KNOWN GAP: the bridge recomputed
+#   under the new setting, the figure shows the new brackets, and the export
+#   buffer still holds the analysis door's older run. Saving a CSV then saves
+#   the settings the figure does not draw. Closing it needs a reporter that
+#   can RENDER without printing -- the same capability punch item 1.2's
+#   canonical report comparison needs -- and one mechanism closes both. It is
+#   recorded in docs/OPEN_ITEMS.md rather than half-fixed here, because the
+#   alternative available today is printing the second report, and the ruling
+#   forbids exactly that.
+# ============================================================================
+procedure emlGraphsReportBridgeIfNew: .tableId, .dataCol$, .groupCol$
+    .print = 1
+    if variableExists ("emlRunAnnotationComparison.printReport")
+        .print = emlRunAnnotationComparison.printReport
+    endif
+
+    ; ITEM 1.2 — THE LINE THE BRIDGE LEFT FOR THIS PROCEDURE TO PRINT, if it
+    ; left one. Read through variableExists for the same reason .printReport
+    ; is: a caller that reaches here without a bridge run in front of it has
+    ; no such output, and the answer there is the old one — say nothing extra
+    ; and print the report. NESTED reads, not `and`: the second read is of a
+    ; name the first has just established exists.
+    .notePending = 0
+    .note$ = ""
+    if variableExists ("emlRunAnnotationComparison.notePending")
+        .notePending = emlRunAnnotationComparison.notePending
+        .note$ = emlRunAnnotationComparison.note$
+    endif
+
+    if .print = 1
+        if .notePending = 1
+            appendInfoLine: .note$
+        endif
+        @emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
+    endif
+endproc
+
+
+# ============================================================================
 # @emlReportBridgeStats — thin dispatcher for graphs tool
 # ============================================================================
-# Called by eml-graphs.praat after @emlBridgeGroupComparison has run.
+# Called by eml-graphs.praat after @emlRunAnnotationComparison has run.
 # Routes to the correct shared reporter based on bridge globals.
 # Same 3-argument signature as the original monolithic reporter.
 # ============================================================================
 procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
-    .nGroups = emlBridgeGroupComparison.nGroups
-    .testType$ = emlBridgeGroupComparison.testType$
+    .nGroups = emlRunAnnotationComparison.nGroups
+    .testType$ = emlRunAnnotationComparison.testType$
+
+    ; ------------------------------------------------------------------
+    ; ITEM 3.5 -- WHAT THE BRIDGE DID, ASKED OF THE BRIDGE.
+    ;
+    ; THIS PROCEDURE STATES NOTHING ABOUT THE POST-HOC ON ITS OWN ACCOUNT.
+    ; The Comparison menu decides whether a pairwise table is wanted, the
+    ; bridge resolves that answer, and this reporter reports the run the
+    ; bridge just made. A reporter that assumed instead is how the Info
+    ; window comes to describe a post-hoc no figure ran, and how
+    ; @emlDeclareTukeyResult comes to read a matrix nobody built.
+    ;
+    ; SO IT ASKS. .doTukey here is @emlRunAnnotationComparison's own resolved
+    ; flag, read straight off the run that has just finished -- exactly the
+    ; shape the Kruskal-Wallis arm below uses for .doDunn, which asks
+    ; @emlDunnTest whether it succeeded rather than assuming it did. Guarded
+    ; through variableExists so a caller that reaches this reporter without
+    ; the bridge (a user script, a harness) still gets a post-hoc, and
+    ; NESTED, never `and`: Praat evaluates both operands.
+    ; ------------------------------------------------------------------
+    .doTukey = 1
+    if variableExists ("emlRunAnnotationComparison.doTukey")
+        .doTukey = emlRunAnnotationComparison.doTukey
+    endif
 
     @emlCSVInit
 
@@ -3469,8 +4878,8 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         # Read the labels the bridge captured, not emlCountGroups' outputs:
         # @emlCountGroups is re-invoked by the tests the bridge runs, so its
         # outputs do not belong to this comparison by the time we get here.
-        .g1$ = emlBridgeGroupComparison.gLabel$ [1]
-        .g2$ = emlBridgeGroupComparison.gLabel$ [2]
+        .g1$ = emlRunAnnotationComparison.gLabel$[1]
+        .g2$ = emlRunAnnotationComparison.gLabel$[2]
 
         selectObject: .tableId
         @emlExtractGroupVectors: .tableId, .dataCol$, .groupCol$, .g1$, .g2$
@@ -3526,13 +4935,23 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         ... .doPar, .doNon, .g1$, .g2$
 
     elsif .testType$ = "parametric"
-        # k-group parametric: ANOVA (bridge ran with doTukey=1)
+        # k-group parametric: ANOVA, with the post-hoc the bridge ran
+        ; ITEM 3.5 -- SITE 2 OF 2. This argument was the literal 1, and the
+        ; comment beside it read "bridge ran with doTukey=1". It is now the
+        ; bridge's own resolved flag, read at the top of this procedure.
         @emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$,
-        ... .tableId, .nGroups, 1
+        ... .tableId, .nGroups, .doTukey
 
         # The declaration @emlRunAnovaAnalysis makes, extras staged first.
-        # The bridge always runs Tukey (the literal 1 above), so the post-hoc
-        # frame is always available on this path.
+        ; ITEM 3.5 -- AND THE POST-HOC FRAME FOLLOWS THE SAME FLAG. The three
+        ; declaration calls below take .doTukey exactly where
+        ; @emlRunAnovaAnalysis passes it (stats/eml-analysis.praat, the
+        ; `if emlOneWayAnova.error$ = ""` block), including the `if .doTukey`
+        ; around @emlDeclareTukeyResult. That guard is not decoration:
+        ; @emlDeclareTukeyResult reads emlOneWayAnova.pMatrix## and
+        ; .groupName$[], which a .tukey = 0 run never builds. Both doors
+        ; declare the same frames for the same run, which is the agreement
+        ; v127's leg1 and leg3 are about.
         #
         # ONE GUARD OVER THE WHOLE SEQUENCE, which is the shape every other
         # declaring path uses -- the Kruskal branch below, and the ten
@@ -3546,7 +4965,7 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         # WHAT THE SPLIT COST HERE, measured rather than assumed: nothing yet,
         # on three independent counts, and none of the three is a property of
         # this procedure. (1) The four call sites in eml-graphs-form.praat all
-        # skip this procedure when emlBridgeGroupComparison.error$ is non-empty,
+        # skip this procedure when emlRunAnnotationComparison.error$ is non-empty,
         # and the bridge copies emlOneWayAnova.error$ into that field, so the
         # guard cannot currently be false on the menu path. (2) Reached anyway
         # -- by a script calling the bridge and this reporter without that check
@@ -3566,29 +4985,48 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
         # guard.
         if emlOneWayAnova.error$ = ""
             @emlResultClearExtras
-            @emlDeclareTukeyResult: .groupCol$
-            @emlResultStageExtra: "posthoc"
-            @emlDeclareAnovaEffectSizes: .groupCol$, 1
+            if .doTukey
+                @emlDeclareTukeyResult: .groupCol$
+                @emlResultStageExtra: "posthoc"
+            endif
+            @emlDeclareAnovaEffectSizes: .groupCol$, .doTukey
             @emlResultStageExtra: "effectsize"
             @emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
-            ... .tableId, 1
+            ... .tableId, .doTukey
         endif
 
     else
         # k-group nonparametric: Kruskal-Wallis
-        # Bridge runs Dunn's only when p < alpha
-        if emlKruskalWallis.p < emlBridgeGroupComparison.alpha
-            .doDunn = 1
-        else
-            .doDunn = 0
+        # THE OMNIBUS DOES NOT DECIDE THIS. Whether the user asked for a
+        # post-hoc decides it: @emlRunAnnotationComparison runs Dunn's on
+        # every nonparametric k-group draw regardless of the omnibus
+        # outcome, so a quiet Kruskal-Wallis never silently withholds a
+        # post-hoc the user's figure asked for. There is a post-hoc to
+        # print whenever it SUCCEEDED.
+        #
+        # SUCCEEDED, not merely attempted, and the difference is a crash. With
+        # .doDunn = 1 @emlReportKWComparison reads emlKruskalWallis.rMatrix##
+        # and does not build it, and the bridge copies that matrix out of
+        # @emlDunnTest only on the branch where Dunn's returned no error. A
+        # .doDunn of 1 over a FAILED Dunn's would therefore print the error
+        # text and then die on a matrix nobody made. Asking the same question
+        # the copy asked keeps the two in step: the reporter builds the matrix
+        # for itself, and its effect-size caption says no pairwise test was
+        # run -- which is what happened.
+        #
+        # NESTED, NOT `and`: Praat evaluates both operands, so one condition
+        # would read emlDunnTest's namespace on a run that never reached it.
+        .doDunn = 0
+        if variableExists ("emlDunnTest.error$")
+            if emlDunnTest.error$ = ""
+                .doDunn = 1
+            endif
         endif
         @emlReportKWComparison: .tableName$, .dataCol$, .groupCol$,
         ... .tableId, .nGroups, .doDunn
 
-        # The declaration @emlRunKWAnalysis makes. NESTED ifs, not `and`:
-        # Praat evaluates BOTH operands of `and`, so a single condition would
-        # read emlDunnTest's namespace on a run where Dunn never executed --
-        # and on this path Dunn runs only when the omnibus is significant.
+        # The declaration @emlRunKruskalWallisAnalysis makes. NESTED ifs, not `and`, for
+        # the reason given above.
         if emlKruskalWallis.error$ = ""
             @emlResultClearExtras
             if .doDunn = 1
@@ -3644,17 +5082,34 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
     @emlReportDescriptiveRow: .displayG1$, .n1, .mean1, .sd1, .median1
     @emlReportDescriptiveRow: .displayG2$, .n2, .mean2, .sd2, .median2
 
+    ; THE DIRECTION IS STATED ONCE, FOR BOTH ARMS. The mean-difference row
+    ; below names its own subtraction, but t, Cohen's d, Hedges' g, the
+    ; Mann-Whitney z and the rank-biserial r are signed too and carry the
+    ; same direction: the group this report lists first against the group it
+    ; lists second. Which group is listed first follows the group order in
+    ; force, so it changes with the ordering setting and cannot be inferred
+    ; from the names.
+    @emlReportNote: "Sign: every difference below is " + .displayG1$
+    ... + " minus " + .displayG2$ + ", and t, z and the effect sizes carry "
+    ... + "that direction."
+
     if .testType$ = "parametric" or .testType$ = "both"
         @emlFormatEffectLabel: emlCohenD.d, "d"
         @emlReportBlank
         @emlReportSection: emlTTest.method$
         if emlShowExplanations
+            ; ITEM 1.2 — EXPLANATION LINES, THROUGH THE EXPLAIN HELPER,
+            ; WHICH NEVER BUFFERS. The outer `if emlShowExplanations` stays:
+            ; it is the shape every explanation site in this file has, and
+            ; @emlExplainLine guards again so no route can print one with the
+            ; toggle off. .wrap = 0 because these print verbatim on one line,
+            ; exactly as they always did.
             if emlTTest.method$ = "Welch"
-                appendInfoLine: "  Why: Compares means of two independent "
-                ... + "groups (robust to unequal variances)."
+                @emlExplainLine: "  Why: Compares means of two independent "
+                ... + "groups (robust to unequal variances).", 0
             else
-                appendInfoLine: "  Why: Compares means of two independent "
-                ... + "groups (assumes equal variances)."
+                @emlExplainLine: "  Why: Compares means of two independent "
+                ... + "groups (assumes equal variances).", 0
             endif
         endif
         if emlShowExplanations
@@ -3707,15 +5162,24 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             endif
         endif
         if .ciOK = 1
+            ; THE LEVEL IS THE USER'S. The quantile comes from the alpha in
+            ; force, so this interval states the same confidence as the stars
+            ; above it and the error bars on the figure beside it, and the
+            ; label carries that level with it — a reader never has to know
+            ; which alpha was set to read the bracket.
+            @emlCIAlphaInForce
+            .ciAlpha = emlCIAlphaInForce.alpha
             .seDiff = abs (emlTTest.meanDiff / emlTTest.t)
-            .tCritDiff = invStudentQ (0.025, emlTTest.df)
+            .tCritDiff = invStudentQ (.ciAlpha / 2, emlTTest.df)
             .diffLo = emlTTest.meanDiff - .tCritDiff * .seDiff
             .diffHi = emlTTest.meanDiff + .tCritDiff * .seDiff
             @eml_fixed: .diffLo, 4
             .fx1$ = eml_fixed.result$
             @eml_fixed: .diffHi, 4
             .fx2$ = eml_fixed.result$
-            @emlReportLineString: "95% CI of diff",
+            @emlCILevelLabel: .ciAlpha
+            .ciDiffLabel$ = emlCILevelLabel.percent$ + "% CI of diff"
+            @emlReportLineString: .ciDiffLabel$,
             ... "[" + .fx1$ + ", " + .fx2$ + "]"
         endif
         @emlReportBlank
@@ -3752,8 +5216,9 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
         @emlReportBlank
         @emlReportSection: "Mann-Whitney U Test"
         if emlShowExplanations
-            appendInfoLine: "  Why: Compares distributions of two "
-            ... + "independent groups without assuming normality."
+            ; ITEM 1.2 — EXPLANATION; never buffers.
+            @emlExplainLine: "  Why: Compares distributions of two "
+            ... + "independent groups without assuming normality.", 0
         endif
         if emlShowExplanations
             ; This gloss opened "Sum of
@@ -3787,6 +5252,17 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
             @emlWizardExplainP: emlMannWhitneyU.p
         endif
         @emlReportPWithExact: "p", emlMannWhitneyU.p
+        ; ITEM 22 (language batch, Fable's ruling 27 August 2026): the
+        ; disclosure row naming HOW the p above was computed. ALWAYS
+        ; prints, never gated on emlShowExplanations -- @emlReportLineString
+        ; itself never gates the row, only the third-column gloss beside it.
+        ; "exact" prints bare; any approximation prints with EVERY reason
+        ; that ruled out the exact branch, comma-separated, no precedence.
+        .pMethod$ = emlMannWhitneyU.method$
+        if emlMannWhitneyU.method$ <> "exact"
+            .pMethod$ = .pMethod$ + " (" + emlMannWhitneyU.methodReason$ + ")"
+        endif
+        @emlReportLineString: "p method", .pMethod$
         # Report the method @emlMannWhitneyU actually used. Read it
         # defensively — a build of eml-inferential.praat that does not expose
         # .method$ must not abort the report. The routing rule is R's
@@ -3811,7 +5287,8 @@ procedure emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .grou
                 ... + " group has n >= 50, or ties are present)"
             endif
         endif
-        @emlReportLineString: "Method", .mwuMethod$
+        ; Legacy "Method" row retired 27 Aug 2026: it duplicated the
+        ; "p method" disclosure row above. One fact, one row -- Fable.
         @emlReportBlank
         @emlReportSection: "Nonparametric Effect Size"
         if emlShowExplanations
@@ -3887,21 +5364,36 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     @emlReportLineString: "Data column", .displayData$
     @emlReportLineString: "Group column", .displayGroup$
     @emlReportLine: "Groups", .nGroups, 0
+    .groupList$ = ""
+    for .iGroup from 1 to .nGroups
+        if .iGroup > 1
+            .groupList$ = .groupList$ + ", "
+        endif
+        .groupList$ = .groupList$
+            ... + replace$ (emlOneWayAnova.groupLabel$[.iGroup], "_", " ", 0)
+    endfor
+    @emlReportGroupOrderLine: .groupList$
 
     # ANOVA table
     @emlReportBlank
     @emlReportSection: "ANOVA Table"
     if emlShowExplanations
-        appendInfoLine: "  Why: Tests whether group means differ "
-        ... + "when normality and equal variances hold."
+        ; ITEM 1.2 — EXPLANATION; never buffers.
+        @emlExplainLine: "  Why: Tests whether group means differ "
+        ... + "when normality and equal variances hold.", 0
     endif
-    appendInfoLine: ""
-    appendInfoLine: left$ ("Source" + "                    ", 20),
-    ... left$ ("SS" + "                ", 16),
-    ... left$ ("df" + "      ", 6),
-    ... left$ ("MS" + "                ", 16),
-    ... left$ ("F" + "            ", 12),
-    ... "p"
+    ; ITEM 1.2 — FACTUAL TABLE, THROUGH THE ONE EMIT HELPER. The
+    ; comma-separated arguments become one concatenated string, because
+    ; appendInfoLine joins its arguments with nothing between them: the
+    ; printed bytes are unchanged and the buffer holds the line the reader
+    ; sees, character for character.
+    @emlEmit: "", ""
+    @emlEmit: left$ ("Source" + "                    ", 20)
+    ... + left$ ("SS" + "                ", 16)
+    ... + left$ ("df" + "      ", 6)
+    ... + left$ ("MS" + "                ", 16)
+    ... + left$ ("F" + "            ", 12)
+    ... + "p", ""
 
     # This cell was fixed$ (p, 6): "0.000019" under a column headed "p",
     # in the same report whose Games-Howell matrix prints the bare APA form
@@ -3920,25 +5412,25 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     .fx2$ = eml_fixed.result$
     @eml_fixed: emlOneWayAnova.fValue, 4
     .fx3$ = eml_fixed.result$
-    appendInfoLine: left$ ("Between" + "                    ", 20),
-    ... left$ (.fx1$ + "                ", 16),
-    ... left$ (string$ (emlOneWayAnova.dfBetween) + "      ", 6),
-    ... left$ (.fx2$ + "                ", 16),
-    ... left$ (.fx3$ + "            ", 12),
-    ... .pCell$
+    @emlEmit: left$ ("Between" + "                    ", 20)
+    ... + left$ (.fx1$ + "                ", 16)
+    ... + left$ (string$ (emlOneWayAnova.dfBetween) + "      ", 6)
+    ... + left$ (.fx2$ + "                ", 16)
+    ... + left$ (.fx3$ + "            ", 12)
+    ... + .pCell$, ""
     @eml_fixed: emlOneWayAnova.ssWithin, 2
     .fx1$ = eml_fixed.result$
     @eml_fixed: emlOneWayAnova.msWithin, 2
     .fx2$ = eml_fixed.result$
-    appendInfoLine: left$ ("Within" + "                    ", 20),
-    ... left$ (.fx1$ + "                ", 16),
-    ... left$ (string$ (emlOneWayAnova.dfWithin) + "      ", 6),
-    ... left$ (.fx2$ + "                ", 16)
+    @emlEmit: left$ ("Within" + "                    ", 20)
+    ... + left$ (.fx1$ + "                ", 16)
+    ... + left$ (string$ (emlOneWayAnova.dfWithin) + "      ", 6)
+    ... + left$ (.fx2$ + "                ", 16), ""
     @eml_fixed: emlOneWayAnova.ssTotal, 2
     .fx1$ = eml_fixed.result$
-    appendInfoLine: left$ ("Total" + "                    ", 20),
-    ... left$ (.fx1$ + "                ", 16),
-    ... left$ (string$ (emlOneWayAnova.dfTotal) + "      ", 6)
+    @emlEmit: left$ ("Total" + "                    ", 20)
+    ... + left$ (.fx1$ + "                ", 16)
+    ... + left$ (string$ (emlOneWayAnova.dfTotal) + "      ", 6), ""
 
     @emlReportBlank
     if emlShowExplanations
@@ -3982,9 +5474,10 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
 
     if .bfRan
         if emlShowExplanations
-            appendInfoLine: "  Why: The ANOVA above pools one within-group "
+            ; ITEM 1.2 — EXPLANATION; never buffers.
+            @emlExplainLine: "  Why: The ANOVA above pools one within-group "
             ... + "spread across all groups. This checks whether that is a "
-            ... + "fair thing to do here."
+            ... + "fair thing to do here.", 0
         endif
         @eml_fixed: emlBrownForsythe.f, 4
         .fx1$ = eml_fixed.result$
@@ -4050,7 +5543,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     if .doTukey
         @emlReportBlank
         @emlReportSection: "Tukey HSD Pairwise Comparisons (p-values)"
-        appendInfoLine: ""
+        @emlEmit: "", ""
         .headerLine$ = left$ ("" + "                ", 14)
         for .jGroup from 1 to .nGroups
             .colName$ = replace$ (emlOneWayAnova.groupLabel$[.jGroup], "_", " ", 0)
@@ -4059,7 +5552,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
             endif
             .headerLine$ = .headerLine$ + left$ (.colName$ + "            ", 12)
         endfor
-        appendInfoLine: .headerLine$
+        @emlEmit: .headerLine$, ""
         for .iGroup from 1 to .nGroups
             .rowName$ = replace$ (emlOneWayAnova.groupLabel$[.iGroup], "_", " ", 0)
             if length (.rowName$) > 12
@@ -4079,13 +5572,13 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                     ; case that the hand-rolled branch did not cover (an
                     ; undefined p fell through to fixed$ and rendered as
                     ; "--undefined--").
-                    .pVal = emlOneWayAnova.pMatrix## [.iGroup, .jGroup]
+                    .pVal = emlOneWayAnova.pMatrix##[.iGroup, .jGroup]
                     @emlFormatP: .pVal
                     .cellText$ = emlFormatP.bare$
                 endif
                 .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
             endfor
-            appendInfoLine: .rowLine$
+            @emlEmit: .rowLine$, ""
         endfor
 
         # The matrix above reports adjusted p and nothing else, so a
@@ -4096,18 +5589,44 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
         # half-width is qCritical * sqrt(MSw/2 * (1/ni + 1/nj)).
         @emlReportBlank
         @emlReportSection: "Tukey HSD Mean Differences (95% family-wise CI)"
-        appendInfoLine: ""
-        appendInfoLine: left$ ("Comparison" + "                          ", 26),
-        ... left$ ("Difference" + "              ", 14),
-        ... "95% CI"
+        @emlEmit: "", ""
+        ; THE COMPARISON COLUMN IS MEASURED, NOT ASSUMED. A fixed cut at 24
+        ; characters is silent when it bites: two groups whose names share a
+        ; prefix -- "Soprano belt trained" and "Soprano belt untrained" --
+        ; give two different comparisons whose first 24 characters are
+        ; identical, so two rows print under one label with nothing on the
+        ; page to tell them apart, and a reader attributes an interval to the
+        ; wrong pair. The width is therefore taken from the widest comparison
+        ; this table actually holds and no name is cut.
+        ;
+        ; ORDINARY REPORTS ARE UNCHANGED. The floor is the 26 this table has
+        ; always been laid out on, so any table whose longest comparison fits
+        ; in 24 characters prints exactly as it did; only a table that would
+        ; otherwise have collided gets a wider column, and a wide column is
+        ; visible where a collision is not.
+        .cmpWidth = 26
+        for .iGroup from 1 to .nGroups - 1
+            for .jGroup from .iGroup + 1 to .nGroups
+                .measure$ = replace$ (emlOneWayAnova.groupLabel$[.iGroup],
+                ... "_", " ", 0)
+                ... + " − "
+                ... + replace$ (emlOneWayAnova.groupLabel$[.jGroup],
+                ... "_", " ", 0)
+                if length (.measure$) + 2 > .cmpWidth
+                    .cmpWidth = length (.measure$) + 2
+                endif
+            endfor
+        endfor
+        @emlPadRight: "Comparison", .cmpWidth
+        ; ITEM 1.2 — factual table header.
+        @emlEmit: emlPadRight.result$
+        ... + left$ ("Difference" + "              ", 14)
+        ... + "95% CI", ""
         for .iGroup from 1 to .nGroups - 1
             for .jGroup from .iGroup + 1 to .nGroups
                 .ciName$ = replace$ (emlOneWayAnova.groupLabel$[.iGroup], "_", " ", 0)
                 ... + " − "
                 ... + replace$ (emlOneWayAnova.groupLabel$[.jGroup], "_", " ", 0)
-                if length (.ciName$) > 24
-                    .ciName$ = left$ (.ciName$, 24)
-                endif
                 .tukeyDiff = emlOneWayAnova.meanDiff## [.iGroup, .jGroup]
                 .tukeyHalf = undefined
                 if emlOneWayAnova.qCritical <> undefined
@@ -4128,16 +5647,21 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 endif
                 @eml_fixed: .tukeyDiff, 4
                 .fx1$ = eml_fixed.result$
-                appendInfoLine: left$ (.ciName$ + "                          ", 26),
-                ... left$ (.fx1$ + "              ", 14),
-                ... .ciText$
+                ; @emlPadRight pads and never cuts, and .cmpWidth was
+                ; measured to be at least two wider than this name, so the
+                ; gutter before the Difference column survives every name.
+                @emlPadRight: .ciName$, .cmpWidth
+                ; ITEM 1.2 — factual table row.
+                @emlEmit: emlPadRight.result$
+                ... + left$ (.fx1$ + "              ", 14)
+                ... + .ciText$, ""
             endfor
         endfor
 
         # CSV rows for Tukey pairwise
         for .iGroup from 1 to .nGroups - 1
             for .jGroup from .iGroup + 1 to .nGroups
-                .pVal = emlOneWayAnova.pMatrix## [.iGroup, .jGroup]
+                .pVal = emlOneWayAnova.pMatrix##[.iGroup, .jGroup]
                 .g1Label$ = emlOneWayAnova.groupLabel$[.iGroup]
                 .g2Label$ = emlOneWayAnova.groupLabel$[.jGroup]
                 @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g1Label$
@@ -4177,6 +5701,14 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 ... .n2, .m2, .s2, .md2
             endfor
         endfor
+
+        ; THE POST-HOC RAN, AND THE OMNIBUS MAY NOT HAVE. Under the ruled
+        ; policy Tukey is never gated on the ANOVA, so this report can
+        ; carry a pairwise table under an F that did not reach the level
+        ; in force. The caveat is stated in a sentence rather than left
+        ; implicit in the table's absence. See @emlPostHocCaution for the
+        ; routing and for where the level comes from.
+        @emlPostHocCaution: emlOneWayAnova.p
     endif
 
     # Pairwise Cohen's d (ALWAYS — bug #11 fix)
@@ -4195,13 +5727,29 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 if emlCohenD.error$ = ""
                     emlOneWayAnova.dMatrix## [.i, .j] = emlCohenD.d
                     emlOneWayAnova.dMatrix## [.j, .i] = -emlCohenD.d
+                else
+                    ; Punch list 9.1, the sibling of the fix in
+                    ; stats/eml-analysis.praat: a failed pair must not read
+                    ; as a true zero effect. The print loop below now shows
+                    ; "n/a" for it.
+                    emlOneWayAnova.dMatrix## [.i, .j] = undefined
+                    emlOneWayAnova.dMatrix## [.j, .i] = undefined
                 endif
             endfor
         endfor
     endif
     @emlReportBlank
     @emlReportSection: "Pairwise Effect Sizes (Cohen's d)"
-    appendInfoLine: ""
+    ; WITH TUKEY OFF THIS GRID IS THE ONLY PAIRWISE THING IN THE REPORT, and
+    ; an unlabelled grid under a heading reading "pairwise" is read as
+    ; significance by someone skimming. The caption says what was not
+    ; computed; its disclosure half prints whatever the explanations toggle
+    ; says. Nothing is said when Tukey DID run — the adjusted p-values are
+    ; right above.
+    if .doTukey = 0
+        @emlEffectMatrixCaption
+    endif
+    @emlEmit: "", ""
     .dHeaderLine$ = left$ ("" + "                ", 14)
     for .jGroup from 1 to .nGroups
         .colName$ = replace$ (emlOneWayAnova.groupLabel$[.jGroup], "_", " ", 0)
@@ -4210,7 +5758,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
         endif
         .dHeaderLine$ = .dHeaderLine$ + left$ (.colName$ + "            ", 12)
     endfor
-    appendInfoLine: .dHeaderLine$
+    @emlEmit: .dHeaderLine$, ""
     for .iGroup from 1 to .nGroups
         .rowName$ = replace$ (emlOneWayAnova.groupLabel$[.iGroup], "_", " ", 0)
         if length (.rowName$) > 12
@@ -4222,13 +5770,27 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .cellText$ = "---"
             else
                 .dVal = emlOneWayAnova.dMatrix## [.iGroup, .jGroup]
-                @eml_fixed: .dVal, 3
-                .cellText$ = eml_fixed.result$
+                if .dVal = undefined
+                    ; Punch list 9.1. A failed pair prints as unavailable,
+                    ; never as 0 -- same convention as @emlPairwiseT's own
+                    ; d matrix above in this report.
+                    .cellText$ = "n/a"
+                else
+                    @eml_fixed: .dVal, 3
+                    .cellText$ = eml_fixed.result$
+                endif
             endif
             .dRowLine$ = .dRowLine$ + left$ (.cellText$ + "            ", 12)
         endfor
-        appendInfoLine: .dRowLine$
+        @emlEmit: .dRowLine$, ""
     endfor
+    ; The Tukey p matrix above is SYMMETRIC and this one is ANTISYMMETRIC:
+    ; d[i, j] is -d[j, i], so the sign here is the direction of the
+    ; difference and not the strength of the effect. The convention is the
+    ; one @emlReportPairwiseComparison prints under its own d matrix, in the
+    ; same words, because a reader meeting both should meet one rule.
+    @emlReportNote: "Row minus column: a negative d means the ROW group's "
+    ... + "mean is lower than the COLUMN group's. |d| is the effect size."
 
     # CSV rows for Cohen's d only (when Tukey did NOT run)
     if .doTukey = 0
@@ -4335,7 +5897,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 @emlReportBlank
                 @emlReportSection:
                 ... "Games-Howell Pairwise Comparisons (p-values)"
-                appendInfoLine: ""
+                @emlEmit: "", ""
                 .ghHeader$ = left$ ("" + "                ", 14)
                 for .jGroup from 1 to .nGroups
                     .ghCol$ = replace$ (emlGamesHowell.groupName$[.jGroup],
@@ -4346,7 +5908,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                     .ghHeader$ = .ghHeader$
                     ... + left$ (.ghCol$ + "            ", 12)
                 endfor
-                appendInfoLine: .ghHeader$
+                @emlEmit: .ghHeader$, ""
                 for .iGroup from 1 to .nGroups
                     .ghRow$ = replace$ (emlGamesHowell.groupName$[.iGroup],
                     ... "_", " ", 0)
@@ -4358,7 +5920,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                         if .iGroup = .jGroup
                             .ghCell$ = "--"
                         else
-                            .ghP = emlGamesHowell.pMatrix## [.iGroup, .jGroup]
+                            .ghP = emlGamesHowell.pMatrix##[.iGroup, .jGroup]
                             if .ghP = undefined
                                 .ghCell$ = "n/a"
                             else
@@ -4369,12 +5931,12 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                         .ghLine$ = .ghLine$
                         ... + left$ (.ghCell$ + "            ", 12)
                     endfor
-                    appendInfoLine: .ghLine$
+                    @emlEmit: .ghLine$, ""
                 endfor
 
                 for .iGroup from 1 to .nGroups - 1
                     for .jGroup from .iGroup + 1 to .nGroups
-                        .ghP = emlGamesHowell.pMatrix## [.iGroup, .jGroup]
+                        .ghP = emlGamesHowell.pMatrix##[.iGroup, .jGroup]
                         if .ghP <> undefined
                             @emlCSVSetTable: .tableName$
                             @emlCSVTermType: "contrast"
@@ -4426,17 +5988,27 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
     @emlReportLineString: "Group column", .displayGroup$
     @emlReportLine: "Groups", .nGroups, 0
     @emlReportLine: "Total N", emlKruskalWallis.n, 0
+    .groupList$ = ""
+    for .iGroup from 1 to .nGroups
+        if .iGroup > 1
+            .groupList$ = .groupList$ + ", "
+        endif
+        .groupList$ = .groupList$
+            ... + replace$ (emlKruskalWallis.groupName$ [.iGroup], "_", " ", 0)
+    endfor
+    @emlReportGroupOrderLine: .groupList$
 
     @emlReportBlank
     @emlReportSection: "Omnibus Test"
     if emlShowExplanations
-        appendInfoLine: "  Why: Nonparametric comparison of three or "
+        ; ITEM 1.2 — EXPLANATION; never buffers.
+        @emlExplainLine: "  Why: Nonparametric comparison of three or "
         ... + "more groups. Every observation is ranked in one pooled "
         ... + "ranking and the groups' mean ranks are compared, so no "
         ... + "normal distribution is assumed. Observations must still be "
         ... + "independent, and reading the result as a difference in "
         ... + "MEDIANS additionally requires the groups to have similar "
-        ... + "distribution shapes."
+        ... + "distribution shapes.", 0
     endif
     if emlShowExplanations
         emlWizardExplain$ = "Test statistic: how far the groups' mean "
@@ -4480,10 +6052,10 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
     # Group mean ranks
     @emlReportBlank
     @emlReportSection: "Group Mean Ranks"
-    appendInfoLine: ""
+    @emlEmit: "", ""
     .grpHeader$ = left$ ("Group" + "                ", 14)
     ... + left$ ("N" + "      ", 6) + "Mean Rank"
-    appendInfoLine: .grpHeader$
+    @emlEmit: .grpHeader$, ""
     for .iGroup from 1 to .nGroups
         .gName$ = replace$ (emlKruskalWallis.groupName$ [.iGroup], "_", " ", 0)
         if length (.gName$) > 12
@@ -4491,9 +6063,10 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
         endif
         @eml_fixed: emlKruskalWallis.meanRank [.iGroup], 2
         .fx1$ = eml_fixed.result$
-        appendInfoLine: left$ (.gName$ + "                ", 14),
-        ... left$ (string$ (emlKruskalWallis.groupN [.iGroup]) + "      ", 6),
-        ... .fx1$
+        ; ITEM 1.2 — factual table row.
+        @emlEmit: left$ (.gName$ + "                ", 14)
+        ... + left$ (string$ (emlKruskalWallis.groupN [.iGroup]) + "      ", 6)
+        ... + .fx1$, ""
     endfor
 
     if .doDunn
@@ -4501,7 +6074,7 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
             .adjLabel$ = emlDunnTest.method$
             @emlReportBlank
             @emlReportSection: "Dunn's Post-Hoc (adjusted p, " + .adjLabel$ + ")"
-            appendInfoLine: ""
+            @emlEmit: "", ""
             .headerLine$ = left$ ("" + "                ", 14)
             for .jGroup from 1 to .nGroups
                 .colName$ = replace$ (emlDunnTest.groupName$ [.jGroup], "_", " ", 0)
@@ -4510,7 +6083,7 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                 endif
                 .headerLine$ = .headerLine$ + left$ (.colName$ + "            ", 12)
             endfor
-            appendInfoLine: .headerLine$
+            @emlEmit: .headerLine$, ""
             for .iGroup from 1 to .nGroups
                 .rowName$ = replace$ (emlDunnTest.groupName$ [.iGroup], "_", " ", 0)
                 if length (.rowName$) > 12
@@ -4525,19 +6098,19 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                         ; a p-value per report. @emlFormatP also covers the
                         ; .999 ceiling and undefined, which the hand-rolled
                         ; floor did not.
-                        .pVal = emlDunnTest.pMatrix## [.iGroup, .jGroup]
+                        .pVal = emlDunnTest.pMatrix##[.iGroup, .jGroup]
                         @emlFormatP: .pVal
                         .cellText$ = emlFormatP.bare$
                     endif
                     .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
                 endfor
-                appendInfoLine: .rowLine$
+                @emlEmit: .rowLine$, ""
             endfor
 
             @emlReportBlank
             @emlReportSection: "Dunn's z-statistics"
-            appendInfoLine: ""
-            appendInfoLine: .headerLine$
+            @emlEmit: "", ""
+            @emlEmit: .headerLine$, ""
             for .iGroup from 1 to .nGroups
                 .rowName$ = replace$ (emlDunnTest.groupName$ [.iGroup], "_", " ", 0)
                 if length (.rowName$) > 12
@@ -4554,13 +6127,22 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                     endif
                     .rowLine$ = .rowLine$ + left$ (.cellText$ + "            ", 12)
                 endfor
-                appendInfoLine: .rowLine$
+                @emlEmit: .rowLine$, ""
             endfor
+            ; The adjusted-p matrix above is symmetric; this one is not.
+            ; @emlDunnTest builds each z from mean rank i minus mean rank j
+            ; and fills the lower triangle with the negation, so the sign is
+            ; the direction of the rank difference. Same convention, same
+            ; wording, as the effect-size matrices in this file and in
+            ; @emlReportPairwiseComparison.
+            @emlReportNote: "Row minus column: a negative z means the ROW "
+            ... + "group's mean rank is lower than the COLUMN group's. |z| "
+            ... + "is the size of the standardised difference."
 
             # CSV rows — per-pair descriptives + rank-biserial r
             for .iGroup from 1 to .nGroups - 1
                 for .jGroup from .iGroup + 1 to .nGroups
-                    .pVal = emlDunnTest.pMatrix## [.iGroup, .jGroup]
+                    .pVal = emlDunnTest.pMatrix##[.iGroup, .jGroup]
                     .zVal = emlDunnTest.zMatrix## [.iGroup, .jGroup]
                     .rVal = emlDunnTest.rMatrix## [.iGroup, .jGroup]
                     .g1Label$ = emlDunnTest.groupName$ [.iGroup]
@@ -4606,8 +6188,17 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                     ... .n2, .m2, .s2, .md2
                 endfor
             endfor
+
+            ; THE POST-HOC RAN, AND THE OMNIBUS MAY NOT HAVE. Dunn's is never
+            ; gated on the Kruskal-Wallis p under the ruled policy, so this
+            ; report can carry a pairwise table under an H that did not reach
+            ; the level in force. The caveat is stated rather than enacted by
+            ; taking the table away. See @emlPostHocCaution.
+            @emlPostHocCaution: emlKruskalWallis.p
         else
-            appendInfoLine: newline$ + "Dunn's test error: " + emlDunnTest.error$
+            ; ITEM 1.2 — a DISCLOSURE: it states that the post-hoc did not
+            ; run, so it is canonical and goes through the emit helper.
+            @emlEmit: newline$ + "Dunn's test error: " + emlDunnTest.error$, ""
         endif
     endif
 
@@ -4627,13 +6218,22 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                 if emlRankBiserialR.error$ = ""
                     emlKruskalWallis.rMatrix## [.i, .j] = emlRankBiserialR.r
                     emlKruskalWallis.rMatrix## [.j, .i] = -emlRankBiserialR.r
+                else
+                    ; Punch list 9.1, sibling of the Cohen's d fix above.
+                    emlKruskalWallis.rMatrix## [.i, .j] = undefined
+                    emlKruskalWallis.rMatrix## [.j, .i] = undefined
                 endif
             endfor
         endfor
     endif
     @emlReportBlank
     @emlReportSection: "Pairwise Effect Sizes (rank-biserial r)"
-    appendInfoLine: ""
+    ; The twin of the caption under the Cohen's d matrix, and for its reason:
+    ; with Dunn's off this grid is the only pairwise thing in the report.
+    if .doDunn = 0
+        @emlEffectMatrixCaption
+    endif
+    @emlEmit: "", ""
     .rHeaderLine$ = left$ ("" + "                ", 14)
     for .jGroup from 1 to .nGroups
         .colName$ = replace$ (emlKruskalWallis.groupName$ [.jGroup], "_", " ", 0)
@@ -4642,7 +6242,7 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
         endif
         .rHeaderLine$ = .rHeaderLine$ + left$ (.colName$ + "            ", 12)
     endfor
-    appendInfoLine: .rHeaderLine$
+    @emlEmit: .rHeaderLine$, ""
     for .iGroup from 1 to .nGroups
         .rowName$ = replace$ (emlKruskalWallis.groupName$ [.iGroup], "_", " ", 0)
         if length (.rowName$) > 12
@@ -4654,13 +6254,24 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                 .cellText$ = "---"
             else
                 .rVal = emlKruskalWallis.rMatrix## [.iGroup, .jGroup]
-                @eml_fixed: .rVal, 3
-                .cellText$ = eml_fixed.result$
+                if .rVal = undefined
+                    ; Punch list 9.1. Same convention as the Cohen's d
+                    ; matrix above: a failed pair reads "n/a", never "0.000".
+                    .cellText$ = "n/a"
+                else
+                    @eml_fixed: .rVal, 3
+                    .cellText$ = eml_fixed.result$
+                endif
             endif
             .rRowLine$ = .rRowLine$ + left$ (.cellText$ + "            ", 12)
         endfor
-        appendInfoLine: .rRowLine$
+        @emlEmit: .rRowLine$, ""
     endfor
+    ; Antisymmetric, for the same reason the Cohen's d matrix above is:
+    ; r[i, j] is -r[j, i], so the sign is the direction and the magnitude is
+    ; the effect. Same wording as @emlReportPairwiseComparison's r matrix.
+    @emlReportNote: "Row minus column: a negative r means the ROW group "
+    ... + "ranks lower than the COLUMN group. |r| is the effect size."
 
     # CSV rows for rank-biserial r (when Dunn did NOT run)
     if .doDunn = 0
@@ -4758,6 +6369,11 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 @emlWizardExplainP: emlPearsonCorrelation.p
             endif
             @emlReportPWithExact: "p", emlPearsonCorrelation.p
+            ; ITEM 22 (language batch, Fable's ruling 27 August 2026):
+            ; Pearson's p is a literal -- @emlPearsonCorrelation never
+            ; branches between an exact and an approximate null, so there
+            ; is no .method$ to read and no reason to compose.
+            @emlReportLineString: "p method", "t distribution"
             # An interval for r, from numbers already in hand, by the
             # Fisher z transform: z = atanh(r), se = 1/sqrt(n-3), and the
             # interval is tanh(z +/- zCrit se). It is a z interval — the
@@ -4777,22 +6393,11 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 endif
             endif
             if .fisherOK = 1
-                # annotAlpha is a graphs-layer global, and a headless or API
-                # caller can reach this report without one. Guarded the same
-                # way as @emlFormatStars, and falling back to the same
-                # documented default of 0.05, so the stars and the interval
-                # cannot disagree about the alpha in force. The upper bound
-                # belongs to the same guard: invGaussQ is undefined above 1,
-                # and an undefined quantile is the garbage bracket the block
-                # exists to refuse.
-                .ciAlpha = 0.05
-                if variableExists ("annotAlpha")
-                    if annotAlpha <> undefined
-                        if annotAlpha > 0 and annotAlpha < 1
-                            .ciAlpha = annotAlpha
-                        endif
-                    endif
-                endif
+                # The level is the user's, resolved once for the whole module
+                # by @emlCIAlphaInForce, so the stars and the interval cannot
+                # disagree about the alpha in force.
+                @emlCIAlphaInForce
+                .ciAlpha = emlCIAlphaInForce.alpha
                 .zCrit = invGaussQ (.ciAlpha / 2)
                 .fisherZ = 0.5 * ln ((1 + .rPearson) / (1 - .rPearson))
                 .fisherSE = 1 / sqrt (.n - 3)
@@ -4804,7 +6409,8 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 .fx1$ = eml_fixed.result$
                 @eml_fixed: .rHi, 4
                 .fx2$ = eml_fixed.result$
-                .ciLabel$ = fixed$ (100 * (1 - .ciAlpha), 0) + "% CI for r"
+                @emlCILevelLabel: .ciAlpha
+                .ciLabel$ = emlCILevelLabel.percent$ + "% CI for r"
                 @emlReportLineString: .ciLabel$,
                 ... "[" + .fx1$ + ", " + .fx2$ + "]"
             endif
@@ -4867,6 +6473,21 @@ procedure emlReportCorrelationAnalysis: .tableName$, .colX$, .colY$, .n, .testTy
                 @emlWizardExplainP: emlSpearmanCorrelation.p
             endif
             @emlReportPWithExact: "p", emlSpearmanCorrelation.p
+            ; ITEM 22 (language batch, Fable's ruling 27 August 2026). The
+            ; p just printed is the value @emlSpearmanCorrelationDispatch
+            ; computed (written back into emlSpearmanCorrelation.p by every
+            ; caller of the dispatch, per its own contract), but .method$
+            ; and .methodReason$ are read straight off the dispatch's own
+            ; qualified globals -- every call site that reaches this report
+            ; calls @emlSpearmanCorrelationDispatch immediately beforehand
+            ; and only restores .rho/.t/.df/.p/.error$ into
+            ; emlSpearmanCorrelation.*, so the dispatch's .method$ and
+            ; .methodReason$ are still the ones this correlation produced.
+            .pMethod$ = emlSpearmanCorrelationDispatch.method$
+            if emlSpearmanCorrelationDispatch.method$ <> "exact"
+                .pMethod$ = .pMethod$ + " (" + emlSpearmanCorrelationDispatch.methodReason$ + ")"
+            endif
+            @emlReportLineString: "p method", .pMethod$
             # Rho is an effect size and had no magnitude gloss in the
             # report and no effect_label in the export.
             @emlFormatEffectLabel: abs (emlSpearmanCorrelation.rho), "r"
@@ -4963,7 +6584,7 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     if emlShowExplanations
         @emlWizardExplainCorrelation: emlLinearRegression.r
     endif
-    @emlReportLine: "R", abs (emlLinearRegression.r), 4
+    @emlReportLine: "R", emlLinearRegression.r, 4
     if emlShowExplanations
         @emlWizardExplainR2: emlLinearRegression.rSquared
     endif
@@ -5004,21 +6625,30 @@ procedure emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
     # under the numeric-aligned "p" header held the string "p < .001". The
     # block is now indented, the term column is headed, and the cells carry
     # @emlFormatP's bare form so the column contains values, not labels.
-    # SE was printed without the interval it defines. dfRes and the two
-    # standard errors are already on screen, so the 95% CI is one t quantile
-    # away and is printed beside each coefficient.
+    # SE is printed with the interval it defines: dfRes and the two standard
+    # errors are already on screen, so the interval is one t quantile away and
+    # is printed beside each coefficient.
+    #
+    # THE LEVEL IS THE USER'S, taken from the alpha in force, and the column
+    # heading names it. A coefficient table headed "95% CI" under an alpha of
+    # .01 would contradict the p column beside it, which marks significance
+    # against that same alpha.
+    @emlCIAlphaInForce
+    .ciAlpha = emlCIAlphaInForce.alpha
     .ciWidth = 0
     if emlLinearRegression.dfRes <> undefined
         if emlLinearRegression.dfRes >= 1
-            .ciWidth = invStudentQ (0.025, emlLinearRegression.dfRes)
+            .ciWidth = invStudentQ (.ciAlpha / 2, emlLinearRegression.dfRes)
         endif
     endif
+    @emlCILevelLabel: .ciAlpha
+    .ciColHead$ = emlCILevelLabel.percent$ + "% CI"
     .hdr$ = "  " + left$ ("Term" + "                    ", 20)
     ... + left$ ("Estimate" + "              ", 14)
     ... + left$ ("SE" + "              ", 14)
     ... + left$ ("t" + "              ", 12)
     ... + left$ ("p" + "            ", 12)
-    ... + "95% CI"
+    ... + .ciColHead$
     appendInfoLine: .hdr$
     # Intercept row
     @emlFormatP: emlLinearRegression.pIntercept
@@ -5415,6 +7045,17 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
     ... ", SD = ", .fx2$,
     ... ", Median = ", .fx3$
 
+    ; THE DIRECTION IS STATED ONCE, ON THE PAGE, FOR BOTH ARMS. Every signed
+    ; quantity a paired test reports -- t, Cohen's dz, r from t, the Wilcoxon
+    ; z and the matched-pairs r -- is built from the same per-pair difference,
+    ; and @emlTTestPaired and @emlWilcoxonSignedRank both take that as their
+    ; first vector minus their second, which is column 1 minus column 2 here.
+    ; A reader who has only the numbers cannot tell which way that runs, so
+    ; the report says it rather than leaving it to be inferred.
+    @emlReportNote: "Sign: every difference below is " + .displayC1$
+    ... + " minus " + .displayC2$ + ", and t, z and the effect sizes carry "
+    ... + "that direction."
+
     if .testType$ = "parametric" or .testType$ = "both"
         if emlTTestPaired.error$ = ""
             @emlReportBlank
@@ -5435,7 +7076,22 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
                 @emlWizardExplainP: emlTTestPaired.p
             endif
             @emlReportPWithExact: "p", emlTTestPaired.p
-            @emlReportLine: "Mean difference", emlTTestPaired.meanDiff, 4
+            ; A PAIRED SIGN FOLLOWS THE TWO COLUMNS, NOT THE GROUP SORT.
+            ; @emlTTestPaired forms every pair's difference as its first
+            ; vector minus its second, and @emlRunPairedAnalysis hands it
+            ; column 1 first, so the printed difference is column 1 minus
+            ; column 2. A bare "Mean difference" would leave that to be
+            ; inferred from the two descriptive lines above, so the label
+            ; names it, in the same display names those lines print.
+            .diffLabel$ = "Mean diff (" + .displayC1$ + " − "
+            ... + .displayC2$ + ")"
+            if length (.diffLabel$) >= 20
+                ; @emlPadRight leaves an over-long label unpadded, which
+                ; would run the value straight into the ")". One space keeps
+                ; them apart.
+                .diffLabel$ = .diffLabel$ + " "
+            endif
+            @emlReportLine: .diffLabel$, emlTTestPaired.meanDiff, 4
             @emlReportLine: "SD of differences", emlTTestPaired.sdDiff, 4
 
             # The effect size under the t-test is the one derived from the
@@ -5514,6 +7170,16 @@ procedure emlReportPairedComparison: .tableName$, .col1$, .col2$, .n,
                 @emlWizardExplainP: emlWilcoxonSignedRank.p
             endif
             @emlReportPWithExact: "p", emlWilcoxonSignedRank.p
+            ; ITEM 22 (language batch, Fable's ruling 27 August 2026): see
+            ; the identical row on the Mann-Whitney arm above for the
+            ; disclosure rule -- always prints, "exact" bare, otherwise
+            ; every reason that ruled out the exact branch, comma-
+            ; separated, no precedence.
+            .pMethod$ = emlWilcoxonSignedRank.method$
+            if emlWilcoxonSignedRank.method$ <> "exact"
+                .pMethod$ = .pMethod$ + " (" + emlWilcoxonSignedRank.methodReason$ + ")"
+            endif
+            @emlReportLineString: "p method", .pMethod$
 
             # The matched-pairs magnitude was printed and then dropped on
             # the way to the export.

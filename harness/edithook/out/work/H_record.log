@@ -48,27 +48,26 @@ H edited
 
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Fri Aug 21 05:09:31 2026
+  Thu Sep  3 03:56:10 2026
 ══════════════════════════════════════════════
 
   Table               H input
   Data column         f0 Hz
   Group column        group
   Groups              3
+  Group order: table order (A, B, C).
 
 
   ── ANOVA Table ─────────────────────────────
-  Why: Tests whether group means differ when normality and equal variances hold.
 
 Source              SS              df    MS              F           p
 Between             2505784.67      2     1252892.33      0.8730      .450
 Within              12916973.00     9     1435219.22      
 Total               15422757.67     11    
 
-  F                   0.8730		Ratio of mean squares: the between-group mean square is 0.9 times the within-group mean square. With no real effect, this ratio tends to be near 1
-  p                   .450		Not statistically significant at the 5% level
-  Effect size         eta-squared = 0.1625		Effect size: large by Cohen's convention (eta-squared >= 0.14 = large). Group membership accounts for 16% of the total variance
-  Why: The ANOVA above pools one within-group spread across all groups. This checks whether that is a fair thing to do here.
+  F                   0.8730
+  p                   .450
+  Effect size         eta-squared = 0.1625
   Equal spread        Brown-Forsythe F(2, 9) = 0.9992
   Equal-spread p      p = .406
 
@@ -81,14 +80,19 @@ Total               15422757.67     11
 
 
   ── Pairwise Effect Sizes (Cohen's d) ───────
+  No pairwise significance tests were run.
 
               A           B           C           
 A             ---         0.688       0.629       
 B             -0.688      ---         -22.984     
 C             -0.629      22.984      ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 H session groupA mean|1129.5000
 H session F|0.8730

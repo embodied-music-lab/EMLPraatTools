@@ -1,5 +1,5 @@
 praat_version	Praat 6.6.30 (June 30 2026)
-source_tree	/home/claude/EMLPraatTools
+source_tree	/home/claude/repo
 leg	axis_record
 record_resolved_min	160.0000
 record_resolved_max	340.0000
@@ -7,7 +7,7 @@ leg	--shell--
 recorded_axis_args	axisYMin, axisYMax
 recorded_axis_block_min	0.0
 recorded_axis_block_max	0.0
-recorded_result_note	Axis resolved to 160.0000 .. 340.0000 over 3 groups.
+recorded_result_note	Axis resolved to 160.0000 .. 340.0000 over 3 groups on the recorded data; auto adapts to other data.
 replay_same_min	160.0000
 replay_same_max	340.0000
 replay_wide_min	900.0000
@@ -192,9 +192,9 @@ name_gbox_name_run_px	37
 name_spaghetti_gap_px	17
 name_spaghetti_first_ink_px	67
 name_spaghetti_name_run_px	37
-name_hist_gap_px	15
+name_hist_gap_px	20
 name_hist_first_ink_px	99
-name_hist_name_run_px	46
+name_hist_name_run_px	41
 name_plain_gap_px	37
 name_plain_first_ink_px	99
 name_plain_name_run_px	37

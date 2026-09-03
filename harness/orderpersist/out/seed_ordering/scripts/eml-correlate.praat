@@ -389,7 +389,7 @@ repeat
                             pgPearErr$ = emlPearsonCorrelation.error$
                         endif
                         if testType$ = "spearman" or testType$ = "both"
-                            @emlSpearmanCorrelation: pgX#, pgY#, 2
+                            @emlSpearmanCorrelationDispatch: pgX#, pgY#, 2
                             pgSpearRho = emlSpearmanCorrelation.rho
                             pgSpearT = emlSpearmanCorrelation.t
                             pgSpearDf = emlSpearmanCorrelation.df

@@ -1,7 +1,7 @@
 #!praat
 # ============================================================
 # EML Stats & Graphs -- recorded workflow
-# Tue Aug 18 22:32:43 2026  --  recorded on Praat 6.6.30
+# Thu Sep  3 04:26:41 2026  --  recorded on Praat 6.6.30
 # Input: Sound tone
 # ============================================================
 
@@ -11,7 +11,7 @@
 # for any user on this platform. If this file fails to parse, the
 # plugin is somewhere else -- edit this block and nothing else.
 #
-#   Praat 6.x  Linux    /home/claude/EMLPraatTools/plugin_EML_StatsGraphs
+#   Praat 6.x  Linux    /home/claude/repo/plugin_EML_StatsGraphs
 #   Praat 7.x  Linux    ~/.config/praat/plugin_EML_StatsGraphs
 #   macOS      ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs
 #   Windows    ~/Praat/plugin_EML_StatsGraphs
@@ -24,21 +24,22 @@
 # folder, not its own.
 # ------------------------------------------------------------
 
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-extract.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-output.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-inferential.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-categorical.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-record.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
-include /home/claude/EMLPraatTools/plugin_EML_StatsGraphs/stats/eml-analysis.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-core-utilities.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-core-descriptive.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-extract.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-output.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-inferential.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-psychometrics.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-categorical.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-result-writer.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-record.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/graphs/eml-annotation-procedures.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/graphs/eml-draw-procedures.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-analysis.praat
+include /home/claude/repo/plugin_EML_StatsGraphs/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 # ---------------------------------------------------------------------------
 # harness/linestyle/data.praat -- THE OBJECTS, AND NOTHING ELSE.
@@ -99,8 +100,21 @@ lsLtasId = selected ("Ltas")
 # THE OBJECT
 # Recorded against: Sound tone.
 # The objects this workflow ran on are named in the block below.
-# All of them must be open before you run this script.
+# None of them is built or opened by a step below: see
+# PRECONDITION, and open them before you run this script.
 # ------------------------------------------------------------
+
+# ============================================================
+# PRECONDITION -- THIS SCRIPT CANNOT REBUILD ITS DATA
+#
+# Sound tone was already open when this recording started.
+# Nothing in the session made it, so nothing below can remake it.
+#
+# YOU MUST SUPPLY THE DATA YOURSELF, open and named as above, before you
+# run this file. The steps below select by name: with nothing of that name
+# open the script stops at its first step, and with DIFFERENT data of that
+# name it runs to the end and answers a different question without saying so.
+# ============================================================
 
 # Name your data objects and columns here for this recorded
 # workflow. Edit a name to run the same workflow on other data;
@@ -108,7 +122,7 @@ lsLtasId = selected ("Ltas")
 # range or a figure format.
 data1$ = "Sound tone"   ; run 1, step 1 (draw)
 axisYMin     = 0.0   ; the y-axis range -- AUTO (both 0 = computed from the data) -- run 1, step 1 (draw)
-axisYMax     = 0.0   ; on the recorded data it resolved to -0.7000 .. 0.7000
+axisYMax     = 0.0   ; on the recorded data this resolved to -0.7000 .. 0.7000; auto adapts to other data
 eraseFirst   = 1   ; 1 clears the page before this figure, 0 adds it to the page already there -- run 1, step 1 (draw)
 panelOriginX = 0   ; inches from the left of the page to this panel's corner -- run 1, step 1 (draw)
 panelOriginY = 0   ; inches from the top of the page to this panel's corner -- run 1, step 1 (draw)
@@ -129,6 +143,9 @@ emlPanelOriginY = panelOriginY
 @emlBeginPanel: emlPanelOriginX, emlPanelOriginY, emlEraseFirst
 emlLineStyle = lineStyle
 emlSecondAxisOn = secondAxisOn
+annotAlpha = 0.05
+emlGroupSortAlphabetical = 0
+emlShowExplanations = 0
 @emlDrawWaveform: data, "Line style", "Time (s)", "Value", 6, 4, "color", 1, 0, 0, axisYMin, axisYMax
 
 # The same step through the menu:
@@ -136,4 +153,4 @@ emlSecondAxisOn = secondAxisOn
 
 
 Select outer viewport: 0, 6, 0, 4
-Save as 300-dpi PNG file: "/home/claude/EMLPraatTools/harness/linestyle/out/replay.png"
+Save as 300-dpi PNG file: "/home/claude/repo/harness/linestyle/out/replay.png"

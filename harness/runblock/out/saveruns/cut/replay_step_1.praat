@@ -39,7 +39,7 @@ include ~/repo/plugin/graphs/eml-draw-procedures.praat
 include ~/repo/plugin/stats/eml-analysis.praat
 include ~/repo/plugin/stats/eml-demo-tables.praat
 
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 
 # ------------------------------------------------------------
@@ -129,7 +129,7 @@ emlLineStyle = lineStyle
 emlSecondAxisOn = secondAxisOn
 annotAlpha = 0.05
 emlGroupSortAlphabetical = 0
-emlShowExplanations = 1
+emlShowExplanations = 0
 @emlDrawBoxPlot: data, "A", "Group", "val", 6, 4, "color", 1, groupCol$, valueCol$, axisYMin, axisYMax
 
 # The same step through the menu:

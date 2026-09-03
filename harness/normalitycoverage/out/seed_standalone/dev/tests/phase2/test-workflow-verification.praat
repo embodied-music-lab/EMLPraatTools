@@ -81,8 +81,13 @@ include ../eml-test-helpers.praat
 # written out above `emlShowExplanationsDefault = 1` in stats/eml-output.praat.
 # That variable is the single declaration: @emlResetExplanations restores it
 # rather than a literal, so the initial and restored values cannot drift.
-@emlTestAssertEqualNum: "default emlShowExplanations = 1",
-    ... 1, emlShowExplanations, 0
+# Default is 0 by ruling (27 Aug 2026): the raw report is the canonical
+# product; annotations are opt-in on every path except the wizard, which
+# forces them on. The 8 Aug 2026 expectation of 1 predates per-path routing
+# and is superseded by it -- the teaching default it protected now lives in
+# the wizard's forced-on path, not in the global.
+@emlTestAssertEqualNum: "default emlShowExplanations = 0",
+    ... 0, emlShowExplanations, 0
 
 # With flag OFF, @emlReportLine should not append explanation
 emlShowExplanations = 0
@@ -230,7 +235,7 @@ for .i from 21 to 30
 endfor
 
 selectObject: tableId
-@emlRunKWAnalysis: tableId, "Data", "Group", 0, "holm"
+@emlRunKruskalWallisAnalysis: tableId, "Data", "Group", 0, "holm"
 .info$ = info$ ()
 
 @emlTestAssertContains: "KW header present",

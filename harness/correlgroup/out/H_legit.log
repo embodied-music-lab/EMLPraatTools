@@ -3,7 +3,7 @@ DLG|1|correlate_two_columns#1|visit=1|clicked=2
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Fri Aug 21 00:40:53 2026
+  Thu Sep  3 03:49:15 2026
   from: analysis dialog
 ══════════════════════════════════════════════
 
@@ -14,24 +14,26 @@ DLG|1|correlate_two_columns#1|visit=1|clicked=2
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   0.9985		Very strong positive relationship (range: -1 to 1)
-  R-squared           0.9970		The fitted model accounts for 100% of the variance in Y in this sample
-  t                   48.117		The observed difference is 48.1 standard errors from zero
-  df                  7		Observations (9) minus 2. Two parameters (slope, intercept) estimated.
-  p                   < .001  (4.38e-10)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  r                   0.9985
+  R-squared           0.9970
+  t                   48.117
+  df                  7
+  p                   < .001  (4.38e-10)
+  p method            t distribution
   95% CI for r        [0.9925, 0.9997]
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 DLG|2|analysis_complete#1|visit=1|clicked=4
 DLG|1|correlate_two_columns#1|visit=2|clicked=2
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Fri Aug 21 00:40:53 2026
+  Thu Sep  3 03:49:15 2026
   from: analysis dialog
 ══════════════════════════════════════════════
 
@@ -42,22 +44,24 @@ DLG|1|correlate_two_columns#1|visit=2|clicked=2
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   0.9985		Very strong positive relationship (range: -1 to 1)
-  R-squared           0.9970		The fitted model accounts for 100% of the variance in Y in this sample
-  t                   48.117		The observed difference is 48.1 standard errors from zero
-  df                  7		Observations (9) minus 2. Two parameters (slope, intercept) estimated.
-  p                   < .001  (4.38e-10)		Statistically significant: if there were truly no effect, results at least this extreme would occur less than 0.1% of the time
+  r                   0.9985
+  R-squared           0.9970
+  t                   48.117
+  df                  7
+  p                   < .001  (4.38e-10)
+  p method            t distribution
   95% CI for r        [0.9925, 0.9997]
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 ══════════════════════════════════════════════
   EML Stats : Correlation by dose
-  Fri Aug 21 00:40:53 2026
+  Thu Sep  3 03:49:15 2026
 ══════════════════════════════════════════════
 
   Grouping column     dose
@@ -66,7 +70,7 @@ DLG|1|correlate_two_columns#1|visit=2|clicked=2
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Fri Aug 21 00:40:53 2026
+  Thu Sep  3 03:49:15 2026
 ══════════════════════════════════════════════
 
   Table               t -- dose = 2
@@ -76,21 +80,23 @@ DLG|1|correlate_two_columns#1|visit=2|clicked=2
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   0.9985		Very strong positive relationship (range: -1 to 1)
-  R-squared           0.9970		The fitted model accounts for 100% of the variance in Y in this sample
-  t                   18.187		The observed difference is 18.2 standard errors from zero
-  df                  1		Observations (3) minus 2. Two parameters (slope, intercept) estimated.
-  p                   .035		Statistically significant at the 5% level: if there were truly no effect, results at least this extreme would occur less than 5% of the time
+  r                   0.9985
+  R-squared           0.9970
+  t                   18.187
+  df                  1
+  p                   .035
+  p method            t distribution
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Fri Aug 21 00:40:53 2026
+  Thu Sep  3 03:49:15 2026
 ══════════════════════════════════════════════
 
   Table               t -- dose = 3
@@ -100,21 +106,23 @@ DLG|1|correlate_two_columns#1|visit=2|clicked=2
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   0.9985		Very strong positive relationship (range: -1 to 1)
-  R-squared           0.9970		The fitted model accounts for 100% of the variance in Y in this sample
-  t                   18.187		The observed difference is 18.2 standard errors from zero
-  df                  1		Observations (3) minus 2. Two parameters (slope, intercept) estimated.
-  p                   .035		Statistically significant at the 5% level: if there were truly no effect, results at least this extreme would occur less than 5% of the time
+  r                   0.9985
+  R-squared           0.9970
+  t                   18.187
+  df                  1
+  p                   .035
+  p method            t distribution
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 
 ══════════════════════════════════════════════
   EML Stats : Correlation Analysis
-  Fri Aug 21 00:40:53 2026
+  Thu Sep  3 03:49:15 2026
 ══════════════════════════════════════════════
 
   Table               t -- dose = 1
@@ -124,16 +132,18 @@ DLG|1|correlate_two_columns#1|visit=2|clicked=2
 
 
   ── Pearson Correlation ─────────────────────
-  Why: Measures linear association between two continuous variables.
-  r                   0.9985		Very strong positive relationship (range: -1 to 1)
-  R-squared           0.9970		The fitted model accounts for 100% of the variance in Y in this sample
-  t                   18.187		The observed difference is 18.2 standard errors from zero
-  df                  1		Observations (3) minus 2. Two parameters (slope, intercept) estimated.
-  p                   .035		Statistically significant at the 5% level: if there were truly no effect, results at least this extreme would occur less than 5% of the time
+  r                   0.9985
+  R-squared           0.9970
+  t                   18.187
+  df                  1
+  p                   .035
+  p method            t distribution
   Magnitude           large effect
 
   Conventions: quartiles R type 7 · SD & variance n-1
   · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
 ══════════════════════════════════════════════
 DLG|2|analysis_complete#1|visit=2|clicked=1

@@ -10,7 +10,7 @@ include /home/claude/repo/plugin/graphs/eml-annotation-procedures.praat
 include /home/claude/repo/plugin/graphs/eml-draw-procedures.praat
 include /home/claude/repo/plugin/stats/eml-analysis.praat
 Text writing preferences: "UTF-8"
-@emlInitDrawingDefaults
+@emlInitializeDrawingDefaults
 @emlClearAnnotations
 @emlRecordInit
 emlRecordPluginRoot$ = "/home/claude/repo/plugin"

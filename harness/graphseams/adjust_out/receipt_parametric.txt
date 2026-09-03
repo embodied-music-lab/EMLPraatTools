@@ -1,5 +1,0 @@
-arm=parametric
-adjustOffered=0
-correction=holm
-testType=parametric
-annotate=1

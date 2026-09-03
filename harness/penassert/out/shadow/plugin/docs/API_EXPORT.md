@@ -111,7 +111,7 @@ permanent property. `validate/v50_api_export.R` reads the list back out of
 |---|---|
 | `@emlRunTwoGroupAnalysis` | *t*-test / Mann–Whitney |
 | `@emlRunAnovaAnalysis` | one-way ANOVA (+ Tukey) |
-| `@emlRunKWAnalysis` | Kruskal–Wallis (+ Dunn) |
+| `@emlRunKruskalWallisAnalysis` | Kruskal–Wallis (+ Dunn) |
 | `@emlRunPairwiseAnalysis` | pairwise comparisons |
 | `@emlRunTwoWayAnalysis` | two-way ANOVA |
 | `@emlRunPairedAnalysis` | paired *t* / Wilcoxon |
@@ -126,6 +126,7 @@ permanent property. `validate/v50_api_export.R` reads the list back out of
 | procedure | what it is |
 |---|---|
 | `@emlRunDescriptiveAnalysis` | descriptive statistics for one column |
+| `@emlRunGroupedRegressionAnalysis` | per-group regression, beside an overall fit already run |
 
 `@emlRunDescriptiveAnalysis` became exportable on **14 August 2026** and it was
 deliberately wired to the **legacy buffer**, not converted. The reason is the
@@ -134,6 +135,22 @@ is refused outright — and a descriptive pass reports sixteen statistics of
 which only `skewness` and `kurtosis` are in it. `q1`, `q3`, `iqr`, `min`,
 `max`, `range`, `variance` and the median have no broom name to be filed
 under. One long-format file keeps all sixteen.
+
+`@emlRunGroupedRegressionAnalysis` (punch list 4.5, 25 August 2026) is the one entry
+on this list that DOES leave `tidy`/`glance` populated with real broom rows
+when it returns — it is listed here because of *how*, not *whether*, it gets
+there. It is not itself the analysis: it runs after `@emlRunRegressionAnalysis`
+has already declared the overall fit, and it works by clearing and rebuilding
+`tidy` directly (`@emlTidyClear` / `@emlTidyRow` / `@emlTidyNum`), one term row
+per coefficient per group plus the re-emitted `"(overall)"` rows, rather than
+by calling a single `@emlDeclare*` helper the way the table above's entries
+do. The distinction is mechanical, not behavioural: call it and you still get
+labelled `tidy` rows and an accurate `n.groups` in `glance`, exactly as this
+table's DECLARE half promises for the analysis it rides. It is the one
+per-door port in this file rather than a whole orchestrator — the shared call
+both `scripts/eml-regress.praat` and `scripts/eml-wizard.praat`'s two
+regression pages make — and its own doc is
+`stats/eml-analysis.praat`'s comment above its definition.
 
 **Two procedures export nothing at all.** `@emlRunReliabilityAnalysis` is a
 Phase 4 stub and refuses immediately. `@emlRunLMMAnalysis` computes a real
