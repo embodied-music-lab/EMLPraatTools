@@ -4455,7 +4455,12 @@ procedure eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupN#, .alpha
                 if .q <> undefined
                     if .q > 0
                         @emlStudentizedRangeQ: .q, .nGroups, .dfWithin, 1
-                        .p = emlStudentizedRangeQ.p
+                        if emlStudentizedRangeQ.error$ = ""
+                            .p = emlStudentizedRangeQ.p
+                        else
+                            .p = undefined
+                            .nUndefined = .nUndefined + 1
+                        endif
                     else
                         .p = 1
                     endif
@@ -4486,13 +4491,27 @@ procedure eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupN#, .alpha
 
         # Critical q value at specified alpha
         @emlInvStudentizedRangeQ: .alpha, .nGroups, .dfWithin, 1
-        .qCritical = emlInvStudentizedRangeQ.q
+        if emlInvStudentizedRangeQ.error$ = ""
+            .qCritical = emlInvStudentizedRangeQ.q
+            .qCriticalWarning$ = ""
+        else
+            .qCritical = undefined
+            .qCriticalWarning$ = "the Tukey critical q is undefined ("
+                ... + emlInvStudentizedRangeQ.error$ + ")"
+        endif
 
         if .nUndefined > 0
             .warning$ = string$ (.nUndefined)
             ... + " of " + string$ (.nPairs) + " comparisons have an "
             ... + "undefined q (zero or undefined pooled standard "
             ... + "error); their p-values are undefined, not 1"
+        endif
+        if .qCriticalWarning$ <> ""
+            if .warning$ <> ""
+                .warning$ = .warning$ + "; " + .qCriticalWarning$
+            else
+                .warning$ = .qCriticalWarning$
+            endif
         endif
     endif
 endproc
@@ -7531,12 +7550,20 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
                 if .q <> undefined
                     if .q > 0
                         @emlStudentizedRangeQ: .q, .nGroups, .df, 1
-                        .pVal = emlStudentizedRangeQ.p
+                        if emlStudentizedRangeQ.error$ = ""
+                            .pVal = emlStudentizedRangeQ.p
+                        else
+                            .pVal = undefined
+                        endif
                     else
                         .pVal = 1
                     endif
                     @emlInvStudentizedRangeQ: .alpha, .nGroups, .df, 1
-                    .qCrit = emlInvStudentizedRangeQ.q
+                    if emlInvStudentizedRangeQ.error$ = ""
+                        .qCrit = emlInvStudentizedRangeQ.q
+                    else
+                        .qCrit = undefined
+                    endif
                 else
                     .nUndefined = .nUndefined + 1
                 endif

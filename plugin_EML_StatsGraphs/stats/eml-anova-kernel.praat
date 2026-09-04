@@ -1633,7 +1633,14 @@ procedure emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$
             .intervalMethod$ = ""
         elsif .adjMethod$ = "tukey"
             @emlInvStudentizedRangeQ: .alpha, .k, .dfError, 1
-            .qCritical = emlInvStudentizedRangeQ.q
+            if emlInvStudentizedRangeQ.error$ = ""
+                .qCritical = emlInvStudentizedRangeQ.q
+            else
+                .qCritical = undefined
+                .warning$ = .warning$ + " The Tukey critical q is undefined ("
+                    ... + emlInvStudentizedRangeQ.error$ + "); simultaneous "
+                    ... + "interval bounds are undefined."
+            endif
             .intervalMethod$ = "Tukey HSD simultaneous interval (studentized "
                 ... + "range, Tukey-Kramer for unequal n), family size "
                 ... + string$ (.k)
@@ -1656,7 +1663,11 @@ procedure emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$
                 if .sed > 0
                     .qForQ = sqrt (2) * abs (.d) / .sed
                     @emlStudentizedRangeQ: .qForQ, .k, .dfError, 1
-                    .p = emlStudentizedRangeQ.p
+                    if emlStudentizedRangeQ.error$ = ""
+                        .p = emlStudentizedRangeQ.p
+                    else
+                        .p = undefined
+                    endif
                     .stat##[.i, .j] = .qForQ
                     .stat##[.j, .i] = .qForQ
                 else
