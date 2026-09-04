@@ -4156,8 +4156,9 @@ endproc
 # Performs Tukey Honest Significant Difference post-hoc test on a Table.
 #
 # Computes pairwise q statistics directly from group means and pooled
-# MSE, using Praat's native studentized range distribution functions
-# (Get TukeyQ: / Get invTukeyQ:) for p-values and critical values.
+# MSE, using the validated studentized-range port
+# (@emlStudentizedRangeQ / @emlInvStudentizedRangeQ) for p-values and
+# critical values.
 #
 # Arguments:
 #   .tableId       - ID of a Table object (must be in object list)
@@ -4211,8 +4212,9 @@ endproc
 #   - Cohen's d per pair uses two-group pooled SD (via @emlCohenD),
 #     consistent with standalone effect size computation
 #   - Requires >= 2 groups with enough observations for dfWithin >= 1
-#   - Uses Get TukeyQ: (Goodies) for p-values and Get invTukeyQ:
-#     for critical q — no Report parsing or Table side effects
+#   - Uses @emlStudentizedRangeQ for p-values and
+#     @emlInvStudentizedRangeQ for critical q — no Report parsing or
+#     Table side effects
 #   - Dependencies: @emlCountGroups, @eml_getGroupData (eml-extract.praat),
 #     @eml_getGroupData (eml-extract.praat),
 #     @emlCohenD (eml-inferential.praat)
@@ -4311,9 +4313,13 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
         for .s from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
             ... .groupName$[.s]
-            .groupN[.s] = eml_getGroupData.n
-            .groupData'.s'# = eml_getGroupData.data#
-            .totalN = .totalN + .groupN[.s]
+            if eml_getGroupData.error$ <> ""
+                .error$ = eml_getGroupData.error$
+            else
+                .groupN[.s] = eml_getGroupData.n
+                .groupData'.s'# = eml_getGroupData.data#
+                .totalN = .totalN + .groupN[.s]
+            endif
         endfor
 
         .allData# = zero# (.totalN)
@@ -4448,7 +4454,8 @@ procedure eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupN#, .alpha
                 endif
                 if .q <> undefined
                     if .q > 0
-                        .p = Get TukeyQ: .q, .nGroups, .dfWithin, 1
+                        @emlStudentizedRangeQ: .q, .nGroups, .dfWithin, 1
+                        .p = emlStudentizedRangeQ.p
                     else
                         .p = 1
                     endif
@@ -4478,7 +4485,8 @@ procedure eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupN#, .alpha
         endfor
 
         # Critical q value at specified alpha
-        .qCritical = Get invTukeyQ: .alpha, .nGroups, .dfWithin, 1
+        @emlInvStudentizedRangeQ: .alpha, .nGroups, .dfWithin, 1
+        .qCritical = emlInvStudentizedRangeQ.q
 
         if .nUndefined > 0
             .warning$ = string$ (.nUndefined)
@@ -4635,15 +4643,19 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
             ... emlCountGroups.groupLabel$[.g]
-            .groupData'.g'# = eml_getGroupData.data#
-            if eml_getGroupData.n < 2
-                .nSingleton = .nSingleton + 1
-                if .nSingleton <= 5
-                    if .singletonList$ <> ""
-                        .singletonList$ = .singletonList$ + ", "
+            if eml_getGroupData.error$ <> ""
+                .error$ = eml_getGroupData.error$
+            else
+                .groupData'.g'# = eml_getGroupData.data#
+                if eml_getGroupData.n < 2
+                    .nSingleton = .nSingleton + 1
+                    if .nSingleton <= 5
+                        if .singletonList$ <> ""
+                            .singletonList$ = .singletonList$ + ", "
+                        endif
+                        .singletonList$ = .singletonList$ + """"
+                        ... + emlCountGroups.groupLabel$[.g] + """"
                     endif
-                    .singletonList$ = .singletonList$ + """"
-                    ... + emlCountGroups.groupLabel$[.g] + """"
                 endif
             endif
         endfor
@@ -5543,14 +5555,18 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
-            .groupN[.g] = eml_getGroupData.n
-            .groupData'.g'# = eml_getGroupData.data#
-            if .groupN[.g] = 0
-                .error$ = "Group """ + .groupName$[.g]
-                ... + """ has 0 observations. Every group needs at "
-                ... + "least 1."
+            if eml_getGroupData.error$ <> ""
+                .error$ = eml_getGroupData.error$
+            else
+                .groupN[.g] = eml_getGroupData.n
+                .groupData'.g'# = eml_getGroupData.data#
+                if .groupN[.g] = 0
+                    .error$ = "Group """ + .groupName$[.g]
+                    ... + """ has 0 observations. Every group needs at "
+                    ... + "least 1."
+                endif
+                .n = .n + .groupN[.g]
             endif
-            .n = .n + .groupN[.g]
         endfor
     endif
 
@@ -5774,14 +5790,18 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
-            .groupN[.g] = eml_getGroupData.n
-            .groupData'.g'# = eml_getGroupData.data#
-            if .groupN[.g] = 0
-                .error$ = "Group """ + .groupName$[.g]
-                ... + """ has 0 observations. Every group needs at "
-                ... + "least 1."
+            if eml_getGroupData.error$ <> ""
+                .error$ = eml_getGroupData.error$
+            else
+                .groupN[.g] = eml_getGroupData.n
+                .groupData'.g'# = eml_getGroupData.data#
+                if .groupN[.g] = 0
+                    .error$ = "Group """ + .groupName$[.g]
+                    ... + """ has 0 observations. Every group needs at "
+                    ... + "least 1."
+                endif
+                .n = .n + .groupN[.g]
             endif
-            .n = .n + .groupN[.g]
         endfor
     endif
 
@@ -6118,8 +6138,12 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
-            .groupN[.g] = eml_getGroupData.n
-            .groupData'.g'# = eml_getGroupData.data#
+            if eml_getGroupData.error$ <> ""
+                .error$ = eml_getGroupData.error$
+            else
+                .groupN[.g] = eml_getGroupData.n
+                .groupData'.g'# = eml_getGroupData.data#
+            endif
         endfor
 
         # --- Determine equalVariances flag ---
@@ -6377,8 +6401,12 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
-            .groupN[.g] = eml_getGroupData.n
-            .groupData'.g'# = eml_getGroupData.data#
+            if eml_getGroupData.error$ <> ""
+                .error$ = eml_getGroupData.error$
+            else
+                .groupN[.g] = eml_getGroupData.n
+                .groupData'.g'# = eml_getGroupData.data#
+            endif
         endfor
 
         # --- Pairwise tests ---
@@ -6580,21 +6608,25 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
-            .gN[.g] = eml_getGroupData.n
-            .gData# = eml_getGroupData.data#
-            .totalN = .totalN + .gN[.g]
-
-            if .gN[.g] > 0
-                .gMean[.g] = mean (.gData#)
+            if eml_getGroupData.error$ <> ""
+                .error$ = eml_getGroupData.error$
             else
-                .gMean[.g] = undefined
-            endif
+                .gN[.g] = eml_getGroupData.n
+                .gData# = eml_getGroupData.data#
+                .totalN = .totalN + .gN[.g]
 
-            # Within-group SS: sum of (x - group_mean)^2
-            for .idx from 1 to .gN[.g]
-                .dev = .gData#[.idx] - .gMean[.g]
-                .ssWithin = .ssWithin + .dev * .dev
-            endfor
+                if .gN[.g] > 0
+                    .gMean[.g] = mean (.gData#)
+                else
+                    .gMean[.g] = undefined
+                endif
+
+                # Within-group SS: sum of (x - group_mean)^2
+                for .idx from 1 to .gN[.g]
+                    .dev = .gData#[.idx] - .gMean[.g]
+                    .ssWithin = .ssWithin + .dev * .dev
+                endfor
+            endif
         endfor
 
         # MSE
@@ -6863,15 +6895,19 @@ procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... emlCountGroups.groupLabel$[.g]
-            .groupData'.g'# = eml_getGroupData.data#
-            if eml_getGroupData.n < 2
-                .nSingleton = .nSingleton + 1
-                if .nSingleton <= 5
-                    if .singletonList$ <> ""
-                        .singletonList$ = .singletonList$ + ", "
+            if eml_getGroupData.error$ <> ""
+                .error$ = eml_getGroupData.error$
+            else
+                .groupData'.g'# = eml_getGroupData.data#
+                if eml_getGroupData.n < 2
+                    .nSingleton = .nSingleton + 1
+                    if .nSingleton <= 5
+                        if .singletonList$ <> ""
+                            .singletonList$ = .singletonList$ + ", "
+                        endif
+                        .singletonList$ = .singletonList$ + """"
+                        ... + emlCountGroups.groupLabel$[.g] + """"
                     endif
-                    .singletonList$ = .singletonList$ + """"
-                    ... + emlCountGroups.groupLabel$[.g] + """"
                 endif
             endif
         endfor
@@ -7104,46 +7140,50 @@ procedure emlWelchAnova: .tableId, .dataCol$, .factorCol$
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... emlCountGroups.groupLabel$[.g]
-            .gN = eml_getGroupData.n
-            .groupLabel$[.g] = emlCountGroups.groupLabel$[.g]
-            .groupN[.g] = .gN
-
-            if .gN < 2
-                .groupMean[.g] = undefined
-                .groupVar[.g] = undefined
-                .nSingleton = .nSingleton + 1
-                if .nSingleton <= 5
-                    if .singletonList$ <> ""
-                        .singletonList$ = .singletonList$ + ", "
-                    endif
-                    .singletonList$ = .singletonList$ + """"
-                    ... + .groupLabel$[.g] + """"
-                endif
+            if eml_getGroupData.error$ <> ""
+                .error$ = eml_getGroupData.error$
             else
-                .gData# = eml_getGroupData.data#
-                .groupMean[.g] = mean (.gData#)
+                .gN = eml_getGroupData.n
+                .groupLabel$[.g] = emlCountGroups.groupLabel$[.g]
+                .groupN[.g] = .gN
 
-                ; Corrected two-pass variance, as elsewhere in this file.
-                .centered# = .gData# - .groupMean[.g]
-                .sumDev = sum (.centered#)
-                .gSS = sum (.centered# * .centered#)
-                ... - .sumDev * .sumDev / .gN
-                if .gSS < 0
-                    .gSS = 0
-                endif
-                .groupVar[.g] = .gSS / (.gN - 1)
-
-                .totalN = .totalN + .gN
-                .sumOfMeans = .sumOfMeans + .groupMean[.g]
-
-                if .groupVar[.g] <= 0
-                    .nFlat = .nFlat + 1
-                    if .nFlat <= 5
-                        if .flatList$ <> ""
-                            .flatList$ = .flatList$ + ", "
+                if .gN < 2
+                    .groupMean[.g] = undefined
+                    .groupVar[.g] = undefined
+                    .nSingleton = .nSingleton + 1
+                    if .nSingleton <= 5
+                        if .singletonList$ <> ""
+                            .singletonList$ = .singletonList$ + ", "
                         endif
-                        .flatList$ = .flatList$ + """"
+                        .singletonList$ = .singletonList$ + """"
                         ... + .groupLabel$[.g] + """"
+                    endif
+                else
+                    .gData# = eml_getGroupData.data#
+                    .groupMean[.g] = mean (.gData#)
+
+                    ; Corrected two-pass variance, as elsewhere in this file.
+                    .centered# = .gData# - .groupMean[.g]
+                    .sumDev = sum (.centered#)
+                    .gSS = sum (.centered# * .centered#)
+                    ... - .sumDev * .sumDev / .gN
+                    if .gSS < 0
+                        .gSS = 0
+                    endif
+                    .groupVar[.g] = .gSS / (.gN - 1)
+
+                    .totalN = .totalN + .gN
+                    .sumOfMeans = .sumOfMeans + .groupMean[.g]
+
+                    if .groupVar[.g] <= 0
+                        .nFlat = .nFlat + 1
+                        if .nFlat <= 5
+                            if .flatList$ <> ""
+                                .flatList$ = .flatList$ + ", "
+                            endif
+                            .flatList$ = .flatList$ + """"
+                            ... + .groupLabel$[.g] + """"
+                        endif
                     endif
                 endif
             endif
@@ -7314,8 +7354,9 @@ endproc
 #   - Cohen's d per pair uses the two-group pooled SD (via @emlCohenD),
 #     identical to @emlTukeyHSD, so the effect-size column means the
 #     same thing whichever post-hoc produced it
-#   - Uses Get TukeyQ: for p-values and Get invTukeyQ: for critical q,
-#     both of which accept a fractional df
+#   - Uses @emlStudentizedRangeQ for p-values and
+#     @emlInvStudentizedRangeQ for critical q, both of which accept a
+#     fractional df
 #   - Dependencies: @emlCountGroups, @eml_getGroupData (eml-extract.praat),
 #     @emlCohenD (eml-inferential.praat)
 #   - Original Table selection is restored on return
@@ -7393,33 +7434,37 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... .groupName$[.g]
-            .gN = eml_getGroupData.n
-            .groupN[.g] = .gN
-            .groupData'.g'# = eml_getGroupData.data#
-
-            if .gN < 2
-                .groupMean[.g] = undefined
-                .groupVar[.g] = undefined
-                .nSingleton = .nSingleton + 1
-                if .nSingleton <= 5
-                    if .singletonList$ <> ""
-                        .singletonList$ = .singletonList$ + ", "
-                    endif
-                    .singletonList$ = .singletonList$ + """"
-                    ... + .groupName$[.g] + """"
-                endif
+            if eml_getGroupData.error$ <> ""
+                .error$ = eml_getGroupData.error$
             else
-                .gData# = eml_getGroupData.data#
-                .groupMean[.g] = mean (.gData#)
-                .centered# = .gData# - .groupMean[.g]
-                .sumDev = sum (.centered#)
-                .gSS = sum (.centered# * .centered#)
-                ... - .sumDev * .sumDev / .gN
-                if .gSS < 0
-                    .gSS = 0
+                .gN = eml_getGroupData.n
+                .groupN[.g] = .gN
+                .groupData'.g'# = eml_getGroupData.data#
+
+                if .gN < 2
+                    .groupMean[.g] = undefined
+                    .groupVar[.g] = undefined
+                    .nSingleton = .nSingleton + 1
+                    if .nSingleton <= 5
+                        if .singletonList$ <> ""
+                            .singletonList$ = .singletonList$ + ", "
+                        endif
+                        .singletonList$ = .singletonList$ + """"
+                        ... + .groupName$[.g] + """"
+                    endif
+                else
+                    .gData# = eml_getGroupData.data#
+                    .groupMean[.g] = mean (.gData#)
+                    .centered# = .gData# - .groupMean[.g]
+                    .sumDev = sum (.centered#)
+                    .gSS = sum (.centered# * .centered#)
+                    ... - .sumDev * .sumDev / .gN
+                    if .gSS < 0
+                        .gSS = 0
+                    endif
+                    .groupVar[.g] = .gSS / (.gN - 1)
+                    .totalN = .totalN + .gN
                 endif
-                .groupVar[.g] = .gSS / (.gN - 1)
-                .totalN = .totalN + .gN
             endif
         endfor
 
@@ -7485,11 +7530,13 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
 
                 if .q <> undefined
                     if .q > 0
-                        .pVal = Get TukeyQ: .q, .nGroups, .df, 1
+                        @emlStudentizedRangeQ: .q, .nGroups, .df, 1
+                        .pVal = emlStudentizedRangeQ.p
                     else
                         .pVal = 1
                     endif
-                    .qCrit = Get invTukeyQ: .alpha, .nGroups, .df, 1
+                    @emlInvStudentizedRangeQ: .alpha, .nGroups, .df, 1
+                    .qCrit = emlInvStudentizedRangeQ.q
                 else
                     .nUndefined = .nUndefined + 1
                 endif

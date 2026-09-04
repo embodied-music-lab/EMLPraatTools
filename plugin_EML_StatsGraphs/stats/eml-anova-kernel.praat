@@ -104,11 +104,12 @@
 # own prior scope note predicted would make an EMM step "not an awkward"
 # addition. Post hoc's Bonferroni/Holm/Benjamini-Hochberg adjustments call
 # the plugin's existing @emlBonferroni/@emlHolm/@emlBenjaminiHochberg
-# (eml-inferential.praat) rather than reimplementing them; its Tukey and
-# Scheffe legs use the same Praat builtins (Get TukeyQ:/Get invTukeyQ:,
-# fisherQ/invFisherQ) @eml_tukeyPairwiseFromGroups and @emlScheffeInterval
-# already use elsewhere in this plugin, generalised to the Tukey-Kramer
-# form for the marginal means' unequal variances (see
+# (eml-inferential.praat) rather than reimplementing them; its Tukey leg
+# calls the validated studentized-range port (@emlStudentizedRangeQ /
+# @emlInvStudentizedRangeQ, eml-studentized-range.praat), and its Scheffe
+# leg uses the same Praat builtins (fisherQ/invFisherQ)
+# @emlScheffeInterval already uses elsewhere in this plugin, generalised
+# to the Tukey-Kramer form for the marginal means' unequal variances (see
 # @emlAnovaKernelTwoWayPostHoc's own header for the derivation). NEITHER
 # THIS FILE NOR ANY NEW PROCEDURE IN IT IS WIRED into any menu, dialog, or
 # orchestrator (eml-inferential.praat / eml-analysis.praat) -- that wiring
@@ -133,22 +134,25 @@
 #    @eml_ak2_buildLSlice)
 #
 # Dependencies: eml-core-descriptive.praat (@emlMedian, @emlShapiroWilk),
-#   AND, as of the EMM/post-hoc/simple-effects addition, eml-inferential
-#   .praat (@emlBonferroni, @emlHolm, @emlBenjaminiHochberg -- called by
-#   @emlAnovaKernelTwoWayPostHoc's Bonferroni/Holm/BH legs; its Tukey and
-#   Scheffe legs use only Praat builtins, no procedure from that file).
-#   Callers must `include` both files before this one (eml-inferential.praat
-#   is only actually EXERCISED if @emlAnovaKernelTwoWayPostHoc is called
-#   with .adjMethod$ "bonferroni", "holm" or "bh"; @emlAnovaKernelTwoWay,
-#   @emlLeveneTest, @emlAnovaKernelTwoWayEMM and @emlAnovaKernelTwoWaySimple
-#   Effects need only eml-core-descriptive.praat, as before). This file does
-#   not read eml-analysis.praat or any menu/dialog machinery, and is not
-#   included by any of them.
+#   eml-studentized-range.praat (@emlStudentizedRangeQ,
+#   @emlInvStudentizedRangeQ -- the Tukey leg), AND, as of the
+#   EMM/post-hoc/simple-effects addition, eml-inferential.praat
+#   (@emlBonferroni, @emlHolm, @emlBenjaminiHochberg -- called by
+#   @emlAnovaKernelTwoWayPostHoc's Bonferroni/Holm/BH legs; its Scheffe
+#   leg uses only Praat builtins, no procedure from that file).
+#   Callers must `include` all three files before this one
+#   (eml-inferential.praat is only actually EXERCISED if
+#   @emlAnovaKernelTwoWayPostHoc is called with .adjMethod$ "bonferroni",
+#   "holm" or "bh"; @emlAnovaKernelTwoWay, @emlLeveneTest,
+#   @emlAnovaKernelTwoWayEMM and @emlAnovaKernelTwoWaySimpleEffects need
+#   only eml-core-descriptive.praat, as before). This file does not read
+#   eml-analysis.praat or any menu/dialog machinery, and is not included
+#   by any of them.
 #
 # Praat functions used: zero#, zero##, transpose##, mul#, mul##, inner,
 #   solve# (never inverse## -- it does not exist in 6.6.30), sort# (inside
-#   @emlMedian), fisherQ, invFisherQ, studentQ, invStudentQ,
-#   Get TukeyQ:, Get invTukeyQ:, floor, abs, sqrt.
+#   @emlMedian), fisherQ, invFisherQ, studentQ, invStudentQ, floor, abs,
+#   sqrt.
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -1403,9 +1407,11 @@ endproc
 # Holm, Benjamini-Hochberg, Tukey or Scheffe. Calls the plugin's EXISTING
 # adjustment machinery rather than reimplementing it -- @emlBonferroni,
 # @emlHolm, @emlBenjaminiHochberg (eml-inferential.praat) for the first
-# three; Praat's own Get TukeyQ:/Get invTukeyQ:/invFisherQ (the same
-# builtins @eml_tukeyPairwiseFromGroups and @emlScheffeInterval already use
-# elsewhere in this plugin) for the last two.
+# three; the validated studentized-range port
+# (@emlStudentizedRangeQ/@emlInvStudentizedRangeQ, the same port
+# @eml_tukeyPairwiseFromGroups calls) for Tukey, and Praat's own
+# invFisherQ (the same builtin @emlScheffeInterval already uses
+# elsewhere in this plugin) for Scheffe.
 #
 # THE RAW TEST. Every pairwise comparison of two marginal means is a t-test
 # against the pooled error term: t = (EMM_i - EMM_i') / SE_diff, SE_diff =
@@ -1429,8 +1435,9 @@ endproc
 #     but with SE_diff computed from each marginal mean's OWN (possibly
 #     unequal, unbalanced-design) variance rather than the single-n
 #     formula -- the standard Tukey-Kramer approximation, referred to the
-#     studentized range distribution via Get TukeyQ:/Get invTukeyQ: with
-#     the family size k = the number of levels in the factor being
+#     studentized range distribution via @emlStudentizedRangeQ/
+#     @emlInvStudentizedRangeQ with the family size k = the number of
+#     levels in the factor being
 #     compared and df = dfError. This is what emmeans' own adjust =
 #     "tukey" computes for an unbalanced design.
 #   scheffe -- F_Scheffe = (diff / SE_diff)^2 / (k - 1), referred to
@@ -1625,7 +1632,8 @@ procedure emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$
             .adjP# = emlBenjaminiHochberg.adjusted#
             .intervalMethod$ = ""
         elsif .adjMethod$ = "tukey"
-            .qCritical = Get invTukeyQ: .alpha, .k, .dfError, 1
+            @emlInvStudentizedRangeQ: .alpha, .k, .dfError, 1
+            .qCritical = emlInvStudentizedRangeQ.q
             .intervalMethod$ = "Tukey HSD simultaneous interval (studentized "
                 ... + "range, Tukey-Kramer for unequal n), family size "
                 ... + string$ (.k)
@@ -1647,7 +1655,8 @@ procedure emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$
             elsif .adjMethod$ = "tukey"
                 if .sed > 0
                     .qForQ = sqrt (2) * abs (.d) / .sed
-                    .p = Get TukeyQ: .qForQ, .k, .dfError, 1
+                    @emlStudentizedRangeQ: .qForQ, .k, .dfError, 1
+                    .p = emlStudentizedRangeQ.p
                     .stat##[.i, .j] = .qForQ
                     .stat##[.j, .i] = .qForQ
                 else
