@@ -76,6 +76,21 @@ include ../stats/eml-psychometrics.praat
 ;
 ; It goes BEFORE eml-inferential.praat because an include is a parse-time
 ; paste and the caller must find the procedure already defined.
+; The studentized-range port, which both kernels below now call for every
+; Tukey and Games-Howell leg. Added 4 September 2026 with the repointing
+; wave. setup.praat's barrel has carried this module at position 5 of 15
+; since the port was written; this chain never named it, so the moment the
+; kernels stopped calling Praat's builtin the one-way ANOVA post-hoc door
+; died at parse time with
+;
+;     Error: Procedure "emlStudentizedRangeQ" not found.
+;
+; Fourth instance of this defect: eml-psychometrics.praat, eml-anova-kernel
+; .praat and eml-categorical.praat each arrived the same way, and the
+; recorder's own emitted-script include list carried the same gap. A module
+; a kernel calls has to be in the chain the doors follow.
+include ../stats/eml-studentized-range.praat
+
 include ../stats/eml-anova-kernel.praat
 include ../stats/eml-inferential.praat
 
