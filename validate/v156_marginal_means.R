@@ -279,7 +279,17 @@ if (!canDrive) {
         paste0("include ", file.path(plug, "stats", "eml-core-descriptive.praat")),
         paste0("include ", file.path(plug, "stats", "eml-core-utilities.praat")),
         paste0("include ", file.path(plug, "stats", "eml-inferential.praat")),
-        paste0("include ", file.path(plug, "stats", "eml-anova-kernel.praat")))
+        paste0("include ", file.path(plug, "stats", "eml-anova-kernel.praat")),
+        # THE STUDENTIZED-RANGE PORT. @emlAnovaKernelTwoWayPostHoc's Tukey leg
+        # calls @emlInvStudentizedRangeQ, which lives in its own file, so
+        # without this line the whole battery dies at the first Tukey call
+        # with `Procedure "emlInvStudentizedRangeQ" not found` and every
+        # check in this file reports NA. This probe's include block is a
+        # fourth hand-maintained module list, alongside setup.praat's barrel
+        # table, scripts/eml-lib.praat's door chain, and @emlRecordRender's
+        # emitted-script list. A procedure that moves into a new file has to
+        # be added to all four.
+        paste0("include ", file.path(plug, "stats", "eml-studentized-range.praat")))
 
     # -------------------------------------------------------------------
     # ONE PRAAT SCRIPT drives every fixture x every leg. Fixed-point

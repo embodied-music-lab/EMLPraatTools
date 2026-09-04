@@ -7231,6 +7231,24 @@ endproc
 # ============================================================================
 # @emlReportTwoWayAnova
 # ============================================================================
+# ────────────────────────────────────────────────────────────────────────────
+# @emlReportTwoWayOmega   (private to the two-way report)
+# One omega-squared row. The kernel can legitimately produce `undefined`
+# for omega squared -- it is a difference of sums of squares divided by a
+# total, and a degenerate design makes it unformable -- and @eml_fixed
+# renders undefined as Praat's own "--undefined--", which reads as a
+# malfunction rather than as a result. Written once here and called three
+# times rather than repeated per effect.
+# ────────────────────────────────────────────────────────────────────────────
+procedure emlReportTwoWayOmega: .label$, .value
+    if .value = undefined
+        @emlReportLineString: .label$, "not available for this design"
+    else
+        @emlReportLine: .label$, .value, 4
+    endif
+endproc
+
+
 procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlUnderscoreToSpace: .tableName$
     .displayTable$ = emlUnderscoreToSpace.result$
@@ -7259,6 +7277,14 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
         ... string$ (emlTwoWayAnova.minCellN) + " to "
         ... + string$ (emlTwoWayAnova.maxCellN) + " (unbalanced)"
     endif
+    ; WHICH SS TYPE PRODUCED THE TABLE BELOW. The glance CSV frame has always
+    ; carried this (@emlDeclareTwoWayResult writes method = "Two-way ANOVA
+    ; (Type III SS)"), and the report did not, so a reader who did not export
+    ; the CSV was never told which of three possible tables they were looking
+    ; at. On an unbalanced design the three types disagree, which is the case
+    ; where knowing matters most. Printed in the header block rather than in
+    ; the table's own heading so the fixed-width block below is untouched.
+    @emlReportLineString: "Sums of squares", emlTwoWayAnova.ssTypeLabel$
 
     @emlReportBlank
     @emlReportSection: "ANOVA Table"
@@ -7442,6 +7468,93 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     endif
     @emlReportLineString: .interLabel$, .etaTextAB$
 
+    ; OMEGA SQUARED, in its own block beside partial eta-squared rather than
+    ; folded into the rows above, so neither number has to share a line and
+    ; the existing block keeps its shape. The kernel has always computed
+    ; these; nothing reached them until @emlTwoWayAnova began re-exporting
+    ; them. They read SMALLER than partial eta-squared and that is expected:
+    ; omega squared subtracts the error each effect is expected to carry by
+    ; chance, so it estimates the population effect rather than describing
+    ; the sample. Undefined is a real outcome the kernel can produce, and it
+    ; is printed as such rather than as a number.
+    @emlReportBlank
+    @emlReportSection: "Effect Sizes (omega squared)"
+    if emlShowExplanations
+        appendInfoLine: "  Why: Omega squared estimates the effect in the "
+        ... + "population. It is smaller than partial eta-squared because "
+        ... + "it removes the variance each effect picks up by chance."
+    endif
+    @emlReportTwoWayOmega: .displayF1$, emlTwoWayAnova.omegaSqA
+    @emlReportTwoWayOmega: .displayF2$, emlTwoWayAnova.omegaSqB
+    @emlReportTwoWayOmega: .interLabel$, emlTwoWayAnova.omegaSqAB
+
+    ; ASSUMPTION CHECKS. Both are computed by @emlAnovaKernelTwoWay on every
+    ; run and neither reached a user before this. Placed after the effect
+    ; sizes and before the cell means: they qualify the whole table above,
+    ; not any one row of it.
+    ;
+    ; THE NORMALITY TEST IS ON THE RESIDUALS, and the section says so. The
+    ; note in @emlReportNormality is the reason -- a parametric test assumes
+    ; normality of the model residuals, and the marginal distribution of the
+    ; data column is a different distribution. This one is the right one, and
+    ; a reader who has seen the other report should be able to tell them
+    ; apart without checking the source.
+    @emlReportBlank
+    @emlReportSection: "Assumption Checks"
+    if emlShowExplanations
+        appendInfoLine: "  Why: The F-tests above assume equal variance "
+        ... + "across cells and normally distributed residuals."
+    endif
+
+    if emlTwoWayAnova.leveneError$ <> ""
+        @emlReportLineString: "Levene's test", "not available: "
+        ... + emlTwoWayAnova.leveneError$
+    elsif emlTwoWayAnova.levenePValue = undefined
+        @emlReportLineString: "Levene's test", "not available"
+    else
+        ; LABELS STAY INSIDE @emlReportLine's 20-character pad. A longer one
+        ; is not truncated -- it runs straight into its own value with no
+        ; separating space, which is how the first draft of this section
+        ; printed. What each test examines is said on the arrow line below
+        ; it instead, where there is room.
+        @eml_fixed: emlTwoWayAnova.leveneW, 4
+        @emlReportLineString: "Levene's W",
+        ... eml_fixed.result$ + "   df "
+        ... + string$ (emlTwoWayAnova.leveneDfBetween) + ", "
+        ... + string$ (emlTwoWayAnova.leveneDfWithin)
+        @emlReportPWithExact: "  p", emlTwoWayAnova.levenePValue
+        if emlTwoWayAnova.levenePValue < 0.05
+            appendInfoLine: "  → Equal variance across cells rejected"
+            ... + " (p < .05)"
+            appendInfoLine: "    The cells differ in spread. Read the"
+            ... + " F-tests with that in mind."
+        else
+            appendInfoLine: "  → Equal variance across cells not"
+            ... + " rejected (p >= .05)"
+        endif
+    endif
+
+    if emlTwoWayAnova.shapiroError$ <> ""
+        @emlReportLineString: "Shapiro-Wilk on residuals",
+        ... "not available: " + emlTwoWayAnova.shapiroError$
+    elsif emlTwoWayAnova.shapiroP = undefined
+        @emlReportLineString: "Shapiro-Wilk on residuals", "not available"
+    else
+        @eml_fixed: emlTwoWayAnova.shapiroW, 4
+        @emlReportLineString: "Shapiro-Wilk W",
+        ... eml_fixed.result$ + "   n "
+        ... + string$ (emlTwoWayAnova.shapiroN)
+        @emlReportPWithExact: "  p", emlTwoWayAnova.shapiroP
+        if emlTwoWayAnova.shapiroP < 0.05
+            appendInfoLine: "  → Residual normality rejected (p < .05)"
+        else
+            appendInfoLine: "  → Residual normality not rejected"
+            ... + " (p >= .05)"
+        endif
+        appendInfoLine: "    Tested on the model residuals, not on the"
+        ... + " data column."
+    endif
+
     # The block went ANOVA table → partial eta-squared → CSV → footer
     # with no cell means and no marginal means, so a significant interaction
     # said the factors are not additive but never in which direction. The
@@ -7575,6 +7688,22 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlCSVAddStr: .twLab$, "", "factor_2", .factor2$
     @emlCSVAdd: .twLab$, "", "n", emlTwoWayAnova.nRows
     @emlCSVAdd: .twLab$, "", "n_cells", emlTwoWayAnova.nCells
+    ; The assumption checks and the SS type go on the TOP-LEVEL term, beside
+    ; n and n_cells, rather than under a new term type. They describe the
+    ; whole model, not any one effect, and a new term type would widen the
+    ; export vocabulary the integrity check has to know about.
+    @emlCSVAddStr: .twLab$, "", "ss_type", emlTwoWayAnova.ssTypeLabel$
+    if emlTwoWayAnova.leveneError$ = ""
+        @emlCSVAdd: .twLab$, "", "levene_w", emlTwoWayAnova.leveneW
+        @emlCSVAdd: .twLab$, "", "levene_df1", emlTwoWayAnova.leveneDfBetween
+        @emlCSVAdd: .twLab$, "", "levene_df2", emlTwoWayAnova.leveneDfWithin
+        @emlCSVAdd: .twLab$, "", "levene_p", emlTwoWayAnova.levenePValue
+    endif
+    if emlTwoWayAnova.shapiroError$ = ""
+        @emlCSVAdd: .twLab$, "", "shapiro_w", emlTwoWayAnova.shapiroW
+        @emlCSVAdd: .twLab$, "", "shapiro_n", emlTwoWayAnova.shapiroN
+        @emlCSVAdd: .twLab$, "", "shapiro_p", emlTwoWayAnova.shapiroP
+    endif
 
     @emlCSVTermType: "factor"
     @emlCSVAdd: .twLab$, .factor1$, "F", emlTwoWayAnova.fA
@@ -7585,6 +7714,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlCSVAdd: .twLab$, .factor1$, "ms", emlTwoWayAnova.msA
     @emlCSVAdd: .twLab$, .factor1$, "partial_eta_squared",
     ... emlTwoWayAnova.partialEtaSqA
+    @emlCSVAdd: .twLab$, .factor1$, "omega_squared",
+    ... emlTwoWayAnova.omegaSqA
     @emlCSVAddStr: .twLab$, .factor1$, "effect_label", .etaLabelA$
 
     @emlCSVAdd: .twLab$, .factor2$, "F", emlTwoWayAnova.fB
@@ -7595,6 +7726,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlCSVAdd: .twLab$, .factor2$, "ms", emlTwoWayAnova.msB
     @emlCSVAdd: .twLab$, .factor2$, "partial_eta_squared",
     ... emlTwoWayAnova.partialEtaSqB
+    @emlCSVAdd: .twLab$, .factor2$, "omega_squared",
+    ... emlTwoWayAnova.omegaSqB
     @emlCSVAddStr: .twLab$, .factor2$, "effect_label", .etaLabelB$
 
     @emlCSVAdd: .twLab$, .rawInterLabel$, "F", emlTwoWayAnova.fAB
@@ -7605,6 +7738,8 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
     @emlCSVAdd: .twLab$, .rawInterLabel$, "ms", emlTwoWayAnova.msAB
     @emlCSVAdd: .twLab$, .rawInterLabel$, "partial_eta_squared",
     ... emlTwoWayAnova.partialEtaSqAB
+    @emlCSVAdd: .twLab$, .rawInterLabel$, "omega_squared",
+    ... emlTwoWayAnova.omegaSqAB
     @emlCSVAddStr: .twLab$, .rawInterLabel$, "effect_label", .etaLabelAB$
 
     @emlCSVTermType: "error"

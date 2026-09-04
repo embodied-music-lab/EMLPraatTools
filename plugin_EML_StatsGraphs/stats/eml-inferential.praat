@@ -5177,6 +5177,14 @@ endproc
 #     .partialEtaSqA  - partial eta-squared for factor 1
 #     .partialEtaSqB  - partial eta-squared for factor 2
 #     .partialEtaSqAB - partial eta-squared for interaction
+#     .omegaSqA, .omegaSqB, .omegaSqAB - omega squared (Field 2013), the
+#                 less biased estimate; undefined if the kernel could not
+#                 form it
+#   Assumption checks, both from the kernel:
+#     .leveneW, .levenePValue, .leveneDfBetween, .leveneDfWithin,
+#     .leveneError$ - Levene's test, median-centred, over the r*s cells
+#     .shapiroW, .shapiroP, .shapiroN, .shapiroError$ - Shapiro-Wilk on
+#                 the residuals (each observation minus its own cell mean)
 #   Status:
 #     .warning$ - non-fatal disclosure (unbalanced, degenerate variance,
 #                 zero error df), or "" if none
@@ -5227,6 +5235,25 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     .partialEtaSqA = undefined
     .partialEtaSqB = undefined
     .partialEtaSqAB = undefined
+    .omegaSqA = undefined
+    .omegaSqB = undefined
+    .omegaSqAB = undefined
+    ; ASSUMPTION CHECKS. Initialised HERE, at entry, and not only in the
+    ; re-export block below. Praat procedure locals are namespaced globals
+    ; that outlive the call, so a run that refuses before the kernel is
+    ; reached would otherwise still be carrying the PREVIOUS run's Levene
+    ; and Shapiro-Wilk figures, and a reporter reading them would print one
+    ; table's assumption checks under another table's heading. Same reason
+    ; @emlRunCategoricalAnalysis initialises .usingCounts at entry.
+    .leveneW = undefined
+    .levenePValue = undefined
+    .leveneDfBetween = undefined
+    .leveneDfWithin = undefined
+    .leveneError$ = ""
+    .shapiroW = undefined
+    .shapiroP = undefined
+    .shapiroN = 0
+    .shapiroError$ = ""
     .warning$ = ""
     .error$ = ""
 
@@ -5320,6 +5347,26 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
         .partialEtaSqA = emlAnovaKernelTwoWay.partialEtaSqA
         .partialEtaSqB = emlAnovaKernelTwoWay.partialEtaSqB
         .partialEtaSqAB = emlAnovaKernelTwoWay.partialEtaSqAB
+        ; OMEGA SQUARED AND THE TWO ASSUMPTION CHECKS. The kernel has always
+        ; computed these; this block used to copy 27 of its fields and omit
+        ; these twelve, so Levene, Shapiro-Wilk on the residuals and omega
+        ; squared were correct and unreachable -- three of the five outputs
+        ; RULING_CONSOLIDATED_KERNELS ruled complete for this door. Reaching
+        ; across two layers into emlAnovaKernelTwoWay's own locals is not the
+        ; contract the rest of the plugin keeps, so they are re-exported here
+        ; like every other kernel result.
+        .omegaSqA = emlAnovaKernelTwoWay.omegaSqA
+        .omegaSqB = emlAnovaKernelTwoWay.omegaSqB
+        .omegaSqAB = emlAnovaKernelTwoWay.omegaSqAB
+        .leveneW = emlAnovaKernelTwoWay.leveneW
+        .levenePValue = emlAnovaKernelTwoWay.levenePValue
+        .leveneDfBetween = emlAnovaKernelTwoWay.leveneDfBetween
+        .leveneDfWithin = emlAnovaKernelTwoWay.leveneDfWithin
+        .leveneError$ = emlAnovaKernelTwoWay.leveneError$
+        .shapiroW = emlAnovaKernelTwoWay.shapiroW
+        .shapiroP = emlAnovaKernelTwoWay.shapiroP
+        .shapiroN = emlAnovaKernelTwoWay.shapiroN
+        .shapiroError$ = emlAnovaKernelTwoWay.shapiroError$
         .warning$ = emlAnovaKernelTwoWay.warning$
     endif
 
