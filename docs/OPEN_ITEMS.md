@@ -3,10 +3,13 @@
 Kept in the repo on purpose: this file survives session loss. Update it
 when an item is opened, changed, or closed. Newest ruling wins.
 
-Last reconciled against the tree: 20 Aug 2026, afternoon. Every item below
-was checked against the code, the checks and the committed evidence rather
-than carried forward on trust; seven items that were listed as open turned
-out to be built and have moved to the closed section.
+This file's ITEM LIST is maintained continuously; its last full
+reconciliation against the tree was 20 August 2026. Read a single item
+here as current, and read the completeness of the list as of that date.
+
+For live status during the kit freeze and the road to 1.0.0, the tracker
+is authoritative: `mailbox/to-opus/TRACKER_KIT_AND_1p0.md`. Where the two
+disagree, the tracker wins.
 
 The phase register for features beyond 1.0.0 is `ROADMAP.md` at the repo
 root. This file is defects and ruled-but-unbuilt work; that one is where

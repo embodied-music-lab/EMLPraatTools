@@ -141,8 +141,9 @@ reported, not assumed).
      the port-attribution header rule
    - re-pointing grep-check: Get TukeyQ / Get invTukeyQ nowhere
      outside the port's file at landing [RULING_WAVE_THREE §track]
-6. Kit re-points to the canonical route; wrapper equivalence one
-   probe each; D-WORDING re-measures. DECIDED-NOT-STARTED.
+6. Kit re-points to the canonical route; D-WORDING re-measures.
+   DECIDED-NOT-STARTED. (Wrapper equivalence struck: the wrappers it
+   named no longer exist, so there is nothing to probe for equivalence.)
 7. grand_ledger BUILT (REPORT_GRAND_LEDGER 2 Sep): 8 counts MEASURED
    live, 7 AWAITING_RUN by design; refuses stale citations — the kit's
    current result files span THREE generations (praat_results 31 Aug <
