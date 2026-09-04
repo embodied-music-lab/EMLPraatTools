@@ -5194,33 +5194,279 @@ procedure eml_completeCaseDisclosure: .nRows, .n, .nExcluded, .parseNote$
 endproc
 
 
+
+
+# ============================================================================
+# @eml_rmCallStrings   (private)
+# The two strings the recorder needs from a repeated-measures call: the
+# argument literal it writes into the emitted script, and the plain-English
+# phrase it puts in the step description.
+#
+# WHY THE LITERAL IS BUILT AND NOT INTERPOLATED. The emitted script has to
+# PARSE, and a string vector argument is written as a vector literal. On the
+# long path there is no column vector to write — the conditions came from one
+# column — and RULING_RM_SIGNATURE_ACCEPTED settled the written form of the
+# unused vector as `empty$# (0)`: `{ }` was measured and does not parse, and a
+# visibly empty argument that says what it is beats a second procedure.
+# An inner quote is doubled, which is how Praat escapes one inside a string.
+# ============================================================================
+procedure eml_rmCallStrings: .format$, .conditionCols$#, .conditionCol$
+    if .format$ = "long"
+        .lit$ = "empty$# (0)"
+        .human$ = "conditions from " + .conditionCol$
+    else
+        .lit$ = "{ "
+        .human$ = ""
+        for .i from 1 to size (.conditionCols$#)
+            if .i > 1
+                .lit$ = .lit$ + ", "
+                .human$ = .human$ + ", "
+            endif
+            .lit$ = .lit$ + """"
+            ... + replace$ (.conditionCols$# [.i], """", """""", 0) + """"
+            .human$ = .human$ + .conditionCols$# [.i]
+        endfor
+        .lit$ = .lit$ + " }"
+        if size (.conditionCols$#) = 0
+            .lit$ = "empty$# (0)"
+        endif
+    endif
+endproc
+
+# ============================================================================
+# @eml_rmResolveMatrix   (private — the one shape-resolver for both RM doors)
+# ----------------------------------------------------------------------------
+# RULING_RM_FORMATS: repeated measures accepts BOTH table shapes for 1.0.
+# WIDE is one row per subject and one column per condition, which is what the
+# doors have always taken. LONG is one row per observation with a subject
+# column, a condition column and a value column, all named by the user.
+#
+# ONE STATISTICS ENGINE (pin 1). Both shapes converge on the same condition
+# matrix and the kernels, the Greenhouse-Geisser correction, the post-hocs and
+# the reporting see no difference. The long path does not build the matrix
+# itself: it goes through the existing reshape canon, @emlReshapeSeriesWide,
+# which is the same procedure the time-series door pivots with.
+#
+# WHY THIS IS SHARED RATHER THAN WRITTEN TWICE. @emlRunRepeatedMeasuresAnalysis
+# and @emlRunFriedmanAnalysis take identical signatures and differ only in the
+# kernel they call. Two copies of the shape resolution would be two places for
+# the refusals to drift apart.
+#
+# THE LONG PATH IS SAFER THAN THE WIDE PATH, and that is deliberate (pin 3).
+# Wide format cannot express a duplicated subject × condition cell — there is
+# one cell — so the wide path has nothing to check. Long format can, and a
+# repeated-measures test needs complete, unique cells. Both faults are an
+# explicit refusal naming the subject and the condition, never a silent
+# aggregation and never a silent drop.
+#
+# Input:  .tableId, .format$ ("wide"/"long"), .subjectCol$, .conditionCols$#,
+#         .conditionCol$, .valueCol$
+# Output: .error$, .n, .k, .data##, .nExcluded, .colLabel$[1..k],
+#         .transient (a Table id to remove when finished, or 0)
+# ============================================================================
+procedure eml_rmResolveMatrix: .tableId, .format$, .subjectCol$, .conditionCols$#, .conditionCol$, .valueCol$
+    .error$ = ""
+    .parseNote$ = ""
+    .transient = 0
+    .n = 0
+    .k = 0
+    .nExcluded = 0
+
+    ; THE FORMAT IS CHECKED FIRST AND BY NAME. RULING_RM_SIGNATURE_ACCEPTED:
+    ; any value other than the two accepted ones is a refusal that says what
+    ; it received and what it will take. A misspelled format must not fall
+    ; through to the wide path and analyse the wrong thing.
+    if .format$ <> "wide" and .format$ <> "long"
+        .error$ = "Unknown table format """ + .format$ + """. Use ""wide"""
+        ... + " — one row per subject, one column per condition — or"
+        ... + " ""long"" — one row per observation, with a subject column,"
+        ... + " a condition column and a value column."
+        goto END_RMRESOLVE
+    endif
+
+    if .format$ = "wide"
+        .srcId = .tableId
+        .cols$# = .conditionCols$#
+        goto RMRESOLVE_EXTRACT
+    endif
+
+    ; ---------------- the long path ----------------
+    selectObject: .tableId
+    .nRowsLong = Get number of rows
+    .ciSubj = Get column index: .subjectCol$
+    if .ciSubj = 0
+        .error$ = "Subject column not found: " + .subjectCol$
+        goto END_RMRESOLVE
+    endif
+    .ciCond = Get column index: .conditionCol$
+    if .ciCond = 0
+        .error$ = "Condition column not found: " + .conditionCol$
+        goto END_RMRESOLVE
+    endif
+    .ciVal = Get column index: .valueCol$
+    if .ciVal = 0
+        .error$ = "Value column not found: " + .valueCol$
+        goto END_RMRESOLVE
+    endif
+
+    ; THE LEVELS COME FROM @emlCountGroups, not from a scan written here.
+    ; That procedure is where this plugin's label rule lives — "Male", "male"
+    ; and " Male" are one level everywhere else, and a private scan would
+    ; agree with it on tidy data and disagree on exactly the data the
+    ; normalisation exists for.
+    @emlCountGroups: .tableId, .conditionCol$
+    if emlCountGroups.error$ <> ""
+        .error$ = emlCountGroups.error$
+        goto END_RMRESOLVE
+    endif
+    .nCond = emlCountGroups.nGroups
+    if .nCond < 2
+        .error$ = "Need at least 2 conditions in " + .conditionCol$
+        ... + "; found " + string$ (.nCond) + "."
+        goto END_RMRESOLVE
+    endif
+    ; COPIED OUT BEFORE THE SECOND CALL. A Praat procedure's outputs live in
+    ; one namespace, so the subject count below overwrites every field read
+    ; here. This is the trap that a second @emlCountGroups call sets.
+    .levels$# = empty$# (.nCond)
+    for .i from 1 to .nCond
+        .levels$# [.i] = emlCountGroups.groupLabel$ [.i]
+        .condNorm$ [.i] = emlCountGroups.groupNorm$ [.i]
+    endfor
+
+    @emlCountGroups: .tableId, .subjectCol$
+    if emlCountGroups.error$ <> ""
+        .error$ = emlCountGroups.error$
+        goto END_RMRESOLVE
+    endif
+    .nSubj = emlCountGroups.nGroups
+    if .nSubj < 2
+        .error$ = "Need at least 2 subjects in " + .subjectCol$
+        ... + "; found " + string$ (.nSubj) + "."
+        goto END_RMRESOLVE
+    endif
+    for .i from 1 to .nSubj
+        .subjLabel$ [.i] = emlCountGroups.groupLabel$ [.i]
+        .subjNorm$ [.i] = emlCountGroups.groupNorm$ [.i]
+    endfor
+
+    ; ---- pin 3: every subject × condition cell present exactly once ----
+    ; One pass over the rows filling a count table, then one pass over the
+    ; count table. A row whose subject or condition label is blank is not
+    ; counted against any cell; it surfaces as a MISSING cell below, which is
+    ; the refusal a reader can act on, rather than as a separate complaint
+    ; about a blank they would then have to connect to a subject.
+    for .a from 1 to .nSubj
+        for .b from 1 to .nCond
+            .cellCount [.a, .b] = 0
+        endfor
+    endfor
+    selectObject: .tableId
+    for .row from 1 to .nRowsLong
+        .sRaw$ = Get value: .row, .subjectCol$
+        .cRaw$ = Get value: .row, .conditionCol$
+        @eml_normalizeLabel: .sRaw$
+        .sNorm$ = eml_normalizeLabel.result$
+        @eml_normalizeLabel: .cRaw$
+        .cNorm$ = eml_normalizeLabel.result$
+        .si = 0
+        for .a from 1 to .nSubj
+            if .subjNorm$ [.a] = .sNorm$
+                .si = .a
+            endif
+        endfor
+        .ci = 0
+        for .b from 1 to .nCond
+            if .condNorm$ [.b] = .cNorm$
+                .ci = .b
+            endif
+        endfor
+        if .si > 0 and .ci > 0
+            .cellCount [.si, .ci] = .cellCount [.si, .ci] + 1
+        endif
+    endfor
+    for .a from 1 to .nSubj
+        for .b from 1 to .nCond
+            if .error$ = ""
+                if .cellCount [.a, .b] = 0
+                    .error$ = "No observation for subject """
+                    ... + .subjLabel$ [.a] + """ in condition """
+                    ... + .levels$# [.b] + """. A repeated-measures test needs"
+                    ... + " every subject measured in every condition."
+                elsif .cellCount [.a, .b] > 1
+                    .error$ = "Subject """ + .subjLabel$ [.a] + """ appears "
+                    ... + string$ (.cellCount [.a, .b]) + " times in condition"
+                    ... + " """ + .levels$# [.b] + """. Each subject must"
+                    ... + " appear once per condition; nothing is averaged"
+                    ... + " for you."
+                endif
+            endif
+        endfor
+    endfor
+    if .error$ <> ""
+        goto END_RMRESOLVE
+    endif
+
+    ; ---- the reshape canon does the conversion, per pin 1 ----
+    @emlReshapeSeriesWide: .tableId, .subjectCol$, .valueCol$,
+    ... .conditionCol$, .levels$#
+    .transient = emlReshapeSeriesWide.tableId
+    .srcId = .transient
+    .cols$# = .levels$#
+
+    label RMRESOLVE_EXTRACT
+    @emlExtractConditionMatrix: .srcId, .cols$#
+    if emlExtractConditionMatrix.error$ <> ""
+        .error$ = emlExtractConditionMatrix.error$
+        goto END_RMRESOLVE
+    endif
+    .n = emlExtractConditionMatrix.n
+    .k = emlExtractConditionMatrix.k
+    .data## = emlExtractConditionMatrix.data##
+    .nExcluded = emlExtractConditionMatrix.nExcluded
+    .parseNote$ = eml_rmResolveMatrix.parseNote$
+    for .j from 1 to .k
+        .colLabel$ [.j] = emlExtractConditionMatrix.colLabel$ [.j]
+    endfor
+
+    label END_RMRESOLVE
+endproc
+
 # ============================================================================
 # @emlExtractConditionMatrix
 # Row-wise COMPLETE-CASE extraction of k condition columns into a matrix.
 # A subject (row) is kept only when ALL k condition cells are defined, which
 # preserves the within-subject blocking that repeated-measures tests require
 # (per-column deletion would break the pairing — same principle as C1/C2).
-# Input:  .tableId, .conditionCols$  ("|"-delimited column names)
+# Input:  .tableId, .conditionCols$#  (a string vector of column names)
 # Output: .data## (n x k), .n, .k, .colLabel$[1..k], .nExcluded, .error$
+#
+# THE PIPE FORM IS GONE. This took a single "|"-delimited string and split it
+# here. RULING_RM_SIGNATURE_ACCEPTED put one list convention on the public
+# surface — the string vector — and killed the pipe form on the
+# no-backward-compatibility basis: it was never shipped, so there is no
+# wrapper and no shim. A caller still holding a pipe string is a caller that
+# has not been converted, and it will fail to parse rather than silently
+# analysing one column named "a|b|c".
+#
+# The trim survives the change. A vector element can still arrive padded —
+# a dialog answer, a recorded literal — and an untrimmed name fails the
+# `Get column index:` check with a message naming a column the user believes
+# they typed correctly.
 # ============================================================================
-procedure emlExtractConditionMatrix: .tableId, .conditionCols$
+procedure emlExtractConditionMatrix: .tableId, .conditionCols$#
     .error$ = ""
     .parseNote$ = ""
     .nExcluded = 0
     .k = 0
-    .rest$ = .conditionCols$ + "|"
-    .barPos = index (.rest$, "|")
-    while .barPos > 0
-        .tok$ = left$ (.rest$, .barPos - 1)
-        .tok$ = replace_regex$ (.tok$, "^ +", "", 0)
+    for .i from 1 to size (.conditionCols$#)
+        .tok$ = replace_regex$ (.conditionCols$# [.i], "^ +", "", 0)
         .tok$ = replace_regex$ (.tok$, " +$", "", 0)
         if .tok$ <> ""
             .k = .k + 1
             .colLabel$ [.k] = .tok$
         endif
-        .rest$ = mid$ (.rest$, .barPos + 1, length (.rest$) - .barPos)
-        .barPos = index (.rest$, "|")
-    endwhile
+    endfor
     if .k < 2
         .error$ = "Need at least 2 condition columns."
         goto END_EXTRACT_COND
@@ -5643,7 +5889,9 @@ endproc
 # removing it would silently shift .conditionCols$, .doPostHoc and
 # .adjMethod$ at every call site. It is kept for a future long-format path.
 # ============================================================================
-procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$
+procedure emlRunRepeatedMeasuresAnalysis: .tableId, .format$,
+... .subjectCol$, .conditionCols$#, .conditionCol$, .valueCol$,
+... .doPostHoc, .adjMethod$
     .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
@@ -5660,15 +5908,32 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
-    @emlExtractConditionMatrix: .tableId, .conditionCols$
-    if emlExtractConditionMatrix.error$ <> ""
-        .error$ = emlExtractConditionMatrix.error$
+    ; THE RECORDER'S TWO STRINGS, BUILT BEFORE ANYTHING CAN REFUSE. The
+    ; record hook below the end label runs on a refusal too, and it reads
+    ; both of these; building them after the resolver would leave a refused
+    ; run recording the PREVIOUS run's condition list, because a Praat
+    ; procedure's locals outlive the call.
+    @eml_rmCallStrings: .format$, .conditionCols$#, .conditionCol$
+    .condLit$ = eml_rmCallStrings.lit$
+    .condHuman$ = eml_rmCallStrings.human$
+
+    ; WIDE OR LONG, resolved in one place for both doors — see
+    ; @eml_rmResolveMatrix. Everything below this point sees the same
+    ; condition matrix whichever shape the user brought.
+    @eml_rmResolveMatrix: .tableId, .format$, .subjectCol$, .conditionCols$#,
+    ... .conditionCol$, .valueCol$
+    .transient = eml_rmResolveMatrix.transient
+    if eml_rmResolveMatrix.error$ <> ""
+        .error$ = eml_rmResolveMatrix.error$
         goto END_RM
     endif
-    .n = emlExtractConditionMatrix.n
-    .k = emlExtractConditionMatrix.k
-    .data## = emlExtractConditionMatrix.data##
-    .nExcluded = emlExtractConditionMatrix.nExcluded
+    .n = eml_rmResolveMatrix.n
+    .k = eml_rmResolveMatrix.k
+    .data## = eml_rmResolveMatrix.data##
+    .nExcluded = eml_rmResolveMatrix.nExcluded
+    for .j from 1 to .k
+        .colLabel$ [.j] = eml_rmResolveMatrix.colLabel$ [.j]
+    endfor
 
     ; ERROR-READ EXEMPT -- .degenerate is set in lockstep with .error$ in every branch of
     ; emlRMAnovaTest; gating on .degenerate = 0 below is equivalent to checking .error$ = "".
@@ -5701,7 +5966,7 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     if emlRMAnovaTest.error$ <> ""
         .error$ = emlRMAnovaTest.error$
         @eml_completeCaseDisclosure: .n + .nExcluded, .n, .nExcluded,
-        ... emlExtractConditionMatrix.parseNote$
+        ... eml_rmResolveMatrix.parseNote$
         if eml_completeCaseDisclosure.note$ <> ""
             .error$ = .error$ + " " + eml_completeCaseDisclosure.note$
         endif
@@ -5718,7 +5983,7 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     ; zero is a mean like any other and prints at the column's width.
     for .j from 1 to .k
         @eml_fixed: emlRMAnovaTest.condMean# [.j], 4
-        .cm$ = "    " + emlExtractConditionMatrix.colLabel$ [.j] + " mean = "
+        .cm$ = "    " + .colLabel$ [.j] + " mean = "
             ... + eml_fixed.result$
         appendInfoLine: .cm$
     endfor
@@ -5815,8 +6080,8 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
             ... + string$ (.n) + " complete cases)."
         appendInfoLine: .exclNote$
         # Say WHICH condition dropped the row and why.
-        if emlExtractConditionMatrix.parseNote$ <> ""
-            @emlWrapText: emlExtractConditionMatrix.parseNote$, 66
+        if eml_rmResolveMatrix.parseNote$ <> ""
+            @emlWrapText: eml_rmResolveMatrix.parseNote$, 66
             for .pl from 1 to emlWrapText.nLines
                 appendInfoLine: "  ", emlWrapText.line$ [.pl]
             endfor
@@ -5842,6 +6107,15 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     label END_RM
     .ok = (.error$ = "")
 
+    ; THE LONG PATH'S PIVOT IS A TRANSIENT AND IT IS REMOVED HERE, on the
+    ; refusal path as well as the success path — the label is the one place
+    ; both reach. A user who ran a long-format analysis should not find an
+    ; "eml_pivot" Table sitting in their object list afterwards.
+    if .transient <> 0
+        removeObject: .transient
+        .transient = 0
+    endif
+
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
@@ -5854,9 +6128,12 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     ; loaded the recorder executes nothing here.
     if variableExists ("emlRecordLoaded")
         @emlRecordAnalysisStep: .tableId, "Repeated-measures ANOVA",
-        ... .conditionCols$ + ", subject " + .subjectCol$,
+        ... .condHuman$ + ", subject " + .subjectCol$,
         ... "Sphericity is corrected, not assumed; the report names the correction.",
-        ... "@emlRunRepeatedMeasuresAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
+        ... "@emlRunRepeatedMeasuresAnalysis: data, """ + .format$ + """, """
+        ... + .subjectCol$ + """, " + .condLit$ + ", """ + .conditionCol$
+        ... + """, """ + .valueCol$ + """, " + string$ (.doPostHoc)
+        ... + ", """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Stats & Graphs > Stats Wizard... (three or more conditions)",
         ... .recResult$, .error$
     endif
@@ -5871,7 +6148,9 @@ endproc
 # reason as @emlRunRepeatedMeasuresAnalysis — wide-format input, so the row
 # index identifies the subject. Retained because callers pass positionally.
 # ============================================================================
-procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPostHoc, .adjMethod$
+procedure emlRunFriedmanAnalysis: .tableId, .format$,
+... .subjectCol$, .conditionCols$#, .conditionCol$, .valueCol$,
+... .doPostHoc, .adjMethod$
     .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
@@ -5888,15 +6167,32 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
-    @emlExtractConditionMatrix: .tableId, .conditionCols$
-    if emlExtractConditionMatrix.error$ <> ""
-        .error$ = emlExtractConditionMatrix.error$
+    ; THE RECORDER'S TWO STRINGS, BUILT BEFORE ANYTHING CAN REFUSE. The
+    ; record hook below the end label runs on a refusal too, and it reads
+    ; both of these; building them after the resolver would leave a refused
+    ; run recording the PREVIOUS run's condition list, because a Praat
+    ; procedure's locals outlive the call.
+    @eml_rmCallStrings: .format$, .conditionCols$#, .conditionCol$
+    .condLit$ = eml_rmCallStrings.lit$
+    .condHuman$ = eml_rmCallStrings.human$
+
+    ; WIDE OR LONG, resolved in one place for both doors — see
+    ; @eml_rmResolveMatrix. Everything below this point sees the same
+    ; condition matrix whichever shape the user brought.
+    @eml_rmResolveMatrix: .tableId, .format$, .subjectCol$, .conditionCols$#,
+    ... .conditionCol$, .valueCol$
+    .transient = eml_rmResolveMatrix.transient
+    if eml_rmResolveMatrix.error$ <> ""
+        .error$ = eml_rmResolveMatrix.error$
         goto END_FRIED
     endif
-    .n = emlExtractConditionMatrix.n
-    .k = emlExtractConditionMatrix.k
-    .data## = emlExtractConditionMatrix.data##
-    .nExcluded = emlExtractConditionMatrix.nExcluded
+    .n = eml_rmResolveMatrix.n
+    .k = eml_rmResolveMatrix.k
+    .data## = eml_rmResolveMatrix.data##
+    .nExcluded = eml_rmResolveMatrix.nExcluded
+    for .j from 1 to .k
+        .colLabel$ [.j] = eml_rmResolveMatrix.colLabel$ [.j]
+    endfor
 
     @emlFriedmanTest: .data##, .n, .k
     ; Same rule as the repeated-measures path: captured where it is fresh.
@@ -5915,7 +6211,7 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     ; As on the repeated-measures path above.
     for .j from 1 to .k
         @eml_fixed: emlFriedmanTest.rankSum# [.j], 1
-        .rs$ = "    " + emlExtractConditionMatrix.colLabel$ [.j] + " rank sum = "
+        .rs$ = "    " + .colLabel$ [.j] + " rank sum = "
             ... + eml_fixed.result$
         appendInfoLine: .rs$
     endfor
@@ -5971,8 +6267,8 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
             ... + string$ (.n) + " complete cases)."
         appendInfoLine: .exclNote$
         # Say WHICH condition dropped the row and why.
-        if emlExtractConditionMatrix.parseNote$ <> ""
-            @emlWrapText: emlExtractConditionMatrix.parseNote$, 66
+        if eml_rmResolveMatrix.parseNote$ <> ""
+            @emlWrapText: eml_rmResolveMatrix.parseNote$, 66
             for .pl from 1 to emlWrapText.nLines
                 appendInfoLine: "  ", emlWrapText.line$ [.pl]
             endfor
@@ -5982,7 +6278,7 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     ; BUILD. @emlFriedmanTest exposes NO .error$ field -- referencing one is a
     ; runtime error -- so the gate is the extractor's error and the
     ; orchestrator's own.
-    if .error$ = "" and emlExtractConditionMatrix.error$ = ""
+    if .error$ = "" and eml_rmResolveMatrix.error$ = ""
         @emlResultClearExtras
         ; Nested, not `and`: with post-hoc off, @emlRMPostHoc never ran and
         ; emlRMPostHoc.nPairs does not exist. Praat evaluates both operands.
@@ -6000,6 +6296,15 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     label END_FRIED
     .ok = (.error$ = "")
 
+    ; THE LONG PATH'S PIVOT IS A TRANSIENT AND IT IS REMOVED HERE, on the
+    ; refusal path as well as the success path — the label is the one place
+    ; both reach. A user who ran a long-format analysis should not find an
+    ; "eml_pivot" Table sitting in their object list afterwards.
+    if .transient <> 0
+        removeObject: .transient
+        .transient = 0
+    endif
+
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
     ; vanishing -- see @emlRecordAnalysisStep.
@@ -6012,9 +6317,12 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     ; loaded the recorder executes nothing here.
     if variableExists ("emlRecordLoaded")
         @emlRecordAnalysisStep: .tableId, "Friedman",
-        ... .conditionCols$ + ", subject " + .subjectCol$,
+        ... .condHuman$ + ", subject " + .subjectCol$,
         ... "Rank-based repeated measures; it does not assume normality and does not test it.",
-        ... "@emlRunFriedmanAnalysis: data, """ + .subjectCol$ + """, """ + .conditionCols$ + """, " + string$ (.doPostHoc) + ", """ + .adjMethod$ + """",
+        ... "@emlRunFriedmanAnalysis: data, """ + .format$ + """, """
+        ... + .subjectCol$ + """, " + .condLit$ + ", """ + .conditionCol$
+        ... + """, """ + .valueCol$ + """, " + string$ (.doPostHoc)
+        ... + ", """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Stats & Graphs > Stats Wizard... (three or more conditions, Friedman)",
         ... .recResult$, .error$
     endif

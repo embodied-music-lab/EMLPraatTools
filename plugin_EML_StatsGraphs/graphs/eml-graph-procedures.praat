@@ -8035,23 +8035,24 @@ endproc
 # .error$ and .warning$ are always "": this transform has no refusal path.
 # .ok is (.error$ = ""), set once at the procedure's single exit.
 # ============================================================================
-procedure emlReshapeSeriesLong: .objectId, .timeCol$, .cols$
+# THE COMMA FORM IS GONE. `.cols$` was one comma-separated string split here.
+# RULING_RM_SIGNATURE_ACCEPTED put one list convention on the public surface —
+# the string vector — and killed the comma form on the same
+# no-backward-compatibility basis as the pipe form: never shipped, so no
+# wrapper and no exception. A column whose own name contains a comma can now
+# be carried, which the comma form could not do and which the form used to
+# refuse the table for.
+procedure emlReshapeSeriesLong: .objectId, .timeCol$, .cols$#
     .error$ = ""
     .warning$ = ""
-    ; The list, split into the array the melt walks. Trailing separator
-    ; tolerated: the form builds this list beside a `prev_` copy that ends in
-    ; one, and a refusal to accept it would be a trap rather than a rule.
+    ; Empty elements tolerated: the form builds this list beside a `prev_`
+    ; copy that could leave a trailing blank, and a refusal to accept one
+    ; would be a trap rather than a rule. The trim stays for the same reason
+    ; it stayed in @emlExtractConditionMatrix — an element can arrive padded
+    ; from a dialog answer or a recorded literal.
     .nSeries = 0
-    .rest$ = .cols$
-    while .rest$ <> ""
-        .comma = index (.rest$, ",")
-        if .comma = 0
-            .one$ = .rest$
-            .rest$ = ""
-        else
-            .one$ = left$ (.rest$, .comma - 1)
-            .rest$ = mid$ (.rest$, .comma + 1, 1000000)
-        endif
+    for .iCol from 1 to size (.cols$#)
+        .one$ = .cols$# [.iCol]
         while left$ (.one$, 1) = " "
             .one$ = mid$ (.one$, 2, 1000000)
         endwhile
@@ -8062,7 +8063,7 @@ procedure emlReshapeSeriesLong: .objectId, .timeCol$, .cols$
             .nSeries = .nSeries + 1
             tsSeriesCol$ [.nSeries] = .one$
         endif
-    endwhile
+    endfor
 
     selectObject: .objectId
     .nDataRows = Get number of rows
@@ -8089,7 +8090,7 @@ endproc
 
 
 # ============================================================================
-# @emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$
+# @emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$#
 #   -> .tableId, .nSeries, .nDataRows, .nUnlisted
 # ============================================================================
 # THE MIRROR IMAGE OF @emlReshapeSeriesLong, AND IT IS HERE FOR THE SAME
@@ -8114,13 +8115,13 @@ endproc
 # its meas2 leg over the same numbers in the other shape and requires the two
 # PNGs to be the same file.
 #
-# WHY THE LEVELS ARRIVE AS ONE COMMA-SEPARATED STRING. It is the shape
-# @emlReshapeSeriesLong' `.cols$` already has, and for the same reason: the
-# recorder lifts a call's string literals into the editable block, so a list
-# that is one literal is one line a reader can retarget. A level whose own
-# name contains a comma cannot be carried this way, and the FORM refuses that
-# table by name rather than letting this procedure split it wrongly and draw a
-# figure with a series missing.
+# WHY THE LEVELS ARRIVE AS A STRING VECTOR. It is the shape
+# @emlReshapeSeriesLong' `.cols$#` has, and one list convention now holds
+# across the whole public surface. The recorder still lifts the list into an
+# emitted script's editable block as a single line a reader can retarget —
+# a vector literal is one line the same way a quoted list was. A level whose
+# own name contains a comma is carried correctly now; the comma form could
+# not carry one, which is why the form used to refuse such a table by name.
 #
 # HOW IT IS BUILT, AND WHY THE SORT IS NOT COSMETIC. The working copy is
 # sorted by (time, name), so every row sharing a time value is contiguous and,
@@ -8139,21 +8140,13 @@ endproc
 # .error$ and .warning$ are always "": this transform has no refusal path.
 # .ok is (.error$ = ""), set once at the procedure's single exit.
 # ============================================================================
-procedure emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$
+procedure emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$#
     .error$ = ""
     .warning$ = ""
-    ; ---- the levels, split exactly as the melt splits its column list -----
+    ; ---- the levels, read exactly as the melt reads its column list ------
     .nSeries = 0
-    .rest$ = .levels$
-    while .rest$ <> ""
-        .comma = index (.rest$, ",")
-        if .comma = 0
-            .one$ = .rest$
-            .rest$ = ""
-        else
-            .one$ = left$ (.rest$, .comma - 1)
-            .rest$ = mid$ (.rest$, .comma + 1, 1000000)
-        endif
+    for .iLev from 1 to size (.levels$#)
+        .one$ = .levels$# [.iLev]
         while left$ (.one$, 1) = " "
             .one$ = mid$ (.one$, 2, 1000000)
         endwhile
@@ -8174,7 +8167,7 @@ procedure emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .le
             @eml_normalizeLabel: .one$
             .levelNorm'.nSeries'$ = eml_normalizeLabel.result$
         endif
-    endwhile
+    endfor
 
     ; ---- the working copy, sorted so that one pass is enough --------------
     selectObject: .objectId

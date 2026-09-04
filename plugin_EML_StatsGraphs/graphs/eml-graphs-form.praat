@@ -6047,13 +6047,38 @@ repeat
                         # takes and the recorder writes into the emitted block
                         # as seriesCols$ (SPEC section 8), where a leading
                         # comma would read as an empty first column.
-                        tsSeriesCols$ = ""
+                        # THE LIST THE RESHAPE PAIR TAKES IS NOW A STRING
+                        # VECTOR, not a comma-joined string
+                        # (RULING_RM_SIGNATURE_ACCEPTED: one list convention
+                        # on the public surface). A column whose own name
+                        # contains a comma survives this; it could not survive
+                        # the joined form, which is why the form used to
+                        # refuse such a table by name.
+                        tsSeriesColsVec$# = empty$# (tsNSeries)
+                        for iS from 1 to tsNSeries
+                            tsSeriesColsVec$# [iS] = tsSeriesCol$[iS]
+                        endfor
+
+                        # THE RECORDED LITERAL, built once here and written
+                        # into both emitted conversion calls below. The
+                        # recorder lifts a call's list into the emitted
+                        # script's editable block, so it has to be one line a
+                        # reader can retarget: a vector literal is that line.
+                        # An inner quote is doubled, which is how Praat
+                        # escapes one inside a string.
+                        tsSeriesColsLit$ = "{ "
                         for iS from 1 to tsNSeries
                             if iS > 1
-                                tsSeriesCols$ = tsSeriesCols$ + ","
+                                tsSeriesColsLit$ = tsSeriesColsLit$ + ", "
                             endif
-                            tsSeriesCols$ = tsSeriesCols$ + tsSeriesCol$[iS]
+                            tsSeriesColsLit$ = tsSeriesColsLit$ + """"
+                            ... + replace$ (tsSeriesCol$[iS], """", """""", 0)
+                            ... + """"
                         endfor
+                        tsSeriesColsLit$ = tsSeriesColsLit$ + " }"
+                        if tsNSeries = 0
+                            tsSeriesColsLit$ = "empty$# (0)"
+                        endif
 
                         # ---- the refusals, before anything is drawn ----
                         tsRefuse$ = ""
@@ -6123,7 +6148,7 @@ repeat
                             # long shape the draw layer has always taken.
                             if tsSeriesRole = 1 and tsNSeries >= 2
                                 @emlReshapeSeriesLong: objectId, timeColName$,
-                                ... tsSeriesCols$
+                                ... tsSeriesColsVec$#
                                 if emlReshapeSeriesLong.error$ <> ""
                                     appendInfoLine: "NOTE: " + emlReshapeSeriesLong.error$
                                 endif
@@ -6175,8 +6200,8 @@ repeat
                                     @emlRecordInit
                                     if emlRecordActive = 1
                                         tsMeltCode$ = "@emlReshapeSeriesLong: data, """
-                                        ... + timeColName$ + """, """
-                                        ... + tsSeriesCols$ + """" + newline$
+                                        ... + timeColName$ + """, "
+                                        ... + tsSeriesColsLit$ + newline$
                                         ... + "data = emlReshapeSeriesLong.tableId"
                                         ... + newline$ + "selectObject: data"
                                         @emlRecordConvert: tsOrigObjectId,
@@ -6327,7 +6352,7 @@ repeat
                                 if allFormsDone = 1 and tsLevelMode = 1
                                     @emlReshapeSeriesWide: objectId,
                                     ... timeColName$, tsLongValueCol$,
-                                    ... tsLevelNameCol$, tsSeriesCols$
+                                    ... tsLevelNameCol$, tsSeriesColsVec$#
                                     if emlReshapeSeriesWide.error$ <> ""
                                         appendInfoLine: "NOTE: " + emlReshapeSeriesWide.error$
                                     endif
@@ -6361,8 +6386,8 @@ repeat
                                             tsPivotCode$ = "@emlReshapeSeriesWide: data, """
                                             ... + timeColName$ + """, """
                                             ... + tsLongValueCol$ + """, """
-                                            ... + tsLevelNameCol$ + """, """
-                                            ... + tsSeriesCols$ + """" + newline$
+                                            ... + tsLevelNameCol$ + """, "
+                                            ... + tsSeriesColsLit$ + newline$
                                             ... + "data = emlReshapeSeriesWide.tableId"
                                             ... + newline$ + "selectObject: data"
                                             @emlRecordConvert: tsOrigObjectId,
