@@ -1,1 +1,0 @@
-/home/claude/repo/plugin_EML_StatsGraphs/scripts/eml-regress.praat

@@ -360,6 +360,24 @@ harness/roundtrip/out/stage/
 harness/roundtrip/out/work/
 harness/roundtrip/out/replay/
 
+# The edit-hook harness's stage, for the same reason and by the same
+# construction. run.sh builds it fresh every run: `ln -s` over an absolute
+# $PLUG, sixty links shaped like an installed plugin so Praat's `runScript:`
+# and `../stats/` `../data/` resolution find what they expect, plus the
+# derived twins dropped in beside the files they were cut from.
+#
+# COMMITTED, IT IS WORSE THAN A SECOND COPY. The links carry the absolute
+# path of whatever tree generated them, so every one of them dangles in any
+# other checkout -- measured 5 September 2026: 50 of the repository's 51
+# committed symlinks, all under this one directory, all naming
+# /home/claude/repo. v47_plugin_folder_name.R walks `harness/` recursively
+# for *.praat and readLines() every hit, so it stops on the first dangling
+# link and the suite ends there -- 47 scripts in, with the rest never
+# sourced. No validator reads this directory; it was committed by omission
+# rather than by design, the roundtrip rule above having never been extended
+# to it.
+harness/edithook/out/stage/
+
 # The settings-publication harness. SETTINGSPUB.tsv and the emitted scripts
 # ARE the evidence validate/v115 reads and are NOT ignored. The per-leg logs
 # and the break tree's whole output are scratch: break.sh builds a copy of the
