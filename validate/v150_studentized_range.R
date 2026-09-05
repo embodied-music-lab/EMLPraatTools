@@ -92,6 +92,56 @@
 # Script author: Ian Howell -- created and verified by this individual
 # ============================================================================
 
+# ---------------------------------------------------------------------------
+# ACCEPTANCE VS CHARACTERIZATION, PER RULING (wired in after the fact)
+# ---------------------------------------------------------------------------
+# RULING_PORT_ACCEPTANCE (mailbox/INDEX_RULINGS.md) settles what an ORACLE is
+# allowed to be here: "the mpmath grid is the ONLY oracle, both directions;
+# R and scipy are documented comparison columns" -- for the procedures this
+# file exercises, that grid is walkthrough/kit/reference/srange_reference.tsv,
+# read by v154 (validate/v154_srange_against_reference.R), not by this file.
+# This file predates that grid and was never rebuilt to read it;
+# RULING_GRID_RELABEL_AND_V150 says so directly: "v150 = the R-
+# characterization file, out of the tally." A reader who has not seen either
+# ruling would look at PART 1's and PART 3's fail counts below and reasonably
+# read them as a pass/fail verdict on the port -- they are not one. R's
+# stats::ptukey/qtukey (the oracle PART 1 and PART 3 grade against) is the
+# SAME approximation this file's own header already caught being wrong by a
+# factor of ~2 to ~13.6x at measured points (see "A FINDING THIS FILE EXISTS
+# TO REPORT HONESTLY" above): under the ruling, disagreement with it is
+# evidence ABOUT R, not a port defect, and cannot fail a cell.
+#
+# The only oracle in this file that is NOT R is indepUpperP (PART 2's
+# hand-coded 800-node Gauss-Legendre quadrature of the same published
+# integral, built for exactly this purpose -- see PART 2's own header).
+# Where it is computed, the port-vs-quadrature comparison is this file's
+# ACCEPTANCE population, judged at the file's standing standard rule
+# (check_dual, rel<=1e-9 OR abs<=1e-12 -- unchanged, not loosened or
+# tightened for this split). It is currently computed for only the 5
+# hand-picked crossCheckCases, not for the full forward grid and not for any
+# inverse cell (indepUpperP computes a forward upper-tail probability;
+# nothing in this file inverts it) -- so the acceptance population this file
+# can presently form is exactly those 5 cells. That shortfall is reported,
+# not papered over, in the VERDICT block after PART 3; extending the
+# quadrature to the full grid, or building an inverse counterpart, is future
+# work this file does not attempt here, per the standing instruction not to
+# fabricate an independent value for a cell that lacks one.
+#
+# Restated per part:
+#   PART 1 (forward, full grid, vs stats::ptukey)  -- CHARACTERIZATION.
+#   PART 2 (cross-check, 5 cells, vs indepUpperP)  -- ACCEPTANCE.
+#   PART 3 (inverse, full grid, vs stats::qtukey)  -- CHARACTERIZATION
+#     (qtukey is R too; no independent inverse value is computed anywhere
+#     in this file).
+# check_dual (this file's local standard-rule grader) is called ONLY for the
+# 5 acceptance cells; characterization cells are still driven through Praat
+# and still have their gap against R measured and printed below -- they are
+# just never passed to check_dual, so they cannot enter a pass/fail tally
+# the ruling says R may not sit in. Nothing is deleted: every cell that used
+# to print a PASS/FAIL line still prints its measured value and gap: what
+# changes is that the gap is no longer graded.
+# ---------------------------------------------------------------------------
+
 V <- "v150"
 
 if (!exists("eml_report")) {
@@ -261,9 +311,17 @@ bucket_of <- function(p) {
 worstRel <- setNames(rep(0, length(buckets)), buckets)
 worstAbs <- setNames(rep(0, length(buckets)), buckets)
 worstCell <- setNames(rep("", length(buckets)), buckets)
-nFail <- setNames(rep(0L, length(buckets)), buckets)
 nTotal <- setNames(rep(0L, length(buckets)), buckets)
 
+# RULING_PORT_ACCEPTANCE: stats::ptukey is R, so this loop is the
+# CHARACTERIZATION population, not a grade -- check_dual is NOT called here
+# (a reader who saw a fail count in the old version of this loop would
+# reasonably assume it meant a port defect; per the ruling it does not, and
+# PART 2 below measures, for exactly the cells where that assumption would
+# bite hardest, that the port tracks the true value more closely than R
+# does). The gap against R is still computed, still recorded per cell, and
+# still printed by bucket immediately below -- nothing here is removed.
+fwdCharRows <- list()
 for (i in seq_along(allCells)) {
     c1 <- allCells[[i]]
     g <- if (i <= length(fwdGot)) fwdGot[[i]] else NULL
@@ -271,35 +329,43 @@ for (i in seq_along(allCells)) {
     oracle <- ptukey(c1$q, nmeans = c1$k, df = c1$df, lower.tail = FALSE)
     bk <- bucket_of(oracle)
     nTotal[bk] <- nTotal[bk] + 1L
-    res <- check_dual(V, sprintf("forward k=%d df=%g q=%.6f p~%.0e", c1$k, c1$df, c1$q, c1$pTarget),
-                       g$p, oracle)
-    if (!res$pass) nFail[bk] <- nFail[bk] + 1L
-    relForBucket <- if (is.finite(res$relErr)) res$relErr else 0
+    finite_both <- is.finite(g$p) && is.finite(oracle)
+    absErr <- if (finite_both) abs(g$p - oracle) else NA_real_
+    relErr <- if (finite_both && oracle != 0) absErr / abs(oracle) else absErr
+    fwdCharRows[[length(fwdCharRows) + 1]] <- data.frame(
+        k = c1$k, df = c1$df, q = c1$q, pTarget = c1$pTarget,
+        r_ptukey = oracle, port = g$p, absErr = absErr, relErr = relErr,
+        bucket = bk, stringsAsFactors = FALSE)
+    relForBucket <- if (is.finite(relErr)) relErr else 0
     if (is.finite(relForBucket) && relForBucket > worstRel[bk]) {
         worstRel[bk] <- relForBucket
-        worstAbs[bk] <- res$absErr
-        worstCell[bk] <- sprintf("k=%d df=%g q=%.6f (oracle p=%.3e, port p=%.3e)",
+        worstAbs[bk] <- absErr
+        worstCell[bk] <- sprintf("k=%d df=%g q=%.6f (R ptukey p=%.3e, port p=%.3e)",
                                   c1$k, c1$df, c1$q, oracle, g$p)
     }
 }
+fwdCharTbl <- if (length(fwdCharRows)) do.call(rbind, fwdCharRows) else NULL
 
-cat("\n      --- v150 forward: worst error by p-magnitude bucket ---\n")
+cat("\n      --- v150 forward, CHARACTERIZATION vs R stats::ptukey (RULING_PORT_ACCEPTANCE:\n")
+cat("          R is a comparison column here, not the oracle -- no PASS/FAIL is asserted\n")
+cat("          by this table; read the number as a measured gap against R, not a defect\n")
+cat("          count) -- worst gap by p-magnitude bucket:\n")
 for (bk in buckets) {
     if (nTotal[bk] == 0) next
-    cat(sprintf("      %-14s  n=%3d  fail=%2d  worst relErr=%.3e  worst absErr=%.3e  at %s\n",
-                bk, nTotal[bk], nFail[bk], worstRel[bk], worstAbs[bk], worstCell[bk]))
+    cat(sprintf("      %-14s  n=%3d  worst relErr=%.3e  worst absErr=%.3e  at %s\n",
+                bk, nTotal[bk], worstRel[bk], worstAbs[bk], worstCell[bk]))
 }
 cat(paste0(
-    "\n      READ THE FAILURES ABOVE AGAINST PART 2 BELOW, NOT IN ISOLATION.\n",
-    "      Most cells in every bucket pass at the standard rule; those that\n",
-    "      fail cluster at small df (roughly df <= 10) and/or deep p, exactly\n",
-    "      where the CROSS-CHECK demonstrates stats::ptukey itself departs\n",
-    "      from an independently-computed true value -- in the k=5,df=3 case\n",
-    "      below, by 13.6x, at p ~ 1e-4 to 1e-5, nowhere near the extreme\n",
-    "      tail. This file does not silently reclassify a 'failure' against\n",
-    "      the designated oracle as a pass; it reports the failure here, and\n",
-    "      reports separately, with a different independent check, which side\n",
-    "      of each such disagreement is actually correct.\n\n"))
+    "\n      READ THE GAPS ABOVE AGAINST PART 2 BELOW, NOT IN ISOLATION.\n",
+    "      The largest gaps cluster at small df (roughly df <= 10) and/or deep\n",
+    "      p, exactly where the CROSS-CHECK demonstrates stats::ptukey itself\n",
+    "      departs from an independently-computed true value -- in the k=5,\n",
+    "      df=3 case below, by 13.6x, at p ~ 1e-4 to 1e-5, nowhere near the\n",
+    "      extreme tail. RULING_PORT_ACCEPTANCE: this table never asserts a\n",
+    "      pass/fail verdict on the port (R is a comparison column, not the\n",
+    "      oracle) -- it reports the measured gap, and PART 2 below is where\n",
+    "      this file's one acceptance verdict, against the independent\n",
+    "      quadrature, actually lives.\n\n"))
 
 # =============================================================================
 # PART 2 -- CROSS-CHECK: where the port disagrees with ptukey in the deep
@@ -392,7 +458,10 @@ crossCheckCases <- list(
     list(k = 5, df = 3, q = 56.818064),
     list(k = 8, df = 3, q = 15.646442)
 )
-cat("      --- v150 cross-check: port vs stats::ptukey vs an independent fixed quadrature ---\n")
+cat("      --- v150 PART 2, ACCEPTANCE population: port vs the independent quadrature\n")
+cat("          (R shown alongside for context, per RULING_PORT_ACCEPTANCE -- a\n")
+cat("          documented comparison column, not the oracle this verdict grades) ---\n")
+accRows <- list()
 for (cs in crossCheckCases) {
     oracleP <- ptukey(cs$q, nmeans = cs$k, df = cs$df, lower.tail = FALSE)
     indepP <- indepUpperP(cs$q, cs$k, cs$df)
@@ -412,12 +481,30 @@ for (cs in crossCheckCases) {
     cat(sprintf("      k=%d df=%d q=%.4f  ptukey=%.6e  port=%.6e  indep=%.6e  |port-indep|/indep=%.3e  |ptukey-indep|/indep=%.3e\n",
                 cs$k, cs$df, cs$q, oracleP, portP, indepP,
                 abs(portP - indepP) / indepP, abs(oracleP - indepP) / indepP))
-    # The claim under test: the port is closer to the independent value
-    # than ptukey is, at exactly the points where port and ptukey disagree.
+    # RULING_PORT_ACCEPTANCE: indepUpperP, not ptukey, is the oracle here --
+    # this check_dual call is this file's ACCEPTANCE verdict, at the file's
+    # own standing standard rule (rel<=1e-9 OR abs<=1e-12, the same rule
+    # check_dual already enforces everywhere else in this file -- not
+    # loosened or tightened for this split). A reader who saw only the
+    # PART 1 bucket table above would not otherwise know this is the one
+    # place in this file a pass/fail claim on the port is actually
+    # licensed by the ruling.
+    res <- check_dual(V, sprintf("ACCEPTANCE[quadrature] forward k=%d df=%d q=%.4f", cs$k, cs$df, cs$q),
+                       portP, indepP)
+    accRows[[length(accRows) + 1]] <- data.frame(
+        k = cs$k, df = cs$df, q = cs$q, indep = indepP, port = portP,
+        r_ptukey = oracleP, absErr = res$absErr, relErr = res$relErr,
+        pass = res$pass, stringsAsFactors = FALSE)
+    # Supplementary attestation, UNCHANGED by this pass: a separate, looser
+    # claim (closer to the independent value than R is -- not equal to it
+    # within the standard rule) that was already made here before this file
+    # had an acceptance/characterization split, and is kept rather than
+    # removed; it is not this file's acceptance verdict, check_dual above is.
     check_true(V, sprintf("cross-check k=%d df=%d q=%.4f: port is at least as close to the independent quadrature as ptukey is",
                            cs$k, cs$df, cs$q),
                abs(portP - indepP) <= abs(oracleP - indepP) * 1.5)
 }
+accTbl <- if (length(accRows)) do.call(rbind, accRows) else NULL
 cat("\n")
 
 # =============================================================================
@@ -459,20 +546,61 @@ check_true(V, sprintf("Praat probe printed one ICELL line per inverse cell (%d e
                        nrow(invCells), length(invGot)),
            length(invGot) == nrow(invCells))
 
+# RULING_PORT_ACCEPTANCE: qtukey is R too, and no independent inverse value
+# is computed anywhere in this file (indepUpperP is forward-only) -- every
+# inverse cell is CHARACTERIZATION, and check_dual is NOT called for any of
+# them. The gap against R is still measured per cell and the worst case is
+# still printed below, same as PART 1, so nothing here is removed -- only
+# the mistaken impression that any of it was ever a pass/fail grade.
 worstRelInv <- 0; worstAtInv <- ""
+invCharRows <- list()
 for (i in seq_len(nrow(invCells))) {
     r <- invCells[i, ]
     g <- if (i <= length(invGot)) invGot[[i]] else NULL
     if (is.null(g)) next
     oracleQ <- qtukey(r$alpha, nmeans = r$k, df = r$df, lower.tail = FALSE)
-    label <- sprintf("inverse k=%d df=%g alpha=%.0e", r$k, r$df, r$alpha)
-    res <- check_dual(V, label, g$q, oracleQ)
-    if (is.finite(res$relErr) && res$relErr > worstRelInv) {
-        worstRelInv <- res$relErr
-        worstAtInv <- sprintf("%s (port q=%.8f, qtukey=%.8f)", label, g$q, oracleQ)
+    label <- sprintf("inverse[characterization] k=%d df=%g alpha=%.0e", r$k, r$df, r$alpha)
+    finite_both <- is.finite(g$q) && is.finite(oracleQ)
+    absErr <- if (finite_both) abs(g$q - oracleQ) else NA_real_
+    relErr <- if (finite_both && oracleQ != 0) absErr / abs(oracleQ) else absErr
+    invCharRows[[length(invCharRows) + 1]] <- data.frame(
+        k = r$k, df = r$df, alpha = r$alpha, r_qtukey = oracleQ, port = g$q,
+        absErr = absErr, relErr = relErr, stringsAsFactors = FALSE)
+    if (is.finite(relErr) && relErr > worstRelInv) {
+        worstRelInv <- relErr
+        worstAtInv <- sprintf("%s (port q=%.8f, R qtukey=%.8f)", label, g$q, oracleQ)
     }
 }
-cat(sprintf("      v150 inverse: worst relative error on q = %.3e at %s\n\n", worstRelInv, worstAtInv))
+invCharTbl <- if (length(invCharRows)) do.call(rbind, invCharRows) else NULL
+cat(sprintf("      v150 inverse, CHARACTERIZATION vs R stats::qtukey: worst relative error on q = %.3e at %s\n\n",
+            worstRelInv, worstAtInv))
+
+# =============================================================================
+# VERDICT -- two populations, per RULING_PORT_ACCEPTANCE; neither substitutes
+# for the other (same framing v154 uses for the same ruling, restated here
+# because this file, unlike v154, is not registered with run_all.R and so
+# never otherwise prints an aggregate line -- without this block the
+# acceptance/characterization split above would exist only in code, not in
+# anything a reader actually sees).
+# =============================================================================
+nAcc <- if (!is.null(accTbl)) nrow(accTbl) else 0
+nAccPass <- if (!is.null(accTbl)) sum(accTbl$pass, na.rm = TRUE) else 0
+nCharFwd <- if (!is.null(fwdCharTbl)) nrow(fwdCharTbl) else 0
+nCharInv <- if (!is.null(invCharTbl)) nrow(invCharTbl) else 0
+cat("      ===================== v150 VERDICT =====================\n")
+cat(sprintf("      ACCEPTANCE:       %d/%d cells pass the standard rule against the independent\n", nAccPass, nAcc))
+cat("                         quadrature (PART 2 only -- the one oracle in this file that is not R).\n")
+cat(sprintf("      CHARACTERIZATION: %d forward cells (vs R stats::ptukey) + %d inverse cells (vs R\n",
+            nCharFwd, nCharInv))
+cat("                         stats::qtukey), excluded from the tally -- R is a documented comparison\n")
+cat("                         column here, never the oracle (RULING_PORT_ACCEPTANCE); see the bucket\n")
+cat("                         tables above for the measured gap, not a pass count.\n")
+cat(sprintf("      SHORTFALL:        the acceptance population this file can currently form is %d cells --\n", nAcc))
+cat("                         indepUpperP is computed only for the 5 hand-picked crossCheckCases; it\n")
+cat("                         does not cover the full forward grid and has no inverse counterpart.\n")
+cat("                         Extending it is not attempted here -- no independent value is fabricated\n")
+cat("                         for a cell that lacks one; this is reported as a shortfall, not closed.\n")
+cat("      ==========================================================\n\n")
 
 # =============================================================================
 # PART 4 -- TIMING: one forward evaluation
