@@ -5263,6 +5263,15 @@ procedure emlRecordRender
     ; defined.
     .text$ = .text$ + "include " + .p$ + "/stats/eml-anova-kernel.praat"
     ... + newline$
+    ; The Wilcoxon interval module, which eml-inferential.praat's
+    ; @emlHodgesLehmannPaired delegates to for its normal-approximation
+    ; branch (RULING_HL_FIX_WIRED_2026-09-04.md). Added 5 September 2026,
+    ; undriven until now: a recorded script replaying a paired
+    ; approximation leg would have emitted a file that died the same way
+    ; as the two-way kernel above, sixth instance of the same defect
+    ; class. It goes before eml-inferential.praat for the same reason.
+    .text$ = .text$ + "include " + .p$ + "/stats/eml-wilcoxon-interval.praat"
+    ... + newline$
     .text$ = .text$ + "include " + .p$ + "/stats/eml-inferential.praat"
     ... + newline$
     ; The SURVEY kernels -- Cronbach's alpha and its respondent-influence

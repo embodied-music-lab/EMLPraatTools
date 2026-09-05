@@ -2040,9 +2040,16 @@ scripts <- c(
                                  # chain the plugin's own menu doors
                                  # actually include, so it stayed green
                                  # while the two-way ANOVA door crashed
-                                 # before dispatch. RED until the door
-                                 # chain gains stats/eml-anova-kernel.praat;
-                                 # that is what it is for.
+                                 # before dispatch. GREEN at base: the door
+                                 # chain has carried stats/eml-anova-kernel
+                                 # .praat since that defect was fixed. What
+                                 # it now guards is the general case -- any
+                                 # module a menu door or a kernel calls that
+                                 # the hand-maintained chain does not name,
+                                 # the same defect class the Wilcoxon
+                                 # interval module hit as its fifth
+                                 # instance (ORDER_DOORCHAIN_INCLUDE_2026-
+                                 # 09-05.md).
 )
 
 # ---------------------------------------------------------------------------

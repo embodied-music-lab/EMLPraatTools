@@ -92,6 +92,22 @@ include ../stats/eml-psychometrics.praat
 include ../stats/eml-studentized-range.praat
 
 include ../stats/eml-anova-kernel.praat
+; The Wilcoxon interval module, which eml-inferential.praat's
+; @emlHodgesLehmannPaired delegates to for its normal-approximation branch
+; (RULING_HL_FIX_WIRED_2026-09-04.md). Added 5 September 2026. The module
+; joined setup.praat's barrel table when the delegation was wired, so the
+; barrel-population check went green by reachability with no exclusion
+; entry -- but barrel membership is not door reachability, and this chain
+; never named it, so the delegated call would have died at parse time with
+;
+;     Error: Procedure "emlWilcoxonIntervalApprox" not found.
+;
+; Fifth instance of this defect: eml-psychometrics.praat, eml-anova-kernel
+; .praat, eml-categorical.praat, and eml-studentized-range.praat above each
+; arrived the same way. It goes before eml-inferential.praat for the same
+; reason as the line above it: an include is a parse-time paste and the
+; caller must find the procedure already defined.
+include ../stats/eml-wilcoxon-interval.praat
 include ../stats/eml-inferential.praat
 
 ; The categorical kernel (@emlChiSquareIndependence, @emlWilsonInterval),
