@@ -643,9 +643,17 @@ procedure emlDescribe: .data#
         .max = emlRange.max
         .range = emlRange.range
         @emlSkewness: .data#
-        .skewness = emlSkewness.result
+        if emlSkewness.error$ = ""
+            .skewness = emlSkewness.result
+        else
+            .skewness = undefined
+        endif
         @emlKurtosis: .data#
-        .kurtosis = emlKurtosis.result
+        if emlKurtosis.error$ = ""
+            .kurtosis = emlKurtosis.result
+        else
+            .kurtosis = undefined
+        endif
         ; 0.95 IS THIS PROCEDURE'S CONTRACT, not an ignored setting. The
         ; outputs are NAMED .ci95Lower / .ci95Upper, the descriptives report
         ; heads them "95% Confidence Interval", and the descriptives dialog

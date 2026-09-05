@@ -1484,6 +1484,17 @@ procedure emlLMM: .tableId, .formula$, .contrastCoding$, .useREML, .maxIter
     .rhoEnd = 1e-7
     .npt = 2 * .thetaSize + 1
 
+    ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+    ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+    ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+    ; is that block's own error-dialog Back-button self-loop, and the file's
+    ; own comments say outright the label has no user-reachable entry. No
+    ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+    ; emlParseFormula/emlCholeskySolve except through this severed door.
+    ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+    ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+    ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+    ; ORDER_LANES_2026-09-05.
     @emlBOBYQA: "emlProfiledDeviance", .thetaInit#,
         ... emlRandomEffectsZ.thetaLower#, .thetaUpper#,
         ... .rhoBeg, .rhoEnd, .maxIter, .npt
@@ -3258,6 +3269,17 @@ procedure emlProfileCI: .level
     for .ii from 1 to .dVal
         .thetaUpper# [.ii] = 1e30
     endfor
+    ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+    ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+    ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+    ; is that block's own error-dialog Back-button self-loop, and the file's
+    ; own comments say outright the label has no user-reachable entry. No
+    ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+    ; emlParseFormula/emlCholeskySolve except through this severed door.
+    ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+    ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+    ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+    ; ORDER_LANES_2026-09-05.
     @emlBOBYQA: "emlProfiledDeviance", .thetaML#,
         ... emlRandomEffectsZ.thetaLower#, .thetaUpper#,
         ... 0.1, 1e-6, 2000, 0
@@ -3362,6 +3384,17 @@ procedure emlProfileCI: .level
                     .found = -1
                 endif
                 .pinnedSvVal = .svLo
+                ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+                ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+                ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+                ; is that block's own error-dialog Back-button self-loop, and the file's
+                ; own comments say outright the label has no user-reachable entry. No
+                ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+                ; emlParseFormula/emlCholeskySolve except through this severed door.
+                ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+                ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+                ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+                ; ORDER_LANES_2026-09-05.
                 @emlNelderMead: "emlProfileObjSv", .wsPoint#,
                     ... .innerLower#, .innerUpper#, 1e-6, 300
                 .wsPoint# = emlNelderMead.xOpt#
@@ -3378,6 +3411,17 @@ procedure emlProfileCI: .level
                 for .bisect from 1 to 15
                     .bsMid = (.bsHi + .bsLo) / 2
                     .pinnedSvVal = .bsMid
+                    ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+                    ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+                    ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+                    ; is that block's own error-dialog Back-button self-loop, and the file's
+                    ; own comments say outright the label has no user-reachable entry. No
+                    ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+                    ; emlParseFormula/emlCholeskySolve except through this severed door.
+                    ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+                    ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+                    ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+                    ; ORDER_LANES_2026-09-05.
                     @emlNelderMead: "emlProfileObjSv", .wsPoint#,
                         ... .innerLower#, .innerUpper#, 1e-6, 200
                     .wsPoint# = emlNelderMead.xOpt#
@@ -3411,6 +3455,17 @@ procedure emlProfileCI: .level
                     .found = -1
                 endif
                 .pinnedSvVal = .svHi
+                ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+                ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+                ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+                ; is that block's own error-dialog Back-button self-loop, and the file's
+                ; own comments say outright the label has no user-reachable entry. No
+                ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+                ; emlParseFormula/emlCholeskySolve except through this severed door.
+                ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+                ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+                ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+                ; ORDER_LANES_2026-09-05.
                 @emlNelderMead: "emlProfileObjSv", .wsPoint#,
                     ... .innerLower#, .innerUpper#, 1e-6, 300
                 .wsPoint# = emlNelderMead.xOpt#
@@ -3427,6 +3482,17 @@ procedure emlProfileCI: .level
                 for .bisect from 1 to 15
                     .bsMid = (.bsHi + .bsLo) / 2
                     .pinnedSvVal = .bsMid
+                    ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+                    ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+                    ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+                    ; is that block's own error-dialog Back-button self-loop, and the file's
+                    ; own comments say outright the label has no user-reachable entry. No
+                    ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+                    ; emlParseFormula/emlCholeskySolve except through this severed door.
+                    ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+                    ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+                    ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+                    ; ORDER_LANES_2026-09-05.
                     @emlNelderMead: "emlProfileObjSv", .wsPoint#,
                         ... .innerLower#, .innerUpper#, 1e-6, 200
                     .wsPoint# = emlNelderMead.xOpt#
@@ -3484,6 +3550,17 @@ procedure emlProfileCI: .level
                     .found = -1
                 endif
                 .pinnedSgVal = .sgLo
+                ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+                ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+                ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+                ; is that block's own error-dialog Back-button self-loop, and the file's
+                ; own comments say outright the label has no user-reachable entry. No
+                ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+                ; emlParseFormula/emlCholeskySolve except through this severed door.
+                ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+                ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+                ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+                ; ORDER_LANES_2026-09-05.
                 @emlNelderMead: "emlProfileObjSig01", .wsPoint#,
                     ... .innerLower#, .innerUpper#, 1e-6, 300
                 .wsPoint# = emlNelderMead.xOpt#
@@ -3500,6 +3577,17 @@ procedure emlProfileCI: .level
                 for .bisect from 1 to 15
                     .bsMid = (.bsHi + .bsLo) / 2
                     .pinnedSgVal = .bsMid
+                    ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+                    ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+                    ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+                    ; is that block's own error-dialog Back-button self-loop, and the file's
+                    ; own comments say outright the label has no user-reachable entry. No
+                    ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+                    ; emlParseFormula/emlCholeskySolve except through this severed door.
+                    ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+                    ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+                    ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+                    ; ORDER_LANES_2026-09-05.
                     @emlNelderMead: "emlProfileObjSig01", .wsPoint#,
                         ... .innerLower#, .innerUpper#, 1e-6, 200
                     .wsPoint# = emlNelderMead.xOpt#
@@ -3527,6 +3615,17 @@ procedure emlProfileCI: .level
             repeat
                 .sgHi = .sgHi + .step
                 .pinnedSgVal = .sgHi
+                ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+                ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+                ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+                ; is that block's own error-dialog Back-button self-loop, and the file's
+                ; own comments say outright the label has no user-reachable entry. No
+                ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+                ; emlParseFormula/emlCholeskySolve except through this severed door.
+                ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+                ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+                ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+                ; ORDER_LANES_2026-09-05.
                 @emlNelderMead: "emlProfileObjSig01", .wsPoint#,
                     ... .innerLower#, .innerUpper#, 1e-6, 300
                 .wsPoint# = emlNelderMead.xOpt#
@@ -3543,6 +3642,17 @@ procedure emlProfileCI: .level
                 for .bisect from 1 to 15
                     .bsMid = (.bsHi + .bsLo) / 2
                     .pinnedSgVal = .bsMid
+                    ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+                    ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+                    ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+                    ; is that block's own error-dialog Back-button self-loop, and the file's
+                    ; own comments say outright the label has no user-reachable entry. No
+                    ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+                    ; emlParseFormula/emlCholeskySolve except through this severed door.
+                    ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+                    ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+                    ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+                    ; ORDER_LANES_2026-09-05.
                     @emlNelderMead: "emlProfileObjSig01", .wsPoint#,
                         ... .innerLower#, .innerUpper#, 1e-6, 200
                     .wsPoint# = emlNelderMead.xOpt#
@@ -3582,6 +3692,17 @@ procedure emlProfileCI: .level
             .foundSigLo = -1
         endif
         .fixedSigma = .sigProbe
+        ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+        ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+        ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+        ; is that block's own error-dialog Back-button self-loop, and the file's
+        ; own comments say outright the label has no user-reachable entry. No
+        ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+        ; emlParseFormula/emlCholeskySolve except through this severed door.
+        ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+        ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+        ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+        ; ORDER_LANES_2026-09-05.
         @emlNelderMead: "emlProfileObjSigma", .wsTheta#,
             ... .thetaLowerAll#, .thetaUpperAll#, 1e-6, 300
         .wsTheta# = emlNelderMead.xOpt#
@@ -3598,6 +3719,17 @@ procedure emlProfileCI: .level
         for .bsI from 1 to 15
             .bsSigMid = (.bsSigHi + .bsSigLo) / 2
             .fixedSigma = .bsSigMid
+            ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+            ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+            ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+            ; is that block's own error-dialog Back-button self-loop, and the file's
+            ; own comments say outright the label has no user-reachable entry. No
+            ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+            ; emlParseFormula/emlCholeskySolve except through this severed door.
+            ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+            ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+            ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+            ; ORDER_LANES_2026-09-05.
             @emlNelderMead: "emlProfileObjSigma", .wsTheta#,
                 ... .thetaLowerAll#, .thetaUpperAll#, 1e-6, 200
             .wsTheta# = emlNelderMead.xOpt#
@@ -3621,6 +3753,17 @@ procedure emlProfileCI: .level
     repeat
         .sigProbe = .sigProbe + .sigStep
         .fixedSigma = .sigProbe
+        ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+        ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+        ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+        ; is that block's own error-dialog Back-button self-loop, and the file's
+        ; own comments say outright the label has no user-reachable entry. No
+        ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+        ; emlParseFormula/emlCholeskySolve except through this severed door.
+        ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+        ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+        ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+        ; ORDER_LANES_2026-09-05.
         @emlNelderMead: "emlProfileObjSigma", .wsTheta#,
             ... .thetaLowerAll#, .thetaUpperAll#, 1e-6, 300
         .wsTheta# = emlNelderMead.xOpt#
@@ -3637,6 +3780,17 @@ procedure emlProfileCI: .level
         for .bsI from 1 to 15
             .bsSigMid = (.bsSigHi + .bsSigLo) / 2
             .fixedSigma = .bsSigMid
+            ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+            ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+            ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+            ; is that block's own error-dialog Back-button self-loop, and the file's
+            ; own comments say outright the label has no user-reachable entry. No
+            ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+            ; emlParseFormula/emlCholeskySolve except through this severed door.
+            ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+            ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+            ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+            ; ORDER_LANES_2026-09-05.
             @emlNelderMead: "emlProfileObjSigma", .wsTheta#,
                 ... .thetaLowerAll#, .thetaUpperAll#, 1e-6, 200
             .wsTheta# = emlNelderMead.xOpt#
@@ -3723,6 +3877,17 @@ procedure emlBootstrapCI: .level, .nBoot
         endfor
 
         # Refit model
+        ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+        ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+        ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+        ; is that block's own error-dialog Back-button self-loop, and the file's
+        ; own comments say outright the label has no user-reachable entry. No
+        ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+        ; emlParseFormula/emlCholeskySolve except through this severed door.
+        ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+        ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+        ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+        ; ORDER_LANES_2026-09-05.
         @emlLMM: .bootTable, .formula$, .contrastCoding$, .useREML, 5000
         if emlLMM.converged
             for .jj from 1 to .pVal
@@ -3810,6 +3975,17 @@ endproc
 # ============================================================================
 procedure emlLikelihoodRatioTest: .tableId, .formulaFull$, .formulaReduced$, .contrastCoding$
     # Fit full model (ML)
+    ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+    ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+    ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+    ; is that block's own error-dialog Back-button self-loop, and the file's
+    ; own comments say outright the label has no user-reachable entry. No
+    ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+    ; emlParseFormula/emlCholeskySolve except through this severed door.
+    ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+    ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+    ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+    ; ORDER_LANES_2026-09-05.
     @emlLMM: .tableId, .formulaFull$, .contrastCoding$, 0, 10000
     .devFull = emlLMM.deviance
     .logLikFull = emlLMM.logLik
@@ -3818,11 +3994,33 @@ procedure emlLikelihoodRatioTest: .tableId, .formulaFull$, .formulaReduced$, .co
     .convergedFull = emlLMM.converged
 
     # Parse reduced formula to check for random effects
+    ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+    ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+    ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+    ; is that block's own error-dialog Back-button self-loop, and the file's
+    ; own comments say outright the label has no user-reachable entry. No
+    ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+    ; emlParseFormula/emlCholeskySolve except through this severed door.
+    ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+    ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+    ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+    ; ORDER_LANES_2026-09-05.
     @emlParseFormula: .formulaReduced$
     .reducedHasRE = emlParseFormula.nRandom
 
     if .reducedHasRE > 0
         # Fit reduced model as LMM (ML)
+        ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+        ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+        ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+        ; is that block's own error-dialog Back-button self-loop, and the file's
+        ; own comments say outright the label has no user-reachable entry. No
+        ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+        ; emlParseFormula/emlCholeskySolve except through this severed door.
+        ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+        ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+        ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+        ; ORDER_LANES_2026-09-05.
         @emlLMM: .tableId, .formulaReduced$, .contrastCoding$, 0, 10000
         .devReduced = emlLMM.deviance
         .logLikReduced = emlLMM.logLik
@@ -3844,6 +4042,17 @@ procedure emlLikelihoodRatioTest: .tableId, .formulaFull$, .formulaReduced$, .co
         # OLS: beta = (X'X)^{-1} X'y
         .xtx## = mul## (transpose## (.xR##), .xR##)
         .xty# = mul# (transpose## (.xR##), .yR#)
+        ; ERROR-READ EXEMPT -- the LMM module's only wizard entry point (label
+        ; D_LMM_FORMULA in scripts/eml-wizard.praat) has no live `goto` reaching
+        ; it from the active dispatch: the only remaining `goto D_LMM_FORMULA`
+        ; is that block's own error-dialog Back-button self-loop, and the file's
+        ; own comments say outright the label has no user-reachable entry. No
+        ; caller in the plugin reaches emlLMM/emlBOBYQA/emlNelderMead/
+        ; emlParseFormula/emlCholeskySolve except through this severed door.
+        ; Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1 ("menu and wizard
+        ; doors withdrawn; public post-1.0"). A bad value here cannot reach a
+        ; user on the shipped 1.0 surface. Gate A4 wave 1 remainder,
+        ; ORDER_LANES_2026-09-05.
         @emlCholeskySolve: .xtx##, .xty#
         .betaOLS# = emlCholeskySolve.x#
         .residOLS# = .yR# - mul# (.xR##, .betaOLS#)

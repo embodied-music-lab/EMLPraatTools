@@ -196,9 +196,17 @@ repeat
                     .swP = emlShapiroWilk.p
 
                     @emlSkewness: .data#
-                    .skew = emlSkewness.result
+                    if emlSkewness.error$ = ""
+                        .skew = emlSkewness.result
+                    else
+                        .skew = 0
+                    endif
                     @emlKurtosis: .data#
-                    .kurt = emlKurtosis.result
+                    if emlKurtosis.error$ = ""
+                        .kurt = emlKurtosis.result
+                    else
+                        .kurt = 0
+                    endif
 
                     # ── The decision ──────────────────────────────────────
                     #

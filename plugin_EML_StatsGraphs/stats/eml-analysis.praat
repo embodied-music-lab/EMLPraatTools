@@ -2186,8 +2186,10 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                     .pairLevel = 1 - .alpha / emlPairwiseT.nPairs
                     @emlTTestInterval: .meanDiffFlat# [.pair], .tVal, .dfVal,
                         ... .pairLevel
-                    .lowFlat# [.pair] = emlTTestInterval.low
-                    .highFlat# [.pair] = emlTTestInterval.high
+                    if emlTTestInterval.error$ = ""
+                        .lowFlat# [.pair] = emlTTestInterval.low
+                        .highFlat# [.pair] = emlTTestInterval.high
+                    endif
                 endif
 
                 @emlSigMark: .adjP, .alpha
@@ -3159,11 +3161,11 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     .spearErr$ = ""
     if .testType$ = "pearson" or .testType$ = "both"
         @emlPearsonCorrelation: .dataX#, .dataY#, 2
+        .pearErr$ = emlPearsonCorrelation.error$
         .pearR = emlPearsonCorrelation.r
         .pearT = emlPearsonCorrelation.t
         .pearDf = emlPearsonCorrelation.df
         .pearP = emlPearsonCorrelation.p
-        .pearErr$ = emlPearsonCorrelation.error$
     endif
     if .testType$ = "spearman" or .testType$ = "both"
         @emlSpearmanCorrelationDispatch: .dataX#, .dataY#, 2
@@ -4016,8 +4018,16 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
 
         # Descriptive shape measures
         @emlSkewness: .data#
+        if emlSkewness.error$ <> ""
+            .error$ = emlSkewness.error$
+            goto END_NORMALITY
+        endif
         .skewness = emlSkewness.result
         @emlKurtosis: .data#
+        if emlKurtosis.error$ <> ""
+            .error$ = emlKurtosis.error$
+            goto END_NORMALITY
+        endif
         .kurtosis = emlKurtosis.result
         @emlMean: .data#
         .mean = emlMean.result

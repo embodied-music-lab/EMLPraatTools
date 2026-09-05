@@ -86,13 +86,24 @@ endfor
 
 # --- Panel 1: Welch t-test + Cohen's d ---
 @emlTTest: groupA#, groupB#, 2, 0
-tValue = emlTTest.t
-dfValue = emlTTest.df
-pValueT = emlTTest.p
+if emlTTest.error$ = ""
+    tValue = emlTTest.t
+    dfValue = emlTTest.df
+    pValueT = emlTTest.p
+else
+    tValue = 0
+    dfValue = 0
+    pValueT = 0
+endif
 
 @emlCohenD: groupA#, groupB#
-dValue = emlCohenD.d
-gValue = emlCohenD.g
+if emlCohenD.error$ = ""
+    dValue = emlCohenD.d
+    gValue = emlCohenD.g
+else
+    dValue = 0
+    gValue = 0
+endif
 
 @emlFormatP: pValueT
 pStringT$ = emlFormatP.formatted$
@@ -110,13 +121,23 @@ iqrB = emlQuartiles.q3 - emlQuartiles.q1
 
 # --- Panel 2: Pearson correlation (r only, no p) ---
 @emlPearsonCorrelation: speakingF0#, singingF0#, 2
-rValue = emlPearsonCorrelation.r
+if emlPearsonCorrelation.error$ = ""
+    rValue = emlPearsonCorrelation.r
+else
+    rValue = 0
+endif
 
 # --- Panel 3: Wilcoxon signed-rank ---
 @emlWilcoxonSignedRank: preJitter#, postJitter#, 2
-tPlus = emlWilcoxonSignedRank.tPlus
-tMinus = emlWilcoxonSignedRank.tMinus
-pValueW = emlWilcoxonSignedRank.p
+if emlWilcoxonSignedRank.error$ = ""
+    tPlus = emlWilcoxonSignedRank.tPlus
+    tMinus = emlWilcoxonSignedRank.tMinus
+    pValueW = emlWilcoxonSignedRank.p
+else
+    tPlus = 0
+    tMinus = 0
+    pValueW = 0
+endif
 wilcoxMethod$ = emlWilcoxonSignedRank.method$
 nNonzero = emlWilcoxonSignedRank.nNonzero
 

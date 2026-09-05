@@ -2052,11 +2052,11 @@ elsif goal = 2
                 wizPgTerm$ = wizCorrGroupCol$ + " = " + wizPgLabel$ [wizPgI]
                 if wizCorrTestType$ = "pearson" or wizCorrTestType$ = "both"
                     @emlPearsonCorrelation: wizPgX#, wizPgY#, 2
+                    wizPgPearErr$ = emlPearsonCorrelation.error$
                     wizPgPearR = emlPearsonCorrelation.r
                     wizPgPearT = emlPearsonCorrelation.t
                     wizPgPearDf = emlPearsonCorrelation.df
                     wizPgPearP = emlPearsonCorrelation.p
-                    wizPgPearErr$ = emlPearsonCorrelation.error$
                 endif
                 if wizCorrTestType$ = "spearman" or wizCorrTestType$ = "both"
                     @emlSpearmanCorrelationDispatch: wizPgX#, wizPgY#, 2
@@ -2553,9 +2553,17 @@ elsif goal = 3
                 wizNormGSwP = emlShapiroWilk.p
 
                 @emlSkewness: wizNormGData#
-                wizNormGSkew = emlSkewness.result
+                if emlSkewness.error$ = ""
+                    wizNormGSkew = emlSkewness.result
+                else
+                    wizNormGSkew = 0
+                endif
                 @emlKurtosis: wizNormGData#
-                wizNormGKurt = emlKurtosis.result
+                if emlKurtosis.error$ = ""
+                    wizNormGKurt = emlKurtosis.result
+                else
+                    wizNormGKurt = 0
+                endif
 
                 @emlNormalityRecommendation: wizNormGSkew, wizNormGKurt,
                 ... wizNormGN, emlShapiroWilk.p, emlShapiroWilk.error$
@@ -3646,9 +3654,17 @@ endproc
 procedure wizardNormDiag: .data#, .label$
     .recommendation = 1
     @emlSkewness: .data#
+    if emlSkewness.error$ = ""
+        .sk = emlSkewness.result
+    else
+        .sk = 0
+    endif
     @emlKurtosis: .data#
-    .sk = emlSkewness.result
-    .ku = emlKurtosis.result
+    if emlKurtosis.error$ = ""
+        .ku = emlKurtosis.result
+    else
+        .ku = 0
+    endif
     .n = size (.data#)
 
     # ── THE DISPLAY STANDARD ──────────────────────────────────────────────
@@ -3926,7 +3942,10 @@ procedure wizardNormCheck: .mode$, .tableId, .col1$, .col2$
         # Test both variables
         selectObject: .tableId
         @emlExtractColumn: .tableId, .col1$
-        if emlExtractColumn.n >= 3
+        if emlExtractColumn.error$ <> ""
+            appendInfoLine: "  ", .col1$, ": ", emlExtractColumn.error$
+            appendInfoLine: ""
+        elsif emlExtractColumn.n >= 3
             @wizardNormDiag: emlExtractColumn.data#, .col1$
             if wizardNormDiag.recommendation = 2
                 .anyFail = 1
@@ -3937,7 +3956,10 @@ procedure wizardNormCheck: .mode$, .tableId, .col1$, .col2$
         endif
         selectObject: .tableId
         @emlExtractColumn: .tableId, .col2$
-        if emlExtractColumn.n >= 3
+        if emlExtractColumn.error$ <> ""
+            appendInfoLine: "  ", .col2$, ": ", emlExtractColumn.error$
+            appendInfoLine: ""
+        elsif emlExtractColumn.n >= 3
             @wizardNormDiag: emlExtractColumn.data#, .col2$
             if wizardNormDiag.recommendation = 2
                 .anyFail = 1
@@ -3951,7 +3973,10 @@ procedure wizardNormCheck: .mode$, .tableId, .col1$, .col2$
         # "single" — test one column
         selectObject: .tableId
         @emlExtractColumn: .tableId, .col1$
-        if emlExtractColumn.n >= 3
+        if emlExtractColumn.error$ <> ""
+            appendInfoLine: "  ", .col1$, ": ", emlExtractColumn.error$
+            appendInfoLine: ""
+        elsif emlExtractColumn.n >= 3
             @wizardNormDiag: emlExtractColumn.data#, .col1$
             if wizardNormDiag.recommendation = 2
                 .anyFail = 1

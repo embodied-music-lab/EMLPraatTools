@@ -397,11 +397,11 @@ repeat
                         # wrong heading.
                         if testType$ = "pearson" or testType$ = "both"
                             @emlPearsonCorrelation: pgX#, pgY#, 2
+                            pgPearErr$ = emlPearsonCorrelation.error$
                             pgPearR = emlPearsonCorrelation.r
                             pgPearT = emlPearsonCorrelation.t
                             pgPearDf = emlPearsonCorrelation.df
                             pgPearP = emlPearsonCorrelation.p
-                            pgPearErr$ = emlPearsonCorrelation.error$
                         endif
                         if testType$ = "spearman" or testType$ = "both"
                             @emlSpearmanCorrelationDispatch: pgX#, pgY#, 2

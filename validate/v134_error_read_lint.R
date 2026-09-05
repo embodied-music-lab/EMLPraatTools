@@ -393,17 +393,47 @@ EXEMPT_SITES <- c(
     "eml-studentized-range.praat|emlInvStudentizedRangeQ|emlStudentizedRangeQ|@emlStudentizedRangeQ: .qHi, .k, .df, .nranges",
     "eml-studentized-range.praat|emlInvStudentizedRangeQ|emlStudentizedRangeQ|@emlStudentizedRangeQ: .qMid, .k, .df, .nranges",
     "eml-wizard.praat|<top-level>|emlDrawQQPlot|@emlDrawQQPlot: wizNormQQData#, wizNormQQLabel$, 6, 4.5, \"color\", 1",
-    "eml-wizard.praat|<top-level>|emlShapiroWilk|@emlShapiroWilk: wizNormGData#"
+    "eml-wizard.praat|<top-level>|emlShapiroWilk|@emlShapiroWilk: wizNormGData#",
+    # ADDED 2026-09-05, Gate A4 wave 1 remainder (ORDER_LANES_2026-09-05):
+    # the LMM module's only wizard entry point (label D_LMM_FORMULA in
+    # scripts/eml-wizard.praat) has no live `goto` reaching it from the
+    # active dispatch -- the file's own comments say outright the label
+    # has no user-reachable entry, and no other caller in the plugin
+    # reaches emlLMM/emlBOBYQA/emlNelderMead/emlParseFormula/
+    # emlCholeskySolve. Matches RULING_REGISTRY_VERDICTS_2026-09-01 SS1
+    # ("menu and wizard doors withdrawn; public post-1.0"), same
+    # disposition and reasoning as the triage table's row for each of
+    # these 13 keys (19 physical call sites; six pairs of the
+    # emlNelderMead keys below each cover two call sites sharing
+    # identical literal text within the same procedure).
+    "eml-lmm.praat|emlBootstrapCI|emlLMM|@emlLMM: .bootTable, .formula$, .contrastCoding$, .useREML, 5000",
+    "eml-lmm.praat|emlLMM|emlBOBYQA|@emlBOBYQA: \"emlProfiledDeviance\", .thetaInit#, ... emlRandomEffectsZ.thetaLower#, .thetaUpper#, ... .rhoBeg, .rhoEnd, .maxIter, .npt",
+    "eml-lmm.praat|emlLikelihoodRatioTest|emlCholeskySolve|@emlCholeskySolve: .xtx##, .xty#",
+    "eml-lmm.praat|emlLikelihoodRatioTest|emlLMM|@emlLMM: .tableId, .formulaFull$, .contrastCoding$, 0, 10000",
+    "eml-lmm.praat|emlLikelihoodRatioTest|emlLMM|@emlLMM: .tableId, .formulaReduced$, .contrastCoding$, 0, 10000",
+    "eml-lmm.praat|emlLikelihoodRatioTest|emlParseFormula|@emlParseFormula: .formulaReduced$",
+    "eml-lmm.praat|emlProfileCI|emlBOBYQA|@emlBOBYQA: \"emlProfiledDeviance\", .thetaML#, ... emlRandomEffectsZ.thetaLower#, .thetaUpper#, ... 0.1, 1e-6, 2000, 0",
+    "eml-lmm.praat|emlProfileCI|emlNelderMead|@emlNelderMead: \"emlProfileObjSig01\", .wsPoint#, ... .innerLower#, .innerUpper#, 1e-6, 200",
+    "eml-lmm.praat|emlProfileCI|emlNelderMead|@emlNelderMead: \"emlProfileObjSig01\", .wsPoint#, ... .innerLower#, .innerUpper#, 1e-6, 300",
+    "eml-lmm.praat|emlProfileCI|emlNelderMead|@emlNelderMead: \"emlProfileObjSigma\", .wsTheta#, ... .thetaLowerAll#, .thetaUpperAll#, 1e-6, 200",
+    "eml-lmm.praat|emlProfileCI|emlNelderMead|@emlNelderMead: \"emlProfileObjSigma\", .wsTheta#, ... .thetaLowerAll#, .thetaUpperAll#, 1e-6, 300",
+    "eml-lmm.praat|emlProfileCI|emlNelderMead|@emlNelderMead: \"emlProfileObjSv\", .wsPoint#, ... .innerLower#, .innerUpper#, 1e-6, 200",
+    "eml-lmm.praat|emlProfileCI|emlNelderMead|@emlNelderMead: \"emlProfileObjSv\", .wsPoint#, ... .innerLower#, .innerUpper#, 1e-6, 300"
 )
 # 34 -> 33 on 2026-09-03 with the countGroups leak's removal, then 33 -> 28 the
 # same day with the re-audit ordered by the same ruling (the other five
 # emlCountGroups pins, individually triage-SAFE, still belonged to a named FIX
 # cluster and came out). 28 -> 33 on 2026-09-05, RULING_CLUSTER_CLAUSE_SCOPED_
 # 2026-09-04, restoring those same five now that the rest of the countGroups
-# cluster is fixed out from under them (Gate A4 cluster 2). The ceiling
-# FOLLOWS the list, in whichever direction it moves: a ceiling left above the
-# list is room for the next wrong pin to fit without tripping anything.
-KNOWN_EXEMPT_CEILING <- 33L
+# cluster is fixed out from under them (Gate A4 cluster 2). 33 -> 46 later the
+# same day, Gate A4 wave 1 remainder (ORDER_LANES_2026-09-05): the 13
+# eml-lmm.praat keys above, all SAFE by the same severed-door reasoning,
+# while every other remaining FIX-disposition row in the triage table (20
+# sites across 6 other files) was fixed in code instead of pinned. The
+# ceiling FOLLOWS the list, in whichever direction it moves: a ceiling left
+# above the list is room for the next wrong pin to fit without tripping
+# anything.
+KNOWN_EXEMPT_CEILING <- 46L
 
 has_exempt_marker <- function(s, code) {
     lo <- max(1L, s$line - 20L)
