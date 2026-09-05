@@ -376,6 +376,239 @@ eml_census("v162", "module setup.praat's table and the door chain must agree on"
 
 }
 
+
+# ===========================================================================
+# LEG 4 -- THE SELF-INCLUDING PROBES
+# ---------------------------------------------------------------------------
+# A fourth copy of "which modules exist" lives in validate/ itself. Eleven
+# checks do not load the plugin through any door: each builds its own Praat
+# script and its own `include` block, naming module files one at a time --
+# 69 include lines across the eleven. Nothing pinned those blocks against
+# anything, and on 4 September that cost the whole marginal-means battery.
+# The Tukey re-pointing moved the studentized-range quantile behind
+# @emlInvStudentizedRangeQ; the marginal-means block never gained
+# stats/eml-studentized-range.praat; the probe died at its first Tukey call
+# and the file reported ONE failure while all 2,352 of its results came back
+# NA. A dead battery and a passing one differ by one line in a summary.
+#
+# THIS IS A LEG AND NOT A SIBLING because the ruling ordering it says so
+# (ANSWER_MODULE_LISTS section 2, confirmed by CONFIRMATION_CANON_BARREL:
+# "one new leg on the door-chain check"). The sibling argument in this
+# file's own header above is about v88 and is not re-litigated here.
+#
+# WHAT IT ASSERTS. For each such check: resolve its include block
+# transitively off disk, close over the plugin's call graph from every
+# @procedure the check names, and require the defining module of every
+# reached procedure to be in the resolved set.
+#
+# TWO THINGS IT HAD TO LEARN, both measured rather than assumed:
+#   * The defect is TRANSITIVE. A first version scanned only the procedures
+#     a check names directly and PASSED the seeded historical omission --
+#     the marginal-means probe names @emlAnovaKernelTwoWayPostHoc, and it is
+#     the KERNEL that calls @emlInvStudentizedRangeQ.
+#   * A call behind `if variableExists (...)` is NOT an edge. The recorder
+#     hooks in every analysis door sit inside that guard and never run for a
+#     caller that did not load the recorder. Counting them reported every
+#     recorder procedure as unloadable for eleven checks that run clean.
+# ---- 1. which checks build their own include block -------------------------
+# THE VALIDATE FOLDER IS THIS FILE'S OWN FOLDER. v162 resolves the plugin
+# through EML_PLUGIN_DIR and never needed a repo root before this leg; using
+# .here keeps the leg working under the shadow-tree runs that set that
+# variable to a copy.
+r_files <- list.files(repo_path("validate"), pattern = "^v[0-9]+.*\\.R$",
+                      full.names = TRUE)
+builds_block <- function(path) {
+    any(grepl('paste0("include ", file.path(plug', readLines(path, warn = FALSE),
+              fixed = TRUE))
+}
+# THIS FILE IS NOT A PROBE, and it matches its own filter because the filter
+# string appears in the line above as a literal. Without this exclusion the
+# leg treats v162 as a probe with an empty include block and reports every
+# procedure named anywhere in it as unloadable -- measured: 593 of them.
+probes <- r_files[vapply(r_files, builds_block, logical(1))]
+probes <- probes[basename(probes) != "v162_door_chain_population.R"]
+
+check_true("v162", "there are self-including probes to account for",
+           length(probes) > 0)
+
+# ---- 2. the module each procedure is defined in, and who calls whom ---------
+# NORMALISED ON BOTH SIDES. This file reaches the plugin through the
+# repository's `plugin` symlink, while the include seeds below resolve to the
+# real `plugin_EML_StatsGraphs` path. Comparing one against the other matches
+# nothing and reports every probe as broken -- measured: 593 false failures
+# across all eleven.
+mods <- normalizePath(c(
+    list.files(file.path(plug, "stats"), pattern = "\\.praat$", full.names = TRUE),
+    list.files(file.path(plug, "graphs"), pattern = "\\.praat$", full.names = TRUE)),
+    mustWork = FALSE)
+defs <- list()
+for (m in mods) {
+    ln <- readLines(m, warn = FALSE)
+    hits <- sub("^procedure[[:space:]]+([A-Za-z_][A-Za-z0-9_]*).*$", "\\1",
+                grep("^procedure[[:space:]]", ln, value = TRUE))
+    for (h in hits) defs[[h]] <- c(defs[[h]], m)
+}
+check_true("v162", "the plugin defines procedures to resolve against",
+           length(defs) > 0)
+
+# THE CALL GRAPH, because the defect is transitive and a direct scan misses it.
+# Measured on the exact historical failure: v156 names @emlAnovaKernelTwoWayPostHoc,
+# and it is the KERNEL that calls @emlInvStudentizedRangeQ. A check that only
+# looked at the procedures the probe names itself passed the seeded omission --
+# which is the omission that killed the battery. What a probe must be able to
+# load is the closure of what it names, not the surface of it.
+#
+# COMMENT STRIPPING IS NOT COSMETIC HERE. A Praat comment starts with # or ;
+# at the start of the line; a # in the MIDDLE of a line is the vector-type
+# suffix. The same call-graph walk in v162 was wrong for one wave because a
+# commented-out call was read as an edge.
+calls <- list()
+for (m in mods) {
+    ln <- readLines(m, warn = FALSE)
+    ln <- ln[!grepl("^[[:space:]]*[#;]", ln)]
+    cur <- NA_character_
+    # OPTIONAL-MODULE CALLS ARE NOT EDGES. The plugin's idiom for a module a
+    # caller may not have loaded is `if variableExists ("emlRecordLoaded")`,
+    # and the recorder hooks in every analysis door sit inside one. Those
+    # calls never execute for a caller that did not load the recorder, so
+    # requiring the probe to load it would fail eleven checks that work.
+    # Measured: without this, the guard reported every recorder procedure as
+    # unloadable for probes that run clean.
+    skip <- 0L; depth <- 0L
+    for (l in ln) {
+        if (grepl("^procedure[[:space:]]", l)) {
+            cur <- sub("^procedure[[:space:]]+([A-Za-z_][A-Za-z0-9_]*).*$", "\\1", l)
+            if (is.null(calls[[cur]])) calls[[cur]] <- character(0)
+            skip <- 0L; depth <- 0L
+            next
+        }
+        opens <- grepl("^[[:space:]]*(if|for|while)[[:space:]]", l)
+        closes <- grepl("^[[:space:]]*(endif|endfor|endwhile)\\b", l)
+        if (opens) {
+            depth <- depth + 1L
+            if (skip == 0L && grepl("variableExists", l)) skip <- depth
+        }
+        if (skip == 0L && !is.na(cur)) {
+            hits <- unlist(regmatches(l, gregexpr("@[A-Za-z_][A-Za-z0-9_]*", l)))
+            if (length(hits)) calls[[cur]] <- unique(c(calls[[cur]], sub("^@", "", hits)))
+        }
+        if (closes) {
+            if (skip == depth) skip <- 0L
+            depth <- max(0L, depth - 1L)
+        }
+    }
+}
+check_true("v162", sprintf("the call graph has edges to close over (%d procedures)",
+                           length(calls)), length(calls) > 0)
+
+close_calls <- function(seeds) {
+    seen <- character(0); todo <- seeds
+    while (length(todo)) {
+        n <- todo[1]; todo <- todo[-1]
+        if (n %in% seen) next
+        seen <- c(seen, n)
+        todo <- c(todo, setdiff(calls[[n]], seen))
+    }
+    seen
+}
+
+# ---- 3. resolve one include block transitively ------------------------------
+# `include` is a parse-time paste, so a listed module drags in whatever it
+# lists. Paths inside a module are relative to the RUN script's folder, which
+# for these probes is a scratch folder; the modules' own "../stats/x.praat"
+# forms are resolved against the plugin root here, which is where they land.
+resolve_block <- function(seed) {
+    seen <- character(0)
+    todo <- seed
+    while (length(todo)) {
+        f <- todo[1]; todo <- todo[-1]
+        if (f %in% seen || !file.exists(f)) next
+        seen <- c(seen, f)
+        ln <- readLines(f, warn = FALSE)
+        inc <- grep("^[[:space:]]*include[[:space:]]", ln, value = TRUE)
+        inc <- sub("^[[:space:]]*include[[:space:]]+", "", inc)
+        for (i in inc) {
+            cand <- normalizePath(file.path(dirname(f), i), mustWork = FALSE)
+            if (!file.exists(cand)) {
+                cand <- normalizePath(file.path(plug, sub("^\\.\\./", "", i)),
+                                      mustWork = FALSE)
+            }
+            todo <- c(todo, cand)
+        }
+    }
+    seen
+}
+
+# ---- 4. the assertion, per probe --------------------------------------------
+unloadable <- list()
+comment_only <- list()
+
+for (p in probes) {
+    ln <- readLines(p, warn = FALSE)
+
+    # THE SEED IS EVERY MODULE PATH THE FILE NAMES, not only the ones written
+    # inline on an include line. Probes routinely bind a path to a variable
+    # first -- v145 does exactly that with INF and ANA -- and reading only
+    # `paste0("include ", file.path(plug, ...))` lines misses those and
+    # reports a probe as unable to load a module it loads on the next line.
+    # Measured: that mistake produced 30 false failures on checks the suite
+    # records as passing.
+    #
+    # OVER-APPROXIMATION, DELIBERATE AND ONE-DIRECTIONAL. A path the file
+    # names for some other reason is counted as loaded. That can only hide a
+    # real omission, never invent one, so the check keeps the property that
+    # matters: it never cries wolf, and a failure here is always real.
+    blkm <- gregexpr('file\\.path\\(plug,[^)]*\\.praat"\\)', ln)
+    blk <- unlist(regmatches(ln, blkm))
+    seed <- vapply(blk, function(one) {
+        q <- gsub('"', "", unlist(regmatches(one, gregexpr('"[^"]+"', one))))
+        if (!length(q)) return(NA_character_)
+        normalizePath(do.call(file.path, c(list(plug), as.list(q))), mustWork = FALSE)
+    }, character(1), USE.NAMES = FALSE)
+    seed <- seed[!is.na(seed)]
+    loaded <- resolve_block(seed)
+
+    code <- ln[!grepl("^[[:space:]]*#", ln)]
+    called <- unique(unlist(regmatches(code, gregexpr("@[A-Za-z_][A-Za-z0-9_]*", code))))
+    called <- sub("^@", "", called)
+    commented <- setdiff(
+        sub("^@", "", unique(unlist(regmatches(ln, gregexpr("@[A-Za-z_][A-Za-z0-9_]*", ln))))),
+        called)
+
+    called <- close_calls(called)
+    for (nm in called) {
+        home <- defs[[nm]]
+        if (is.null(home)) next           # not a plugin procedure; Praat builtin or a local
+        if (!any(home %in% loaded)) {
+            unloadable[[length(unloadable) + 1]] <-
+                sprintf("%s reaches @%s, defined in %s, which its include block does not load",
+                        basename(p), nm, paste(basename(home), collapse = "/"))
+        }
+    }
+    for (nm in commented) {
+        home <- defs[[nm]]
+        if (!is.null(home) && !any(home %in% loaded)) {
+            comment_only[[length(comment_only) + 1]] <-
+                sprintf("%s names @%s in comments only", basename(p), nm)
+        }
+    }
+}
+
+# THE OFFENDERS PRINT ABOVE THE CHECK, ONE PER LINE, and the check line
+# carries only the count. A single check line holding thirty findings
+# overflowed the report formatter outright, and a reader cannot act on a
+# wall of semicolons anyway.
+if (length(unloadable)) {
+    cat("\n")
+    for (u in unlist(unloadable)) cat("  UNLOADABLE  ", u, "\n", sep = "")
+    cat("\n")
+}
+
+check_true("v162",
+    sprintf("every self-including probe can load every procedure it reaches (%d probes, %d unloadable)",
+            length(probes), length(unloadable)),
+    length(unloadable) == 0)
+
 if (!exists("EML_SUITE")) {
     eml_report("v162 door chain population: setup.praat's table vs the door chain's resolved includes")
     eml_exit()
