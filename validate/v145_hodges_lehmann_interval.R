@@ -222,6 +222,7 @@ if (!canDrive) {
         paste0("include ", file.path(plug, "stats", "eml-core-descriptive.praat")),
         paste0("include ", file.path(plug, "stats", "eml-extract.praat")),
         paste0("include ", file.path(plug, "stats", "eml-output.praat")),
+        paste0("include ", file.path(plug, "stats", "eml-wilcoxon-interval.praat")),
         paste0("include ", inferential_file),
         paste0("include ", file.path(plug, "stats", "eml-result-writer.praat")),
         paste0("include ", file.path(plug, "graphs", "eml-graph-procedures.praat")),
@@ -673,8 +674,13 @@ if (!canDrive) {
     #     still return an interval.
     #
     # What IS shared, and is asserted to be shared, is Brent's zeroin:
-    # @eml_hlZeroin exists once, takes a .form switch where R's C takes a
-    # function pointer, and both branches iterate through it.
+    # @eml_hlZeroin exists once. RULING_HL_FIX_WIRED_2026-09-04 retired
+    # its .form switch along with @eml_hlPairedW, the one-sample W it
+    # dispatched to: the paired form's normal-approximation branch now
+    # delegates whole to @emlWilcoxonIntervalApprox
+    # (eml-wilcoxon-interval.praat), which carries its own zeroin port,
+    # so @eml_hlZeroin's one remaining caller is the two-sample form and
+    # its one dispatch is @eml_hlTwoSampleW.
     #
     # THE ORACLE for the interval is wilcox.test(x, y, paired = TRUE,
     # conf.int = TRUE, conf.level = 1 - alpha/m). The estimate is oracled
@@ -718,30 +724,42 @@ if (!canDrive) {
                              c("emlHodgesLehmannPaired", "emlWilcoxonSignedRank")))
     }
 
-    # -- PART 3.0b: zeroin was REUSED, not re-ported ---------------------
+    # -- PART 3.0b: zeroin is not RE-PORTED, in this file or the module --
     #
-    # Fable's item 4 says in terms: "THE ZEROIN PORT IS GENERAL ... REUSE,
-    # do not re-port ... re-porting R's zeroin a second time would be the
-    # clearest possible violation." A second copy of Brent's method would
-    # be invisible behaviourally -- it would agree with the first on every
-    # cell in this file until one of them was edited -- so it is asserted
-    # as a text fact: the loop exists once, and both W's reach it.
+    # Fable's item 4 said, of the original two-branch design in this file:
+    # "THE ZEROIN PORT IS GENERAL ... REUSE, do not re-port ... re-porting
+    # R's zeroin a second time would be the clearest possible violation."
+    # RULING_HL_FIX_WIRED_2026-09-04 moved the paired form's root-finding
+    # out of this file entirely, to @emlWilcoxonIntervalApprox's own port
+    # -- so the property worth protecting is no longer "one zeroin in this
+    # file serves both forms" but "this file keeps exactly one zeroin, for
+    # the one form still ported here, and the dead helper delegation
+    # obsoleted (@eml_hlPairedW, and @eml_hlZeroin's .form switch) is
+    # actually GONE rather than left as unreachable code calling a
+    # deleted procedure."
     check_true(V, "Brent's zeroin exists exactly once in the tree (@eml_hlZeroin)",
                sum(grepl("^procedure eml_hlZeroin:", inf_src)) == 1 &&
                !any(grepl("^procedure eml_hlTwoSampleZeroin", inf_src)))
-    check_true(V, "the one zeroin dispatches to BOTH W's -- two-sample and paired -- at R's single function-pointer site",
+    check_true(V, "eml_hlZeroin's one dispatch site now calls only @eml_hlTwoSampleW, and @eml_hlPairedW -- the one-sample W the retired .form=2 arm alone used -- is gone from the file as a procedure and a call, not merely unreachable",
                any(grepl("@eml_hlTwoSampleW: .v1#, .v2#, .b, .correct", inf_src, fixed = TRUE)) &&
-               any(grepl("@eml_hlPairedW: .v1#, .b, .correct", inf_src, fixed = TRUE)))
+               !any(grepl("^procedure eml_hlPairedW", inf_src)) &&
+               !any(grepl("@eml_hlPairedW:", inf_src, fixed = TRUE)) &&
+               !any(grepl("^procedure eml_hlZeroin: .form,", inf_src, fixed = TRUE)))
     check_true(V, "the acceptance test that decides zeroin's iterates appears exactly once",
                sum(grepl("0.75 * .cb * .q", inf_src, fixed = TRUE)) == 1)
-    # And the paired procedure reaches it, rather than @eml_hlTwoSampleRoot
-    # -- whose endpoint early-returns are the two-sample structure.
+    # The paired procedure must still not reach @eml_hlTwoSampleRoot --
+    # whose endpoint early-returns are the two-sample structure -- and,
+    # post-delegation, must not reach @eml_hlZeroin either: its own
+    # normal-approximation root-finding no longer lives in this file at
+    # all, it lives in @emlWilcoxonIntervalApprox.
     hlp_at <- grep("^procedure emlHodgesLehmannPaired", inf_src)
     hlp_end <- if (length(hlp_at) == 1)
         hlp_at + which(inf_src[hlp_at:length(inf_src)] == "endproc")[1] - 1 else NA
-    check_true(V, "@emlHodgesLehmannPaired calls @eml_hlZeroin directly and never @eml_hlTwoSampleRoot",
+    check_true(V, "@emlHodgesLehmannPaired delegates its normal-approximation branch to @emlWilcoxonIntervalApprox and reaches neither @eml_hlZeroin nor @eml_hlTwoSampleRoot itself",
         !is.na(hlp_end) &&
-        any(grepl("@eml_hlZeroin: 2,", inf_src[hlp_at:hlp_end], fixed = TRUE)) &&
+        any(grepl("@emlWilcoxonIntervalApprox: .v1#, .v2#, 1, .level",
+                  inf_src[hlp_at:hlp_end], fixed = TRUE)) &&
+        !any(grepl("eml_hlZeroin", inf_src[hlp_at:hlp_end], fixed = TRUE)) &&
         !any(grepl("eml_hlTwoSampleRoot", inf_src[hlp_at:hlp_end], fixed = TRUE)))
 
     # -- PART 3a: the procedure itself, both paired cells ----------------

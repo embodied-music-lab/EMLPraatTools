@@ -389,23 +389,24 @@ emlSetupPath$ = emlPluginRoot.abs$ + "/scripts/eml-lib-user.praat"
 # table with the demo generator emits a create step that calls @emlDemoTable
 # to build it again, and the two lists are compared against each other by
 # validate/v82.
-emlSetupNModules = 16
+emlSetupNModules = 17
 emlSetupModule$ [ 1] = "stats/eml-core-utilities.praat"
 emlSetupModule$ [ 2] = "stats/eml-core-descriptive.praat"
 emlSetupModule$ [ 3] = "stats/eml-extract.praat"
 emlSetupModule$ [ 4] = "stats/eml-output.praat"
 emlSetupModule$ [ 5] = "stats/eml-studentized-range.praat"
 emlSetupModule$ [ 6] = "stats/eml-anova-kernel.praat"
-emlSetupModule$ [ 7] = "stats/eml-inferential.praat"
-emlSetupModule$ [ 8] = "stats/eml-psychometrics.praat"
-emlSetupModule$ [ 9] = "stats/eml-categorical.praat"
-emlSetupModule$ [10] = "stats/eml-result-writer.praat"
-emlSetupModule$ [11] = "stats/eml-record.praat"
-emlSetupModule$ [12] = "graphs/eml-graph-procedures.praat"
-emlSetupModule$ [13] = "graphs/eml-annotation-procedures.praat"
-emlSetupModule$ [14] = "graphs/eml-draw-procedures.praat"
-emlSetupModule$ [15] = "stats/eml-analysis.praat"
-emlSetupModule$ [16] = "stats/eml-demo-tables.praat"
+emlSetupModule$ [ 7] = "stats/eml-wilcoxon-interval.praat"
+emlSetupModule$ [ 8] = "stats/eml-inferential.praat"
+emlSetupModule$ [ 9] = "stats/eml-psychometrics.praat"
+emlSetupModule$ [10] = "stats/eml-categorical.praat"
+emlSetupModule$ [11] = "stats/eml-result-writer.praat"
+emlSetupModule$ [12] = "stats/eml-record.praat"
+emlSetupModule$ [13] = "graphs/eml-graph-procedures.praat"
+emlSetupModule$ [14] = "graphs/eml-annotation-procedures.praat"
+emlSetupModule$ [15] = "graphs/eml-draw-procedures.praat"
+emlSetupModule$ [16] = "stats/eml-analysis.praat"
+emlSetupModule$ [17] = "stats/eml-demo-tables.praat"
 
 # ── THE MODULES THAT ARE NOT IN THE BARREL, AND WHY ────────────────────────
 #
