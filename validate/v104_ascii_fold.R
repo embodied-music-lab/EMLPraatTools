@@ -408,7 +408,7 @@ cen <- file.path(af, "BYTES.tsv")
 if (file.exists(cen)) {
     b <- read.delim(cen, stringsAsFactors = FALSE, colClasses = "character")
     for (leg in legs) {
-        p <- unname(outputs(leg)["path"])
+        p <- out_file(outputs(leg))
         if (is.na(p) || !nzchar(p)) next
         row <- b[b$name == basename(p), , drop = FALSE]
         check_true("v104", sprintf("%s: the harness census lists the file", leg),
