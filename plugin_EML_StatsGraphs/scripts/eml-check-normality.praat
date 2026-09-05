@@ -178,7 +178,7 @@ repeat
                 selectObject: tableId
                 @eml_getGroupData: tableId, col$, groupCol$, .gLabel$
 
-                if eml_getGroupData.n >= 3
+                if eml_getGroupData.error$ = "" and eml_getGroupData.n >= 3
                     .nAssessed = .nAssessed + 1
                     .data# = eml_getGroupData.data#
                     .n = eml_getGroupData.n

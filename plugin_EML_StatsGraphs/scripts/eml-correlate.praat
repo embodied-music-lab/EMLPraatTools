@@ -276,7 +276,11 @@ repeat
                     selectObject: tableId
                     @eml_getGroupPairedData: tableId, colX$, colY$,
                     ... groupCol$, pgLabel$ [pgI]
-                    pgN [pgI] = eml_getGroupPairedData.n
+                    if eml_getGroupPairedData.error$ <> ""
+                        pgN [pgI] = 0
+                    else
+                        pgN [pgI] = eml_getGroupPairedData.n
+                    endif
                     if pgN [pgI] >= 3
                         pgRun = pgRun + 1
                     else
@@ -371,10 +375,17 @@ repeat
                         # the pairs.
                         @eml_getGroupPairedData: tableId, colX$, colY$,
                         ... groupCol$, pgLabel$ [pgI]
-                        pgX# = eml_getGroupPairedData.dataX#
-                        pgY# = eml_getGroupPairedData.dataY#
-                        pgThisN = eml_getGroupPairedData.n
-                        pgExcluded = eml_getGroupPairedData.nExcluded
+                        if eml_getGroupPairedData.error$ <> ""
+                            pgX# = zero# (0)
+                            pgY# = zero# (0)
+                            pgThisN = 0
+                            pgExcluded = 0
+                        else
+                            pgX# = eml_getGroupPairedData.dataX#
+                            pgY# = eml_getGroupPairedData.dataY#
+                            pgThisN = eml_getGroupPairedData.n
+                            pgExcluded = eml_getGroupPairedData.nExcluded
+                        endif
                         pgTerm$ = groupCol$ + " = " + pgLabel$ [pgI]
                         # Each test's outputs are captured immediately after
                         # its own call, the way the orchestrator does it, so

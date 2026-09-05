@@ -5524,19 +5524,23 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     for .gIdx from 1 to .nGroups
         @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
         ... emlOneWayAnova.groupLabel$[.gIdx]
-        .gN = eml_getGroupData.n
-        .gData# = eml_getGroupData.data#
-        .gMean = mean (.gData#)
-        .gSD = stdev (.gData#)
-        .gSorted# = sort# (.gData#)
-        .gMidIdx = ceiling (.gN / 2)
-        if .gN mod 2 = 1
-            .gMedian = .gSorted# [.gMidIdx]
-        else
-            .gMedian = (.gSorted# [.gMidIdx] + .gSorted# [.gMidIdx + 1]) / 2
-        endif
         .gDisplayLabel$ = replace$ (emlOneWayAnova.groupLabel$[.gIdx], "_", " ", 0)
-        @emlReportDescriptiveRow: .gDisplayLabel$, .gN, .gMean, .gSD, .gMedian
+        if eml_getGroupData.error$ <> ""
+            @emlEmit: "  " + .gDisplayLabel$ + ": " + eml_getGroupData.error$, ""
+        else
+            .gN = eml_getGroupData.n
+            .gData# = eml_getGroupData.data#
+            .gMean = mean (.gData#)
+            .gSD = stdev (.gData#)
+            .gSorted# = sort# (.gData#)
+            .gMidIdx = ceiling (.gN / 2)
+            if .gN mod 2 = 1
+                .gMedian = .gSorted# [.gMidIdx]
+            else
+                .gMedian = (.gSorted# [.gMidIdx] + .gSorted# [.gMidIdx + 1]) / 2
+            endif
+            @emlReportDescriptiveRow: .gDisplayLabel$, .gN, .gMean, .gSD, .gMedian
+        endif
     endfor
 
     # Tukey pairwise p-values (only when Tukey ran)
@@ -5665,11 +5669,21 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .g1Label$ = emlOneWayAnova.groupLabel$[.iGroup]
                 .g2Label$ = emlOneWayAnova.groupLabel$[.jGroup]
                 @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g1Label$
-                .n1 = eml_getGroupData.n
-                .v1# = eml_getGroupData.data#
+                if eml_getGroupData.error$ <> ""
+                    .n1 = 0
+                    .v1# = zero# (0)
+                else
+                    .n1 = eml_getGroupData.n
+                    .v1# = eml_getGroupData.data#
+                endif
                 @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g2Label$
-                .n2 = eml_getGroupData.n
-                .v2# = eml_getGroupData.data#
+                if eml_getGroupData.error$ <> ""
+                    .n2 = 0
+                    .v2# = zero# (0)
+                else
+                    .n2 = eml_getGroupData.n
+                    .v2# = eml_getGroupData.data#
+                endif
                 .pairD = emlOneWayAnova.dMatrix## [.iGroup, .jGroup]
                 @emlMean: .v1#
                 .m1 = emlMean.result
@@ -5720,20 +5734,30 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
             @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
             ... emlOneWayAnova.groupLabel$[.i]
             .tmpV1# = eml_getGroupData.data#
+            .tmpV1Error$ = eml_getGroupData.error$
             for .j from .i + 1 to .nGroups
                 @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
                 ... emlOneWayAnova.groupLabel$[.j]
-                @emlCohenD: .tmpV1#, eml_getGroupData.data#
-                if emlCohenD.error$ = ""
-                    emlOneWayAnova.dMatrix## [.i, .j] = emlCohenD.d
-                    emlOneWayAnova.dMatrix## [.j, .i] = -emlCohenD.d
-                else
+                if .tmpV1Error$ <> "" or eml_getGroupData.error$ <> ""
                     ; Punch list 9.1, the sibling of the fix in
                     ; stats/eml-analysis.praat: a failed pair must not read
                     ; as a true zero effect. The print loop below now shows
                     ; "n/a" for it.
                     emlOneWayAnova.dMatrix## [.i, .j] = undefined
                     emlOneWayAnova.dMatrix## [.j, .i] = undefined
+                else
+                    @emlCohenD: .tmpV1#, eml_getGroupData.data#
+                    if emlCohenD.error$ = ""
+                        emlOneWayAnova.dMatrix## [.i, .j] = emlCohenD.d
+                        emlOneWayAnova.dMatrix## [.j, .i] = -emlCohenD.d
+                    else
+                        ; Punch list 9.1, the sibling of the fix in
+                        ; stats/eml-analysis.praat: a failed pair must not read
+                        ; as a true zero effect. The print loop below now shows
+                        ; "n/a" for it.
+                        emlOneWayAnova.dMatrix## [.i, .j] = undefined
+                        emlOneWayAnova.dMatrix## [.j, .i] = undefined
+                    endif
                 endif
             endfor
         endfor
@@ -5799,11 +5823,21 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .g1Label$ = emlOneWayAnova.groupLabel$[.iGroup]
                 .g2Label$ = emlOneWayAnova.groupLabel$[.jGroup]
                 @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g1Label$
-                .n1 = eml_getGroupData.n
-                .v1# = eml_getGroupData.data#
+                if eml_getGroupData.error$ <> ""
+                    .n1 = 0
+                    .v1# = zero# (0)
+                else
+                    .n1 = eml_getGroupData.n
+                    .v1# = eml_getGroupData.data#
+                endif
                 @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g2Label$
-                .n2 = eml_getGroupData.n
-                .v2# = eml_getGroupData.data#
+                if eml_getGroupData.error$ <> ""
+                    .n2 = 0
+                    .v2# = zero# (0)
+                else
+                    .n2 = eml_getGroupData.n
+                    .v2# = eml_getGroupData.data#
+                endif
                 .pairD = emlOneWayAnova.dMatrix## [.iGroup, .jGroup]
                 @emlMean: .v1#
                 .m1 = emlMean.result
@@ -6149,12 +6183,22 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                     .g2Label$ = emlDunnTest.groupName$ [.jGroup]
                     @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
                     ... .g1Label$
-                    .n1 = eml_getGroupData.n
-                    .v1# = eml_getGroupData.data#
+                    if eml_getGroupData.error$ <> ""
+                        .n1 = 0
+                        .v1# = zero# (0)
+                    else
+                        .n1 = eml_getGroupData.n
+                        .v1# = eml_getGroupData.data#
+                    endif
                     @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
                     ... .g2Label$
-                    .n2 = eml_getGroupData.n
-                    .v2# = eml_getGroupData.data#
+                    if eml_getGroupData.error$ <> ""
+                        .n2 = 0
+                        .v2# = zero# (0)
+                    else
+                        .n2 = eml_getGroupData.n
+                        .v2# = eml_getGroupData.data#
+                    endif
                     @emlMean: .v1#
                     .m1 = emlMean.result
                     @emlSD: .v1#
@@ -6211,17 +6255,24 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
             @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
             ... emlKruskalWallis.groupName$[.i]
             .tmpV1# = eml_getGroupData.data#
+            .tmpV1Error$ = eml_getGroupData.error$
             for .j from .i + 1 to .nGroups
                 @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
                 ... emlKruskalWallis.groupName$[.j]
-                @emlRankBiserialR: .tmpV1#, eml_getGroupData.data#, 2
-                if emlRankBiserialR.error$ = ""
-                    emlKruskalWallis.rMatrix## [.i, .j] = emlRankBiserialR.r
-                    emlKruskalWallis.rMatrix## [.j, .i] = -emlRankBiserialR.r
-                else
+                if .tmpV1Error$ <> "" or eml_getGroupData.error$ <> ""
                     ; Punch list 9.1, sibling of the Cohen's d fix above.
                     emlKruskalWallis.rMatrix## [.i, .j] = undefined
                     emlKruskalWallis.rMatrix## [.j, .i] = undefined
+                else
+                    @emlRankBiserialR: .tmpV1#, eml_getGroupData.data#, 2
+                    if emlRankBiserialR.error$ = ""
+                        emlKruskalWallis.rMatrix## [.i, .j] = emlRankBiserialR.r
+                        emlKruskalWallis.rMatrix## [.j, .i] = -emlRankBiserialR.r
+                    else
+                        ; Punch list 9.1, sibling of the Cohen's d fix above.
+                        emlKruskalWallis.rMatrix## [.i, .j] = undefined
+                        emlKruskalWallis.rMatrix## [.j, .i] = undefined
+                    endif
                 endif
             endfor
         endfor
@@ -6281,11 +6332,21 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
                 .g2Label$ = emlKruskalWallis.groupName$ [.jGroup]
                 .rVal = emlKruskalWallis.rMatrix## [.iGroup, .jGroup]
                 @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g1Label$
-                .n1 = eml_getGroupData.n
-                .v1# = eml_getGroupData.data#
+                if eml_getGroupData.error$ <> ""
+                    .n1 = 0
+                    .v1# = zero# (0)
+                else
+                    .n1 = eml_getGroupData.n
+                    .v1# = eml_getGroupData.data#
+                endif
                 @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g2Label$
-                .n2 = eml_getGroupData.n
-                .v2# = eml_getGroupData.data#
+                if eml_getGroupData.error$ <> ""
+                    .n2 = 0
+                    .v2# = zero# (0)
+                else
+                    .n2 = eml_getGroupData.n
+                    .v2# = eml_getGroupData.data#
+                endif
                 @emlMean: .v1#
                 .m1 = emlMean.result
                 @emlSD: .v1#
