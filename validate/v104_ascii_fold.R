@@ -120,6 +120,28 @@ outputs <- function(leg) {
 }
 
 # ---------------------------------------------------------------------------
+# out_file -- the leg's written file, at a path that resolves HERE.
+#
+# The driver records `path` with @emlSaveInfoToFile's own argument, which is
+# absolute: harness/asciifold/out is handed to Praat as a full path, so the
+# value stored is the full path ON THE MACHINE THAT DROVE IT. Committed, it
+# names a tree nobody else has -- measured 5 September 2026, the recorded
+# value is /home/claude/repo/... and readLines on it ends the whole suite,
+# since no validator may end the run early and this one is sourced 104 deep.
+#
+# Only the basename is portable. The directory is `af`, which this file has
+# already resolved locally and which every other read here goes through
+# (BYTES.tsv, WITNESS.tsv, the *.outputs.tsv glob). The census read below
+# already assumes exactly this, matching rows on basename(p) rather than on
+# the recorded path, so this states once what that line relies on.
+# ---------------------------------------------------------------------------
+out_file <- function(o) {
+    p <- unname(o["path"])
+    if (is.na(p) || !nzchar(p)) return(p)
+    file.path(af, basename(p))
+}
+
+# ---------------------------------------------------------------------------
 # ascii_verdicts -- the three byte-level questions, asked of one file.
 #
 # ASKED AS THREE CHECKS AND NOT AS ONE. "The file is clean" collapses three
@@ -181,7 +203,7 @@ for (leg in c(legs, "broom")) {
 # 2. THE REPORT WRITER -- @emlReportToFile
 # ---------------------------------------------------------------------------
 o <- outputs("report")
-rp <- unname(o["path"])
+rp <- out_file(o)
 check_true("v104", "report: the writer reported success", isTRUE(o["success"] == "1"))
 check_true("v104", "report: the writer reported it had folded something",
            isTRUE(o["folded"] == "1"))
@@ -272,7 +294,7 @@ if (!is.na(rp) && file.exists(rp)) {
 # 3. THE CSV WRITER -- @emlExportStatsCSV through @eml_csvQuote
 # ---------------------------------------------------------------------------
 o <- outputs("csv")
-cp <- unname(o["path"])
+cp <- out_file(o)
 check_true("v104", "csv: the writer reported success", isTRUE(o["success"] == "1"))
 check_true("v104", "csv: the writer reported five rows", isTRUE(o["rows"] == "5"))
 if (is.na(cp) || !nzchar(cp)) {
@@ -361,7 +383,7 @@ dcsv <- tryCatch(suppressWarnings(read.csv(cp, stringsAsFactors = FALSE)),
 # path where the unfolded text is guaranteed to be the input, so it is the one
 # that proves the fold sits at the writer rather than at the reporters.
 o <- outputs("info")
-ip <- unname(o["path"])
+ip <- out_file(o)
 check_true("v104", "info: the saver reported success", isTRUE(o["success"] == "1"))
 if (is.na(ip) || !nzchar(ip)) {
     check_true("v104", "info: the saver named the file it wrote", FALSE)
