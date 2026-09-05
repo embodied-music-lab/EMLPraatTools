@@ -1971,7 +1971,11 @@ elsif goal = 2
             selectObject: tableId
             @eml_getGroupPairedData: tableId, corrCol1$, corrCol2$,
             ... wizCorrGroupCol$, wizPgLabel$ [wizPgI]
-            wizPgN [wizPgI] = eml_getGroupPairedData.n
+            if eml_getGroupPairedData.error$ <> ""
+                wizPgN [wizPgI] = 0
+            else
+                wizPgN [wizPgI] = eml_getGroupPairedData.n
+            endif
             if wizPgN [wizPgI] >= 3
                 wizPgRun = wizPgRun + 1
             else
@@ -2030,10 +2034,17 @@ elsif goal = 2
                 selectObject: tableId
                 @eml_getGroupPairedData: tableId, corrCol1$, corrCol2$,
                 ... wizCorrGroupCol$, wizPgLabel$ [wizPgI]
-                wizPgX# = eml_getGroupPairedData.dataX#
-                wizPgY# = eml_getGroupPairedData.dataY#
-                wizPgThisN = eml_getGroupPairedData.n
-                wizPgExcluded = eml_getGroupPairedData.nExcluded
+                if eml_getGroupPairedData.error$ <> ""
+                    wizPgX# = zero# (0)
+                    wizPgY# = zero# (0)
+                    wizPgThisN = 0
+                    wizPgExcluded = 0
+                else
+                    wizPgX# = eml_getGroupPairedData.dataX#
+                    wizPgY# = eml_getGroupPairedData.dataY#
+                    wizPgThisN = eml_getGroupPairedData.n
+                    wizPgExcluded = eml_getGroupPairedData.nExcluded
+                endif
                 wizPgTerm$ = wizCorrGroupCol$ + " = " + wizPgLabel$ [wizPgI]
                 if wizCorrTestType$ = "pearson" or wizCorrTestType$ = "both"
                     @emlPearsonCorrelation: wizPgX#, wizPgY#, 2
@@ -2521,7 +2532,7 @@ elsif goal = 3
             @eml_getGroupData: tableId, wizNormGCol$, wizNormGGroupCol$,
             ... wizNormGLabel$
 
-            if eml_getGroupData.n >= 3
+            if eml_getGroupData.error$ = "" and eml_getGroupData.n >= 3
                 wizNormGNAssessed = wizNormGNAssessed + 1
                 wizNormGData# = eml_getGroupData.data#
                 wizNormGN = eml_getGroupData.n
@@ -3852,7 +3863,7 @@ procedure wizardNormCheck: .mode$, .tableId, .col1$, .col2$
             for .g from 1 to emlCountGroups.nGroups
                 @eml_getGroupData: .tableId, .col1$, .col2$,
                 ... emlCountGroups.groupLabel$[.g]
-                if eml_getGroupData.n >= 3
+                if eml_getGroupData.error$ = "" and eml_getGroupData.n >= 3
                     .nAssessed = .nAssessed + 1
                     @wizardNormDiag: eml_getGroupData.data#,
                     ... emlCountGroups.groupLabel$[.g]
@@ -4256,20 +4267,24 @@ procedure wizardRunDescribeByGroup: .tableId, .dataCol$, .groupCol$
         @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
         ... .gLabel$[.g]
         .gDisplay$ = replace$ (.gLabel$[.g], "_", " ", 0)
-        .gN = eml_getGroupData.n
+        if eml_getGroupData.error$ <> ""
+            appendInfoLine: "  ", .gDisplay$, ": ", eml_getGroupData.error$
+        else
+            .gN = eml_getGroupData.n
 
-        # ONE PASS, NOT THREE. This called @emlMean, @emlSD and @emlMedian
-        # separately; @emlDescribe computes those and thirteen more from the
-        # same vector, so the reported row and the declared row are now the
-        # same numbers by construction rather than by both being right.
-        @emlDescribe: eml_getGroupData.data#
-        .gMean = emlDescribe.mean
-        .gSD = emlDescribe.sd
-        .gMed = emlDescribe.median
+            # ONE PASS, NOT THREE. This called @emlMean, @emlSD and @emlMedian
+            # separately; @emlDescribe computes those and thirteen more from the
+            # same vector, so the reported row and the declared row are now the
+            # same numbers by construction rather than by both being right.
+            @emlDescribe: eml_getGroupData.data#
+            .gMean = emlDescribe.mean
+            .gSD = emlDescribe.sd
+            .gMed = emlDescribe.median
 
-        @emlReportDescriptiveRow: .gDisplay$, .gN,
-        ... .gMean, .gSD, .gMed
-        @emlCSVAddDescriptiveRow: .gDisplay$
+            @emlReportDescriptiveRow: .gDisplay$, .gN,
+            ... .gMean, .gSD, .gMed
+            @emlCSVAddDescriptiveRow: .gDisplay$
+        endif
     endfor
 
     @emlReportFooter
