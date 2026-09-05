@@ -45,6 +45,22 @@ read_input <- function(name) {
 #   expect    "match"  — these must agree; disagreement is a FAILURE
 #             "differ" — these must NOT agree; agreement is a FAILURE.
 #                        Used to pin a known defect (see D15).
+#
+# BELOW-FLOOR CARVE-OUT, added 5 Sep 2026 per
+# AMENDMENT2_TRANSPORT_AND_FLOOR_2026-09-05 §2, enforcing the rule
+# RULING_PORT_ACCEPTANCE_2026-09-02 §3 already states: when the tolerance
+# is at or above the magnitude of the value being measured (tol > |computed|),
+# ANY reported value within tol agrees trivially — the comparison cannot
+# fail no matter what the plugin actually computed, worst case a
+# double-digit-percent disagreement reported as a match (see
+# FINDING_41_CELLS_CANNOT_FAIL_2026-09-05). That cell carries no
+# information about correctness and must not be counted as a pass or a
+# fail: pass is recorded as NA, so it neither inflates the pass count nor
+# trips eml_exit(). eml_report() marks these BFLR and always prints them —
+# "never reported green" (AMENDMENT2 §2) means never silently, not just
+# never PASS. Scoped to expect=="match": a "differ" pin (D15-style) is a
+# distinctness assertion, and a coarse tolerance does not make it
+# unfalsifiable in the same direction, so it is left alone here.
 # ---------------------------------------------------------------------------
 check <- function(id, what, reported, computed, tol = 5e-4, expect = "match") {
     # V7, 6 Aug 2026. `agree` is FALSE whenever either side is non-finite, so
@@ -54,7 +70,11 @@ check <- function(id, what, reported, computed, tol = 5e-4, expect = "match") {
     # Both branches now require both values to be finite first.
     finite_both <- is.finite(reported) && is.finite(computed)
     agree <- finite_both && abs(reported - computed) <= tol
-    pass <- if (expect == "match") agree else (finite_both && !agree)
+    belowFloor <- identical(expect, "match") && is.finite(tol) &&
+        is.finite(computed) && tol > abs(computed)
+    pass <- if (belowFloor) {
+        NA
+    } else if (expect == "match") agree else (finite_both && !agree)
     EML_RESULTS$rows[[length(EML_RESULTS$rows) + 1L]] <- data.frame(
         id = id, quantity = what, reported = reported, computed = computed,
         tol = tol, expect = expect, pass = pass, stringsAsFactors = FALSE
@@ -303,25 +323,36 @@ eml_report <- function(title) {
     # were PASS. Failures and attestations always print, in full. Set
     # EML_VERBOSE=1 to see the passing lines too.
     .emlVerbose <- nzchar(Sys.getenv("EML_VERBOSE"))
-    .emlAnyFail <- any(!df$pass[df$expect != "attested"])
+    # any(!df$pass[...]) would itself error ("missing value where TRUE/FALSE
+    # needed") the first time a below-floor row's pass=NA reaches it; %in%
+    # FALSE reads a below-floor cell as neither a pass nor the fail that
+    # forces verbose mode, which is right -- it hasn't asserted anything.
+    .emlAnyFail <- any(df$pass[df$expect != "attested"] %in% FALSE)
     .emlShowAll <- .emlVerbose || .emlAnyFail
 
     for (i in seq_len(nrow(df))) {
         r <- df[i, ]
-        if (!.emlShowAll && r$pass && !identical(r$expect, "attested")) next
+        isBelowFloor <- is.na(r$pass) && !identical(r$expect, "attested")
+        # Below-floor rows always print, quiet mode or not: AMENDMENT2 §2's
+        # "never reported green" means never silent, not just never PASS.
+        if (!.emlShowAll && !isBelowFloor && isTRUE(r$pass) &&
+            !identical(r$expect, "attested")) next
         mark <- if (identical(r$expect, "attested")) {
             "ATST"
+        } else if (isBelowFloor) {
+            "BFLR"
         } else if (r$pass) "PASS" else "FAIL"
         val <- if (is.na(r$reported)) {
-            sprintf("computed=%.10g  expected %s", r$computed, r$expect)
+            sprintf("computed=%.17g  expected %s", r$computed, r$expect)
         } else {
-            sprintf("reported=%.10g  computed=%.10g  (%s, tol %g)",
+            sprintf("reported=%.17g  computed=%.17g  (%s, tol %g)",
                     r$reported, r$computed, r$expect, r$tol)
         }
         cat(sprintf("%-4s  %-6s  %-46s  %s\n", mark, r$id, r$quantity, val))
     }
     att <- df$expect == "attested"
-    chk <- df[!att, , drop = FALSE]
+    bflr <- is.na(df$pass) & !att
+    chk <- df[!att & !bflr, , drop = FALSE]
     n_fail <- sum(!chk$pass)
     cat(strrep("-", 78), "\n")
     cat(sprintf("%d checks, %d passed, %d FAILED\n",
@@ -330,6 +361,10 @@ eml_report <- function(title) {
         cat(sprintf("%d attestation(s) recorded, not counted as checks\n",
                     sum(att)))
     }
+    if (any(bflr)) {
+        cat(sprintf("%d below-floor cell(s) excluded from the tally above (tolerance exceeds |computed|; see BFLR lines)\n",
+                    sum(bflr)))
+    }
     invisible(df)
 }
 
@@ -337,7 +372,11 @@ eml_exit <- function() {
     df <- do.call(rbind, EML_RESULTS$rows)
     if (!is.null(df)) {
         chk <- df[df$expect != "attested", , drop = FALSE]
-        if (any(!chk$pass)) quit(status = 1)
+        # Below-floor cells (pass=NA, see check()'s carve-out) assert nothing
+        # and must neither fail nor silently pass the exit status.
+        # any(!chk$pass) errors on NA; %in% FALSE reads only a genuine FALSE
+        # as a failure and treats NA as neither pass nor fail.
+        if (any(chk$pass %in% FALSE)) quit(status = 1)
     }
     invisible(NULL)
 }
