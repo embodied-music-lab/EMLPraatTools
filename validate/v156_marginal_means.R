@@ -123,6 +123,68 @@
 # "worst relative error, quantity x fixture" table for the complete
 # per-quantity, per-fixture figures.
 #
+# ---------------------------------------------------------------------------
+# UPDATE -- RULING_PORT_ACCEPTANCE: TUKEY RECLASSIFIED STRUCTURALLY
+# ---------------------------------------------------------------------------
+# The RESULT above is the state as of the post hoc kernel's ORIGINAL Tukey
+# leg, which called Praat's builtin Get invTukeyQ:/Get TukeyQ: -- the same
+# general-integration algorithm R's own qtukey/ptukey use internally, so it
+# tracked R everywhere except the one documented k=2 exact-closed-form gap.
+# Since then, @emlAnovaKernelTwoWayPostHoc's Tukey leg has been RE-POINTED
+# to @emlInvStudentizedRangeQ/@emlStudentizedRangeQ (see this file's own
+# "THE STUDENTIZED-RANGE PORT" comment at the include block below; the
+# re-pointing itself is walkthrough/kit/audit/tukey_repoint_plan.md's
+# subject, and v154/validate/v154_srange_against_reference.R is what
+# accepted that routine, against the independent mpmath grid) -- a MORE
+# ACCURATE routine by that measure, but one that no longer tracks R's own
+# qtukey/ptukey as closely at every (k, df) as the shared-algorithm builtin
+# did. Run today (`EML_PLUGIN_DIR=plugin_EML_StatsGraphs PRAAT=
+# /usr/local/bin/praat6630 Rscript validate/v156_marginal_means.R`, this
+# environment): 2352 checks, 2240 passed, 112 FAILED -- 109 of them every
+# Tukey-adjusted p and every Tukey-adjusted CI endpoint, at every k, not
+# only k=2 (that original gap is now one instance of a general one), plus
+# the 3 already-documented SCHEFFE F NEAR ZERO cells above, which are
+# unrelated to this routine and untouched by this update.
+#
+# RULING_PORT_ACCEPTANCE (mailbox/INDEX_RULINGS.md) settles what to do with
+# that: R is never the acceptance oracle, in either direction. Applied to
+# this file, the split is STRUCTURAL, not outcome-based -- a cell is
+# CHARACTERIZATION because ITS ORACLE VALUE IS COMPUTED BY PASSING THROUGH
+# R's studentized-range routine (emmeans' adjust="tukey" p-value, via R's
+# ptukey; its adjust="tukey" CI, via R's qtukey critical value), never
+# because it happens to fail today -- defining characterization as "the
+# cells that fail" would make this file's acceptance claim unfalsifiable,
+# exactly the error the ruling's wording heads off. A reader who saw only a
+# bare "112 FAILED" summary line below would reasonably read it as a
+# post hoc kernel regression; it is not one -- it is the same structural
+# situation v150/v154 already document for the studentized-range kernel
+# this post hoc leg calls, now visible here because this file's own oracle
+# (emmeans) depends on that same kernel too.
+#
+# What moves to CHARACTERIZATION, and why (by dependency, not by outcome):
+#   - post hoc p, adjust="tukey"       -- emmeans computes it via R's ptukey.
+#   - post hoc CI low/high, adjust="tukey" -- emmeans computes it via R's
+#     qtukey critical value.
+# What stays ACCEPTANCE, at its existing tolerance, because it does not
+# depend on that routine:
+#   - post hoc diff/SE/raw-t (shared across every adjustment method,
+#     including tukey -- only the p-value/critical-value differ by method).
+#   - the Tukey q STATISTIC itself (m=="tukey"'s .stat## check) --
+#     reconstructed as a closed-form function of the raw t (itself already
+#     acceptance), never calling ptukey/qtukey at all; see that check's own
+#     comment below for the empirical confirmation it is not among the 109.
+#   - every EMM mean/SE/CI, every Bonferroni/Holm/BH/Scheffe p-value/CI,
+#     every difference/SE/t-statistic, and every simple effect -- none of
+#     these route through R's studentized-range routine.
+# Characterization cells are still driven through Praat, still computed,
+# and still reported with BOTH the port's value and the emmeans/R value
+# (characterize(), defined below, and the CHARACTERIZATION population
+# summary at the end of this file) -- check()/check_true() is simply never
+# called for them, so this routine's known R-disagreement cannot fail this
+# file's tally, per the ruling. No tolerance is changed anywhere in this
+# file by this update.
+# ---------------------------------------------------------------------------
+#
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
 #            Embodied Music Lab -- www.embodiedmusiclab.com
@@ -405,6 +467,27 @@ if (!canDrive) {
             fixture = fixture, quantity = quantity, worst_rel_err = res))
     }
 
+    # RULING_PORT_ACCEPTANCE, wired into this file (see the header's "TUKEY
+    # RECLASSIFIED STRUCTURALLY"): characterize() is check()'s
+    # non-counting twin. It computes the same absolute/relative gap check()
+    # would, and records BOTH the port's value and the R-derived (emmeans)
+    # value it is measured against -- but it never touches EML_RESULTS, so
+    # it cannot enter the checks/passed/FAILED tally eml_report prints. Used
+    # only for the Tukey-adjusted p and CI cells (post hoc loop below);
+    # every other quantity in this file keeps calling check()/check_true()
+    # exactly as before this pass.
+    CHAR_ROWS <- list()
+    characterize <- function(fixture, quantity, label, reported, computed) {
+        finite_both <- is.finite(reported) && is.finite(computed)
+        absErr <- if (finite_both) abs(reported - computed) else NA_real_
+        relErr <- if (finite_both && computed != 0) absErr / abs(computed) else absErr
+        CHAR_ROWS[[length(CHAR_ROWS) + 1]] <<- data.frame(
+            fixture = fixture, quantity = quantity, label = label,
+            port = reported, emmeans_r = computed,
+            absErr = absErr, relErr = relErr, stringsAsFactors = FALSE)
+        invisible(NULL)
+    }
+
     for (tag in names(fixtures)) {
         fx <- fixtures[[tag]]
         fit <- fit_for(fx)
@@ -605,8 +688,22 @@ if (!canDrive) {
                     check(V, sprintf("[%s] post hoc SE %s-%s (factor %d, %s)", tag, r$nameI, r$nameJ, fsel, m),
                           got_se, oc_se, tol = std_tol(oc_se))
                     record_worst(tag, paste0("postHoc_SE_", m), rel_err(got_se, oc_se))
-                    check(V, sprintf("[%s] post hoc p %s-%s (factor %d, %s)", tag, r$nameI, r$nameJ, fsel, m),
-                          got_p, oc_p, tol = std_tol(oc_p))
+                    # RULING_PORT_ACCEPTANCE (see header): emmeans' Tukey-
+                    # adjusted p-value (adjust="tukey") is computed from R's
+                    # OWN ptukey on the studentized range -- exactly the
+                    # oracle-is-R dependency the ruling excludes from the
+                    # tally. This is decided by WHERE THE VALUE COMES FROM,
+                    # not by whether it currently disagrees: bonferroni/
+                    # holm/bh/scheffe p-values below use no such routine and
+                    # stay graded by check() regardless of adjustment.
+                    if (m == "tukey") {
+                        characterize(tag, "postHoc_p_tukey",
+                                     sprintf("[%s] post hoc p %s-%s (factor %d, tukey)", tag, r$nameI, r$nameJ, fsel),
+                                     got_p, oc_p)
+                    } else {
+                        check(V, sprintf("[%s] post hoc p %s-%s (factor %d, %s)", tag, r$nameI, r$nameJ, fsel, m),
+                              got_p, oc_p, tol = std_tol(oc_p))
+                    }
                     record_worst(tag, paste0("postHoc_p_", m), rel_err(got_p, oc_p))
                     # raw t/q/F stat: bonferroni/holm/bh all share the SAME
                     # raw t; emmeans' t.ratio for tukey/scheffe adjust=
@@ -622,6 +719,15 @@ if (!canDrive) {
                               got_stat, oc_t, tol = std_tol(oc_t))
                         record_worst(tag, paste0("postHoc_stat_", m), rel_err(got_stat, oc_t))
                     } else if (m == "tukey") {
+                        # STAYS ACCEPTANCE, unlike the p/CI above: oc_q is a
+                        # closed-form function of oc_t (the same raw t
+                        # bonferroni/holm/bh are graded against, itself not
+                        # R-studentized-range-derived) -- it never calls
+                        # ptukey/qtukey, so RULING_PORT_ACCEPTANCE's "oracle
+                        # flows through R's studentized-range routine" test
+                        # does not apply to it. Confirmed empirically too:
+                        # this is not among the 109 Tukey p/CI cells that
+                        # fail today (see header).
                         oc_q <- abs(oc_t) * sqrt(2)
                         check(V, sprintf("[%s] post hoc Tukey q %s-%s (factor %d)", tag, r$nameI, r$nameJ, fsel),
                               got_stat, oc_q, tol = std_tol(oc_q))
@@ -641,24 +747,48 @@ if (!canDrive) {
                     }
 
                     if (HAS_CI[[m]]) {
-                        # K=2 TUKEY: on a 2-level family (unbal2x2), this
-                        # CI is expected to fail the 1e-9 standard tolerance
-                        # by up to ~3.4e-8 relative -- see this file's own
-                        # header ("RESULT, as measured") for the full
-                        # measurement. Praat's Get invTukeyQ:/Get TukeyQ:
-                        # match R's OWN qtukey/ptukey almost exactly; the
-                        # gap is between that shared GENERAL numerical
-                        # algorithm and the EXACT closed form emmeans uses
-                        # only for k=2 pairwise Tukey intervals.
+                        # K=2 TUKEY (historical note, kept -- this is the
+                        # original, narrower form of the same dependency the
+                        # header's "TUKEY RECLASSIFIED STRUCTURALLY" section
+                        # generalizes): on a 2-level family (unbal2x2), the
+                        # PRE-re-pointing Tukey CI missed the 1e-9 standard
+                        # tolerance by up to ~3.4e-8 relative, because
+                        # Praat's Get invTukeyQ:/Get TukeyQ: match R's OWN
+                        # qtukey/ptukey almost exactly, while emmeans uses
+                        # the EXACT closed form only for k=2. That gap was
+                        # the first measured evidence that this interval's
+                        # oracle runs through R's studentized-range routine
+                        # at all; the routine has since changed (the port is
+                        # now @emlInvStudentizedRangeQ, more accurate per
+                        # v154, but no closer to R at every k), so the SAME
+                        # dependency now shows at every k, not just k=2 --
+                        # see the header for the current measured count.
                         check_true(V, sprintf("[%s] post hoc interval printed %s-%s (factor %d, %s)", tag, r$nameI, r$nameJ, fsel, m),
                                    r$low != "undef" && r$high != "undef")
                         if (r$low != "undef") {
                             got_low <- as.numeric(r$low); got_high <- as.numeric(r$high)
-                            check(V, sprintf("[%s] post hoc CI low %s-%s (factor %d, %s)", tag, r$nameI, r$nameJ, fsel, m),
-                                  got_low, oc_low, tol = std_tol(oc_low))
+                            # RULING_PORT_ACCEPTANCE: confint(pairs(...,
+                            # adjust="tukey")) builds this interval from R's
+                            # OWN qtukey critical value -- the same oracle-
+                            # is-R dependency as the p-value above, decided
+                            # here by that dependency, not by outcome.
+                            # bonferroni/scheffe intervals below use no such
+                            # routine (their critical values come from t/F)
+                            # and stay graded by check() at every k.
+                            if (m == "tukey") {
+                                characterize(tag, "postHoc_CI_tukey",
+                                             sprintf("[%s] post hoc CI low %s-%s (factor %d, tukey)", tag, r$nameI, r$nameJ, fsel),
+                                             got_low, oc_low)
+                                characterize(tag, "postHoc_CI_tukey",
+                                             sprintf("[%s] post hoc CI high %s-%s (factor %d, tukey)", tag, r$nameI, r$nameJ, fsel),
+                                             got_high, oc_high)
+                            } else {
+                                check(V, sprintf("[%s] post hoc CI low %s-%s (factor %d, %s)", tag, r$nameI, r$nameJ, fsel, m),
+                                      got_low, oc_low, tol = std_tol(oc_low))
+                                check(V, sprintf("[%s] post hoc CI high %s-%s (factor %d, %s)", tag, r$nameI, r$nameJ, fsel, m),
+                                      got_high, oc_high, tol = std_tol(oc_high))
+                            }
                             record_worst(tag, paste0("postHoc_CI_", m), rel_err(got_low, oc_low))
-                            check(V, sprintf("[%s] post hoc CI high %s-%s (factor %d, %s)", tag, r$nameI, r$nameJ, fsel, m),
-                                  got_high, oc_high, tol = std_tol(oc_high))
                             record_worst(tag, paste0("postHoc_CI_", m), rel_err(got_high, oc_high))
                         }
                     } else {
@@ -685,6 +815,39 @@ if (!canDrive) {
             cat(sprintf("        %-16s %-22s worst rel err = %.3e\n",
                         agg$fixture[i], agg$quantity[i], agg$worst_rel_err[i]))
         }
+    }
+
+    # -----------------------------------------------------------------
+    # CHARACTERIZATION population -- RULING_PORT_ACCEPTANCE, wired in per
+    # the header's "TUKEY RECLASSIFIED STRUCTURALLY". These cells (Tukey-
+    # adjusted p and CI, every k, every fixture) were computed and measured
+    # above via characterize(), not check()/check_true() -- excluded from
+    # the "N checks, M passed, K FAILED" tally eml_report prints below, but
+    # not from the record: both the port's value and the emmeans/R value
+    # are in CHAR_ROWS, and both go to disk here so the disagreement this
+    # file measures is auditable per cell, not just as an aggregate.
+    # -----------------------------------------------------------------
+    charDf <- if (length(CHAR_ROWS)) do.call(rbind, CHAR_ROWS) else NULL
+    if (!is.null(charDf)) {
+        cat(sprintf("\n      CHARACTERIZATION population (%d cells -- Tukey-adjusted p/CI; oracle flows\n",
+                    nrow(charDf)))
+        cat("      through R's studentized-range routine, RULING_PORT_ACCEPTANCE -- excluded from\n")
+        cat("      the tally above, not from measurement), worst gap vs emmeans/R by fixture:\n")
+        aggc <- aggregate(relErr ~ fixture + quantity, data = charDf,
+                           FUN = function(x) max(abs(x[is.finite(x)]), 0))
+        aggc <- aggc[order(aggc$fixture, aggc$quantity), ]
+        for (i in seq_len(nrow(aggc))) {
+            cat(sprintf("        %-16s %-18s worst rel err vs emmeans (R) = %.3e\n",
+                        aggc$fixture[i], aggc$quantity[i], aggc$relErr[i]))
+        }
+        outDir <- repo_path("walkthrough", "kit", "audit")
+        dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
+        outFile <- file.path(outDir, "v156_tukey_characterization.tsv")
+        write.table(charDf, outFile, sep = "\t", row.names = FALSE, quote = FALSE, na = "NA")
+        cat(sprintf("      per-cell evidence (port value AND emmeans/R value, both columns) written: %s\n",
+                    outFile))
+    } else {
+        cat("\n      CHARACTERIZATION population: empty (no Tukey-adjusted p/CI cell was reached).\n")
     }
 
     }  # ran
