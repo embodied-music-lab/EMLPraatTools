@@ -2050,6 +2050,15 @@ scripts <- c(
                                  # interval module hit as its fifth
                                  # instance (ORDER_DOORCHAIN_INCLUDE_2026-
                                  # 09-05.md).
+    ,
+    "v163_hl_paired_disclosure.R" # RULING_HL_FIX_WIRED_2026-09-04 item 3:
+                                 # @emlHodgesLehmannPaired's normal-
+                                 # approximation branch drives, then a red
+                                 # demo of the disclosure gone silent, then
+                                 # the report/CSV leg -- RED until eml-
+                                 # analysis.praat's PostHoc loop carries
+                                 # .warning$/.achievedLevel through; that
+                                 # file is held by another wave.
 )
 
 # ---------------------------------------------------------------------------
