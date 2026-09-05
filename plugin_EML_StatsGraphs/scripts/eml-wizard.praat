@@ -381,7 +381,7 @@ if goal = 1
             # Validate group count before proceeding
             selectObject: tableId
             @emlCountGroups: tableId, groupCol$
-            if emlCountGroups.nGroups <> 2
+            if emlCountGroups.error$ <> "" or emlCountGroups.nGroups <> 2
                 # This guard always returned to the column page, which was
                 # right, but it said so through a bare @pauseScript whose only
                 # buttons are Stop and Continue — neither of which states what
@@ -620,7 +620,7 @@ if goal = 1
             # Validate group count before proceeding
             selectObject: tableId
             @emlCountGroups: tableId, groupCol$
-            if emlCountGroups.nGroups < 3
+            if emlCountGroups.error$ <> "" or emlCountGroups.nGroups < 3
                 # As above — same guard, same surface.
                 if emlCountGroups.nGroups = 2
                     @emlErrorDialog: "Only 2 groups in """
@@ -1961,7 +1961,11 @@ elsif goal = 2
     if wizCorrHasGroupCol
         selectObject: tableId
         @emlCountGroups: tableId, wizCorrGroupCol$
-        wizPgTotal = emlCountGroups.nGroups
+        if emlCountGroups.error$ = ""
+            wizPgTotal = emlCountGroups.nGroups
+        else
+            wizPgTotal = 0
+        endif
         wizPgRun = 0
         wizPgSkipped = 0
         wizPgSkipList$ = ""
@@ -2520,12 +2524,16 @@ elsif goal = 3
         @emlCountGroups: tableId, wizNormGGroupCol$
         wizNormGAllOK = 1
         wizNormGNAssessed = 0
-        wizNormQQGroupN = emlCountGroups.nGroups
+        if emlCountGroups.error$ = ""
+            wizNormQQGroupN = emlCountGroups.nGroups
+        else
+            wizNormQQGroupN = 0
+        endif
         for wizNormGg from 1 to wizNormQQGroupN
             wizNormQQGroupLabel$ [wizNormGg] = emlCountGroups.groupLabel$ [wizNormGg]
         endfor
 
-        for wizNormGg from 1 to emlCountGroups.nGroups
+        for wizNormGg from 1 to wizNormQQGroupN
             wizNormGLabel$ = emlCountGroups.groupLabel$ [wizNormGg]
             wizNormGGDisplay$ = replace$ (wizNormGLabel$, "_", " ", 0)
             selectObject: tableId
@@ -2600,10 +2608,10 @@ elsif goal = 3
 
         appendInfoLine: ""
         if wizNormGAllOK
-            if wizNormGNAssessed < emlCountGroups.nGroups
+            if wizNormGNAssessed < wizNormQQGroupN
                 appendInfoLine: "  Summary: No strong departure in the"
                 ... + " groups large enough to test (",
-                ... wizNormGNAssessed, " of ", emlCountGroups.nGroups,
+                ... wizNormGNAssessed, " of ", wizNormQQGroupN,
                 ... " assessed)."
             else
                 appendInfoLine: "  Summary: no group in this column shows a"

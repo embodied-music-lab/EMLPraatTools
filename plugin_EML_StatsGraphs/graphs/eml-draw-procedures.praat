@@ -2925,7 +2925,11 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # Extract unique conditions via single source
     # ----------------------------------------------------------------
     @emlCountGroups: .objectId, .condCol$
-    .nCond = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        .nCond = emlCountGroups.nGroups
+    else
+        .nCond = 0
+    endif
     for .c from 1 to .nCond
         .condLabel$[.c] = emlCountGroups.groupLabel$[.c]
     endfor
@@ -3059,7 +3063,11 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # Collect unique subject IDs via single source
     # ----------------------------------------------------------------
     @emlCountGroups: .objectId, .idCol$
-    .nSubjects = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        .nSubjects = emlCountGroups.nGroups
+    else
+        .nSubjects = 0
+    endif
     for .s from 1 to .nSubjects
         .subjId$[.s] = emlCountGroups.groupLabel$[.s]
     endfor
@@ -3916,7 +3924,11 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
 
     # Step 2: Extract unique group names via single source
     @emlCountGroups: .objectId, .groupCol$
-    .nGroups = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        .nGroups = emlCountGroups.nGroups
+    else
+        .nGroups = 0
+    endif
     for .g from 1 to .nGroups
         .grpLabel$[.g] = emlCountGroups.groupLabel$[.g]
     endfor
@@ -4916,7 +4928,11 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         # ==============================================================
 
         @emlCountGroups: .objectId, .groupCol$
-        .nGroups = emlCountGroups.nGroups
+        if emlCountGroups.error$ = ""
+            .nGroups = emlCountGroups.nGroups
+        else
+            .nGroups = 0
+        endif
 
         # The sprite set has no squares and no triangles (Step 6C). Once the
         # ninth group exists, the shape is carrying information the sprites
@@ -5579,7 +5595,11 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
 
     # Step 2: Extract groups and data
     @emlCountGroups: .objectId, .groupCol$
-    .nGroups = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        .nGroups = emlCountGroups.nGroups
+    else
+        .nGroups = 0
+    endif
     for .g from 1 to .nGroups
         .grpLabel$[.g] = emlCountGroups.groupLabel$[.g]
     endfor
@@ -5967,9 +5987,11 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     .hasGroups = 0
     .nGroups = 1
     if .groupCol$ <> ""
-        .hasGroups = 1
         @emlCountGroups: .objectId, .groupCol$
-        .nGroups = emlCountGroups.nGroups
+        if emlCountGroups.error$ = ""
+            .hasGroups = 1
+            .nGroups = emlCountGroups.nGroups
+        endif
 
     endif
 
@@ -6482,14 +6504,22 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
 
     # Step 2: Extract unique categories via single source
     @emlCountGroups: .objectId, .catCol$
-    .nCats = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        .nCats = emlCountGroups.nGroups
+    else
+        .nCats = 0
+    endif
     for .c from 1 to .nCats
         .cat$[.c] = emlCountGroups.groupLabel$[.c]
     endfor
 
     # Step 3: Extract unique sub-groups via single source
     @emlCountGroups: .objectId, .subCol$
-    .nSubs = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        .nSubs = emlCountGroups.nGroups
+    else
+        .nSubs = 0
+    endif
     for .s from 1 to .nSubs
         .sub$[.s] = emlCountGroups.groupLabel$[.s]
     endfor
@@ -6880,13 +6910,21 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
 
     # Extract unique categories and sub-groups via single source
     @emlCountGroups: .objectId, .catCol$
-    .nCats = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        .nCats = emlCountGroups.nGroups
+    else
+        .nCats = 0
+    endif
     for .c from 1 to .nCats
         .cat$[.c] = emlCountGroups.groupLabel$[.c]
     endfor
 
     @emlCountGroups: .objectId, .subCol$
-    .nSubs = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        .nSubs = emlCountGroups.nGroups
+    else
+        .nSubs = 0
+    endif
     for .s from 1 to .nSubs
         .sub$[.s] = emlCountGroups.groupLabel$[.s]
     endfor

@@ -266,7 +266,11 @@ repeat
             if hasGroupCol
                 selectObject: tableId
                 @emlCountGroups: tableId, groupCol$
-                pgTotal = emlCountGroups.nGroups
+                if emlCountGroups.error$ = ""
+                    pgTotal = emlCountGroups.nGroups
+                else
+                    pgTotal = 0
+                endif
                 pgRun = 0
                 pgSkipped = 0
                 pgSkipList$ = ""

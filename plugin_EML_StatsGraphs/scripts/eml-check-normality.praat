@@ -153,12 +153,17 @@ repeat
             appendInfoLine: ""
             selectObject: tableId
             @emlCountGroups: tableId, groupCol$
+            if emlCountGroups.error$ = ""
+                .nGroupsFound = emlCountGroups.nGroups
+            else
+                .nGroupsFound = 0
+            endif
             .allGroupsOK = 1
             # COVERAGE. A group too small to test (n < 3) is skipped below,
             # not tested -- and the column summary must never generalise
             # over a group it never examined. .nAssessed counts groups that
             # actually ran; the summary compares it against
-            # emlCountGroups.nGroups rather than assuming the two are equal.
+            # .nGroupsFound rather than assuming the two are equal.
             .nAssessed = 0
 
             # Group labels for the Q-Q picker, captured from the same
@@ -166,13 +171,13 @@ repeat
             # later. The grouping column does not change within a run, so
             # the first column's labels are every column's labels.
             if iSel = 1
-                qqNGroups = emlCountGroups.nGroups
+                qqNGroups = .nGroupsFound
                 for iQQg from 1 to qqNGroups
                     qqGroupLabel$ [iQQg] = emlCountGroups.groupLabel$ [iQQg]
                 endfor
             endif
 
-            for iGroup from 1 to emlCountGroups.nGroups
+            for iGroup from 1 to .nGroupsFound
                 .gLabel$ = emlCountGroups.groupLabel$ [iGroup]
                 .gDisplay$ = replace$ (.gLabel$, "_", " ", 0)
                 selectObject: tableId
@@ -351,7 +356,7 @@ repeat
 
             appendInfoLine: ""
             if .allGroupsOK
-                if .nAssessed < emlCountGroups.nGroups
+                if .nAssessed < .nGroupsFound
                     # COVERAGE was incomplete: at least one group was too
                     # small to test and never examined. "no group ... shows
                     # a strong departure" is a claim about every group in
@@ -360,7 +365,7 @@ repeat
                     # reader. Language batch item 13, verbatim.
                     appendInfoLine: "  Summary: No strong departure in the"
                     ... + " groups large enough to test (",
-                    ... .nAssessed, " of ", emlCountGroups.nGroups,
+                    ... .nAssessed, " of ", .nGroupsFound,
                     ... " assessed)."
                 else
                     appendInfoLine: "  Summary: no group in this column shows a"

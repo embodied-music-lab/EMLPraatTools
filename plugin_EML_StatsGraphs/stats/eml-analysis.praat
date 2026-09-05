@@ -117,6 +117,13 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; ERROR-READ EXEMPT -- .nBlankRows initializes to 0 at emlCountGroups's
+    ; top (stats/eml-extract.praat:1718) and is incremented only inside the
+    ; row-loop that runs on the column-found success path
+    ; (stats/eml-extract.praat:1764); it cannot be nonzero on the
+    ; column-not-found failure path. The real gate on emlCountGroups.error$
+    ; follows on the very next non-comment line (verified identical at all
+    ; 5 sites: eml-analysis.praat:120,534,957,1268,1826).
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -531,6 +538,13 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; ERROR-READ EXEMPT -- .nBlankRows initializes to 0 at emlCountGroups's
+    ; top (stats/eml-extract.praat:1718) and is incremented only inside the
+    ; row-loop that runs on the column-found success path
+    ; (stats/eml-extract.praat:1764); it cannot be nonzero on the
+    ; column-not-found failure path. The real gate on emlCountGroups.error$
+    ; follows on the very next non-comment line (verified identical at all
+    ; 5 sites: eml-analysis.praat:120,534,957,1268,1826).
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -954,6 +968,13 @@ procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn,
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; ERROR-READ EXEMPT -- .nBlankRows initializes to 0 at emlCountGroups's
+    ; top (stats/eml-extract.praat:1718) and is incremented only inside the
+    ; row-loop that runs on the column-found success path
+    ; (stats/eml-extract.praat:1764); it cannot be nonzero on the
+    ; column-not-found failure path. The real gate on emlCountGroups.error$
+    ; follows on the very next non-comment line (verified identical at all
+    ; 5 sites: eml-analysis.praat:120,534,957,1268,1826).
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -1265,6 +1286,13 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; ERROR-READ EXEMPT -- .nBlankRows initializes to 0 at emlCountGroups's
+    ; top (stats/eml-extract.praat:1718) and is incremented only inside the
+    ; row-loop that runs on the column-found success path
+    ; (stats/eml-extract.praat:1764); it cannot be nonzero on the
+    ; column-not-found failure path. The real gate on emlCountGroups.error$
+    ; follows on the very next non-comment line (verified identical at all
+    ; 5 sites: eml-analysis.praat:120,534,957,1268,1826).
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -1823,6 +1851,13 @@ endproc
 #   .tableId, .dataCol$, .groupCol$ — as passed to the test
 # ============================================================================
 procedure emlReportPairwiseDescriptives: .tableId, .dataCol$, .groupCol$
+    ; ERROR-READ EXEMPT -- .nBlankRows initializes to 0 at emlCountGroups's
+    ; top (stats/eml-extract.praat:1718) and is incremented only inside the
+    ; row-loop that runs on the column-found success path
+    ; (stats/eml-extract.praat:1764); it cannot be nonzero on the
+    ; column-not-found failure path. The real gate on emlCountGroups.error$
+    ; follows on the very next non-comment line (verified identical at all
+    ; 5 sites: eml-analysis.praat:120,534,957,1268,1826).
     @emlCountGroups: .tableId, .groupCol$
     ; BLANK GROUP CELLS ARE MISSING DATA, not a category -- see
     ; @emlCountGroups. Captured immediately, because every
@@ -3550,7 +3585,11 @@ procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .grou
 
     selectObject: .tableId
     @emlCountGroups: .tableId, .groupCol$
-    .pgTotal = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        .pgTotal = emlCountGroups.nGroups
+    else
+        .pgTotal = 0
+    endif
     .pgRun = 0
     .pgSkipped = 0
     .pgSkipList$ = ""

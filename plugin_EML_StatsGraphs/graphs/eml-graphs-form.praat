@@ -5981,7 +5981,7 @@ repeat
                                 emlGroupSortAlphabetical = config_groupSort - 1
                                 tsLevelNameCol$ = tsTxtName$[tsTxtPick - 1]
                                 @emlCountGroups: objectId, tsLevelNameCol$
-                                if emlCountGroups.nGroups >= 2
+                                if emlCountGroups.error$ = "" and emlCountGroups.nGroups >= 2
                                     tsLevelMode = 1
                                 endif
                             endif

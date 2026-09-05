@@ -358,30 +358,18 @@ EXEMPT_SITES <- c(
     "eml-analysis.praat|emlRMPostHoc|emlBenjaminiHochberg|@emlBenjaminiHochberg: .rawP#",
     "eml-analysis.praat|emlRMPostHoc|emlBonferroni|@emlBonferroni: .rawP#",
     "eml-analysis.praat|emlRMPostHoc|emlHolm|@emlHolm: .rawP#",
-    # REMOVED 2026-09-03, RULING_EXEMPT_LEAK: this site was pinned here and
-    # the census calls it UNSAFE. eml-analysis.praat:3567 reads
-    # emlCountGroups.nGroups straight into .pgTotal and reads .error$ nowhere,
-    # so a bad column name reports "0 groups" instead of the real reason.
-    # emlCountGroups is one of the clusters RULING_ERROR_TRIAGE_APPROVED names
-    # for the FIX list (getGroupData x33 -> countGroups x20 -> Pearson drift ->
-    # skew/kurtosis), so a countGroups site was never eligible for this list at
-    # all. It does not shrink to a corrected reason; it leaves and joins the fix
-    # population. The pin was made on the cluster name against the wrong list.
-    #
-    # REMOVED 2026-09-03, re-audit ordered by the same ruling: the other five
-    # emlCountGroups pins here (emlReportPairwiseDescriptives, emlRunAnova
-    # Analysis, emlRunKruskalWallisAnalysis, emlRunPairwiseAnalysis,
-    # emlRunTwoGroupAnalysis -- error_site_triage.tsv rows for eml-analysis.
-    # praat:120,534,957,1268,1826) each carry a SAFE disposition IN THE TABLE
-    # ("the real gate on emlCountGroups.error$ follows on the very next
-    # non-comment line"), but the ruling's removal test is stated as an OR:
-    # a site comes out if the census/triage calls it UNSAFE, OR if it belongs
-    # to a cluster the ruling names for the FIX list, and emlCountGroups is
-    # named there regardless of any individual site's local SAFE reasoning.
-    # A per-site proxy-safety argument does not survive the whole cluster
-    # being fixed out from under it. All five leave and join the fix
-    # population; their ERROR-READ EXEMPT markers are removed from
-    # stats/eml-analysis.praat at the same lines.
+    # RESTORED 2026-09-05, RULING_CLUSTER_CLAUSE_SCOPED_2026-09-04: a
+    # fix-cluster site comes out unless the accepted triage table dispositions
+    # that exact site SAFE with a written mechanism. These five do (the
+    # .nBlankRows argument at eml-analysis.praat:120,534,957,1268,1826,
+    # unchanged since the table was written), so they stay adjudicated
+    # exempt while the other 20 countGroups FIX sites are fixed
+    # (Gate A4 cluster 2, ORDER_A4_CLUSTER2_COUNTGROUPS_2026-09-05).
+    "eml-analysis.praat|emlRunTwoGroupAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    "eml-analysis.praat|emlRunAnovaAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    "eml-analysis.praat|emlRunKruskalWallisAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    "eml-analysis.praat|emlRunPairwiseAnalysis|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
+    "eml-analysis.praat|emlReportPairwiseDescriptives|emlCountGroups|@emlCountGroups: .tableId, .groupCol$",
     "eml-analysis.praat|emlRunNormalityAnalysis|emlShapiroWilk|@emlShapiroWilk: .data#",
     "eml-analysis.praat|emlRunRepeatedMeasuresAnalysis|emlRMAnovaTest|@emlRMAnovaTest: .data##, .n, .k",
     "eml-anova-kernel.praat|emlAnovaKernelTwoWayPostHoc|emlBenjaminiHochberg|@emlBenjaminiHochberg: .rawP#",
@@ -409,11 +397,13 @@ EXEMPT_SITES <- c(
 )
 # 34 -> 33 on 2026-09-03 with the countGroups leak's removal, then 33 -> 28 the
 # same day with the re-audit ordered by the same ruling (the other five
-# emlCountGroups pins, individually triage-SAFE, still belong to a named FIX
-# cluster and come out). The ceiling FOLLOWS the list down, always: a ceiling
-# left above the list is room for the next wrong pin to fit without tripping
-# anything.
-KNOWN_EXEMPT_CEILING <- 28L
+# emlCountGroups pins, individually triage-SAFE, still belonged to a named FIX
+# cluster and came out). 28 -> 33 on 2026-09-05, RULING_CLUSTER_CLAUSE_SCOPED_
+# 2026-09-04, restoring those same five now that the rest of the countGroups
+# cluster is fixed out from under them (Gate A4 cluster 2). The ceiling
+# FOLLOWS the list, in whichever direction it moves: a ceiling left above the
+# list is room for the next wrong pin to fit without tripping anything.
+KNOWN_EXEMPT_CEILING <- 33L
 
 has_exempt_marker <- function(s, code) {
     lo <- max(1L, s$line - 20L)

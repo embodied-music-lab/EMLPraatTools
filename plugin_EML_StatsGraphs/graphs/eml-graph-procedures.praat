@@ -7116,7 +7116,11 @@ endproc
 
 procedure emlExtractUniqueValues: .tableId, .colName$
     @emlCountGroups: .tableId, .colName$
-    .nLabels = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        .nLabels = emlCountGroups.nGroups
+    else
+        .nLabels = 0
+    endif
     for .i from 1 to .nLabels
         .raw$[.i] = emlCountGroups.groupLabel$[.i]
         @emlSanitizeLabel: .raw$[.i]
@@ -7564,7 +7568,11 @@ procedure emlMeasureBarData: .tableId, .groupCol$, .valueCol$, .errorMode, .erro
 
     # Extract unique groups via single source
     @emlCountGroups: .tableId, .groupCol$
-    emlBarData_nGroups = emlCountGroups.nGroups
+    if emlCountGroups.error$ = ""
+        emlBarData_nGroups = emlCountGroups.nGroups
+    else
+        emlBarData_nGroups = 0
+    endif
     for .g from 1 to emlBarData_nGroups
         emlBarData_label$[.g] = emlCountGroups.groupLabel$[.g]
     endfor
