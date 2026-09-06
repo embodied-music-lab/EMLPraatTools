@@ -553,6 +553,9 @@ procedure eml_ak2_gather: .tableId, .dataCol$, .factor1$, .factor2$
 
     # --- pass 1: discover factor levels, first-appearance order ---
     if .error$ = ""
+        ; VECTOR-EXEMPT: cat2 -- reads the two TEXT factor columns per row to
+        ; discover each factor's levels in first-appearance order; string reads
+        ; and first-seen dedup have no vector form.
         for .row from 1 to .n
             .l1$ = Get value: .row, .factor1$
             .l2$ = Get value: .row, .factor2$

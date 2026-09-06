@@ -3450,6 +3450,9 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
             .yClean# = Get all numbers in column: .depCol$
             .nValid = .nRows
         else
+            ; VECTOR-EXEMPT: cat2 -- count pass of the pairwise-complete filter;
+            ; runs only when a column has a hole, per row because the drop is
+            ; pairwise and Praat has no boolean-mask vector index.
             .nValid = 0
             for .iRow from 1 to .nRows
                 selectObject: .tableId
@@ -3471,6 +3474,8 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         .xClean# = zero# (.nValid)
         .yClean# = zero# (.nValid)
         .idx = 0
+        ; VECTOR-EXEMPT: cat2 -- fill pass of the pairwise-complete filter; per
+        ; row for the same reason as the count pass above.
         for .iRow from 1 to .nRows
             selectObject: .tableId
             .xVal = Get value: .iRow, .predCol$
@@ -4540,6 +4545,10 @@ procedure emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$,
     ; table that does not match the number the user typed in.
     .nRowLevels = 0
     .nColLevels = 0
+    ; VECTOR-EXEMPT: cat2 -- reads two TEXT category columns per row to discover
+    ; distinct levels in first-seen order (and validate pre-aggregated counts).
+    ; String reads, first-seen ordering, and level dedup have no vector form;
+    ; "Get all numbers in column:" does not apply to a category column.
     for .r from 1 to .nRows
         selectObject: .tableId
         .rv$ = Get value: .r, .rowCol$
@@ -4625,6 +4634,9 @@ procedure emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$,
     ; .rowCol$, columns = sorted levels of .colCol$. Cells with no
     ; observations stay at the zero## fill -- 0, not missing.
     .observed## = zero## (.nRowLevels, .nColLevels)
+    ; VECTOR-EXEMPT: cat2 -- tallies each row into the contingency matrix by
+    ; matching its two TEXT levels; text match and scatter into the observed
+    ; matrix have no vector form.
     for .r from 1 to .nRows
         selectObject: .tableId
         .rv$ = Get value: .r, .rowCol$
@@ -4882,6 +4894,9 @@ procedure emlRunProportionAnalysis: .tableId, .col$, .successValue$,
     ; @emlCountGroups skips a blank group cell into its own .nBlankRows.
     .nLevels = 0
     .nExcluded = 0
+    ; VECTOR-EXEMPT: cat2 -- reads one TEXT column per row to discover distinct
+    ; levels in first-seen order and tally blanks into .nExcluded; string reads,
+    ; level dedup, and blank handling have no vector form.
     for .r from 1 to .nRows
         selectObject: .tableId
         .cv$ = Get value: .r, .col$
@@ -4974,6 +4989,9 @@ procedure emlRunProportionAnalysis: .tableId, .col$, .successValue$,
     ; weights every row by its (already-validated) count.
     .successes = 0
     .n = 0
+    ; VECTOR-EXEMPT: cat2 -- reads one TEXT column per row, matching the success
+    ; value and weighting by the (per-row) count in aggregated mode; string
+    ; match and per-row weighting have no vector form here.
     for .r from 1 to .nRows
         selectObject: .tableId
         .cv$ = Get value: .r, .col$
