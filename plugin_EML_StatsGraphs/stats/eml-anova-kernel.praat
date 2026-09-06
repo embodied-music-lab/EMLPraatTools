@@ -600,6 +600,11 @@ procedure eml_ak2_gather: .tableId, .dataCol$, .factor1$, .factor2$
         .cellSum# = zero# (.rs)
         .grandSum = 0
 
+        ; VECTOR-EXEMPT: cat2 -- resolves each row to a two-way cell by matching
+        ; the two TEXT factor columns (no vector string read). The numeric read
+        ; stays per row: a vector "Get all numbers in column:" raises on a missing
+        ; cell, and completeness of the data column is not guaranteed at this
+        ; level, so the per-row read preserves the original behavior.
         for .row from 1 to .n
             .yv = Get value: .row, .dataCol$
             .l1$ = Get value: .row, .factor1$

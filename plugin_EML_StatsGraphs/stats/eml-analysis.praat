@@ -3424,16 +3424,42 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
     endif
 
     if .error$ = ""
-        # Extract paired values, pairwise-delete undefined
-        .nValid = 0
-        for .iRow from 1 to .nRows
+        # Extract paired values, pairwise-delete undefined.
+        ;
+        ; Both columns are validated strict=0, so either MAY hold missing
+        ; cells -- but most real columns hold none. @eml_strictNumericColumn
+        ; probes each: when BOTH are strictly numeric (no missing, no
+        ; non-numeric cell), every row is a complete pair and the two
+        ; whole-column reads are row-aligned, so the clean case takes one
+        ; C-speed "Get all numbers in column:" per column with no per-row
+        ; sweep. Only when a column actually holds a hole does the pairwise
+        ; filter run per row -- "Get all numbers in column:" raises on a
+        ; missing cell and Praat has no boolean-mask vector index, so a
+        ; pairwise-complete drop cannot be vectorised. Proven bit-identical:
+        ; for a strict column the whole-column read equals the per-row sweep
+        ; in order and value.
+        @eml_strictNumericColumn: .tableId, .predCol$
+        .predStrict = eml_strictNumericColumn.strict
+        @eml_strictNumericColumn: .tableId, .depCol$
+        .depStrict = eml_strictNumericColumn.strict
+        .bothComplete = .predStrict and .depStrict
+
+        if .bothComplete
             selectObject: .tableId
-            .xVal = Get value: .iRow, .predCol$
-            .yVal = Get value: .iRow, .depCol$
-            if .xVal <> undefined and .yVal <> undefined
-                .nValid += 1
-            endif
-        endfor
+            .xClean# = Get all numbers in column: .predCol$
+            .yClean# = Get all numbers in column: .depCol$
+            .nValid = .nRows
+        else
+            .nValid = 0
+            for .iRow from 1 to .nRows
+                selectObject: .tableId
+                .xVal = Get value: .iRow, .predCol$
+                .yVal = Get value: .iRow, .depCol$
+                if .xVal <> undefined and .yVal <> undefined
+                    .nValid += 1
+                endif
+            endfor
+        endif
 
         if .nValid < 3
             .error$ = "Need at least 3 non-missing paired observations (found "
@@ -3441,7 +3467,7 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         endif
     endif
 
-    if .error$ = ""
+    if .error$ = "" and not .bothComplete
         .xClean# = zero# (.nValid)
         .yClean# = zero# (.nValid)
         .idx = 0
@@ -3455,7 +3481,9 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
                 .yClean# [.idx] = .yVal
             endif
         endfor
+    endif
 
+    if .error$ = ""
         @emlLinearRegression: .xClean#, .yClean#
         if emlLinearRegression.error$ <> ""
             .error$ = emlLinearRegression.error$
@@ -6366,6 +6394,11 @@ procedure emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
     selectObject: .tableId
     .nRows = Get number of rows
     .sigma = sqrt (emlOneWayAnova.msWithin)
+    ; VECTOR-EXEMPT: cat2 -- the data column is validated strict=0, so it may
+    ; hold missing cells; the loop reads each cell as text and skips undefined
+    ; (a vector "Get all numbers in column:" RAISES on a missing cell). The group
+    ; label is also read per row to look up its fitted mean, and the augment
+    ; columns are written per row through @emlAugmentNum (a results-writer change).
     for .r from 1 to .nRows
         selectObject: .tableId
         .g$ = Get value: .r, .groupCol$
