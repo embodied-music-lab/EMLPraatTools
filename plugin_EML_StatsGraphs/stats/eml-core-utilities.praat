@@ -499,12 +499,8 @@ procedure emlDiff: .data#
         .error$ = "Input must have at least 2 elements for differencing"
     else
         .nOut = .n - 1
-        .result# = zero# (.nOut)
-        
-        for .i from 1 to .nOut
-            .iNext = .i + 1
-            .result#[.i] = .data#[.iNext] - .data#[.i]
-        endfor
+        # First difference: element i+1 minus element i, as two shifted slices.
+        .result# = part# (.data#, 2, .n) - part# (.data#, 1, .nOut)
     endif
 endproc
 
@@ -538,12 +534,15 @@ procedure emlLag: .data#, .k
         endfor
     else
         .result# = zero# (.n)
-        
+
+        ; VECTOR-EXEMPT: cat2 -- a lag is a shifted copy with an undefined prefix.
+        ; Praat 6.6.30 has no slice-write (v#[a:b] = ...) or vector concatenation
+        ; to assemble it, so the prefix and the shifted body are filled by loop.
         # First k elements are undefined
         for .i from 1 to .k
             .result#[.i] = undefined
         endfor
-        
+
         # Remaining elements are lagged values
         for .i from .k + 1 to .n
             .lagIdx = .i - .k
@@ -591,10 +590,8 @@ procedure emlBinData: .data#, .nBins
             
             # Create bin edges
             .nEdges = .nBins + 1
-            .binEdges# = zero# (.nEdges)
-            for .i from 1 to .nEdges
-                .binEdges#[.i] = .dataMin + (.i - 1) * .binWidth
-            endfor
+            # Equal-width edges: dataMin + 0,1,..,nBins times the width.
+            .binEdges# = .dataMin + from_to# (0, .nBins) * .binWidth
             
             # Ensure last edge exactly equals max (avoid floating-point issues)
             .binEdges#[.nEdges] = .dataMax
@@ -670,10 +667,7 @@ procedure emlZScore: .data#
             .result# = zero# (.n)
             .warning$ = "Standard deviation is zero; all z-scores set to 0"
         else
-            .result# = zero# (.n)
-            for .i from 1 to .n
-                .result#[.i] = (.data#[.i] - .mean) / .sd
-            endfor
+            .result# = (.data# - .mean) / .sd
         endif
     endif
 endproc
@@ -791,12 +785,15 @@ procedure emlConcatenateVectors: .v1#, .v2#
         .result# = .v1#
     else
         .result# = zero# (.nTotal)
-        
+
+        ; VECTOR-EXEMPT: cat2 -- Praat 6.6.30 has no vector concatenation
+        ; (combine#/append#/brace-concat) and no slice-write (v#[a:b] = ...),
+        ; so the two source vectors are copied into place element by element.
         # Copy first vector
         for .i from 1 to .n1
             .result#[.i] = .v1#[.i]
         endfor
-        
+
         # Copy second vector
         for .i from 1 to .n2
             .outIdx = .n1 + .i
@@ -829,7 +826,9 @@ procedure emlRepeatVector: .v#, .nReps
     else
         .nTotal = .nV * .nReps
         .result# = zero# (.nTotal)
-        
+
+        ; VECTOR-EXEMPT: cat2 -- no vector slice-write (v#[a:b] = ...) or tile
+        ; primitive in Praat 6.6.30, so each repetition is copied into place.
         for .rep from 1 to .nReps
             .offset = (.rep - 1) * .nV
             for .i from 1 to .nV
