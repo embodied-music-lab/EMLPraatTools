@@ -411,10 +411,7 @@ procedure emlTTestPaired: .v1#, .v2#, .tails
         .error$ = "tails must be 1 or 2"
     else
         # --- Compute differences ---
-        .diffs# = zero# (.n)
-        for .i from 1 to .n
-            .diffs#[.i] = .v1#[.i] - .v2#[.i]
-        endfor
+        .diffs# = .v1# - .v2#
 
         .meanDiff = mean (.diffs#)
         .sdDiff = stdev (.diffs#)
@@ -735,13 +732,11 @@ procedure eml_pearsonCore: .x#, .y#, .tails
         .sumX2 = 0
         .sumY2 = 0
 
-        for .i from 1 to .n
-            .dx = .x#[.i] - .meanX
-            .dy = .y#[.i] - .meanY
-            .sumXY = .sumXY + .dx * .dy
-            .sumX2 = .sumX2 + .dx * .dx
-            .sumY2 = .sumY2 + .dy * .dy
-        endfor
+        .dx# = .x# - .meanX
+        .dy# = .y# - .meanY
+        .sumXY = sum (.dx# * .dy#)
+        .sumX2 = sum (.dx# * .dx#)
+        .sumY2 = sum (.dy# * .dy#)
 
         # Check for zero variance
         if .sumX2 = 0 or .sumY2 = 0
@@ -2016,25 +2011,8 @@ procedure emlMannWhitneyU: .v1#, .v2#, .tails
             # Computed from the combined ranking
             .tieCorrection = 0
             if .hasTies = 1
-                # Re-sort combined to find tie group sizes
-                # Use sorted values from ranks to count consecutive equal ranks
-                # More efficient: count tie groups from sorted ranks
-                .sortedRanks# = zero# (.nTotal)
-                for .i from 1 to .nTotal
-                    .sortedRanks#[.i] = .ranks#[.i]
-                endfor
-                # Sort ranks (they may not be in order since they're assigned
-                # to original positions)
-                # Use simple insertion sort for ranks
-                for .i from 2 to .nTotal
-                    .key = .sortedRanks#[.i]
-                    .j = .i - 1
-                    while .j >= 1 and .sortedRanks#[.j] > .key
-                        .sortedRanks#[.j + 1] = .sortedRanks#[.j]
-                        .j = .j - 1
-                    endwhile
-                    .sortedRanks#[.j + 1] = .key
-                endfor
+                # Sorted ranks, for counting consecutive equal-rank tie groups.
+                .sortedRanks# = sort# (.ranks#)
 
                 # Count consecutive equal ranks
                 .i = 1
@@ -2812,10 +2790,7 @@ procedure emlCohenDz: .v1#, .v2#
     elsif .n < 2
         .error$ = "Cohen's d_z is undefined for fewer than 2 pairs."
     else
-        .diff# = zero# (.n)
-        for .i from 1 to .n
-            .diff# [.i] = .v1# [.i] - .v2# [.i]
-        endfor
+        .diff# = .v1# - .v2#
         .sdDiff = stdev (.diff#)
         if .sdDiff = 0
             .error$ = "Cohen's d_z is undefined when all differences are"
@@ -2914,10 +2889,7 @@ procedure emlWilcoxonSignedRank: .v1#, .v2#, .tails
         .error$ = "tails must be 1 or 2"
     else
         # --- Compute differences and separate zeros ---
-        .allDiffs# = zero# (.n)
-        for .i from 1 to .n
-            .allDiffs#[.i] = .v1#[.i] - .v2#[.i]
-        endfor
+        .allDiffs# = .v1# - .v2#
 
         # Count non-zero diffs
         .nNonzero = 0
@@ -2942,10 +2914,7 @@ procedure emlWilcoxonSignedRank: .v1#, .v2#, .tails
             endfor
 
             # Absolute values of non-zero diffs
-            .absDiffs# = zero# (.nNonzero)
-            for .i from 1 to .nNonzero
-                .absDiffs#[.i] = abs (.nonzeroDiffs#[.i])
-            endfor
+            .absDiffs# = abs# (.nonzeroDiffs#)
 
             # Rank absolute differences (with average tie handling)
             @emlRankVector: .absDiffs#
@@ -3044,21 +3013,8 @@ procedure emlWilcoxonSignedRank: .v1#, .v2#, .tails
 
                 # Tie correction: subtract sum(t^3 - t)/48 for each tie group
                 if .hasTies = 1
-                    # Sort ranks to find tie groups
-                    .sortedRanks# = zero# (.nNonzero)
-                    for .i from 1 to .nNonzero
-                        .sortedRanks#[.i] = .ranks#[.i]
-                    endfor
-                    # Insertion sort
-                    for .i from 2 to .nNonzero
-                        .key = .sortedRanks#[.i]
-                        .j = .i - 1
-                        while .j >= 1 and .sortedRanks#[.j] > .key
-                            .sortedRanks#[.j + 1] = .sortedRanks#[.j]
-                            .j = .j - 1
-                        endwhile
-                        .sortedRanks#[.j + 1] = .key
-                    endfor
+                    # Sorted ranks, for counting consecutive equal-rank tie groups.
+                    .sortedRanks# = sort# (.ranks#)
 
                     # Count consecutive equal ranks
                     .tieCorrection = 0
@@ -3274,10 +3230,7 @@ procedure emlHodgesLehmannPaired: .v1#, .v2#, .level
         # cross-difference does: a sample whose interval cannot be built
         # still HAS a median Walsh average, and returning it with the
         # bounds undefined says more than returning nothing.
-        .allDiffs# = zero# (.n)
-        for .i from 1 to .n
-            .allDiffs#[.i] = .v1#[.i] - .v2#[.i]
-        endfor
+        .allDiffs# = .v1# - .v2#
 
         # The fill is a pair loop because Praat has no outer-sum
         # primitive and no slice assignment (probed on 6.6.30). The
@@ -3325,10 +3278,7 @@ procedure emlHodgesLehmannPaired: .v1#, .v2#, .level
                 endif
             endfor
 
-            .absDiffs# = zero# (.nNonzero)
-            for .i from 1 to .nNonzero
-                .absDiffs#[.i] = abs (.nonzeroDiffs#[.i])
-            endfor
+            .absDiffs# = abs# (.nonzeroDiffs#)
 
             @emlRankVector: .absDiffs#
             .hasTies = emlRankVector.hasTies
@@ -5194,10 +5144,18 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
         .nLev1 = 0
         .nLev2 = 0
 
+        # The data column is strict-numeric (checked above), so read it once as
+        # a vector instead of cell by cell.
+        selectObject: .tableId
+        .yCol# = Get all numbers in column: .dataCol$
+        ; VECTOR-EXEMPT: cat2 -- builds the two-way design by first-seen order
+        ; from the two TEXT factor columns (Praat has no "get all strings in
+        ; column") and matches each row to a cell; the one numeric read is
+        ; hoisted out as .yCol#.
         for .r from 1 to .nObs
             .l1$ = Get value: .r, .factor1$
             .l2$ = Get value: .r, .factor2$
-            .yv = Get value: .r, .dataCol$
+            .yv = .yCol# [.r]
             .cellKey$ = .l1$ + newline$ + .l2$
 
             .cellIdx = 0
@@ -7510,18 +7468,12 @@ procedure emlLinearRegression: .x#, .y#
         .xMean = mean (.x#)
         .yMean = mean (.y#)
 
-        .ssXX = 0
-        .ssYY = 0
-        .ssXY = 0
-        .sumX2 = 0
-        for .i from 1 to .n
-            .dx = .x# [.i] - .xMean
-            .dy = .y# [.i] - .yMean
-            .ssXX = .ssXX + .dx * .dx
-            .ssYY = .ssYY + .dy * .dy
-            .ssXY = .ssXY + .dx * .dy
-            .sumX2 = .sumX2 + .x# [.i] * .x# [.i]
-        endfor
+        .dx# = .x# - .xMean
+        .dy# = .y# - .yMean
+        .ssXX = sum (.dx# * .dx#)
+        .ssYY = sum (.dy# * .dy#)
+        .ssXY = sum (.dx# * .dy#)
+        .sumX2 = sum (.x# * .x#)
 
         if .ssXX = 0
             .error$ = "Predictor has zero variance."
