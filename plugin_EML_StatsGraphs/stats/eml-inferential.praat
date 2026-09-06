@@ -7814,29 +7814,57 @@ procedure emlOLSInfluence: .tableId, .xCol$, .yCol$
     endif
 
     # --- listwise deletion, the same rule @emlRunRegressionAnalysis uses ---
+    # Probe both columns first: when both are strictly numeric (no missing,
+    # no non-numeric cell), every row is a complete pair and the whole-column
+    # reads are row-aligned, so the fit's inputs come from one C-speed read per
+    # column with no per-row sweep. A column with a real hole falls back to the
+    # per-row pairwise-complete filter. Proven bit-identical to the per-row
+    # sweep for a strict column (order and value). The diagnostics pass below
+    # still reads per row, because it writes each row's leverage and residual
+    # back at that row's ORIGINAL position and skips the incomplete pairs.
     if .error$ = ""
-        for .r from 1 to .nRows
-            selectObject: .tableId
-            .xv = Get value: .r, .xCol$
-            .yv = Get value: .r, .yCol$
-            # Praat evaluates BOTH sides of `and`, so this is nested, not
-            # conjoined. Same everywhere below.
-            if .xv <> undefined
-                if .yv <> undefined
-                    .nValid = .nValid + 1
+        @eml_strictNumericColumn: .tableId, .xCol$
+        .xStrict = eml_strictNumericColumn.strict
+        @eml_strictNumericColumn: .tableId, .yCol$
+        .yStrict = eml_strictNumericColumn.strict
+        .bothComplete = .xStrict and .yStrict
+        if .bothComplete
+            .nValid = .nRows
+        else
+            ; VECTOR-EXEMPT: cat2 -- pairwise-complete filter over two strict=0
+            ; columns; "Get all numbers in column:" raises on a missing cell and
+            ; Praat has no boolean-mask vector index, so the drop runs per row.
+            for .r from 1 to .nRows
+                selectObject: .tableId
+                .xv = Get value: .r, .xCol$
+                .yv = Get value: .r, .yCol$
+                # Praat evaluates BOTH sides of `and`, so this is nested, not
+                # conjoined. Same everywhere below.
+                if .xv <> undefined
+                    if .yv <> undefined
+                        .nValid = .nValid + 1
+                    endif
                 endif
-            endif
-        endfor
+            endfor
+        endif
         if .nValid < 3
             .error$ = "Need at least 3 non-missing paired observations "
             ... + "(found " + string$ (.nValid) + ")."
         endif
     endif
 
-    if .error$ = ""
+    if .error$ = "" and .bothComplete
+        selectObject: .tableId
+        .xClean# = Get all numbers in column: .xCol$
+        .yClean# = Get all numbers in column: .yCol$
+    endif
+
+    if .error$ = "" and not .bothComplete
         .xClean# = zero# (.nValid)
         .yClean# = zero# (.nValid)
         .k = 0
+        ; VECTOR-EXEMPT: cat2 -- fill pass of the pairwise-complete filter; per
+        ; row for the same reason as the count pass above.
         for .r from 1 to .nRows
             selectObject: .tableId
             .xv = Get value: .r, .xCol$
@@ -7849,7 +7877,9 @@ procedure emlOLSInfluence: .tableId, .xCol$, .yCol$
                 endif
             endif
         endfor
+    endif
 
+    if .error$ = ""
         # The fit itself is not recomputed here. @emlLinearRegression already
         # exposes every term the formulae below need.
         @emlLinearRegression: .xClean#, .yClean#
@@ -7867,6 +7897,11 @@ procedure emlOLSInfluence: .tableId, .xCol$, .yCol$
         .ssXX = emlLinearRegression.ssXX
         .rss = 0
 
+        ; VECTOR-EXEMPT: cat2 -- writes each observation's fitted value,
+        ; residual, leverage, standardized residual, and Cook's distance back
+        ; at that row's ORIGINAL position, and marks .used# per row while
+        ; skipping the incomplete pairs. The scatter to original rows and the
+        ; pairwise skip have no vector form here.
         for .r from 1 to .nRows
             selectObject: .tableId
             .xv = Get value: .r, .xCol$
