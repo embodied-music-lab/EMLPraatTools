@@ -133,13 +133,21 @@ procedure emlExtractColumn: .tableId, .columnName$
             endif
         endif
 
-        .data# = zero#(.nRows)
         .n = 0
 
-        ; ERROR-READ EXEMPT -- this column was already confirmed present (.colExists) on this
-        ; same unmutated table earlier in this procedure; emlAuditColumn's one failure mode
-        ; (column not found) is unreachable here.
-        if .fastPath = 0
+        # Fast path: the column is strictly numeric with no empty cells, so
+        # Praat's C-speed column read returns every value already numericised.
+        # No cell can be undefined here, so .n = .nRows and the resize is a
+        # no-op. The interpreter per-cell loop below is kept only for the
+        # dirty-column path, where each cell must be classified individually.
+        if .fastPath = 1
+            selectObject: .tableId
+            .data# = Get all numbers in column: .columnName$
+            .n = size (.data#)
+        else
+            ; ERROR-READ EXEMPT -- this column was already confirmed present (.colExists) on this
+            ; same unmutated table earlier in this procedure; emlAuditColumn's one failure mode
+            ; (column not found) is unreachable here.
             @emlAuditColumn: .tableId, .columnName$
             .nEmpty = emlAuditColumn.nEmpty
             .nLocale = emlAuditColumn.nLocale
@@ -147,25 +155,23 @@ procedure emlExtractColumn: .tableId, .columnName$
             .nCoerced = emlAuditColumn.nCoerced
             .nLeadingDot = emlAuditColumn.nLeadingDot
             .note$ = emlAuditColumn.note$
+            .data# = zero#(.nRows)
+            ; VECTOR-EXEMPT: cat1 -- per-cell numeric classification (@eml_readCell probes
+            ; Praat's numericiser cell by cell); this is the dirty-column path, not a reduction.
+            for .row from 1 to .nRows
+                @eml_readCell: .tableId, .row, .columnName$, .fastPath
+                if eml_readCell.value <> undefined
+                    .n = .n + 1
+                    .data#[.n] = eml_readCell.value
+                endif
+            endfor
         endif
-
-        for .row from 1 to .nRows
-            @eml_readCell: .tableId, .row, .columnName$, .fastPath
-            if eml_readCell.value <> undefined
-                .n = .n + 1
-                .data#[.n] = eml_readCell.value
-            endif
-        endfor
 
         .nUndefined = .nRows - .n
 
         # Resize to actual count if there were undefined values
         if .n < .nRows and .n > 0
-            .temp# = zero#(.n)
-            for .i from 1 to .n
-                .temp#[.i] = .data#[.i]
-            endfor
-            .data# = .temp#
+            .data# = part# (.data#, 1, .n)
         elsif .n = 0
             .data# = zero#(0)
         endif
@@ -894,6 +900,16 @@ procedure eml_strictNumericColumn: .tableId, .columnName$
         # it cannot read must report `.unreadable`, not raise, whatever
         # produced the cell. Any future caller reaching here with a "?" gets
         # the answer the contract above promises instead of a stack trace.
+        ; VECTOR-EXEMPT: cat2 -- deliberately kept a loop. Praat 6.6.30 has no
+        ; zero-object count-where or first-match text command for a Table
+        ; (verified: "Search column:" and "Get number of rows where column
+        ; (text):" do not exist), so every vector form of this existence scan
+        ; must allocate a transient Table per call (Extract, or Copy+Formula).
+        ; This runs on the per-group path, so that adds object-id churn against
+        ; the 10k active-object cap -- the exact pressure this de-loop pass is
+        ; relieving -- to remove only a modest per-analysis interpreter cost,
+        ; and a count also drops the documented .firstBadRow (the ROW of the
+        ; first bad cell, which no count gives). The loop allocates nothing.
         for .row from 1 to .nRows
             selectObject: .tableId
             .cell$ = Get value: .row, .columnName$
@@ -1232,6 +1248,11 @@ procedure emlAuditColumn: .tableId, .columnName$
         endif
     endif
 
+    ; VECTOR-EXEMPT: cat2 -- only reached when the fast path above has already
+    ; ruled the column impure. Each cell must be routed through @eml_classifyCell's
+    ; per-cell locale / coercion / leading-dot / empty logic, which has no Table
+    ; vector equivalent; the kind counts and first-row diagnostics it produces
+    ; cannot come from a column reduction.
     for .row from 1 to .nRows
         selectObject: .tableId
         .cell$ = Get value: .row, .columnName$
@@ -1844,52 +1865,34 @@ endproc
 #
 # Output:
 #   .subsetId    - new Table containing only that group's rows. Caller
-#                  owns it and must remove it. NOTE: on the normalising
-#                  path the group column of the subset holds the
-#                  normalised label, not the original spelling.
+#                  owns it and must remove it. NOTE: the group column of the
+#                  subset holds the normalised label, not the original
+#                  spelling. (Where every cell is already canonical this is
+#                  the original spelling, so the subset is unchanged.)
 # ============================================================================
 procedure eml_groupSubset: .tableId, .groupCol$, .groupLabel$
     @eml_normalizeLabel: .groupLabel$
     .wantNorm$ = eml_normalizeLabel.result$
 
-    .needNormalize = 0
-    if .groupLabel$ <> .wantNorm$
-        .needNormalize = 1
-    endif
-
+    # Always normalise the group column on a copy with a single C-speed
+    # Formula pass -- trim leading/trailing spaces and tabs, then lower-case --
+    # then extract on the normalised label. This replaces a per-row detection
+    # scan and a per-row normalise loop (each an interpreter call per cell,
+    # the dominant per-group cost) with two vector operations. The regex
+    # reproduces @eml_normalizeLabel exactly, verified cell-by-cell on
+    # adversarial labels (leading/trailing tabs, non-ASCII, empty, internal
+    # spaces). When every cell is already canonical the pass changes nothing,
+    # so the extracted rows and their contents are bit-identical to a direct
+    # extract on the raw label -- matching the old detect-then-normalise
+    # branch value for value.
     selectObject: .tableId
     .nRows = Get number of rows
-
-    .row = 1
-    while .row <= .nRows and .needNormalize = 0
-        selectObject: .tableId
-        .cell$ = Get value: .row, .groupCol$
-        @eml_normalizeLabel: .cell$
-        if .cell$ <> eml_normalizeLabel.result$
-            .needNormalize = 1
-        endif
-        .row = .row + 1
-    endwhile
-
-    if .needNormalize = 0
-        selectObject: .tableId
-        .subsetId = Extract rows where column (text): .groupCol$,
-            ... "is equal to", .groupLabel$
-    else
-        selectObject: .tableId
-        .workId = Copy: "eml_groupNorm"
-        for .r from 1 to .nRows
-            selectObject: .workId
-            .cell$ = Get value: .r, .groupCol$
-            @eml_normalizeLabel: .cell$
-            selectObject: .workId
-            Set string value: .r, .groupCol$, eml_normalizeLabel.result$
-        endfor
-        selectObject: .workId
-        .subsetId = Extract rows where column (text): .groupCol$,
-            ... "is equal to", .wantNorm$
-        removeObject: .workId
-    endif
+    .workId = Copy: "eml_groupNorm"
+    Formula: .groupCol$, "replace_regex$ (replace_regex$ (replace_regex$ (self$, ""^[ " + tab$ + "]+"", """", 0), ""[ " + tab$ + "]+$"", """", 0), ""(.)"", ""\l\1"", 0)"
+    selectObject: .workId
+    .subsetId = Extract rows where column (text): .groupCol$,
+        ... "is equal to", .wantNorm$
+    removeObject: .workId
 endproc
 
 
