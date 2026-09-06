@@ -2260,10 +2260,21 @@ if (!is.null(df) && nrow(df)) {
     if (nrow(real)) {
         per <- do.call(rbind, lapply(split(real, real$id), function(g)
             data.frame(validator = g$id[1],
+                       # Below-floor cells carry pass = NA (helpers.R's carve-out,
+                       # e400869b: tolerance exceeds |computed|, so the comparison
+                       # is unfalsifiable and is excluded from the tally rather than
+                       # counted as a trivial pass). sum()/all() poison on a single
+                       # NA -- `if (all(g$pass))` threw "missing value where TRUE/
+                       # FALSE needed" and crashed summary assembly before this file
+                       # was written, on every run once any below-floor cell existed.
+                       # Match helpers.R eml_report/eml_exit: NA is neither pass nor
+                       # fail. checks = passed + failed + bfloor; a validator whose
+                       # only non-passes are below-floor is a PASS.
                        checks    = nrow(g),
-                       passed    = sum(g$pass),
-                       failed    = sum(!g$pass),
-                       status    = if (all(g$pass)) "PASS" else "FAIL",
+                       passed    = sum(g$pass, na.rm = TRUE),
+                       failed    = sum(g$pass %in% FALSE),
+                       bfloor    = sum(is.na(g$pass)),
+                       status    = if (any(g$pass %in% FALSE)) "FAIL" else "PASS",
                        stringsAsFactors = FALSE)))
         per <- per[order(per$validator), , drop = FALSE]
         out <- file.path(dirname(normalizePath(sub("^--file=", "",
