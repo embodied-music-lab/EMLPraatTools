@@ -5,12 +5,10 @@
 # Praat expands `~` to your home folder, so the path is the same on every
 # Mac and this script needs no change from you.
 #
-# ON WINDOWS OR LINUX, change that one line to your own Praat preferences
-# folder -- the one setup.praat wrote scripts/eml-lib-user.praat into the
-# first time you launched Praat after installing the plugin:
-#
-#     Windows   C:\Users\<you>\Praat\plugin_EML_StatsGraphs\scripts\eml-lib-user.praat
-#     Linux     ~/.praat-dir/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
+# ON WINDOWS OR LINUX, comment out the macOS `include` below and uncomment the
+# line for your platform. Each path is the folder setup.praat wrote
+# scripts/eml-lib-user.praat into the first time you launched Praat after
+# installing the plugin. On Windows, replace <you> with your account name.
 #
 # If the path is wrong, Praat stops at PARSE time with its own "Cannot open
 # file" dialog naming the path it tried, before any line of this script runs.
@@ -19,6 +17,8 @@
 # ============================================================================
 
 include ~/Library/Preferences/Praat Prefs/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
+# include ~/.praat-dir/plugin_EML_StatsGraphs/scripts/eml-lib-user.praat
+# include C:\Users\<you>\Praat\plugin_EML_StatsGraphs\scripts\eml-lib-user.praat
 
 
 # ============================================================================
@@ -292,11 +292,21 @@ procedure emlKitSanitizeText: .s$
 endproc
 
 # ----------------------------------------------------------------------------
-# Output buffer for audit/praat_results.tsv. Built in memory and written once
-# at the end -- 630 cells produce several thousand rows, and one write beats
-# a few thousand file opens.
+# Results file for audit/praat_results.tsv, WRITTEN AS THE RUN GOES. The header
+# is written once here; each cell appends its own rows and empties the buffer in
+# @emlKitProcessRow. Nothing is held whole in memory.
+#
+# WHY NOT ONE WRITE AT THE END (the earlier design): the buffer was a single
+# string every row was concatenated onto, and Praat strings are immutable, so
+# each append recopied the whole string -- O(n^2) time and memory over the
+# ~10,000 rows a full run emits. The run climbed past 6 GB and slowed as it went.
+# Appending per cell keeps memory and time flat, and matches how the API is
+# actually used: one analysis at a time, its result written out, then the next.
 # ----------------------------------------------------------------------------
-emlKitTSVBuf$ = "cell_id" + tab$ + "quantity" + tab$ + "value" + tab$ + "source" + newline$
+createDirectory: "audit"
+writeFile: "audit/praat_results.tsv",
+... "cell_id" + tab$ + "quantity" + tab$ + "value" + tab$ + "source" + newline$
+emlKitTSVBuf$ = ""
 emlKitRowCount = 0
 
 # ----------------------------------------------------------------------------
@@ -726,6 +736,12 @@ procedure emlKitProcessRow: .cellId$, .lane$, .proc$, .dataset$, .colA$,
     @emlKitEndCell: .cellId$, .lane$, .proc$, .dataset$, .colA$, .colB$,
     ... .colC$, .test$, .posthoc$, .adjust$, .equalVar$, .groupOrder$,
     ... .conf$, .correction$, .prereq$, .expect$, .note$, .outcome$
+
+    # This cell is done emitting: append its rows to the results file and empty
+    # the buffer. The file is built on disk cell by cell (see the buffer's header
+    # note), so nothing accumulates in memory across the run.
+    appendFile: "audit/praat_results.tsv", emlKitTSVBuf$
+    emlKitTSVBuf$ = ""
 endproc
 
 
@@ -1929,10 +1945,17 @@ endproc
 
 
 # ============================================================================
-# SECTION 9 -- write the results TSV, the environment capture, and the
+# SECTION 9 -- finalize the results TSV, write the environment capture, and the
 # summary
 # ============================================================================
-writeFile: "audit/praat_results.tsv", emlKitTSVBuf$
+# audit/praat_results.tsv is already written -- its header at startup and each
+# cell's rows as that cell finished, in @emlKitProcessRow. Only a straggler
+# emitted outside a cell scope could still be buffered; flush it rather than
+# overwrite the file built during the run. Normally the buffer is empty here.
+if emlKitTSVBuf$ <> ""
+    appendFile: "audit/praat_results.tsv", emlKitTSVBuf$
+    emlKitTSVBuf$ = ""
+endif
 
 # ----------------------------------------------------------------------------
 # audit/praat_environment.tsv -- the environment block captured at the very
