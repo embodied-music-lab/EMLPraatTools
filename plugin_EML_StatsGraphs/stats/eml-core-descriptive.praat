@@ -305,11 +305,8 @@ procedure emlSkewness: .data#
             .error$ = "Skewness is undefined when all values are identical"
             .error$ = .error$ + " (standard deviation is zero)."
         else
-            .sumCubed = 0
-            for .i from 1 to .n
-                .z = (.data#[.i] - .m) / .s
-                .sumCubed = .sumCubed + .z * .z * .z
-            endfor
+            .z# = (.data# - .m) / .s
+            .sumCubed = sum (.z# * .z# * .z#)
             .result = (.n / ((.n - 1) * (.n - 2))) * .sumCubed
         endif
     endif
@@ -340,12 +337,9 @@ procedure emlKurtosis: .data#
             .error$ = "Excess kurtosis is undefined when all values are"
             .error$ = .error$ + " identical (standard deviation is zero)."
         else
-            .sumFourth = 0
-            for .i from 1 to .n
-                .z = (.data#[.i] - .m) / .s
-                .z2 = .z * .z
-                .sumFourth = .sumFourth + .z2 * .z2
-            endfor
+            .z# = (.data# - .m) / .s
+            .z2# = .z# * .z#
+            .sumFourth = sum (.z2# * .z2#)
             .term1 = (.n * (.n + 1)) / ((.n - 1) * (.n - 2) * (.n - 3))
             .term2 = (3 * (.n - 1) * (.n - 1)) / ((.n - 2) * (.n - 3))
             .result = .term1 * .sumFourth - .term2
@@ -390,10 +384,7 @@ procedure emlHarmonicMean: .data#
     elsif min (.data#) <= 0
         .result = undefined
     else
-        .recipSum = 0
-        for .i from 1 to .n
-            .recipSum = .recipSum + 1 / .data#[.i]
-        endfor
+        .recipSum = sum (.data# ^ -1)
         .result = .n / .recipSum
     endif
 endproc
@@ -427,10 +418,7 @@ procedure emlTrimmedMean: .data#, .proportion
         if .nTrimmed <= 0
             .result = undefined
         else
-            .sum = 0
-            for .i from .k + 1 to .n - .k
-                .sum = .sum + .sorted#[.i]
-            endfor
+            .sum = sum (part# (.sorted#, .k + 1, .n - .k))
             .result = .sum / .nTrimmed
         endif
     endif
@@ -469,9 +457,7 @@ procedure emlWinsorizedMean: .data#, .proportion
             .upperVal = .sorted#[.upperIdx]
             # Sum: k copies of lowerVal + middle values + k copies of upperVal
             .sum = .k * .lowerVal + .k * .upperVal
-            for .i from .k + 1 to .upperIdx
-                .sum = .sum + .sorted#[.i]
-            endfor
+            ... + sum (part# (.sorted#, .k + 1, .upperIdx))
             .result = .sum / .n
         endif
     endif
@@ -500,10 +486,7 @@ procedure emlMAD: .data#
         @emlMedian: .data#
         .med = emlMedian.result
         # Compute absolute deviations
-        .deviations# = zero# (.n)
-        for .i from 1 to .n
-            .deviations#[.i] = abs (.data#[.i] - .med)
-        endfor
+        .deviations# = abs# (.data# - .med)
         # Get median of deviations
         @emlMedian: .deviations#
         .rawMAD = emlMedian.result
