@@ -3885,16 +3885,19 @@ procedure emlTableFromGroups: .nGroups, .dataColName$, .factorColName$
         .tableId = Create Table with column names: "emlGroupTable",
         ... .nRows, .colSpec$
 
-        # Populate rows: step through data# sequentially,
-        # assigning group labels based on groupSize boundaries
+        # Populate rows. The numeric column is filled in one C-speed pass:
+        # .data# is already in row order (the old loop stepped .dataIdx 1..nRows
+        # in the same order), so column row R takes .data#[row]. The factor
+        # labels are set per row.
         selectObject: .tableId
+        Formula: .dataColName$, ~ .data# [row]
+        ; VECTOR-EXEMPT: cat2 -- factor labels are arbitrary strings pulled from
+        ; a script array per row; a column Formula would have to inline the label
+        ; text and would break on any quote or newline in a label.
         .row = 0
-        .dataIdx = 0
         for .g from 1 to .nGroups
             for .j from 1 to .groupSize[.g]
                 .row = .row + 1
-                .dataIdx = .dataIdx + 1
-                Set numeric value: .row, .dataColName$, .data#[.dataIdx]
                 Set string value: .row, .factorColName$, .groupLabel$[.g]
             endfor
         endfor
