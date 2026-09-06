@@ -97,6 +97,9 @@ procedure emlExtractColumn: .tableId, .columnName$
 
     # Check if column exists
     .colExists = 0
+    ; VECTOR-EXEMPT: cat1 -- iterates the table's COLUMNS (schema width), not its
+    ; observation rows, so it is bounded by a handful of columns and a vector form
+    ; buys nothing.
     for .c from 1 to .nCols
         selectObject: .tableId
         .checkName$ = Get column label: .c
@@ -211,6 +214,9 @@ procedure emlExtractColumnAsStrings: .tableId, .columnName$
 
     # Check if column exists
     .colExists = 0
+    ; VECTOR-EXEMPT: cat1 -- iterates the table's COLUMNS (schema width), not its
+    ; observation rows, so it is bounded by a handful of columns and a vector form
+    ; buys nothing.
     for .c from 1 to .nCols
         selectObject: .tableId
         .checkName$ = Get column label: .c
@@ -804,6 +810,8 @@ procedure eml_normalizeLabel: .raw$
 
     # Strip leading spaces and tabs. Praat's "or" does not short-circuit,
     # so the length test is a separate enclosing "if", not a conjunct.
+    ; VECTOR-EXEMPT: cat1 -- the trim loops here walk the characters at the ends
+    ; of ONE label string, bounded by label length rather than observation count.
     .trimming = 1
     while .trimming = 1
         .trimming = 0
@@ -987,6 +995,8 @@ procedure eml_classifyCell: .raw$
 
     # eml_normalizeLabel lower-cases as well as trimming, which is wanted for
     # label matching and not wanted here, so trim without it.
+    ; VECTOR-EXEMPT: cat1 -- the trim loops here walk the characters at the ends
+    ; of ONE cell's text, bounded by cell length rather than observation count.
     .trimmed$ = .raw$
     .trimming = 1
     while .trimming = 1
@@ -1398,6 +1408,9 @@ procedure emlValidateNumericColumn: .tableId, .columnName$
 
     # Check if column exists
     .colExists = 0
+    ; VECTOR-EXEMPT: cat1 -- iterates the table's COLUMNS (schema width), not its
+    ; observation rows, so it is bounded by a handful of columns and a vector form
+    ; buys nothing.
     for .c from 1 to .nCols
         selectObject: .tableId
         .checkName$ = Get column label: .c
