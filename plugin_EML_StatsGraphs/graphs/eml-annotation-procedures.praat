@@ -5522,25 +5522,22 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     @emlReportDescriptiveHeader
 
     for .gIdx from 1 to .nGroups
-        @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
-        ... emlOneWayAnova.groupLabel$[.gIdx]
+        ; reuse emlOneWayAnova's cached group vector -- no re-extraction (memory).
+        ; The reporter runs only after emlOneWayAnova succeeded, so every group's
+        ; cache vector exists and holds >= 2 observations.
+        .gData# = emlOneWayAnova.groupData'.gIdx'#
         .gDisplayLabel$ = replace$ (emlOneWayAnova.groupLabel$[.gIdx], "_", " ", 0)
-        if eml_getGroupData.error$ <> ""
-            @emlEmit: "  " + .gDisplayLabel$ + ": " + eml_getGroupData.error$, ""
+        .gN = size (.gData#)
+        .gMean = mean (.gData#)
+        .gSD = stdev (.gData#)
+        .gSorted# = sort# (.gData#)
+        .gMidIdx = ceiling (.gN / 2)
+        if .gN mod 2 = 1
+            .gMedian = .gSorted# [.gMidIdx]
         else
-            .gN = eml_getGroupData.n
-            .gData# = eml_getGroupData.data#
-            .gMean = mean (.gData#)
-            .gSD = stdev (.gData#)
-            .gSorted# = sort# (.gData#)
-            .gMidIdx = ceiling (.gN / 2)
-            if .gN mod 2 = 1
-                .gMedian = .gSorted# [.gMidIdx]
-            else
-                .gMedian = (.gSorted# [.gMidIdx] + .gSorted# [.gMidIdx + 1]) / 2
-            endif
-            @emlReportDescriptiveRow: .gDisplayLabel$, .gN, .gMean, .gSD, .gMedian
+            .gMedian = (.gSorted# [.gMidIdx] + .gSorted# [.gMidIdx + 1]) / 2
         endif
+        @emlReportDescriptiveRow: .gDisplayLabel$, .gN, .gMean, .gSD, .gMedian
     endfor
 
     # Tukey pairwise p-values (only when Tukey ran)
@@ -5668,22 +5665,11 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                 .pVal = emlOneWayAnova.pMatrix##[.iGroup, .jGroup]
                 .g1Label$ = emlOneWayAnova.groupLabel$[.iGroup]
                 .g2Label$ = emlOneWayAnova.groupLabel$[.jGroup]
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g1Label$
-                if eml_getGroupData.error$ <> ""
-                    .n1 = 0
-                    .v1# = zero# (0)
-                else
-                    .n1 = eml_getGroupData.n
-                    .v1# = eml_getGroupData.data#
-                endif
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g2Label$
-                if eml_getGroupData.error$ <> ""
-                    .n2 = 0
-                    .v2# = zero# (0)
-                else
-                    .n2 = eml_getGroupData.n
-                    .v2# = eml_getGroupData.data#
-                endif
+                ; reuse emlOneWayAnova's cached group vectors -- no re-extraction (memory)
+                .v1# = emlOneWayAnova.groupData'.iGroup'#
+                .n1 = size (.v1#)
+                .v2# = emlOneWayAnova.groupData'.jGroup'#
+                .n2 = size (.v2#)
                 .pairD = emlOneWayAnova.dMatrix## [.iGroup, .jGroup]
                 @emlMean: .v1#
                 .m1 = emlMean.result
@@ -5731,14 +5717,12 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
     if .doTukey = 0
         emlOneWayAnova.dMatrix## = zero## (.nGroups, .nGroups)
         for .i from 1 to .nGroups - 1
-            @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
-            ... emlOneWayAnova.groupLabel$[.i]
-            .tmpV1# = eml_getGroupData.data#
-            .tmpV1Error$ = eml_getGroupData.error$
+            ; reuse emlOneWayAnova's cached group vectors -- no re-extraction (memory)
+            .tmpV1# = emlOneWayAnova.groupData'.i'#
+            .tmpV1Error$ = ""
             for .j from .i + 1 to .nGroups
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
-                ... emlOneWayAnova.groupLabel$[.j]
-                if .tmpV1Error$ <> "" or eml_getGroupData.error$ <> ""
+                .tmpV2# = emlOneWayAnova.groupData'.j'#
+                if .tmpV1Error$ <> ""
                     ; Punch list 9.1, the sibling of the fix in
                     ; stats/eml-analysis.praat: a failed pair must not read
                     ; as a true zero effect. The print loop below now shows
@@ -5746,7 +5730,7 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
                     emlOneWayAnova.dMatrix## [.i, .j] = undefined
                     emlOneWayAnova.dMatrix## [.j, .i] = undefined
                 else
-                    @emlCohenD: .tmpV1#, eml_getGroupData.data#
+                    @emlCohenD: .tmpV1#, .tmpV2#
                     if emlCohenD.error$ = ""
                         emlOneWayAnova.dMatrix## [.i, .j] = emlCohenD.d
                         emlOneWayAnova.dMatrix## [.j, .i] = -emlCohenD.d
@@ -5822,22 +5806,11 @@ procedure emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId
             for .jGroup from .iGroup + 1 to .nGroups
                 .g1Label$ = emlOneWayAnova.groupLabel$[.iGroup]
                 .g2Label$ = emlOneWayAnova.groupLabel$[.jGroup]
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g1Label$
-                if eml_getGroupData.error$ <> ""
-                    .n1 = 0
-                    .v1# = zero# (0)
-                else
-                    .n1 = eml_getGroupData.n
-                    .v1# = eml_getGroupData.data#
-                endif
-                @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .g2Label$
-                if eml_getGroupData.error$ <> ""
-                    .n2 = 0
-                    .v2# = zero# (0)
-                else
-                    .n2 = eml_getGroupData.n
-                    .v2# = eml_getGroupData.data#
-                endif
+                ; reuse emlOneWayAnova's cached group vectors -- no re-extraction (memory)
+                .v1# = emlOneWayAnova.groupData'.iGroup'#
+                .n1 = size (.v1#)
+                .v2# = emlOneWayAnova.groupData'.jGroup'#
+                .n2 = size (.v2#)
                 .pairD = emlOneWayAnova.dMatrix## [.iGroup, .jGroup]
                 @emlMean: .v1#
                 .m1 = emlMean.result
