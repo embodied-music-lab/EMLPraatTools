@@ -54,6 +54,56 @@ Evidence:
 - Every surviving `cat1` / `cat2` loop carries a `; VECTOR-EXEMPT` note naming
   its category and reason.
 
+### Gate C progress (2026-09-06, single-process Praat 6.6.30 verification)
+
+Vectorized (files that carried real loops):
+
+- `eml-inferential` — reductions, difference vectors, rank sorts; group table
+  numeric column built in one pass. Committed `e12c7064`, `58f9a2c4`.
+- `eml-core-utilities` — z-score, difference, bin-edge builders. `f71a6a9e`.
+- `eml-core-descriptive` — six reductions: skewness and kurtosis moment sums,
+  harmonic mean (`sum(v# ^ -1)`, since Praat rejects scalar/vector division),
+  trimmed and Winsorized middle sums via `part#`, MAD deviations via `abs#`.
+  Bit-identical to the pre-edit code and to a sequential reference at n=250.
+  `9a0b7cc6`.
+- `eml-analysis` — regression extractor now probes both columns with
+  `eml_strictNumericColumn`; when both are complete-numeric it reads each whole
+  at C speed and skips both per-row sweeps, else it falls back to the per-row
+  pairwise-complete filter. Fast path proven bit-identical to a least-squares
+  reference; a holed column routes to the slow path and drops the incomplete
+  pair. `02ccec6e`.
+- `eml-anova-kernel` — Levene grand-sum reduction via `sum(z#)`, bit-identical.
+  `be8edfba`.
+
+Reviewed clean (already vectorized by the author; no row-by-row table calls;
+remaining loops are legitimately kept and will be tagged in the Gate E pass):
+
+- `eml-psychometrics` — Cronbach alpha and alpha-influence already run on
+  `columnSums#` / `rowSums#` / `outer##` / `mul#`. Surviving loops: two
+  listwise-deletion gathers, the per-item alpha-if-deleted (k is small, column
+  pulled by unit-vector `mul#`), the respondent jackknife (the leave-one-out is
+  the loop), and an undefined-skipping argmax. No Praat boolean-mask or
+  segment-sum primitive covers these.
+- `eml-categorical` — chi-square already uses `outer##` for expected counts and
+  a vectorized statistic and continuity correction. Surviving loops are the
+  small-contingency-table cell validation and the expected-count diagnostic,
+  both documented in-file as deliberately kept (no matrix min/count reduction at
+  script level without allocating a transient object).
+
+Deferred to the numerical lane (zero-finders and rank-inversion CIs, the same
+character as the held mixed-model files; a wrong edit fails silently):
+
+- `eml-studentized-range` — the range integration is the loop; reads only, and
+  no read here is a table row sweep.
+- `eml-wilcoxon-interval` — Brent zero-finder plus O(n^2) Walsh-average
+  pairwise loops; the pairwise set is the Hodges-Lehmann method and an `outer##`
+  rewrite would allocate an n x n matrix, the exact memory pressure this pass is
+  relieving. Hold for a dedicated careful unit.
+
+Open decision held for Ian: the group-extraction redesign in the two-way gather
+and the one-way path is the real memory lever (the 256 MB ANOVA extraction).
+Not spent without his steer.
+
 ## Gate D: results writers
 
 Vectorize the record and output writers: `eml-record` (49 per-row calls, the
