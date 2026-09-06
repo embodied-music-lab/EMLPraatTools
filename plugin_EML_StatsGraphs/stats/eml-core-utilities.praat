@@ -940,6 +940,123 @@ procedure emlGenerateUniquePath: .path$
     endif
 endproc
 
+
+# ============================================================================
+# OBJECT-LIFETIME PRIMITIVES
+# ----------------------------------------------------------------------------
+# Praat gives object ids in strictly increasing order and never reuses them, so
+# a watermark taken on entry cleanly separates objects made before a scope from
+# objects made inside it. @emlObjMark records that watermark; @emlScopeClose and
+# its keep-selected / keep-vector variants remove everything created after the
+# mark (except keepers), in one batched removeObject; @emlKeepOnly is the
+# backstop that keeps only an explicit id list. The scan reads the whole
+# selection as a vector (selected#) so it stays cheap even near the 10,000-object
+# ceiling. Loops here range over the live-object list, never data rows.
+# ============================================================================
+
+procedure emlObjMark
+    select all
+    .n = numberOfSelected ()
+    if .n > 0
+        .id = max (selected# ())
+    else
+        .id = 0
+    endif
+endproc
+
+# Shared engine: remove every live object with id > .mark whose id is NOT in
+# the space-separated keep-list, in ONE batched removeObject call. Pass
+# .mark = -1 to consider every object (the keep-only backstop). The scan reads
+# the whole selection as a vector (selected#()); the removal is a single call.
+procedure eml_reap: .mark, .keep$
+    select all
+    .n = numberOfSelected ()
+    if .n > 0
+        .all# = selected# ()
+        .pad$ = " " + .keep$ + " "
+        # single pass: collect ids to remove into an over-allocated vector,
+        # then remove them all in ONE call. Trailing slots stay 0; id 0 is
+        # never a real object, and nocheck lets removeObject skip the padding.
+        .rm# = zero# (.n)
+        .j = 0
+        for .i to .n
+            if .all# [.i] > .mark and index (.pad$, " " + string$ (.all# [.i]) + " ") = 0
+                .j += 1
+                .rm# [.j] = .all# [.i]
+            endif
+        endfor
+        if .j > 0
+            nocheck removeObject: .rm#
+        endif
+    endif
+endproc
+
+# ids of the current selection as a space-separated string.
+procedure eml_selStr
+    .s$ = ""
+    .n = numberOfSelected ()
+    if .n > 0
+        .ids# = selected# ()
+        for .i to .n
+            .s$ = .s$ + " " + string$ (.ids# [.i])
+        endfor
+    endif
+endproc
+
+# vector of ids as a space-separated string.
+procedure eml_vecStr: .v#
+    .s$ = ""
+    for .i to size (.v#)
+        .s$ = .s$ + " " + string$ (.v# [.i])
+    endfor
+endproc
+
+# re-select a space-separated id list (restores a saved selection).
+procedure eml_reselect: .ids$
+    .ids$ = .ids$ + " "
+    .first = 1
+    .rest$ = .ids$
+    while .rest$ <> "" and index (.rest$, " ") > 0
+        .tok$ = left$ (.rest$, index (.rest$, " ") - 1)
+        .rest$ = mid$ (.rest$, index (.rest$, " ") + 1, 10000)
+        if .tok$ <> ""
+            if .first = 1
+                selectObject: number (.tok$)
+                .first = 0
+            else
+                plusObject: number (.tok$)
+            endif
+        endif
+    endwhile
+endproc
+
+# Close a scope keeping NOTHING: remove every object created after .mark.
+procedure emlScopeClose: .mark
+    @eml_reap: .mark, ""
+endproc
+
+# Close a scope keeping whatever is SELECTED (and restore that selection).
+procedure emlScopeCloseKeepSel: .mark
+    @eml_selStr
+    .keep$ = eml_selStr.s$
+    @eml_reap: .mark, .keep$
+    @eml_reselect: .keep$
+endproc
+
+# Close a scope keeping the objects whose ids are in the vector .keep# (any count).
+procedure emlScopeCloseKeepVec: .mark, .keep#
+    @eml_vecStr: .keep#
+    .keep$ = eml_vecStr.s$
+    @eml_reap: .mark, .keep$
+    @eml_reselect: .keep$
+endproc
+
+# Backstop GC: keep ONLY the space-separated ids in .keep$, remove all else.
+procedure emlKeepOnly: .keep$
+    @eml_reap: -1, .keep$
+endproc
+
+
 # ============================================================================
 # END OF CORE UTILITY PROCEDURES
 # ============================================================================
