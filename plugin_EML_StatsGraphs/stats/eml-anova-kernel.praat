@@ -1010,10 +1010,7 @@ procedure emlLeveneTest: .n, .value#, .groupOf#, .k
         .zGroupSum#[.g] = .zGroupSum#[.g] + .zv
     endfor
 
-    .zGrandSum = 0
-    for .row from 1 to .n
-        .zGrandSum = .zGrandSum + .z#[.row]
-    endfor
+    .zGrandSum = sum (.z#)
     .zGrandMean = .zGrandSum / .n
 
     .zGroupMean# = zero# (.k)
