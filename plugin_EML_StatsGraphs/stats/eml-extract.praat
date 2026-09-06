@@ -1865,34 +1865,52 @@ endproc
 #
 # Output:
 #   .subsetId    - new Table containing only that group's rows. Caller
-#                  owns it and must remove it. NOTE: the group column of the
-#                  subset holds the normalised label, not the original
-#                  spelling. (Where every cell is already canonical this is
-#                  the original spelling, so the subset is unchanged.)
+#                  owns it and must remove it. NOTE: on the normalising
+#                  path the group column of the subset holds the
+#                  normalised label, not the original spelling.
 # ============================================================================
 procedure eml_groupSubset: .tableId, .groupCol$, .groupLabel$
     @eml_normalizeLabel: .groupLabel$
     .wantNorm$ = eml_normalizeLabel.result$
 
-    # Always normalise the group column on a copy with a single C-speed
-    # Formula pass -- trim leading/trailing spaces and tabs, then lower-case --
-    # then extract on the normalised label. This replaces a per-row detection
-    # scan and a per-row normalise loop (each an interpreter call per cell,
-    # the dominant per-group cost) with two vector operations. The regex
-    # reproduces @eml_normalizeLabel exactly, verified cell-by-cell on
-    # adversarial labels (leading/trailing tabs, non-ASCII, empty, internal
-    # spaces). When every cell is already canonical the pass changes nothing,
-    # so the extracted rows and their contents are bit-identical to a direct
-    # extract on the raw label -- matching the old detect-then-normalise
-    # branch value for value.
+    .needNormalize = 0
+    if .groupLabel$ <> .wantNorm$
+        .needNormalize = 1
+    endif
+
     selectObject: .tableId
     .nRows = Get number of rows
-    .workId = Copy: "eml_groupNorm"
-    Formula: .groupCol$, "replace_regex$ (replace_regex$ (replace_regex$ (self$, ""^[ " + tab$ + "]+"", """", 0), ""[ " + tab$ + "]+$"", """", 0), ""(.)"", ""\l\1"", 0)"
-    selectObject: .workId
-    .subsetId = Extract rows where column (text): .groupCol$,
-        ... "is equal to", .wantNorm$
-    removeObject: .workId
+
+    .row = 1
+    while .row <= .nRows and .needNormalize = 0
+        selectObject: .tableId
+        .cell$ = Get value: .row, .groupCol$
+        @eml_normalizeLabel: .cell$
+        if .cell$ <> eml_normalizeLabel.result$
+            .needNormalize = 1
+        endif
+        .row = .row + 1
+    endwhile
+
+    if .needNormalize = 0
+        selectObject: .tableId
+        .subsetId = Extract rows where column (text): .groupCol$,
+            ... "is equal to", .groupLabel$
+    else
+        selectObject: .tableId
+        .workId = Copy: "eml_groupNorm"
+        for .r from 1 to .nRows
+            selectObject: .workId
+            .cell$ = Get value: .r, .groupCol$
+            @eml_normalizeLabel: .cell$
+            selectObject: .workId
+            Set string value: .r, .groupCol$, eml_normalizeLabel.result$
+        endfor
+        selectObject: .workId
+        .subsetId = Extract rows where column (text): .groupCol$,
+            ... "is equal to", .wantNorm$
+        removeObject: .workId
+    endif
 endproc
 
 
