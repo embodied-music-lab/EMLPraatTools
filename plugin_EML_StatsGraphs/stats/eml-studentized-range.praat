@@ -740,9 +740,9 @@ procedure emlStudentizedRangeQ: .q, .k, .df, .nranges
             # {3,5,10,45} x p in {1e-6,1e-10,1e-15}) were compared before and
             # after. None got worse. Four more improved to about 1e-9
             # agreement -- k=5 df=3 at 1e-10 and 1e-15, k=5 df=5 at 1e-15,
-            # k=10 df=5 at 1e-15 -- all four previously hidden because R and
-            # scipy both underflow to zero there, so the old oracle could not
-            # see the error.
+            # k=10 df=5 at 1e-15 -- masked because R and scipy both
+            # underflow to zero there, so the reference oracle cannot see
+            # the error there.
             .geoW0 = 0.0005
             .geoRatio = 2.0
             .geoMaxSegs = 40
@@ -1032,11 +1032,9 @@ procedure emlInvStudentizedRangeQ: .p, .k, .df, .nranges
             # 1e-13, matched to @emlStudentizedRangeQ's own .relEps -- see
             # this procedure's own header ("ROOT-FINDER, k != 2") for the
             # measured wall-clock evidence that the Illinois-modified false
-            # position solve below converges FASTER at this tolerance than
-            # plain bisection did at the previously loosened 1e-10 (100.3 s
-            # vs 230.1 s on the full 22-row quantile batch), so this is a
-            # genuine tightening, not a reversion that reintroduces the
-            # timeout the previous wave was avoiding.
+            # position solve below converges in 100.3 s at this tolerance,
+            # versus 230.1 s for plain bisection at a looser 1e-10
+            # tolerance, on the full 22-row quantile batch.
             .relTol = 1e-13
             .maxExpand = 80
             .maxBisect = 200

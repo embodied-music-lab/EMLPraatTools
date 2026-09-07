@@ -600,17 +600,13 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
         goto END_ANOVA
     endif
 
-    # Ensure pairwise Cohen's d matrix always exists
+    # Ensure pairwise Cohen's d matrix always exists.
     #
-    # ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_2026-09-01.md
-    # §5). This used to call @eml_getGroupData again for every (i, j)
-    # pair -- group j re-extracted for every pair it appeared in -- even
-    # though @emlOneWayAnova, just above, already extracted every group's
-    # vector once to run the F-test. It now reads
-    # emlOneWayAnova.groupData'g'#, the cache that call left behind, which
-    # is populated whether or not Tukey ran (@emlOneWayAnova's own single
-    # extraction loop runs unconditionally). The reporter reads; it does
-    # not re-extract.
+    # Reads emlOneWayAnova.groupData'g'#, the cache @emlOneWayAnova's own
+    # single extraction loop leaves behind, instead of re-extracting each
+    # (i, j) pair. The cache is populated whether or not Tukey ran, because
+    # that extraction loop runs unconditionally. The reporter reads; it
+    # does not re-extract.
     if .doTukey = 0
         emlOneWayAnova.dMatrix## = zero## (.nGroups, .nGroups)
         for .i from 1 to .nGroups - 1
@@ -1060,11 +1056,8 @@ procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn,
             .needRMatrix = 0
         endif
     endif
-    ; ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_2026-09-01.md
-    ; §5). This used to re-extract every pair from the table even though
-    ; @emlKruskalWallis, just above, already extracted every group once.
-    ; Reads emlKruskalWallis.groupData'g'#, the cache that call left
-    ; behind, instead.
+    ; Reads emlKruskalWallis.groupData'g'#, the cache @emlKruskalWallis
+    ; left behind, instead of re-extracting each pair from the table.
     if .needRMatrix
         emlKruskalWallis.rMatrix## = zero## (.nGroups, .nGroups)
         for .i from 1 to .nGroups - 1
@@ -2430,18 +2423,14 @@ procedure emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupC
                 ; the block above the loop for why the call is made on
                 ; every row and the CORRECTION gates the result.
                 ;
-                ; ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS_
-                ; 2026-09-01.md §5). THE VECTORS USED TO BE RE-READ FROM
-                ; THE TABLE here, through @eml_getGroupData, on every one
-                ; of the C(k,2) pairs -- even though @emlPairwiseWilcoxon,
-                ; above, already extracted every group once to run its own
-                ; tests. They now read emlPairwiseWilcoxon.groupData'g'#,
-                ; the cache that call left behind, instead. The .hlErrI$ /
+                ; Reads emlPairwiseWilcoxon.groupData'g'# here instead of
+                ; re-reading through @eml_getGroupData on each of the
+                ; C(k,2) pairs; @emlPairwiseWilcoxon already extracted
+                ; every group once to run its own tests. The .hlErrI$ /
                 ; .hlErrJ$ gate below stays: a cache read cannot itself
                 ; fail (both groups were already extracted successfully to
-                ; reach this point), but the shape is kept so a future
-                ; change to what feeds .hlI# / .hlJ# does not silently
-                ; drop the error-read discipline v134 lints.
+                ; reach this point), but the shape keeps the error-read
+                ; discipline v134 lints.
                 .hlErrI$ = ""
                 .hlI# = emlPairwiseWilcoxon.groupData'.iGroup'#
                 .hlErrJ$ = ""
@@ -2790,18 +2779,10 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$, .ssTy
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
-    # NO INFO-WINDOW SAVE/RESTORE HERE, AND NONE NEEDED. This orchestrator
-    # used to snapshot info$ () before calling @emlTwoWayAnova and replay it
-    # with writeInfo: afterwards, because Praat's built-in `Report two-way
-    # anova` clears the Info window when it runs. That replay was correct in
-    # the GUI and wrong in batch -- under `praat --run`, Info output is
-    # streamed to stdout as it is produced, so writeInfo: does not restore
-    # anything, it re-prints the whole preceding transcript a second time.
-    # @emlTwoWayAnova no longer calls that built-in at all (it routes
-    # through @emlAnovaKernelTwoWay, per
-    # mailbox/to-opus/RULING_CONSOLIDATED_KERNELS_2026-09-01.md Class C), so
-    # there is no Info-window side effect to save or restore in the first
-    # place, not merely one that has been captured instead.
+    # NO INFO-WINDOW SAVE/RESTORE HERE, AND NONE NEEDED. @emlTwoWayAnova
+    # routes through @emlAnovaKernelTwoWay rather than Praat's built-in
+    # `Report two-way anova`, so it has no Info-window side effect to save
+    # or restore.
     @emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
     if emlTwoWayAnova.error$ <> ""
         .error$ = emlTwoWayAnova.error$
@@ -6130,11 +6111,11 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
             .hlHighFlat# [.pairIdx] = undefined
             .hlMethod$ [.pairIdx] = ""
 
-            # v1.2 item 1: the pairwise test can fail (zero-variance
-            # differences, all-zero differences, too few pairs). Previously
-            # its undefined .p was written straight into .rawP#, and the
-            # adjustment procedure rendered it as an adjusted p of 0 — a
-            # false "significant" result. Propagate undefined instead.
+            # The pairwise test can fail (zero-variance differences,
+            # all-zero differences, too few pairs). Propagate undefined
+            # instead of writing .p straight into .rawP#, which the
+            # adjustment procedure would render as a false "significant"
+            # adjusted p of 0.
             if .testType$ = "parametric"
                 @emlTTestPaired: .va#, .vb#, 2
                 .pairErr$ = emlTTestPaired.error$

@@ -71,8 +71,8 @@ include ../stats/eml-psychometrics.praat
 ;
 ; The failure lands on Praat's own uncaught-error dialog rather than the
 ; plugin's, because it happens before the orchestrator can set .error$. The
-; module was in setup.praat's table all along, so the generated barrel could
-; load it and a user's own script worked; only the menu route was broken.
+; module sits in setup.praat's table, so the generated barrel loads it for
+; a user's own script; the menu route needs it named in this chain too.
 ;
 ; It goes BEFORE eml-inferential.praat because an include is a parse-time
 ; paste and the caller must find the procedure already defined.

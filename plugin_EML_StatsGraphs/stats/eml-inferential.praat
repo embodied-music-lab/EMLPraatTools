@@ -1264,8 +1264,8 @@ endproc
 # INTERNAL HELPER: @eml_spearmanExactEligible — the one copy of the cutoff
 # ============================================================================
 # R reaches the exact Spearman branch only when n <= 1290 ("n*(n^2-1) does
-# not overflow" at that size -- see @eml_spearmanPspearman below, which is
-# the only caller that used to carry this literal). Pulled out to its own
+# not overflow" at that size -- see @eml_spearmanPspearman below, the sole
+# caller of this literal). Pulled out to its own
 # predicate so @emlSpearmanCorrelationDispatch can ask the SAME question
 # on the ties-present path -- where it never reaches the kernel and so
 # never learns on its own whether n is ALSO past the cutoff -- without
@@ -1504,9 +1504,8 @@ endproc
 # (@emlRunCorrelationAnalysis), the per-group correlation (both the
 # Correlate dialog and the wizard's own per-group loop), and the scatter's
 # draw-time annotation (ungrouped, per-group and overall/pooled) -- calls
-# THIS procedure where it used to call @emlSpearmanCorrelation directly, so
-# there is exactly one place the branch law is decided, and the
-# door-agreement census (v127) sees one answer from every door.
+# THIS procedure, so there is exactly one place the branch law is decided,
+# and the door-agreement census (v127) sees one answer from every door.
 #
 # NEITHER existing kernel is modified or paraphrased here. This procedure
 # only ROUTES between two numbers each of them already computes:
@@ -2663,8 +2662,8 @@ procedure eml_wilcoxonExactP: .tPlus, .n
     .maxT = .n * (.n + 1) / 2
     .total = 2 ^ .n
 
-    # --- Cache: the DP table is keyed by .n alone (Fable's 26 August
-    # ruling, item 4 -- the signed-rank half). @emlWilcoxonSignedRank
+    # --- Cache: the DP table is keyed by .n alone (the signed-rank half).
+    # @emlWilcoxonSignedRank
     # (p-value) and @emlHodgesLehmannPaired (critical rank) are two reads
     # of the SAME object for the same pair-of-conditions, and a
     # repeated-measures design with a common complete-case n calls this
@@ -4408,17 +4407,12 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
         .nSingleton = 0
         .singletonList$ = ""
 
-        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
-        # 2026-09-01.md §5). This loop used to run a second time, right
-        # below, purely to re-fetch what it had already fetched here to
-        # check group sizes -- and then a THIRD time again lower down to
-        # centre the shifted deviations. All three needed nothing but this
-        # group's vector, so the vector is now cached once, as
-        # .groupData'.g'#, and every later pass in this procedure (the
-        # sum in "pass 1" and the shifted centering in "pass 2") reads it
-        # instead of calling @eml_getGroupData again. Cross-case safety is
-        # the same bounded-index argument as everywhere else in this file:
-        # a later, smaller-nGroups case never reads a stale higher index.
+        # Caches each group's vector once, as .groupData'.g'#. Every later
+        # pass in this procedure -- the sum in "pass 1" and the shifted
+        # centering in "pass 2" -- reads it instead of calling
+        # @eml_getGroupData again. Cross-case safety is the same
+        # bounded-index argument as everywhere else in this file: a later,
+        # smaller-nGroups case never reads a stale higher index.
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
             ... emlCountGroups.groupLabel$[.g]
@@ -4904,10 +4898,9 @@ endproc
 #     .ssError, .dfError, .msError
 #   Total (centred sum of squares, from the kernel):
 #     .ssTotal, .dfTotal
-#   Vestigial (no longer distinct from the corrected figures above, now
-#   that there is no separate "as reported by the built-in" value to keep
-#   apart from the corrected one -- kept only so a caller reading these
-#   five fields by name does not hit "Procedure attribute not found"):
+#   Unused (kept only so a caller reading these five fields by name does
+#   not hit "Procedure attribute not found"; not distinct from the
+#   corrected figures above):
 #     .ssErrorReported, .dfErrorReported, .msErrorReported
 #     .ssTotalReported, .dfTotalReported (always undefined)
 #   Which SS type produced the table above (always Type III here; the
@@ -5106,14 +5099,11 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
         .partialEtaSqA = emlAnovaKernelTwoWay.partialEtaSqA
         .partialEtaSqB = emlAnovaKernelTwoWay.partialEtaSqB
         .partialEtaSqAB = emlAnovaKernelTwoWay.partialEtaSqAB
-        ; OMEGA SQUARED AND THE TWO ASSUMPTION CHECKS. The kernel has always
-        ; computed these; this block used to copy 27 of its fields and omit
-        ; these twelve, so Levene, Shapiro-Wilk on the residuals and omega
-        ; squared were correct and unreachable -- three of the five outputs
-        ; RULING_CONSOLIDATED_KERNELS ruled complete for this door. Reaching
-        ; across two layers into emlAnovaKernelTwoWay's own locals is not the
-        ; contract the rest of the plugin keeps, so they are re-exported here
-        ; like every other kernel result.
+        ; OMEGA SQUARED AND THE TWO ASSUMPTION CHECKS. The kernel computes
+        ; these fields (Levene, Shapiro-Wilk on the residuals, and omega
+        ; squared). Reaching across two layers into emlAnovaKernelTwoWay's
+        ; own locals is not the contract the rest of the plugin keeps, so
+        ; they are re-exported here like every other kernel result.
         .omegaSqA = emlAnovaKernelTwoWay.omegaSqA
         .omegaSqB = emlAnovaKernelTwoWay.omegaSqB
         .omegaSqAB = emlAnovaKernelTwoWay.omegaSqAB
@@ -5377,12 +5367,10 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
     endif
 
     if .error$ = ""
-        # Get per-group sizes AND cache each group's vector -- ONE
-        # EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
-        # 09-01.md §5). A second loop used to sit right below this one,
-        # calling @eml_getGroupData again for every group purely to build
-        # the flat ranking vector; it now reads .groupData'g'#, the cache
-        # this loop leaves behind.
+        # Get per-group sizes AND cache each group's vector, as
+        # .groupData'g'#. The pass below that builds the flat ranking
+        # vector reads this cache instead of calling @eml_getGroupData
+        # again.
         .n = 0
         for .g from 1 to .nGroups
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
@@ -5612,12 +5600,10 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
     endif
 
     if .error$ = ""
-        # Get per-group sizes AND cache each group's vector -- ONE
-        # EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
-        # 09-01.md §5). A second loop used to sit right below this one,
-        # calling @eml_getGroupData again for every group purely to build
-        # the flat ranking vector; it now reads .groupData'g'#, the cache
-        # this loop leaves behind.
+        # Get per-group sizes AND cache each group's vector, as
+        # .groupData'g'#. The pass below that builds the flat ranking
+        # vector reads this cache instead of calling @eml_getGroupData
+        # again.
         .n = 0
         for .g from 1 to .nGroups
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
@@ -5960,13 +5946,10 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
     endif
 
     if .error$ = ""
-        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
-        # 2026-09-01.md §5). The pairwise loop below used to call
-        # @eml_getGroupData twice EVERY iteration -- group i re-extracted
-        # for every j it was paired with, group j re-extracted for every
-        # pair -- which is 2*C(k,2) extractions where one pass per group
-        # (k) suffices. Both vectors and each group's complete-case n are
-        # cached here, once, and the pairwise loop below reads them.
+        # One extraction per group: both vectors and each group's
+        # complete-case n are cached here, once, and the pairwise loop
+        # below reads them instead of re-extracting either group on each
+        # of its C(k,2) pairs.
         for .g from 1 to .nGroups
             .groupName$[.g] = emlCountGroups.groupLabel$[.g]
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
@@ -6720,11 +6703,9 @@ procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
         .nSingleton = 0
         .singletonList$ = ""
 
-        # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_
-        # 2026-09-01.md §5). This used to be followed by a second loop,
-        # below, that re-fetched every group's vector purely to compute
-        # its median and deviations. Cached here instead, as
-        # .groupData'g'#, and read from there in pass 1.
+        # Caches each group's vector here, as .groupData'g'#. Pass 1,
+        # which computes each group's median and deviations, reads it
+        # from there.
         for .g from 1 to .nGroups
             @eml_getGroupData: .tableId, .dataCol$, .factorCol$,
             ... emlCountGroups.groupLabel$[.g]
@@ -7407,10 +7388,8 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
     endif
 
     # --- Cohen's d per pair (two-group pooled SD, as in @emlTukeyHSD) ---
-    # Reads the .groupData'g'# cache the descriptives loop above built --
-    # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
-    # 09-01.md §5). This loop used to call @eml_getGroupData twice per
-    # pair; it no longer touches the table at all.
+    # Reads the .groupData'g'# cache the descriptives loop above built;
+    # this loop never touches the table.
 
     if .error$ = ""
         for .i from 1 to .nGroups

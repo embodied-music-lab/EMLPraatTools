@@ -82,12 +82,10 @@
 # emlWizardExplain$ is set before each @emlReportLine/@emlReportLineString
 # call and consumed (cleared) by the procedure.
 #
-# THE DEFAULT IS 0 (item 22 of the language batch, Fable's ruling 27 August
-# 2026, superseding the "default is 1" rationale this block used to state):
-# a report is terse by default and a reader who wants the plain-language
-# gloss beside a value turns the gate on for that session. @emlGraphsWorkflow
-# still raises the gate for the drawing path exactly as before -- this
-# change only retires the WRAPPER report's default, not the graph path's.
+# THE DEFAULT IS 0: a report is terse by default, and a reader who wants
+# the plain-language gloss beside a value turns the gate on for that
+# session. @emlGraphsWorkflow raises the gate separately for the drawing
+# path; this default governs only the WRAPPER report.
 #
 # THE DEFAULT IS DECLARED ONCE, HERE. @emlResetExplanations restores this
 # variable rather than a literal, so the initial value and the restored value
