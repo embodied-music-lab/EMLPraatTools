@@ -102,7 +102,7 @@ repeat
         endif
     else
         selectObject: tableId
-        @emlRunTwoWayAnalysis: tableId, dataCol$, factor1$, factor2$
+        @emlRunTwoWayAnalysis: tableId, dataCol$, factor1$, factor2$, 3
         if emlRunTwoWayAnalysis.error$ <> ""
             # An error must not strand the user on a form the error has
             # just ruled out. Present it with guidance, and honour Quit.

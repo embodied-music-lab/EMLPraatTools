@@ -4958,7 +4958,7 @@ endproc
 #   - Original Table selection is restored on return.
 # ============================================================================
 
-procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
+procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
     .fA = undefined
     .pA = undefined
     .dfA = undefined
@@ -4990,7 +4990,6 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     .minCellN = undefined
     .maxCellN = undefined
     .balanced = 1
-    .ssType = 3
     .ssTypeLabel$ = "Type III"
     .partialEtaSqA = undefined
     .partialEtaSqB = undefined
@@ -5074,7 +5073,7 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
     # procedure's own .error$ and nothing below it runs.
 
     if .error$ = ""
-        @emlAnovaKernelTwoWay: .tableId, .dataCol$, .factor1$, .factor2$, 3
+        @emlAnovaKernelTwoWay: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
         .error$ = emlAnovaKernelTwoWay.error$
     endif
 

@@ -989,7 +989,7 @@ if goal = 1
             ... "", displayTable$
 
             @emlRunTwoWayAnalysis: tableId, data_column$,
-            ... factor_1$, factor_2$
+            ... factor_1$, factor_2$, 3
             if emlRunTwoWayAnalysis.error$ <> ""
                 # An analysis error must not tear down the wizard. Return
                 # the user into the back-chain with every answer intact.

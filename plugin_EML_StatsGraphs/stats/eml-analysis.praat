@@ -2772,7 +2772,7 @@ endproc
 #
 # ============================================================================
 
-procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
+procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
     .recResult$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
@@ -2802,7 +2802,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     # mailbox/to-opus/RULING_CONSOLIDATED_KERNELS_2026-09-01.md Class C), so
     # there is no Info-window side effect to save or restore in the first
     # place, not merely one that has been captured instead.
-    @emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$
+    @emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
     if emlTwoWayAnova.error$ <> ""
         .error$ = emlTwoWayAnova.error$
         goto END_TWOWAY
@@ -2852,7 +2852,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
         @emlRecordAnalysisStep: .tableId, "Two-way ANOVA",
         ... .dataCol$ + " by " + .factor1$ + " and " + .factor2$,
         ... "Type of sums of squares and the balance of the design both matter here; see the report.",
-        ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """",
+        ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """" + ", " + string$ (.ssType),
         ... "In the GUI: New > EML Stats & Graphs > Compare two-way (ANOVA)...",
         ... .recResult$, .error$
     endif

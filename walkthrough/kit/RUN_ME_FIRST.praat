@@ -1136,7 +1136,7 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
 
     elsif .proc$ = "emlRunTwoWayAnalysis"
         # --- 5. TWO-WAY ANOVA --------------------------------------------
-        @emlRunTwoWayAnalysis: .tableId, .colA$, .colB$, .colC$
+        @emlRunTwoWayAnalysis: .tableId, .colA$, .colB$, .colC$, 3
         if emlRunTwoWayAnalysis.error$ <> ""
             .refused = 1
             .refuseReason$ = emlRunTwoWayAnalysis.error$
