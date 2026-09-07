@@ -111,6 +111,8 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     ; glance under the RM name.
     @emlCSVInit
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
 
@@ -404,6 +406,7 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         endif
     endif
     label END_TWO_GROUP
+    .ok = (.error$ = "")
 
     ; ---------------------------------------------------------------------
     ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
@@ -532,6 +535,8 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     ; glance under the RM name.
     @emlCSVInit
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
 
@@ -711,6 +716,7 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     endif
 
     label END_ANOVA
+    .ok = (.error$ = "")
 
     ; ---------------------------------------------------------------------
     ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
@@ -962,6 +968,8 @@ procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn,
     ; glance under the RM name.
     @emlCSVInit
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
 
@@ -1152,6 +1160,7 @@ procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn,
     endif
 
     label END_KW
+    .ok = (.error$ = "")
 
     ; ---------------------------------------------------------------------
     ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
@@ -1280,6 +1289,8 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     ; glance under the RM name.
     @emlCSVInit
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
 
@@ -1515,6 +1526,7 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     endif
 
     label END_PAIRWISE
+    .ok = (.error$ = "")
 
     ; ---------------------------------------------------------------------
     ; THE RESULT STORE'S PUBLICATION. One call, stating the whole result --
@@ -2770,6 +2782,8 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     ; glance under the RM name.
     @emlCSVInit
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
 
@@ -2822,6 +2836,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$
     endif
 
     label END_TWOWAY
+    .ok = (.error$ = "")
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -2862,6 +2877,8 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     ; glance under the RM name.
     @emlCSVInit
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
     .nExcluded = 0
@@ -3050,6 +3067,7 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
         endif
     endif
     label END_PAIRED
+    .ok = (.error$ = "")
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -3112,6 +3130,8 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     .spearDf = undefined
     .spearP = undefined
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
     .nExcluded = 0
@@ -3240,6 +3260,7 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     endif
 
     label END_CORR
+    .ok = (.error$ = "")
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -3280,6 +3301,8 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     ; glance under the RM name.
     @emlCSVInit
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
 
@@ -3343,6 +3366,7 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
         endif
     endif
     label END_DESCRIBE
+    .ok = (.error$ = "")
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -3387,6 +3411,8 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
     ; glance under the RM name.
     @emlCSVInit
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
 
@@ -3542,6 +3568,7 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
     endif
 
     selectObject: .tableId
+    .ok = (.error$ = "")
 endproc
 
 
@@ -3601,6 +3628,9 @@ endproc
 #                                   them in words.
 # ============================================================================
 procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .groupCol$
+    .error$ = ""
+    .warning$ = ""
+    .ok = 0
     ; Read directly from the object rather than taking it as an argument --
     ; @emlRunRegressionAnalysis does the same for its own report, and the
     ; menu door (which HAS a tableName$ global) and the wizard (which does
@@ -3774,6 +3804,7 @@ procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .grou
     endif
 
     selectObject: .tableId
+    .ok = (.error$ = "")
 endproc
 
 # ============================================================================
@@ -3999,6 +4030,8 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         @emlCSVInit
     endif
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
 
@@ -4130,6 +4163,7 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         ... + "  Recommendation: " + .recommendation$
     endif
     label END_NORMALITY
+    .ok = (.error$ = "")
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -5615,6 +5649,8 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     ; glance under the RM name.
     @emlCSVInit
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
     selectObject: .tableId
@@ -5800,6 +5836,7 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .subjectCol$, .conditionCols
     endif
 
     label END_RM
+    .ok = (.error$ = "")
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -5840,6 +5877,8 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     ; glance under the RM name.
     @emlCSVInit
     .error$ = ""
+    .warning$ = ""
+    .ok = 0
     # Menu item that WOULD work on this table, when one exists.
     .remedy$ = ""
     selectObject: .tableId
@@ -5955,6 +5994,7 @@ procedure emlRunFriedmanAnalysis: .tableId, .subjectCol$, .conditionCols$, .doPo
     endif
 
     label END_FRIED
+    .ok = (.error$ = "")
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
