@@ -6,7 +6,7 @@ emlRunTwoGroupAnalysis	analysis	Two-group comparison — Student/Welch t-test or
 emlRunAnovaAnalysis	analysis	One-way ANOVA with an optional Tukey HSD post-hoc; recorded through the bespoke @emlRecordAnova.
 emlRunKruskalWallisAnalysis	analysis	Kruskal-Wallis H test with an optional Dunn's post-hoc and a chosen p-adjustment method.
 emlRunPairwiseAnalysis	analysis	All-pairs comparisons across 3+ groups by t-test or Mann-Whitney, with a p-adjustment method.
-emlRunTwoWayAnalysis	analysis	Two-way ANOVA (Type III sums of squares) for one numeric column crossed by two factors.
+emlRunTwoWayAnalysis	analysis	Two-way ANOVA for one numeric column crossed by two factors; selectable Type I, II, or III sums of squares (.ssType 1, 2, or anything else for III).
 emlRunPairedAnalysis	analysis	Paired comparison of two columns — paired t-test or Wilcoxon signed-rank.
 emlRunCorrelationAnalysis	analysis	Correlation between two numeric columns — Pearson r or Spearman rho — with its significance test.
 emlRunDescriptiveAnalysis	analysis	Descriptive statistics (mean, SD, quartiles and more) for one numeric column.
