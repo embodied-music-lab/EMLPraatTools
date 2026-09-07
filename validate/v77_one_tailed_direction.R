@@ -194,8 +194,9 @@ if (file.exists(srcInf)) {
     check_true("v77",
                "no one-tailed p is taken from the ABSOLUTE t (.p = studentQ(.absT))",
                length(grep("\\.p\\s*=\\s*studentQ\\s*\\(\\s*\\.absT", inf)) == 0)
-    check("v77", "the one-tailed arm of each of the three kernels takes .pGreater",
-          length(grep("^\\s*\\.p = \\.pGreater\\s*$", inf)), 8, tol = 0)
+    check("v77",
+          "the one-tailed arm of each of the three kernels takes .pGreater, plus emlSpearmanExactP's own",
+          length(grep("^\\s*\\.p = \\.pGreater\\s*$", inf)), 9, tol = 0)
 
     # THE HEADERS STATE THE FIXED ALTERNATIVE POSITIVELY, in @emlMannWhitneyU's
     # voice: what .tails = 1 IS, what a wrong-direction test returns, and which

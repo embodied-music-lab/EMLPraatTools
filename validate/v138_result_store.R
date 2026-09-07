@@ -124,7 +124,8 @@ KERNELS <- c(
     "emlGamesHowell"      = "Games-Howell over every pair of levels",
     "emlBrownForsythe"    = "Brown-Forsythe on the same triple",
     "emlTTest"            = "two-sample t; a group comparison when fed a split column",
-    "emlMannWhitneyU"     = "Mann-Whitney U; likewise"
+    "emlMannWhitneyU"     = "Mann-Whitney U; likewise",
+    "eml_tukeyPairwiseFromGroups" = "the Tukey HSD kernel @emlTukeyHSD and @emlOneWayAnova's own post-hoc both call"
 )
 
 # ---------------------------------------------------------------------------
@@ -147,6 +148,8 @@ EXEMPT <- c(
               "for the post-hoc, which is what puts it in this population.",
               "Publishing from here would publish a fragment of whichever run",
               "called it, under no identity anyone chose"),
+    "emlTukeyHSD" =
+        "a kernel, calling @eml_tukeyPairwiseFromGroups to do the pairwise arithmetic; see @emlOneWayAnova",
     "emlPairwiseT" =
         "a kernel, calling @emlTTest once per pair; see @emlOneWayAnova",
     "emlRankBiserialR" =

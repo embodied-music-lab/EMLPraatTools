@@ -118,6 +118,9 @@ permanent property. `validate/v50_api_export.R` reads the list back out of
 | `@emlRunCorrelationAnalysis` | Pearson / Spearman |
 | `@emlRunRegressionAnalysis` | simple linear regression |
 | `@emlRunNormalityAnalysis` | Shapiro–Wilk + shape statistics |
+| `@emlRunReliabilityAnalysis` | Cronbach's alpha reliability |
+| `@emlRunCategoricalAnalysis` | chi-square test of independence |
+| `@emlRunProportionAnalysis` | one-sample proportion (Wilson interval) |
 | `@emlRunRepeatedMeasuresAnalysis` | RM-ANOVA |
 | `@emlRunFriedmanAnalysis` | Friedman |
 
@@ -152,8 +155,7 @@ both `scripts/eml-regress.praat` and `scripts/eml-wizard.praat`'s two
 regression pages make — and its own doc is
 `stats/eml-analysis.praat`'s comment above its definition.
 
-**Two procedures export nothing at all.** `@emlRunReliabilityAnalysis` is a
-Phase 4 stub and refuses immediately. `@emlRunLMMAnalysis` computes a real
+**One procedure exports nothing at all.** `@emlRunLMMAnalysis` computes a real
 mixed model but writes into neither buffer — **do not call the exporter after
 it**, and see §7.
 
