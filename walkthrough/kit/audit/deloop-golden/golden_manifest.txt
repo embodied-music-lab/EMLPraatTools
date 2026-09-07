@@ -1,6 +1,11 @@
-EML kit golden baseline (de-loop reference)
-commit: 74c6fb106caacf85ad26a820b017278b62f054f2  (extractor: annotate the bounded schema and label loops as vector-exempt)
+EML kit golden baseline (single reference)
+commit: 75aca590fb5680a404eb242ecbd030a0d763a681  (stats: comments state present behavior, not change history)
 rows: 12043   distinct_cells: 685
-sha256: 12655d52bb331dd1b87a6c11ac4b0258ead3c1e10d00f439e14ba2dfcd244920
-captured: 2026-09-06 17:30 EDT from single-process kit, no OOM, peak ~1963MB
-note: adds SmLs06-09 (c0670-673), recovered by the reporter cache-reuse fix; all 4 pass the v19 NIST gate (plugin within 1 digit of base R on between-SS)
+sha256: 3b7edf311dda90732b6dca755da9aa0deddd2583ee0e3fccc6fd0576b0c0b31f
+captured: 2026-09-07 09:50 EDT from single-process kit, no OOM, peak ~1963MB
+note: re-captured at the freeze tree after bundles 026-033. 230 graded cells
+      moved from the prior baseline (commit 74c6fb10), every one within 1e-12
+      (max 9.95e-14), from reduction reassociation in the vectorized regression
+      and ANOVA kernels (ACCURACY_VECTORIZATION_STUDY). The moved cells are
+      listed in MOVED_CELLS_2026-09-07.tsv beside this file. From here any
+      movement is a defect until a ruling re-baselines; one reference at a time.
