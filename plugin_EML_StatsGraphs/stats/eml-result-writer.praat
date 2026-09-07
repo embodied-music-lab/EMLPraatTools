@@ -135,12 +135,22 @@
 # also only half of what it takes: the other half is in
 # stats/eml-analysis.praat, where @emlDeclareNormalityResult declares the two
 # columns per row for there to be anything for this line to order.
+#
+# WARNING TRAILS EVEN alternative, the same relative place it already holds
+# in emlVocabGlance$ below. It is not a broom name in either frame: the
+# glance version is one warning per MODEL (@emlDeclareRMResult's sphericity
+# caveat); the tidy version, used by @emlDeclareFriedmanPostHoc, is one
+# per ROW -- a post-hoc pair whose confidence interval fell back to the
+# normal approximation and could not reach the requested level. Same word,
+# same column position in both frames, because it is the same kind of fact:
+# a caveat about the number beside it, not the number itself.
 emlVocabTidy$ = "term effect contrast null.value estimate estimate1"
 ... + " estimate2 std.error"
 ... + " df num.df den.df sumsq meansq"
 ... + " statistic p.value parameter conf.low conf.high adj.p.value"
 ... + " gg.epsilon hf.epsilon df.gg p.value.gg"
 ... + " effect.size effect.size.type skewness kurtosis method alternative"
+... + " warning"
 
 # Glance order is broom::glance(lm)'s order exactly:
 #   r.squared adj.r.squared sigma statistic p.value df logLik AIC BIC

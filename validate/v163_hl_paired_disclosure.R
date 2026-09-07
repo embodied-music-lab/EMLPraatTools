@@ -285,21 +285,30 @@ if (!canDrive) {
     # silent, which is the exact silent failure item 3 names.
     # -------------------------------------------------------------------
     inf_src <- readLines(INF)
-    needleAchieved <- "                .achievedLevel = emlWilcoxonIntervalApprox.achievedLevel"
-    needleWarning  <- "                .warning$ = emlWilcoxonIntervalApprox.warning$"
+    needleAchieved <- "                    .achievedLevel = emlWilcoxonIntervalApprox.achievedLevel"
+    needleWarning  <- "                    .warning$ = emlWilcoxonIntervalApprox.warning$"
     hitAchieved <- which(inf_src == needleAchieved)
     hitWarning  <- which(inf_src == needleWarning)
-    check_true(V, "[red demo] the disclosure seed site (.achievedLevel copy) exists, exactly once",
-               length(hitAchieved) == 1)
-    check_true(V, "[red demo] the disclosure seed site (.warning$ copy) exists, exactly once",
-               length(hitWarning) == 1)
+    # [SELF-TEST] this is the precondition for the mutant PART 2 builds below,
+    # not a live measurement of the shipped disclosure -- it is checking that
+    # THIS FILE's own seed sites still match the two lines it is about to
+    # stub out, the v145/v158 "[RED]"-flag convention's static counterpart.
+    # One check, not two: the two sites are a single fact for the mutant
+    # (both stubbed, or the demo below does not run at all), and counting
+    # them separately would make this file's own total drift by one merely
+    # because it targets two lines instead of one.
+    check_true(V,
+        paste0("[red demo, self-test] the disclosure seed sites this file's ",
+               "mutant stubs still exist, exactly once each ",
+               "(.achievedLevel copy, .warning$ copy)"),
+        length(hitAchieved) == 1 && length(hitWarning) == 1)
 
     if (length(hitAchieved) == 1 && length(hitWarning) == 1) {
         mutDir <- file.path(work, "mutant"); dir.create(mutDir, showWarnings = FALSE)
         mutInf <- file.path(mutDir, "eml-inferential.praat")
         mutSrc <- inf_src
-        mutSrc[hitAchieved] <- "                ; red-demo stub: .achievedLevel disclosure suppressed"
-        mutSrc[hitWarning]  <- "                ; red-demo stub: .warning$ disclosure suppressed"
+        mutSrc[hitAchieved] <- "                    ; red-demo stub: .achievedLevel disclosure suppressed"
+        mutSrc[hitWarning]  <- "                    ; red-demo stub: .warning$ disclosure suppressed"
         writeLines(mutSrc, mutInf)
 
         part2 <- c(prelude(mutInf), "",

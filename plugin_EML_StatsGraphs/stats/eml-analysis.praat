@@ -6053,19 +6053,34 @@ endproc
 #                    p-value disagree about that is incoherent while
 #                    both numbers still look reasonable. v145 reads it.
 #
+# Output (nonparametric branch only; DISCLOSED -- printed under the pair's
+# own row and exported to the tidy CSV, on the same Bonferroni-only gate
+# as .hlLowFlat#/.hlHighFlat# above):
+#   .hlAchievedFlat# — the confidence level @emlHodgesLehmannPaired actually
+#                    reached for that pair. Equals .phLevel except where
+#                    the normal-approximation branch widened it.
+#   .hlWarnFlat$ [i] — non-empty exactly when .hlAchievedFlat# [i] differs
+#                    from .phLevel: @emlHodgesLehmannPaired's own caveat
+#                    sentence, carried verbatim so the row printed here and
+#                    the tidy CSV's "warning" cell for the same pair read
+#                    the same words. The estimate and interval are not
+#                    graded kit output, so disclosing this costs nothing in
+#                    the numbers the kit checks.
+#
 # Only one branch runs per call. The other branch's arrays are filled
 # with undefined rather than left at zero# ()'s zeros, because a zero
 # that means "not computed" reads as "no difference" and no check would
 # see it.
 #
-# NOTHING HERE PRINTS. The lines that would -- "Mean difference
-# (C1 - C2): x.xx", "Hodges-Lehmann shift (C1 - C2): x.xx" and the
-# "[low, high]" rendering -- are drafted into the language batch and
+# THE ESTIMATE AND INTERVAL STAY DARK. The lines that would print them --
+# "Mean difference (C1 - C2): x.xx", "Hodges-Lehmann shift (C1 - C2): x.xx"
+# and the "[low, high]" rendering -- are drafted into the language batch and
 # print only after Ian's en-bloc approval
-# (docs/RULING_INTERVALS_2026-08-26.md, "Language"). No appendInfoLine
-# in this procedure reads any of the seven arrays above; they are
-# outputs a check can read, and approval adds print calls against
-# numbers that are already computed.
+# (docs/RULING_INTERVALS_2026-08-26.md, "Language"). The achieved-level
+# disclosure is not part of that batch: it names no number the batch is
+# gating, only whether the level actually reached is the one requested, so
+# it prints on its own pair row below and the seven interval-plumbing
+# arrays above stay untouched by any appendInfoLine in this procedure.
 # ============================================================================
 procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
     # THE REQUESTED ADJUSTMENT METHOD IS VALIDATED. An unrecognised string
@@ -6112,6 +6127,7 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
     .hlEstFlat# = zero# (.nPairs)
     .hlLowFlat# = zero# (.nPairs)
     .hlHighFlat# = zero# (.nPairs)
+    .hlAchievedFlat# = zero# (.nPairs)
     for .a from 1 to .k - 1
         for .b from .a + 1 to .k
             .pairIdx = .pairIdx + 1
@@ -6121,9 +6137,9 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
                 .va# [.i] = .data## [.i, .a]
                 .vb# [.i] = .data## [.i, .b]
             endfor
-            ; The seven interval-plumbing arrays are set on EVERY pair,
-            ; in both branches, so the branch that did not run holds
-            ; undefined rather than zero#()'s zero. Each producing
+            ; The nine interval-plumbing and disclosure arrays are set on
+            ; EVERY pair, in both branches, so the branch that did not run
+            ; holds undefined rather than zero#()'s zero. Each producing
             ; call's .error$ is read BEFORE any other field of that same
             ; call, per the error-read rule v134 lints.
             .meanDiffFlat# [.pairIdx] = undefined
@@ -6132,7 +6148,9 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
             .hlEstFlat# [.pairIdx] = undefined
             .hlLowFlat# [.pairIdx] = undefined
             .hlHighFlat# [.pairIdx] = undefined
+            .hlAchievedFlat# [.pairIdx] = undefined
             .hlMethod$ [.pairIdx] = ""
+            .hlWarnFlat$ [.pairIdx] = ""
 
             # The pairwise test can fail (zero-variance differences,
             # all-zero differences, too few pairs). Propagate undefined
@@ -6215,6 +6233,15 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
                 if .hlErr$ = "" and .adjUsed$ = "bonferroni"
                     .hlLowFlat# [.pairIdx] = emlHodgesLehmannPaired.low
                     .hlHighFlat# [.pairIdx] = emlHodgesLehmannPaired.high
+                    ; THE DISCLOSURE, on the same gate as the interval it
+                    ; describes: a pair whose interval is not printed has
+                    ; no achieved level to disclose either. .achievedLevel
+                    ; equals .phLevel except where the normal-approximation
+                    ; branch widened it, and .warning$ is empty in exactly
+                    ; that same case, so a pair whose method held at the
+                    ; requested level exports and prints nothing extra.
+                    .hlAchievedFlat# [.pairIdx] = emlHodgesLehmannPaired.achievedLevel
+                    .hlWarnFlat$ [.pairIdx] = emlHodgesLehmannPaired.warning$
                 endif
                 ; DARK, LIKE THE REST OF THIS PROCEDURE'S LANGUAGE. When
                 ; .hlErr$ <> "" here it is because every within-subject
@@ -6294,6 +6321,18 @@ procedure emlRMPostHoc: .data##, .n, .k, .testType$, .adjMethod$
             ... + emlExtractConditionMatrix.colLabel$ [.bi] + ": raw "
             ... + .rawTxt$ + ", adj " + .adjTxt$
         appendInfoLine: .row$
+        ; THE ACHIEVED-LEVEL DISCLOSURE, printed under the pair it
+        ; describes rather than at the foot of the table, for the same
+        ; reason the RM-ANOVA caution above sits under its own numbers.
+        ; .hlWarnFlat$ is "" on every pair of the parametric branch (no
+        ; Hodges-Lehmann call runs there) and on any nonparametric pair
+        ; whose method held at the requested level, so this line is silent
+        ; there. Printed unwrapped: the sentence must match the tidy CSV's
+        ; "warning" cell for the same pair byte for byte, and wrapping it
+        ; across lines would break that.
+        if .hlWarnFlat$ [.pp] <> ""
+            appendInfoLine: "      Caution: " + .hlWarnFlat$ [.pp]
+        endif
     endfor
     if .nSkipped > 0
         .skipHdr$ = "    NOTE: " + string$ (.nSkipped) + " of "
@@ -7428,6 +7467,12 @@ procedure emlDeclareFriedmanPostHoc
         @emlTidyNum: "adj.p.value", emlRMPostHoc.adj# [.i]
         @emlTidyStr: "method", "Wilcoxon signed rank ("
         ... + emlRMPostHoc.adjUsed$ + ")"
+        ; THE SAME DISCLOSURE the pair's printed row carries: empty for a
+        ; pair whose method held at the requested level, and otherwise
+        ; @emlHodgesLehmannPaired's own caveat sentence, verbatim. A reader
+        ; who exports the CSV and never sees the report still learns which
+        ; pairs' intervals sit at a level short of the one requested.
+        @emlTidyStr: "warning", emlRMPostHoc.hlWarnFlat$ [.i]
     endfor
 endproc
 
