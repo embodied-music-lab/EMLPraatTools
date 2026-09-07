@@ -284,6 +284,25 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @eml_serialSum
+# Sum a vector left to right, in element order.
+# Praat's built-in sum() reduces a vector in an order the machine's SIMD
+# support chooses, so its last bit can differ between machines. A graded
+# statistic that must reproduce to the last bit sums with this procedure. The
+# standardised third and fourth moments carry heavy cancellation, which is
+# where the order reaches the reported digits.
+# Input:  .v# — numeric vector
+# Output: .result — the sum, taken in element order
+# ----------------------------------------------------------------------------
+procedure eml_serialSum: .v#
+    .result = 0
+    for .i to size (.v#)
+        .result = .result + .v# [.i]
+    endfor
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlSkewness
 # Sample skewness (Fisher's definition).
 # Input:  data# — numeric vector
@@ -306,7 +325,8 @@ procedure emlSkewness: .data#
             .error$ = .error$ + " (standard deviation is zero)."
         else
             .z# = (.data# - .m) / .s
-            .sumCubed = sum (.z# * .z# * .z#)
+            @eml_serialSum: .z# * .z# * .z#
+            .sumCubed = eml_serialSum.result
             .result = (.n / ((.n - 1) * (.n - 2))) * .sumCubed
         endif
     endif
@@ -339,7 +359,8 @@ procedure emlKurtosis: .data#
         else
             .z# = (.data# - .m) / .s
             .z2# = .z# * .z#
-            .sumFourth = sum (.z2# * .z2#)
+            @eml_serialSum: .z2# * .z2#
+            .sumFourth = eml_serialSum.result
             .term1 = (.n * (.n + 1)) / ((.n - 1) * (.n - 2) * (.n - 3))
             .term2 = (3 * (.n - 1) * (.n - 1)) / ((.n - 2) * (.n - 3))
             .result = .term1 * .sumFourth - .term2
