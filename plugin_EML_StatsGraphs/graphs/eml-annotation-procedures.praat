@@ -4652,6 +4652,7 @@ procedure emlBridgeCorrelation: .tableId, .colX$, .colY$, .alpha, .style$, .corr
             if .corrType$ = "spearman"
                 # Need Pearson r for the regression line
                 @emlPearsonCorrelation: .xData#, .yData#, 2
+                .rLineError$ = emlPearsonCorrelation.error$
                 .rForLine = emlPearsonCorrelation.r
             else
                 .rForLine = .rVal
@@ -4883,6 +4884,7 @@ procedure emlReportBridgeStats: .tableId, .dataCol$, .groupCol$
 
         selectObject: .tableId
         @emlExtractGroupVectors: .tableId, .dataCol$, .groupCol$, .g1$, .g2$
+        .gvError$ = emlExtractGroupVectors.error$
         .v1# = emlExtractGroupVectors.group1#
         .v2# = emlExtractGroupVectors.group2#
         .n1 = emlExtractGroupVectors.n1
@@ -6227,8 +6229,8 @@ procedure emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .
         for .i from 1 to .nGroups - 1
             @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
             ... emlKruskalWallis.groupName$[.i]
-            .tmpV1# = eml_getGroupData.data#
             .tmpV1Error$ = eml_getGroupData.error$
+            .tmpV1# = eml_getGroupData.data#
             for .j from .i + 1 to .nGroups
                 @eml_getGroupData: .tableId, .dataCol$, .groupCol$,
                 ... emlKruskalWallis.groupName$[.j]

@@ -476,11 +476,11 @@ procedure emlAnovaKernelTwoWay: .tableId, .dataCol$, .factor1$, .factor2$, .ssTy
     # --- Levene's test, grouped by the r*s cells ---
     if .error$ = ""
         @emlLeveneTest: .n, eml_ak2_gather.y#, eml_ak2_gather.cellOf#, .rs
+        .leveneError$ = emlLeveneTest.error$
         .leveneW = emlLeveneTest.w
         .levenePValue = emlLeveneTest.p
         .leveneDfBetween = emlLeveneTest.dfBetween
         .leveneDfWithin = emlLeveneTest.dfWithin
-        .leveneError$ = emlLeveneTest.error$
     endif
 
     # --- Shapiro-Wilk on the residuals, through the plugin's own test ---
@@ -491,10 +491,10 @@ procedure emlAnovaKernelTwoWay: .tableId, .dataCol$, .factor1$, .factor2$, .ssTy
                 ... - eml_ak2_gather.cellMean#[eml_ak2_gather.cellOf#[.row]]
         endfor
         @emlShapiroWilk: .resid#
+        .shapiroError$ = emlShapiroWilk.error$
         .shapiroW = emlShapiroWilk.w
         .shapiroP = emlShapiroWilk.p
         .shapiroN = emlShapiroWilk.n
-        .shapiroError$ = emlShapiroWilk.error$
     endif
 
     if .error$ = ""

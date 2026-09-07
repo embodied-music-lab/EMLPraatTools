@@ -878,13 +878,13 @@ procedure emlPearsonCorrelationAlt: .x#, .y#, .alternative$
         .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
     else
         @eml_pearsonCore: .x#, .y#, .tails
+        .error$ = eml_pearsonCore.error$
         .r = eml_pearsonCore.r
         .t = eml_pearsonCore.t
         .df = eml_pearsonCore.df
         .pGreater = eml_pearsonCore.pGreater
         .pLess = eml_pearsonCore.pLess
         .n = eml_pearsonCore.n
-        .error$ = eml_pearsonCore.error$
         .warning$ = eml_pearsonCore.warning$
         .perfect = eml_pearsonCore.perfect
 
@@ -1042,13 +1042,13 @@ procedure emlSpearmanCorrelationAlt: .x#, .y#, .alternative$
         .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
     else
         @emlSpearmanCorrelation: .x#, .y#, .tails
+        .error$ = emlSpearmanCorrelation.error$
         .rho = emlSpearmanCorrelation.rho
         .t = emlSpearmanCorrelation.t
         .df = emlSpearmanCorrelation.df
         .pGreater = emlSpearmanCorrelation.pGreater
         .pLess = emlSpearmanCorrelation.pLess
         .n = emlSpearmanCorrelation.n
-        .error$ = emlSpearmanCorrelation.error$
         .warning$ = emlSpearmanCorrelation.warning$
         .perfect = emlSpearmanCorrelation.perfect
 
@@ -1561,11 +1561,11 @@ endproc
 
 procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
     @emlSpearmanCorrelation: .x#, .y#, .tails
+    .error$ = emlSpearmanCorrelation.error$
     .rho = emlSpearmanCorrelation.rho
     .t = emlSpearmanCorrelation.t
     .df = emlSpearmanCorrelation.df
     .n = emlSpearmanCorrelation.n
-    .error$ = emlSpearmanCorrelation.error$
     .warning$ = emlSpearmanCorrelation.warning$
     .perfect = emlSpearmanCorrelation.perfect
     .pAsymptotic = emlSpearmanCorrelation.p
@@ -1611,6 +1611,7 @@ procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
             .p = .pAsymptotic
         else
             @emlSpearmanExactP: .rho, .n, .tails
+            .error$ = emlSpearmanExactP.error$
             .method$ = emlSpearmanExactP.method$
             ; EXHAUSTIVE DISPATCH. Every label is matched positively and
             ; none is left as the implicit default. A single positive test
@@ -1629,7 +1630,10 @@ procedure emlSpearmanCorrelationDispatch: .x#, .y#, .tails
             ; repair. This label is produced inside the module, so there
             ; is no substitute to defend: the only honest output is a
             ; refusal.
-            if .method$ = "exact"
+            if .error$ <> ""
+                .methodReason$ = ""
+                .p = undefined
+            elsif .method$ = "exact"
                 .methodReason$ = ""
                 .p = emlSpearmanExactP.p
             elsif .method$ = "t approximation"
@@ -3351,12 +3355,13 @@ procedure emlHodgesLehmannPaired: .v1#, .v2#, .level
                 .method$ = "normal approximation"
 
                 @emlWilcoxonIntervalApprox: .v1#, .v2#, 1, .level
-                .low = emlWilcoxonIntervalApprox.low
-                .high = emlWilcoxonIntervalApprox.high
-                .achievedLevel = emlWilcoxonIntervalApprox.achievedLevel
-                .warning$ = emlWilcoxonIntervalApprox.warning$
-                if emlWilcoxonIntervalApprox.ok = 0
+                if emlWilcoxonIntervalApprox.error$ <> ""
                     .error$ = emlWilcoxonIntervalApprox.error$
+                else
+                    .low = emlWilcoxonIntervalApprox.low
+                    .high = emlWilcoxonIntervalApprox.high
+                    .achievedLevel = emlWilcoxonIntervalApprox.achievedLevel
+                    .warning$ = emlWilcoxonIntervalApprox.warning$
                 endif
             endif
         endif
