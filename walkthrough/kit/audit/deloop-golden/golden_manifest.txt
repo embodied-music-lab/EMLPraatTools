@@ -1,0 +1,6 @@
+EML kit golden baseline (de-loop reference)
+commit: 74c6fb106caacf85ad26a820b017278b62f054f2  (extractor: annotate the bounded schema and label loops as vector-exempt)
+rows: 12043   distinct_cells: 685
+sha256: 12655d52bb331dd1b87a6c11ac4b0258ead3c1e10d00f439e14ba2dfcd244920
+captured: 2026-09-06 17:30 EDT from single-process kit, no OOM, peak ~1963MB
+note: adds SmLs06-09 (c0670-673), recovered by the reporter cache-reuse fix; all 4 pass the v19 NIST gate (plugin within 1 digit of base R on between-SS)
