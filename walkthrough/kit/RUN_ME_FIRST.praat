@@ -1531,14 +1531,18 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
         ... or .proc$ = "emlRunFriedmanAnalysis"
         # --- 12/13. REPEATED-MEASURES ANOVA (GG) / FRIEDMAN ----------------
         .doPostHoc = number (.posthoc$)
-        @emlExtractConditionMatrix: .tableId, .colA$
+        ; The kit's condition list is the internal "|"-delimited form; the
+        ; frozen public signature takes a string vector, so split once and
+        ; pass the vector to both the standalone extract and the door.
+        @eml_pipeSplit: .colA$
+        @emlExtractConditionMatrix: .tableId, eml_pipeSplit.v$#
         if .proc$ = "emlRunRepeatedMeasuresAnalysis"
-            @emlRunRepeatedMeasuresAnalysis: .tableId, "", .colA$,
-            ... .doPostHoc, .adjust$
+            @emlRunRepeatedMeasuresAnalysis: .tableId, "wide", "",
+            ... eml_pipeSplit.v$#, "", "", .doPostHoc, .adjust$
             .thisErr$ = emlRunRepeatedMeasuresAnalysis.error$
         else
-            @emlRunFriedmanAnalysis: .tableId, "", .colA$, .doPostHoc,
-            ... .adjust$
+            @emlRunFriedmanAnalysis: .tableId, "wide", "",
+            ... eml_pipeSplit.v$#, "", "", .doPostHoc, .adjust$
             .thisErr$ = ""
             if emlExtractConditionMatrix.error$ <> ""
                 .thisErr$ = emlExtractConditionMatrix.error$

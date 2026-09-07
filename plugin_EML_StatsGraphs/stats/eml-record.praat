@@ -3299,9 +3299,15 @@ procedure emlRecordColumnSpec: .proc$
         ; grouped figures' own category axis.
         .spec$ = "2=categoryCol 4=countCol"
     elsif .proc$ = "emlRunRepeatedMeasuresAnalysis"
-        .spec$ = "2=subjectCol 3=conditionCols"
+        ; Frozen 8-argument signature: 1=table, 2=format ("wide"/"long", NOT a
+        ; column, so never listed here), 3=subjectCol, 4=conditionCols (a
+        ; string-vector literal, passed through verbatim like the melt's
+        ; seriesCols), 5=conditionCol, 6=valueCol. In wide runs 3/5/6 are empty
+        ; and skipped as roles the session did not use; in long runs they name
+        ; the three columns and are hoisted for editing.
+        .spec$ = "3=subjectCol 4=conditionCols 5=conditionCol 6=valueCol"
     elsif .proc$ = "emlRunFriedmanAnalysis"
-        .spec$ = "2=subjectCol 3=conditionCols"
+        .spec$ = "3=subjectCol 4=conditionCols 5=conditionCol 6=valueCol"
 
     ; ---- the figure's own statistics (graphs/eml-annotation-procedures) ----
     elsif .proc$ = "emlRunAnnotationComparison"

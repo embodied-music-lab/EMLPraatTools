@@ -5234,6 +5234,37 @@ procedure eml_rmCallStrings: .format$, .conditionCols$#, .conditionCol$
 endproc
 
 # ============================================================================
+# @eml_pipeSplit   (private — the "|"-string to string-vector bridge)
+# ----------------------------------------------------------------------------
+# The two RM/Friedman doors that predate the string-vector signature — the
+# wizard and the kit runner — build their condition list as one "|"-delimited
+# string, historically with a trailing "|". The frozen public signature takes
+# a string vector, so each door splits here and passes the vector. A trailing
+# empty segment is dropped; any interior empty is preserved and left for
+# @emlExtractConditionMatrix, which trims each element and skips the empties.
+# The split is on "|" only: this is the internal pipe form, never the public
+# surface, so a column name containing a pipe never reaches here.
+# ============================================================================
+procedure eml_pipeSplit: .s$
+    .n = 0
+    .rest$ = .s$
+    while index (.rest$, "|") > 0
+        .p = index (.rest$, "|")
+        .n += 1
+        .part$ [.n] = left$ (.rest$, .p - 1)
+        .rest$ = mid$ (.rest$, .p + 1, 1000000)
+    endwhile
+    if .rest$ <> ""
+        .n += 1
+        .part$ [.n] = .rest$
+    endif
+    .v$# = empty$# (.n)
+    for .i to .n
+        .v$# [.i] = .part$ [.i]
+    endfor
+endproc
+
+# ============================================================================
 # @eml_rmResolveMatrix   (private — the one shape-resolver for both RM doors)
 # ----------------------------------------------------------------------------
 # RULING_RM_FORMATS: repeated measures accepts BOTH table shapes for 1.0.

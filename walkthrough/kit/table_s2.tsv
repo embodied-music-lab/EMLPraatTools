@@ -13,8 +13,8 @@ emlRunDescriptiveAnalysis	analysis	Descriptive statistics (mean, SD, quartiles a
 emlRunRegressionAnalysis	analysis	OLS simple linear regression of one dependent column on one predictor.
 emlRunGroupedRegressionAnalysis	analysis	Per-group OLS regression fits reported beside the overall fit, one line per group. No recorder hook exists for this call — see report.
 emlRunNormalityAnalysis	analysis	Normality test for one numeric column — Shapiro-Wilk and/or skewness/kurtosis — with a plain-language recommendation.
-emlRunRepeatedMeasuresAnalysis	analysis	Parametric repeated-measures ANOVA (wide format) with Greenhouse-Geisser correction and an optional post-hoc. .subjectCol$ is reserved and currently unread.
-emlRunFriedmanAnalysis	analysis	Friedman test — nonparametric repeated measures, wide format — with an optional post-hoc.
+emlRunRepeatedMeasuresAnalysis	analysis	Parametric repeated-measures ANOVA with Greenhouse-Geisser correction and an optional post-hoc. .format$ is "wide" (one row per subject, conditions in .conditionCols$#) or "long" (.subjectCol$, .conditionCol$, .valueCol$ name the three columns).
+emlRunFriedmanAnalysis	analysis	Friedman test — nonparametric repeated measures — with an optional post-hoc. .format$ is "wide" (conditions in .conditionCols$#) or "long" (.subjectCol$, .conditionCol$, .valueCol$ name the three columns).
 emlRunReliabilityAnalysis	analysis	Cronbach's alpha over a set of item columns, with a confidence interval, alpha-if-item-deleted, and an optional respondent-influence check. Rows with missing items are dropped and the count is disclosed.
 emlRunCategoricalAnalysis	analysis	Chi-square test of independence over two category columns, with Cramer's V and an optional Yates correction. An empty .countCol$ tallies raw rows; a named one reads pre-aggregated counts.
 emlRunProportionAnalysis	analysis	One proportion with a Wilson score interval. An empty .countCol$ tallies raw rows; a named one reads pre-aggregated counts, which is how summary data such as "37 yes, 83 no" enters.

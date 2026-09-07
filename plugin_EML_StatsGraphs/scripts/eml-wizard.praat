@@ -1462,8 +1462,9 @@ if goal = 1
             @wizardReportPlan: "Repeated measures (k conditions)",
             ... "not assessed", "RM-ANOVA (Greenhouse-Geisser)",
             ... "n/a", condList$, "", "", displayTable$
-            @emlRunRepeatedMeasuresAnalysis: tableId, "", condList$,
-            ... pairwise_post_hoc, adjustment$
+            @eml_pipeSplit: condList$
+            @emlRunRepeatedMeasuresAnalysis: tableId, "wide", "",
+            ... eml_pipeSplit.v$#, "", "", pairwise_post_hoc, adjustment$
             if emlRunRepeatedMeasuresAnalysis.error$ <> ""
                 # An analysis error must not tear down the wizard. Return
                 # the user into the back-chain with every answer intact.
@@ -1478,8 +1479,9 @@ if goal = 1
             @wizardReportPlan: "Repeated measures (k conditions)",
             ... "not assessed", "Friedman test",
             ... "n/a", condList$, "", "", displayTable$
-            @emlRunFriedmanAnalysis: tableId, "", condList$,
-            ... pairwise_post_hoc, adjustment$
+            @eml_pipeSplit: condList$
+            @emlRunFriedmanAnalysis: tableId, "wide", "",
+            ... eml_pipeSplit.v$#, "", "", pairwise_post_hoc, adjustment$
             if emlRunFriedmanAnalysis.error$ <> ""
                 # An analysis error must not tear down the wizard. Return
                 # the user into the back-chain with every answer intact.
