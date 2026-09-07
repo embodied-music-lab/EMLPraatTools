@@ -284,21 +284,32 @@ endproc
 
 
 # ----------------------------------------------------------------------------
-# @eml_serialSum
-# Sum a vector left to right, in element order.
-# Praat's built-in sum() reduces a vector in an order the machine's SIMD
-# support chooses, so its last bit can differ between machines. A graded
-# statistic that must reproduce to the last bit sums with this procedure. The
-# standardised third and fourth moments carry heavy cancellation, which is
-# where the order reaches the reported digits.
+# @eml_pairwiseSum
+# Sum a vector by folding it in half and adding the two halves, repeated until
+# one value remains.
+# Praat's built-in sum() reduces a vector in an order the machine's SIMD width
+# chooses, so its last bit can differ between machines. This fold fixes the
+# tree shape, and an elementwise vector add gives the same bit on any machine,
+# so the result reproduces everywhere. A lone middle element on an odd length
+# rides to the next round unchanged. The standardised third and fourth moments
+# carry heavy cancellation, which is where the order reaches the reported
+# digits. The work is log2(n) whole-vector adds.
 # Input:  .v# — numeric vector
-# Output: .result — the sum, taken in element order
+# Output: .result — the sum
 # ----------------------------------------------------------------------------
-procedure eml_serialSum: .v#
-    .result = 0
-    for .i to size (.v#)
-        .result = .result + .v# [.i]
-    endfor
+procedure eml_pairwiseSum: .v#
+    .a# = .v#
+    while size (.a#) > 1
+        .n = size (.a#)
+        .h = .n div 2
+        .folded# = part# (.a#, 1, .h) + part# (.a#, .h + 1, 2 * .h)
+        if .n mod 2 = 1
+            .a# = combine# (.folded#, part# (.a#, .n, .n))
+        else
+            .a# = .folded#
+        endif
+    endwhile
+    .result = .a# [1]
 endproc
 
 
@@ -325,8 +336,8 @@ procedure emlSkewness: .data#
             .error$ = .error$ + " (standard deviation is zero)."
         else
             .z# = (.data# - .m) / .s
-            @eml_serialSum: .z# * .z# * .z#
-            .sumCubed = eml_serialSum.result
+            @eml_pairwiseSum: .z# * .z# * .z#
+            .sumCubed = eml_pairwiseSum.result
             .result = (.n / ((.n - 1) * (.n - 2))) * .sumCubed
         endif
     endif
@@ -359,8 +370,8 @@ procedure emlKurtosis: .data#
         else
             .z# = (.data# - .m) / .s
             .z2# = .z# * .z#
-            @eml_serialSum: .z2# * .z2#
-            .sumFourth = eml_serialSum.result
+            @eml_pairwiseSum: .z2# * .z2#
+            .sumFourth = eml_pairwiseSum.result
             .term1 = (.n * (.n + 1)) / ((.n - 1) * (.n - 2) * (.n - 3))
             .term2 = (3 * (.n - 1) * (.n - 1)) / ((.n - 2) * (.n - 3))
             .result = .term1 * .sumFourth - .term2
