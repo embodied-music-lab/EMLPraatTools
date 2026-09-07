@@ -390,22 +390,23 @@ procedure emlKitRowSelected: .proc$
 endproc
 
 # ----------------------------------------------------------------------------
-# @emlKitSplit17 -- split one matrix.tsv line into its 17 tab-separated
+# @emlKitSplit18 -- split one matrix.tsv line into its 18 tab-separated
 # columns (cell_id, lane, procedure, dataset, col_a, col_b, col_c, test,
 # posthoc, adjust, equal_var, group_order, conf, correction, prereq, expect,
-# note), header order verbatim from matrix.tsv. Output: .f$[1..17].
+# note, ss_type), header order verbatim from matrix.tsv. Output: .f$[1..18].
 #
 # THE TRAILING study COLUMN (Ian's ruling, docs/MEMO_TO_FABLE_TIERS_2026-08-28.md)
-# lands in .f$[18], one tab further out than the 17 fields every caller here
-# reads. The loop bound below is 17, not 16, precisely so that split, not
-# note (.f$[17]), swallows the rest of the line -- an unfixed 16-bound would
-# run the study value straight onto the end of every cell's note, with a
-# literal embedded tab, which nothing downstream would ever separate again.
-# No caller reads .f$[18]; compare.R gets study from matrix.tsv directly.
+# lands in .f$[19], one tab further out than the 18 fields every caller here
+# reads. The loop bound below is 18, not 17, precisely so that split, not
+# ss_type (.f$[18]), swallows the rest of the line -- an unfixed 17-bound
+# would run the study value straight onto the end of every cell's ss_type,
+# with a literal embedded tab, which nothing downstream would ever separate
+# again. No caller reads .f$[19]; compare.R gets study from matrix.tsv
+# directly.
 # ----------------------------------------------------------------------------
-procedure emlKitSplit17: .line$
+procedure emlKitSplit18: .line$
     .rest$ = .line$
-    for .c from 1 to 17
+    for .c from 1 to 18
         .tPos = index (.rest$, tab$)
         if .tPos = 0
             .f$ [.c] = .rest$
@@ -415,7 +416,7 @@ procedure emlKitSplit17: .line$
             .rest$ = mid$ (.rest$, .tPos + 1, length (.rest$) - .tPos)
         endif
     endfor
-    .f$ [18] = .rest$
+    .f$ [19] = .rest$
 endproc
 
 # ----------------------------------------------------------------------------
@@ -547,7 +548,7 @@ endproc
 # ----------------------------------------------------------------------------
 procedure emlKitEndCell: .cellId$, .lane$, .proc$, .dataset$, .colA$, .colB$,
     ... .colC$, .test$, .posthoc$, .adjust$, .equalVar$, .groupOrder$,
-    ... .conf$, .correction$, .prereq$, .expect$, .note$, .outcome$
+    ... .conf$, .correction$, .prereq$, .expect$, .note$, .ssType$, .outcome$
 
     .rep$ = "=== " + .cellId$ + " ===" + newline$
     .rep$ = .rep$ + "lane: " + .lane$ + newline$
@@ -566,6 +567,23 @@ procedure emlKitEndCell: .cellId$, .lane$, .proc$, .dataset$, .colA$, .colB$,
     if .note$ <> ""
         @emlKitSanitizeText: .note$
         .rep$ = .rep$ + "note: " + emlKitSanitizeText.result$ + newline$
+    endif
+    # ss_type: emlRunTwoWayAnalysis only (matrix.tsv header note; every other
+    # procedure's field is always blank). The resolved label is added only
+    # for that procedure, so the report states which sums-of-squares type
+    # actually ran even when the field itself is blank -- empty means
+    # Type III, the kernel's own default.
+    if .proc$ = "emlRunTwoWayAnalysis"
+        if .ssType$ = "1"
+            .ssTypeLabel$ = "Type I"
+        elsif .ssType$ = "2"
+            .ssTypeLabel$ = "Type II"
+        else
+            .ssTypeLabel$ = "Type III"
+        endif
+        .rep$ = .rep$ + "ss_type=" + .ssType$ + "  (" + .ssTypeLabel$ + ")" + newline$
+    else
+        .rep$ = .rep$ + "ss_type=" + .ssType$ + newline$
     endif
     .rep$ = .rep$ + "outcome: " + .outcome$ + newline$
     .rep$ = .rep$ + newline$
@@ -641,16 +659,16 @@ while length (emlKitRemaining$) > 0
             emlKitHeaderSeen = 1
         endif
     else
-        @emlKitSplit17: emlKitLine$
-        @emlKitRowSelected: emlKitSplit17.f$[3]
+        @emlKitSplit18: emlKitLine$
+        @emlKitRowSelected: emlKitSplit18.f$[3]
         if emlKitRowSelected.selected = 1
             @emlKitProcessRow:
-            ... emlKitSplit17.f$[1], emlKitSplit17.f$[2], emlKitSplit17.f$[3],
-            ... emlKitSplit17.f$[4], emlKitSplit17.f$[5], emlKitSplit17.f$[6],
-            ... emlKitSplit17.f$[7], emlKitSplit17.f$[8], emlKitSplit17.f$[9],
-            ... emlKitSplit17.f$[10], emlKitSplit17.f$[11], emlKitSplit17.f$[12],
-            ... emlKitSplit17.f$[13], emlKitSplit17.f$[14], emlKitSplit17.f$[15],
-            ... emlKitSplit17.f$[16], emlKitSplit17.f$[17]
+            ... emlKitSplit18.f$[1], emlKitSplit18.f$[2], emlKitSplit18.f$[3],
+            ... emlKitSplit18.f$[4], emlKitSplit18.f$[5], emlKitSplit18.f$[6],
+            ... emlKitSplit18.f$[7], emlKitSplit18.f$[8], emlKitSplit18.f$[9],
+            ... emlKitSplit18.f$[10], emlKitSplit18.f$[11], emlKitSplit18.f$[12],
+            ... emlKitSplit18.f$[13], emlKitSplit18.f$[14], emlKitSplit18.f$[15],
+            ... emlKitSplit18.f$[16], emlKitSplit18.f$[17], emlKitSplit18.f$[18]
         endif
     endif
 endwhile
@@ -661,7 +679,8 @@ endwhile
 # ============================================================================
 procedure emlKitProcessRow: .cellId$, .lane$, .proc$, .dataset$, .colA$,
     ... .colB$, .colC$, .test$, .posthoc$, .adjust$, .equalVar$,
-    ... .groupOrder$, .conf$, .correction$, .prereq$, .expect$, .note$
+    ... .groupOrder$, .conf$, .correction$, .prereq$, .expect$, .note$,
+    ... .ssType$
 
     emlKitNCells = emlKitNCells + 1
     @emlKitBeginCell: .cellId$
@@ -706,7 +725,7 @@ procedure emlKitProcessRow: .cellId$, .lane$, .proc$, .dataset$, .colA$,
         if .refused = 0
             @emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$,
             ... .colB$, .colC$, .test$, .posthoc$, .adjust$, .equalVar$,
-            ... .conf$, .correction$
+            ... .conf$, .correction$, .ssType$
             .refused = emlKitDispatchAnalysis.refused
             .refuseReason$ = emlKitDispatchAnalysis.refuseReason$
         endif
@@ -735,7 +754,7 @@ procedure emlKitProcessRow: .cellId$, .lane$, .proc$, .dataset$, .colA$,
 
     @emlKitEndCell: .cellId$, .lane$, .proc$, .dataset$, .colA$, .colB$,
     ... .colC$, .test$, .posthoc$, .adjust$, .equalVar$, .groupOrder$,
-    ... .conf$, .correction$, .prereq$, .expect$, .note$, .outcome$
+    ... .conf$, .correction$, .prereq$, .expect$, .note$, .ssType$, .outcome$
 
     # This cell is done emitting: append its rows to the results file and empty
     # the buffer. The file is built on disk cell by cell (see the buffer's header
@@ -860,7 +879,8 @@ endproc
 # Output: .refused, .refuseReason$
 # ============================================================================
 procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
-    ... .colC$, .test$, .posthoc$, .adjust$, .equalVar$, .conf$, .correction$
+    ... .colC$, .test$, .posthoc$, .adjust$, .equalVar$, .conf$, .correction$,
+    ... .ssType$
 
     .refused = 0
     .refuseReason$ = ""
@@ -1136,7 +1156,17 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
 
     elsif .proc$ = "emlRunTwoWayAnalysis"
         # --- 5. TWO-WAY ANOVA --------------------------------------------
-        @emlRunTwoWayAnalysis: .tableId, .colA$, .colB$, .colC$, 3
+        # .ssType$ is matrix.tsv's own field (empty on every cell that
+        # predates it): 1 = Type I, 2 = Type II, anything else -- including
+        # empty -- is Type III, @emlRunTwoWayAnalysis's own .ssType contract
+        # (stats/eml-analysis.praat, REGISTRY.tsv). Read here, not
+        # hardcoded, so the matrix row is what selects the type.
+        if .ssType$ = ""
+            .ssTypeNum = 3
+        else
+            .ssTypeNum = number (.ssType$)
+        endif
+        @emlRunTwoWayAnalysis: .tableId, .colA$, .colB$, .colC$, .ssTypeNum
         if emlRunTwoWayAnalysis.error$ <> ""
             .refused = 1
             .refuseReason$ = emlRunTwoWayAnalysis.error$

@@ -1025,26 +1025,32 @@ process_pairwise <- function(row) {
 
 # =============================================================================
 # emlRunTwoWayAnalysis -- two-way ANOVA (factor1 * factor2, with interaction)
-# car::Anova(fit, type=3) under contr.sum: matches the plugin's own kernel
-# (@emlAnovaKernelTwoWay, eml-anova-kernel.praat), which computes Types I,
-# II and III directly from the raw data and defaults to reporting Type III
-# as its headline table -- see
-# mailbox/to-opus/RULING_CONSOLIDATED_KERNELS_2026-09-01.md section 2
-# ("Oracles: Type III = car::Anova(fit, type = 3) under contr.sum"). This
-# leg previously ran Type II deliberately, to avoid tying the oracle to
-# whatever unspecified SS type Praat's built-in `Report two-way anova`
-# happened to print; now that the plugin computes a real, defined Type III
-# itself (no built-in call anywhere on that side, see
-# eml-inferential.praat's @emlTwoWayAnova), matching it directly is the
-# correct oracle, not an incidental one. contr.sum is set only around the
-# fit -- Type III's marginal-effect test is contrast-coding-dependent, so
-# the fit itself, not just the car::Anova() call, has to use it; options()
-# is restored immediately after, same pattern as afex's own contrasts
-# reset around line 158 above.
-# On a BALANCED design Types I, II and III agree, so this changed nothing
-# for the pre-existing balanced-fixture cells; it matters only on the
-# unbalanced/three-level cells this leg's rewrite adds.
-# Partial and non-partial eta-squared for every term via effectsize.
+# The SS type is a setting, matrix.tsv's own `ss_type` column (empty | "1" |
+# "2"), read here exactly as @emlRunTwoWayAnalysis reads its .ssType
+# argument: 1 = Type I, 2 = Type II, anything else (including empty) =
+# Type III -- matching the plugin's own kernel (@emlAnovaKernelTwoWay,
+# eml-anova-kernel.praat), which computes all three directly from the raw
+# data. Oracle per type, all reusing the one fit-and-report path below
+# (only the `at` table and its label differ):
+#   Type I   sequential  -- anova(aov(x ~ a * b))
+#   Type II  car::Anova(fit, type = 2)
+#   Type III car::Anova(fit, type = 3) under contr.sum -- see
+#            mailbox/to-opus/RULING_CONSOLIDATED_KERNELS_2026-09-01.md
+#            section 2 ("Oracles: Type III = car::Anova(fit, type = 3)
+#            under contr.sum"). Only Type III's marginal-effect test is
+#            contrast-coding-dependent, so contr.sum is set only around
+#            that fit and restored immediately after, same pattern as
+#            afex's own contrasts reset around line 158 above; Type I and
+#            Type II partition the same design-matrix column space under
+#            any full-rank contrast coding, so neither needs it.
+# On a BALANCED design Types I, II and III agree; the three differ only on
+# an unbalanced design, which is why the Type I/II kit cells are declared
+# on the unbalanced fixtures (matrix.tsv notes on those cell_ids).
+# Partial and non-partial eta-squared for every term via effectsize, which
+# accepts all three table shapes (Type I's plain "anova" object and car's
+# Type II/III "anova" objects alike) and labels its own header from the
+# table's class, so the term-level extraction loop below is unchanged by
+# which type produced `at`.
 # No group_order axis here (matrix.tsv's own header, note B8: this
 # procedure never calls @emlCountGroups), so none is read.
 # =============================================================================
@@ -1060,17 +1066,38 @@ process_twoway <- function(row) {
         refuseCell(cid, sprintf("factor '%s' or '%s' has fewer than 2 levels", row$col_b, row$col_c)); return(invisible())
     }
     dfr <- data.frame(x = x, a = a, b = b)
-    oldContrasts <- options(contrasts = c("contr.sum", "contr.poly"))
-    fit <- lm(x ~ a * b, data = dfr)
-    at <- car::Anova(fit, type = 3)
-    options(oldContrasts)
+    # ss_type SELECTS THE ORACLE. Read as a setting off the row, never a
+    # literal: "1" -> Type I, "2" -> Type II, anything else (including the
+    # empty string every pre-existing two-way cell carries) -> Type III,
+    # the same three-way rule @emlRunTwoWayAnalysis's own .ssType applies.
+    ssTypeReq <- if (identical(row$ss_type, "1")) 1L else if (identical(row$ss_type, "2")) 2L else 3L
+    if (ssTypeReq == 1L) {
+        at <- anova(aov(x ~ a * b, data = dfr))
+        ssLabel <- "Type I"
+        ssMethod <- "sequential anova(aov)"
+        atSource <- "stats::anova"
+    } else if (ssTypeReq == 2L) {
+        fit <- lm(x ~ a * b, data = dfr)
+        at <- car::Anova(fit, type = 2)
+        ssLabel <- "Type II"
+        ssMethod <- "car::Anova"
+        atSource <- "car::Anova"
+    } else {
+        oldContrasts <- options(contrasts = c("contr.sum", "contr.poly"))
+        fit <- lm(x ~ a * b, data = dfr)
+        at <- car::Anova(fit, type = 3)
+        options(oldContrasts)
+        ssLabel <- "Type III"
+        ssMethod <- "car::Anova, contr.sum"
+        atSource <- "car::Anova"
+    }
     # Type III's table carries an "(Intercept)" row Type I/II tables do not
     # have; it is not one of the three reported terms and must be dropped
     # here or it falls into the `else` branch below and gets reported as
     # the interaction.
     terms <- rownames(at); terms <- terms[!(terms %in% c("Residuals", "(Intercept)"))]
     dfRes <- at["Residuals", "Df"]; ssRes <- at["Residuals", "Sum Sq"]
-    lines <- c(sprintf("Two-way ANOVA (Type III SS, car::Anova, contr.sum) -- %s by %s * %s", row$col_a, row$col_b, row$col_c), "")
+    lines <- c(sprintf("Two-way ANOVA (%s SS, %s) -- %s by %s * %s", ssLabel, ssMethod, row$col_a, row$col_b, row$col_c), "")
     es <- effectsize::eta_squared(at, partial = TRUE, ci = NULL, verbose = FALSE)
     esFull <- effectsize::eta_squared(at, partial = FALSE, ci = NULL, verbose = FALSE)
     # TERMS ARE KEYED BY THE FACTOR'S OWN NAME, not by position. "factor1"
@@ -1084,13 +1111,13 @@ process_twoway <- function(row) {
     for (tm in terms) {
         tag <- if (tm == "a") f1 else if (tm == "b") f2 else paste0(f1, "__", f2)
         ss <- at[tm, "Sum Sq"]; dfT <- at[tm, "Df"]; Fv <- at[tm, "F value"]; pv <- at[tm, "Pr(>F)"]
-        emit(cid, paste0(tag, "_ss"), ss, "car::Anova")
-        emit(cid, paste0(tag, "_df"), dfT, "car::Anova")
-        emit(cid, paste0(tag, "_f"), Fv, "car::Anova")
-        emit(cid, paste0(tag, "_p"), pv, "car::Anova")
+        emit(cid, paste0(tag, "_ss"), ss, atSource)
+        emit(cid, paste0(tag, "_df"), dfT, atSource)
+        emit(cid, paste0(tag, "_f"), Fv, atSource)
+        emit(cid, paste0(tag, "_p"), pv, atSource)
         # A mean square is SS/df by definition -- an identity between two
         # quantities already reported here, not a statistic re-derived.
-        emit(cid, paste0(tag, "_ms"), ss / dfT, "car::Anova")
+        emit(cid, paste0(tag, "_ms"), ss / dfT, atSource)
         peta <- es$Eta2_partial[es$Parameter == tm]
         eta <- esFull$Eta2[esFull$Parameter == tm]
         emit(cid, paste0(tag, "_partial_eta_squared"), peta, "effectsize::eta_squared")
@@ -1098,8 +1125,8 @@ process_twoway <- function(row) {
         lines <- c(lines, sprintf("%s (%s): F(%.0f,%.0f)=%.4f p=%.4g partial_eta2=%.4f eta2=%.4f",
                                    tag, tm, dfT, dfRes, Fv, pv, peta, eta))
     }
-    emit(cid, "ss_within", ssRes, "car::Anova"); emit(cid, "df_within", dfRes, "car::Anova")
-    emit(cid, "ms_within", ssRes / dfRes, "car::Anova")
+    emit(cid, "ss_within", ssRes, atSource); emit(cid, "df_within", dfRes, atSource)
+    emit(cid, "ms_within", ssRes / dfRes, atSource)
     # NOT sum(at[["Sum Sq"]]): that sum only equals the total SS for a
     # SEQUENTIAL (Type I) decomposition, or incidentally on a balanced
     # design where all types agree. On an unbalanced design a Type II or
