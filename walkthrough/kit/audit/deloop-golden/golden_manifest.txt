@@ -1,7 +1,7 @@
 EML kit golden baseline (single reference)
 commit: 75aca590fb5680a404eb242ecbd030a0d763a681  (stats: comments state present behavior, not change history)
-rows: 12043   distinct_cells: 685
-sha256: b46f6f90186665e7335f340343ecce2eb8b4aca88c92e7cd4693436f57a650df
+rows: 12147   distinct_cells: 689
+sha256: 491b96bb921486299741c9ea50a65d31f7080ec88801dda62a8be3ea64b8871c
 captured: 2026-09-07 09:50 EDT from single-process kit, no OOM, peak ~1963MB
 note: re-captured at the freeze tree after bundles 026-033. 230 graded cells
       moved from the prior baseline (commit 74c6fb10), every one within 1e-12
@@ -16,3 +16,6 @@ note2: skewness and kurtosis re-captured for 72 cells. Those two moments
       shifts the last bit. The fixed order reproduces on any machine. The
       change is last-bit only (~1e-14) and has no effect at any reported
       precision.
+note3: four cells added for two-way ANOVA Type I and II on the
+      unbalanced designs (c0692-c0695). Graded against R (car); values are the
+      plugin's current output.
