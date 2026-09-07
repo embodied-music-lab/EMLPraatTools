@@ -6124,6 +6124,9 @@ repeat
                             if tsSeriesRole = 1 and tsNSeries >= 2
                                 @emlReshapeSeriesLong: objectId, timeColName$,
                                 ... tsSeriesCols$
+                                if emlReshapeSeriesLong.error$ <> ""
+                                    appendInfoLine: "NOTE: " + emlReshapeSeriesLong.error$
+                                endif
                                 tsOrigObjectId = objectId
                                 tsMeltTableId = emlReshapeSeriesLong.tableId
 
@@ -6325,6 +6328,9 @@ repeat
                                     @emlReshapeSeriesWide: objectId,
                                     ... timeColName$, tsLongValueCol$,
                                     ... tsLevelNameCol$, tsSeriesCols$
+                                    if emlReshapeSeriesWide.error$ <> ""
+                                        appendInfoLine: "NOTE: " + emlReshapeSeriesWide.error$
+                                    endif
                                     tsOrigObjectId = objectId
                                     tsPivotTableId = emlReshapeSeriesWide.tableId
 

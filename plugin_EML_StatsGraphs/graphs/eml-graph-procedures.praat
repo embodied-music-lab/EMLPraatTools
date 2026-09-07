@@ -215,8 +215,13 @@ endproc
 # with the values the block at the top of the emitted script declares. A
 # standalone script that never calls it gets @emlInitializeDrawingDefaults' erase-on
 # single panel at the origin, which is what such a script has always had.
+#
+# Outputs: .error$ (always ""; this procedure has no refusal path),
+# .warning$ (always ""), .ok (.error$ = "", set once at the single exit).
 # ----------------------------------------------------------------------------
 procedure emlBeginPanel: .originX, .originY, .erase
+    .error$ = ""
+    .warning$ = ""
     @emlSetPanelOrigin: .originX, .originY
     emlEraseFirst = .erase
     if .erase = 1
@@ -226,6 +231,7 @@ procedure emlBeginPanel: .originX, .originY, .erase
     else
         emlPagePanelN = emlPagePanelN + 1
     endif
+    .ok = (.error$ = "")
 endproc
 
 # ----------------------------------------------------------------------------
@@ -285,8 +291,13 @@ endproc
 # The plugin does NOT call this — it has its own UI-driven path.
 #
 # Precondition for all @emlDraw* orchestrator procedures.
+#
+# Outputs: .error$ (always ""; this procedure has no refusal path),
+# .warning$ (always ""), .ok (.error$ = "", set once at the single exit).
 # ----------------------------------------------------------------------------
 procedure emlInitializeDrawingDefaults
+    .error$ = ""
+    .warning$ = ""
     # Panel origin (single panel at Picture window origin)
     emlPanelOriginX = 0
     emlPanelOriginY = 0
@@ -480,6 +491,7 @@ procedure emlInitializeDrawingDefaults
     annotStyle$ = "stars"
     annotShowNS = 0
     annotAlpha = 0.05
+    .ok = (.error$ = "")
 endproc
 
 # ----------------------------------------------------------------------------
@@ -8019,8 +8031,13 @@ endproc
 # after the melt and because a caller that wants the array gets it either way.
 # The form passes a list it built from the array, so the round trip is the
 # identity.
+#
+# .error$ and .warning$ are always "": this transform has no refusal path.
+# .ok is (.error$ = ""), set once at the procedure's single exit.
 # ============================================================================
 procedure emlReshapeSeriesLong: .objectId, .timeCol$, .cols$
+    .error$ = ""
+    .warning$ = ""
     ; The list, split into the array the melt walks. Trailing separator
     ; tolerated: the form builds this list beside a `prev_` copy that ends in
     ; one, and a refusal to accept it would be a trap rather than a rule.
@@ -8067,6 +8084,7 @@ procedure emlReshapeSeriesLong: .objectId, .timeCol$, .cols$
             Set numeric value: .meltRow, "eml_value", .dataVal
         endfor
     endfor
+    .ok = (.error$ = "")
 endproc
 
 
@@ -8117,8 +8135,13 @@ endproc
 # assumed: @emlDrawTimeSeries copies its table and sorts it before it reads a
 # single value. The rows come out in ascending time because that is what the
 # sort this procedure needs anyway leaves behind.
+#
+# .error$ and .warning$ are always "": this transform has no refusal path.
+# .ok is (.error$ = ""), set once at the procedure's single exit.
 # ============================================================================
 procedure emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$
+    .error$ = ""
+    .warning$ = ""
     ; ---- the levels, split exactly as the melt splits its column list -----
     .nSeries = 0
     .rest$ = .levels$
@@ -8274,6 +8297,7 @@ procedure emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .le
     endfor
 
     selectObject: .tableId
+    .ok = (.error$ = "")
 endproc
 
 
@@ -8289,9 +8313,13 @@ endproc
 # the library.
 #
 # Arguments: .tableId
-# Outputs: modifies .tableId in place
+# Outputs: modifies .tableId in place. .error$ and .warning$ are always ""
+# (this procedure has no refusal path); .ok is (.error$ = ""), set once at
+# the procedure's single exit.
 # ----------------------------------------------------------------------------
 procedure emlCleanConvertedTable: .tableId
+    .error$ = ""
+    .warning$ = ""
     selectObject: .tableId
     .nCols = Get number of columns
     .nRows = Get number of rows
@@ -8386,4 +8414,5 @@ procedure emlCleanConvertedTable: .tableId
             Set string value: .iRow, .rowColName$, "r" + string$ (.iRow)
         endif
     endfor
+    .ok = (.error$ = "")
 endproc

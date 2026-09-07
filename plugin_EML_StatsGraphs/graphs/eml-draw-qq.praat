@@ -121,6 +121,8 @@
 # Outputs:
 #   .drew       — 1 if a figure was drawn, 0 if refused
 #   .error$     — refusal message, "" when .drew = 1
+#   .warning$   — "" always; this procedure has no non-fatal note to give
+#   .ok         — (.error$ = ""), set once at the procedure's single exit
 #   .n          — points plotted (complete cases)
 #   .nDropped   — undefined cells excluded
 #   .slope      — reference-line slope     (undefined when refused)
@@ -152,6 +154,7 @@
 procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode
     .drew = 0
     .error$ = ""
+    .warning$ = ""
     .n = 0
     .nDropped = 0
     .slope = undefined
@@ -389,4 +392,5 @@ procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode
 
         .drew = 1
     endif
+    .ok = (.error$ = "")
 endproc

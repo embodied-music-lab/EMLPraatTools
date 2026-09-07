@@ -145,8 +145,13 @@
 # @emlClearAnnotations
 # Reset all annotation arrays to empty state. Call at the top of each
 # draw cycle before bridge procedures.
+#
+# Outputs: .error$ (always ""; this procedure has no refusal path),
+# .warning$ (always ""), .ok (.error$ = "", set once at the single exit).
 # ----------------------------------------------------------------------------
 procedure emlClearAnnotations
+    .error$ = ""
+    .warning$ = ""
     annotBracketN = 0
     # The bracket caption. Cleared here beside the count it travels with, so a
     # figure whose bridge never reached a post-hoc cannot inherit the previous
@@ -181,6 +186,7 @@ procedure emlClearAnnotations
     annotMatrixEffectLabel$ = ""
     annotMatrixPosthoc$ = ""
     emlMatrixLayout_pLegend$ = "p < .05"
+    .ok = (.error$ = "")
 endproc
 
 
@@ -767,11 +773,16 @@ endproc
 #   .yRange        — yMax - yMin of the data
 #   .bracketColor$ — RGB colour string for bracket lines
 #   .fontSize      — text size for annotation labels
+#
+# Outputs: .error$ (always ""; this procedure has no refusal path),
+# .warning$ (always ""), .ok (.error$ = "", set once at the single exit).
 # ----------------------------------------------------------------------------
 ; .axYMin/.axYMax are the installed y axis, carried through to
 ; @emlDrawAnnotation for its post-sprite restore only. The x axis it restores
 ; is .xMin/.xMax, which this procedure already has.
 procedure emlDrawAnnotations: .xMin, .xMax, .yDataMax, .yRange, .bracketColor$, .fontSize, .axYMin, .axYMax
+    .error$ = ""
+    .warning$ = ""
     # --- Brackets ---
     if annotBracketN > 0
         # Physically grounded tier geometry via world-per-inch
@@ -811,6 +822,7 @@ procedure emlDrawAnnotations: .xMin, .xMax, .yDataMax, .yRange, .bracketColor$, 
     if annotBracketN > 0
         @emlDrawBracketCaption: .fontSize, .xMin, .xMax, .axYMin, .axYMax
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -1227,9 +1239,12 @@ endproc
 #   .xMin, .xMax, .yMin, .yMax — current axis bounds
 #   .fontSize  — text size for annotation lines
 #
-# Draws directly; no output variables.
-# Uses annotBlockDraw$[] for Picture window text (may contain %% markup).
-# Caller is responsible for populating annotBlockN and annotBlockDraw$[].
+# Draws directly. Uses annotBlockDraw$[] for Picture window text (may
+# contain %% markup). Caller is responsible for populating annotBlockN
+# and annotBlockDraw$[].
+#
+# Outputs: .error$ (always ""; this procedure has no refusal path),
+# .warning$ (always ""), .ok (.error$ = "", set once at the single exit).
 #
 # WRAPPING. A box exactly as wide as its longest line as
 # handed in. One long disclosure line therefore made the box wide enough to
@@ -1277,6 +1292,8 @@ endproc
 # through @emlSanitizeLabel, exactly as @emlDisclose derives Draw from Label.
 # ----------------------------------------------------------------------------
 procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSize
+    .error$ = ""
+    .warning$ = ""
     if annotBlockN = 0
         # Nothing to draw
     else
@@ -1583,6 +1600,7 @@ procedure emlDrawAnnotationBlock: .corner$, .xMin, .xMax, .yMin, .yMax, .fontSiz
         Font size: emlSetAdaptiveTheme.bodySize
     endif
     label ANNOT_BLOCK_END
+    .ok = (.error$ = "")
 endproc
 
 
@@ -1657,6 +1675,9 @@ procedure emlPlaceAnnotationBox: .xMin, .xMax, .yMin, .yMax, .fontSize, .qTL, .q
     emlAnnotBlockMeasureOnly = 1
     @emlDrawAnnotationBlock: "top-left", .xMin, .xMax, .yMin, .yMax, .fontSize
     emlAnnotBlockMeasureOnly = 0
+    if emlDrawAnnotationBlock.error$ <> ""
+        goto PLACE_ANNOT_END
+    endif
     .boxW = emlDrawAnnotationBlock.boxW
     .boxH = emlDrawAnnotationBlock.boxH
     .insetX = emlDrawAnnotationBlock.insetX
@@ -3376,6 +3397,8 @@ endproc
 #   Also sets:
 #     .omnibus$  — formatted omnibus test result string (for Info window)
 #     .error$    — "" on success, diagnostic message on failure
+#     .warning$  — "" always; this procedure has no non-fatal note to give
+#     .ok        — (.error$ = ""), set once at the procedure's single exit
 #
 #   AND THE READ SIDE'S ANSWER (docs/RULING_RESULT_STORE.md sections c and d):
 #     .verdict$      "consume" / "settings" / "data" / "none". What the store
@@ -3408,6 +3431,7 @@ procedure emlRunAnnotationComparison: .tableId, .dataCol$, .factorCol$, .alpha, 
     # .layoutMode: 1 = auto, 2 = force brackets, 3 = force matrix
     .omnibus$ = ""
     .error$ = ""
+    .warning$ = ""
 
     ; ------------------------------------------------------------------
     ; THE READ SIDE. docs/RULING_RESULT_STORE.md sections (c) and (d):
@@ -4534,6 +4558,7 @@ procedure emlRunAnnotationComparison: .tableId, .dataCol$, .factorCol$, .alpha, 
             ... .recResult$, .error$
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 

@@ -378,9 +378,15 @@ emlReportAdjust$ = ""
 # @emlReportContext: .analysis$, .adjustment$
 # Declare provenance for the NEXT @emlReportHeader. Either argument may be ""
 # to leave that half unstated. Consumed by the header.
+#
+# Outputs: .error$ (always ""; this procedure has no refusal path),
+# .warning$ (always ""), .ok (.error$ = "", set once at the single exit).
 procedure emlReportContext: .analysis$, .adjustment$
+    .error$ = ""
+    .warning$ = ""
     emlReportAnalysis$ = .analysis$
     emlReportAdjust$ = .adjustment$
+    .ok = (.error$ = "")
 endproc
 
 

@@ -5797,10 +5797,17 @@ endproc
 #            .folder$      where the recording was made
 #            .formats$     the recorded format choice, comma-separated
 # Outputs: .nWritten, .fileList$
+#          .error$   "" on success; a one-line summary when the destination
+#                     folder could not be written to
+#          .warning$ "" unless a requested figure format did not land on
+#                     this system, in which case it names the missing ones
+#          .ok       (.error$ = ""), set once at the procedure's single exit
 # ----------------------------------------------------------------------------
 procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$, .formats$
     .nWritten = 0
     .fileList$ = ""
+    .error$ = ""
+    .warning$ = ""
 
     while endsWith (.folder$, "/") and length (.folder$) > 1
         .folder$ = left$ (.folder$, length (.folder$) - 1)
@@ -5818,6 +5825,7 @@ procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$, .formats$
     nocheck deleteFile: .probe$
     nocheck writeFileLine: .probe$, "eml"
     if not fileReadable (.probe$)
+        .error$ = "Could not write to """ + .folder$ + """."
         appendInfoLine: ""
         appendInfoLine: "EML: this recorded save could not write to"
         appendInfoLine: .folder$
@@ -5952,6 +5960,8 @@ procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$, .formats$
                 appendInfoLine: "EML: ",
                 ... eml_saveFormatRedirectLines.line$ [.rl]
             endfor
+            .warning$ = "Format(s) not written on this system: "
+            ... + .figMissing$ + "."
         endif
     endif
 
@@ -5994,6 +6004,7 @@ procedure emlRecordReplaySave: .offerFigure, .stem$, .folder$, .formats$
     appendInfoLine: "base name ", .stem$
 
     label END_RECORD_REPLAY_SAVE
+    .ok = (.error$ = "")
 endproc
 
 
@@ -6031,14 +6042,22 @@ endproc
 # it is somewhere else. The replay says which line to edit and returns, rather
 # than stopping the run with the plugin's own source quoted at the reader.
 #
-# Outputs: .ok      1 when one object was read
+# Outputs: .ok      1 when one object was read; (.error$ = ""), set once at
+#                    the procedure's single exit
 #          .id      that object, selected; 0 when nothing was read
+#          .error$  "" when .ok = 1; a one-line summary of the refusal
+#                    otherwise, matching the paragraph printed to the Info
+#                    window
+#          .warning$ always ""; this procedure has no non-fatal note to give
 # ----------------------------------------------------------------------------
 procedure emlRecordReplayRead: .path$
     .ok = 0
     .id = 0
+    .error$ = ""
+    .warning$ = ""
 
     if not fileReadable (.path$)
+        .error$ = "Could not read """ + .path$ + """: not readable on this machine."
         appendInfoLine: ""
         appendInfoLine: "EML: this recorded step reads a file that is not"
         appendInfoLine: "readable here:"
@@ -6081,9 +6100,10 @@ procedure emlRecordReplayRead: .path$
     endif
 
     if numberOfSelected () = 1
-        .ok = 1
         .id = selected ()
     else
+        .error$ = "Could not read """ + .path$
+        ... + """: not a file Praat understands."
         appendInfoLine: ""
         appendInfoLine: "EML: this recorded step could not read"
         appendInfoLine: .path$
@@ -6092,6 +6112,7 @@ procedure emlRecordReplayRead: .path$
     endif
 
     label END_RECORD_REPLAY_READ
+    .ok = (.error$ = "")
 endproc
 
 
@@ -6126,8 +6147,13 @@ endproc
 # spelling that `selectObject:` needs, so the type word is stripped here --
 # renaming a Table to "Table x" would make every later select ask for
 # "Table Table x".
+#
+# Outputs: .error$ (always ""; this procedure has no refusal path),
+# .warning$ (always ""), .ok (.error$ = "", set once at the single exit).
 # ----------------------------------------------------------------------------
 procedure emlRecordReplayName: .name$
+    .error$ = ""
+    .warning$ = ""
     if numberOfSelected () <> 1
         goto END_RECORD_REPLAY_NAME
     endif
@@ -6144,4 +6170,5 @@ procedure emlRecordReplayName: .name$
     endif
     Rename: .bare$
     label END_RECORD_REPLAY_NAME
+    .ok = (.error$ = "")
 endproc

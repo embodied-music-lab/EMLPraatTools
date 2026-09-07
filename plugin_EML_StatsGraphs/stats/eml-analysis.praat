@@ -3607,6 +3607,13 @@ endproc
 #                                   them (e.g. a flow-invariant or coverage
 #                                   check); the Info report already states
 #                                   them in words.
+#   .error$   -- "" when at least one group fit; otherwise names the
+#                grouping column and states that no group reached 3
+#                complete pairs.
+#   .warning$ -- "" unless at least one group fit AND at least one was
+#                skipped, in which case it names every skipped group and
+#                the reason (fewer than 3 complete pairs).
+#   .ok       -- (.error$ = ""), set once at the procedure's single exit.
 # ============================================================================
 procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .groupCol$
     .error$ = ""
@@ -3669,6 +3676,22 @@ procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .grou
     endfor
     if .pgSkipMore > 0
         .pgSkipList$ = .pgSkipList$ + ", and " + string$ (.pgSkipMore) + " more"
+    endif
+
+    ; The outcome channel reuses the same .pgRun/.pgSkipped/.pgSkipList$
+    ; tally the Info report below states in words -- no parallel count.
+    ; At least one group fit: the overall and per-group fits stand, and
+    ; the skipped groups (if any) go out as a warning naming each one.
+    ; No group fit: there is nothing to publish as a per-group result, and
+    ; that is an error, not a quiet report of zero groups.
+    if .pgRun = 0
+        .error$ = "No group in """ + .groupCol$ + """ has 3 or more "
+        ... + "complete pairs to regress -- a coarser grouping column "
+        ... + "would give regressions that can be computed."
+    elsif .pgSkipped > 0
+        .warning$ = string$ (.pgSkipped) + " of " + string$ (.pgTotal)
+        ... + " group(s) skipped (fewer than 3 complete pairs): "
+        ... + .pgSkipList$
     endif
 
     @emlUnderscoreToSpace: .groupCol$
@@ -4396,7 +4419,6 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
     @emlResultClearExtras
     @emlDeclareReliabilityResult: .tableName$, .itemCols$#, .k, .n,
     ... .nExcluded, .warning$
-    .ok = 1
 
     .recResult$ = "alpha = " + .aVal$ + ", " + .ciPercent$ + "% CI ["
     ... + .loVal$ + ", " + .hiVal$ + "]" + newline$
@@ -4407,6 +4429,7 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
     endif
 
     label END_RELIABILITY
+    .ok = (.error$ = "")
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -4754,7 +4777,6 @@ procedure emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$,
 
     @emlResultClearExtras
     @emlDeclareCategoricalResult: .tableName$, .rowCol$, .colCol$, .warning$
-    .ok = 1
 
     .recResult$ = "chi-square(" + string$ (emlChiSquareIndependence.df)
     ... + ") = " + .chiTxt$ + ", p = " + .pTxt$ + newline$
@@ -4765,6 +4787,7 @@ procedure emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$,
     endif
 
     label END_CATEGORICAL
+    .ok = (.error$ = "")
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than
@@ -5080,7 +5103,6 @@ procedure emlRunProportionAnalysis: .tableId, .col$, .successValue$,
     @emlResultClearExtras
     @emlDeclareProportionResult: .tableName$, .col$, .successValue$,
     ... .n, .nExcluded, .warning$
-    .ok = 1
 
     .recResult$ = "p = " + .pVal$ + ", " + .ciPercent$ + "% Wilson CI ["
     ... + .loVal$ + ", " + .hiVal$ + "]" + newline$
@@ -5090,6 +5112,7 @@ procedure emlRunProportionAnalysis: .tableId, .col$, .successValue$,
     endif
 
     label END_PROPORTION
+    .ok = (.error$ = "")
 
     ; RECORD WORKFLOW. Inert unless a recording is running. Placed after
     ; the end label so a refusal is recorded as a step rather than

@@ -75,7 +75,7 @@ demoSeed = randomInteger (100000, 2147483647)
 
 @emlDemoTable: demo_type, demoSeed
 
-if emlDemoTable.tableId = 0
+if emlDemoTable.error$ <> ""
     writeInfoLine: emlDemoTable.description$
     exitScript: ""
 endif

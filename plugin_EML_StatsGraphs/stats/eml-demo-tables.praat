@@ -80,11 +80,17 @@
 # seed the recording carries to rebuild the recorded table; pass a fresh one
 # for fresh data.
 #
-# Outputs: .tableId       the new Table, left selected
+# Outputs: .tableId       the new Table, left selected; 0 when refused
 #          .name$         its full "Table <name>", for the recorder
-#          .description$  the wrapper's on-screen guide to the table
+#          .description$  the wrapper's on-screen guide to the table, or the
+#                         refusal sentence when .demoType is out of range
 #          .summary$      the guide's first line, one phrase naming what was
 #                         built, for the recorder's comment
+#          .error$        "" on success; .description$'s refusal sentence
+#                         when .demoType is out of range
+#          .warning$      always ""; this procedure has no non-fatal note
+#                         to give
+#          .ok            (.error$ = ""), set once at the single exit
 # ----------------------------------------------------------------------------
 procedure emlDemoTable: .demoType, .seed
     ; THE SEED FIRST, BEFORE ANY BRANCH DRAWS. Applied unconditionally: type 6
@@ -95,6 +101,8 @@ procedure emlDemoTable: .demoType, .seed
     .tableId = 0
     .description$ = ""
     .summary$ = ""
+    .error$ = ""
+    .warning$ = ""
 
     # ============================================================================
     # 1. Two independent groups: patients vs controls
@@ -355,6 +363,7 @@ procedure emlDemoTable: .demoType, .seed
         .name$ = ""
         .description$ = "No demo table of type " + string$ (.demoType)
         ... + ". This plugin builds types 1 to 7."
+        .error$ = .description$
         goto END_EML_DEMO_TABLE
     endif
 
@@ -380,4 +389,5 @@ procedure emlDemoTable: .demoType, .seed
     endif
 
     label END_EML_DEMO_TABLE
+    .ok = (.error$ = "")
 endproc
