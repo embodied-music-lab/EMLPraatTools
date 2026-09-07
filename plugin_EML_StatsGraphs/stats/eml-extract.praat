@@ -1183,6 +1183,86 @@ endproc
 
 
 # ============================================================================
+# @eml_auditNote (internal helper)
+# ============================================================================
+# Render the user-facing remedy sentences for one set of cell-classification
+# tallies -- the same tallies @eml_classifyCell's kinds 1..5 produce, however
+# they were gathered. One sentence per condition present, ordered by how
+# much damage the condition does (a wrong number outranks a missing one),
+# "" if every tally is zero.
+#
+# @emlAuditColumn calls this with tallies gathered over a whole column, and
+# @eml_getGroupData calls it with tallies gathered over one group's rows
+# during its single pass over the table -- so a caller asking "why did rows
+# go missing" gets the identical wording for the identical condition
+# regardless of which one answered.
+#
+# Arguments:
+#   .nLocale, .firstLocaleRow, .firstLocaleValue$
+#   .nCoerced, .firstCoercedRow, .firstCoercedValue$
+#   .nLeadingDot, .firstLeadingDotRow, .firstLeadingDotValue$
+#   .nUnreadable, .firstUnreadableRow, .firstUnreadableValue$
+#   .nEmpty, .firstEmptyRow
+#
+# Output:
+#   .result$ - the assembled note, "" if every tally is zero
+# ============================================================================
+procedure eml_auditNote: .nLocale, .firstLocaleRow, .firstLocaleValue$,
+    ... .nCoerced, .firstCoercedRow, .firstCoercedValue$,
+    ... .nLeadingDot, .firstLeadingDotRow, .firstLeadingDotValue$,
+    ... .nUnreadable, .firstUnreadableRow, .firstUnreadableValue$,
+    ... .nEmpty, .firstEmptyRow
+    .result$ = ""
+    .sep$ = ""
+    if .nLocale > 0
+        .result$ = .result$ + .sep$ + string$ (.nLocale)
+        ... + " cell(s) use a comma where a decimal point belongs (row "
+        ... + string$ (.firstLocaleRow) + ": " + .firstLocaleValue$
+        ... + "). Praat reads these as a different number, so they are "
+        ... + "excluded rather than guessed at. Replace the commas with "
+        ... + "points to use these values."
+        .sep$ = " "
+    endif
+    if .nCoerced > 0
+        .result$ = .result$ + .sep$ + string$ (.nCoerced)
+        ... + " cell(s) are read as a number other than the one written "
+        ... + "(row " + string$ (.firstCoercedRow) + ": "
+        ... + .firstCoercedValue$ + "). Excluded."
+        .sep$ = " "
+    endif
+    if .nLeadingDot > 0
+        .result$ = .result$ + .sep$ + string$ (.nLeadingDot)
+        ... + " cell(s) begin with a bare decimal point (row "
+        ... + string$ (.firstLeadingDotRow) + ": "
+        ... + .firstLeadingDotValue$ + "). Praat does not read these as "
+        ... + "numbers. Write a leading zero to use these values."
+        .sep$ = " "
+    endif
+    # WHAT THIS SENTENCE MAY CLAIM. This path DESCRIBES a column; it does not
+    # repair one. It sees a cell it cannot read as a number and excludes it,
+    # and that is the entire extent of what it knows. Whether a given token is
+    # a placeholder standing in for a value that was never collected, or a
+    # note somebody typed into a numeric column, is a question about intent,
+    # and nothing on this path inspects intent -- the token is reported as
+    # unrecognised and the reader is told what became of the cell.
+    if .nUnreadable > 0
+        .result$ = .result$ + .sep$ + string$ (.nUnreadable)
+        ... + " cell(s) are not numeric in any locale (row "
+        ... + string$ (.firstUnreadableRow) + ": "
+        ... + .firstUnreadableValue$ + "). Unrecognized nonnumeric token; "
+        ... + "excluded."
+        .sep$ = " "
+    endif
+    if .nEmpty > 0
+        .result$ = .result$ + .sep$ + string$ (.nEmpty)
+        ... + " cell(s) are empty (row " + string$ (.firstEmptyRow)
+        ... + " first). Treated as missing data."
+        .sep$ = " "
+    endif
+endproc
+
+
+# ============================================================================
 # @emlAuditColumn
 # ============================================================================
 # Classify EVERY cell of a column and report the conditions separately, with
@@ -1302,56 +1382,16 @@ procedure emlAuditColumn: .tableId, .columnName$
         endif
     endfor
 
-    # --- the note ---
-    # Ordered by how much damage the condition does, not by how common it is.
-    # A wrong number outranks a missing one: a dropped row shows up in N, a
-    # corrupted value does not show up anywhere.
-    .sep$ = ""
-    if .nLocale > 0
-        .note$ = .note$ + .sep$ + string$ (.nLocale)
-        ... + " cell(s) use a comma where a decimal point belongs (row "
-        ... + string$ (.firstLocaleRow) + ": " + .firstLocaleValue$
-        ... + "). Praat reads these as a different number, so they are "
-        ... + "excluded rather than guessed at. Replace the commas with "
-        ... + "points to use these values."
-        .sep$ = " "
-    endif
-    if .nCoerced > 0
-        .note$ = .note$ + .sep$ + string$ (.nCoerced)
-        ... + " cell(s) are read as a number other than the one written "
-        ... + "(row " + string$ (.firstCoercedRow) + ": "
-        ... + .firstCoercedValue$ + "). Excluded."
-        .sep$ = " "
-    endif
-    if .nLeadingDot > 0
-        .note$ = .note$ + .sep$ + string$ (.nLeadingDot)
-        ... + " cell(s) begin with a bare decimal point (row "
-        ... + string$ (.firstLeadingDotRow) + ": "
-        ... + .firstLeadingDotValue$ + "). Praat does not read these as "
-        ... + "numbers. Write a leading zero to use these values."
-        .sep$ = " "
-    endif
-    # WHAT THIS SENTENCE MAY CLAIM. This path DESCRIBES a column; it does not
-    # repair one. It sees a cell it cannot read as a number and excludes it,
-    # and that is the entire extent of what it knows. Whether a given token is
-    # a placeholder standing in for a value that was never collected, or a
-    # note somebody typed into a numeric column, is a question about intent,
-    # and nothing on this path inspects intent -- the token is reported as
-    # unrecognised and the reader is told what became of the cell.
-    if .nUnreadable > 0
-        .note$ = .note$ + .sep$ + string$ (.nUnreadable)
-        ... + " cell(s) are not numeric in any locale (row "
-        ... + string$ (.firstUnreadableRow) + ": "
-        ... + .firstUnreadableValue$ + "). Unrecognized nonnumeric token; "
-        ... + "excluded."
-        .sep$ = " "
-    endif
-    if .nEmpty > 0
-        .note$ = .note$ + .sep$ + string$ (.nEmpty)
-        ... + " cell(s) are empty (row " + string$ (.firstEmptyRow)
-        ... + " first). Treated as missing data."
-        .sep$ = " "
-    endif
+    # The note is rendered by @eml_auditNote from these tallies -- see that
+    # procedure for the wording and the ordering rule. @eml_getGroupData
+    # renders its own group-scoped tallies through the same call, so the two
+    # cannot drift into different wording for the same condition.
+    @eml_auditNote: .nLocale, .firstLocaleRow, .firstLocaleValue$,
+        ... .nCoerced, .firstCoercedRow, .firstCoercedValue$,
+        ... .nLeadingDot, .firstLeadingDotRow, .firstLeadingDotValue$,
+        ... .nUnreadable, .firstUnreadableRow, .firstUnreadableValue$,
+        ... .nEmpty, .firstEmptyRow
+    .note$ = eml_auditNote.result$
 
     label AUDIT_DONE
 endproc
@@ -1929,9 +1969,11 @@ endproc
 
 # ============================================================================
 # @eml_getGroupData
-# Extract one group's numeric data from a Table. Self-contained:
-# filters rows by group label, removes undefined values, returns
-# auto-sized vector. No group limit, no shared state.
+# Extract one group's numeric data from a Table in a single pass over its
+# rows. Self-contained: filters rows by group label, removes undefined
+# values, returns auto-sized vector. No group limit, no shared state, and
+# no per-group subset Table -- the table is walked once and matching rows
+# are scattered directly into the output vector.
 #
 # Arguments:
 #   tableId    - ID of the Table object
@@ -1940,48 +1982,199 @@ endproc
 #   groupLabel$ - label value to match
 #
 # Output:
-#   .n      - number of valid (non-undefined) observations
-#   .data#  - vector of values
-#   .error$ - "" on success
+#   .n         - number of valid (non-undefined) observations
+#   .data#     - vector of values
+#   .nExcluded - group rows dropped for a non-numeric data cell
+#   .note$     - remedy text for the dropped rows (@eml_auditNote), "" if
+#                nothing was dropped
+#   .error$    - "" on success
 #
-# Group rows are selected on the normalised label (see @eml_groupSubset)
+# Group rows are matched on the normalised label (see @eml_normalizeLabel)
 # so this agrees with @emlCountGroups.
 #
-# The surviving column is verified to be strictly numeric before
-# "Get all numbers in column:" is called. Without that check Praat
-# silently returns each row's alphabetical RANK instead of its value
-# whenever one surviving cell is not strictly numeric — and the
-# "<> undefined" filter above does not prevent it, because that filter
-# uses lenient coercion and keeps cells such as "1,5", "30%" and "1/2".
+# THE FAST/SLOW DECISION IS MADE ONCE, ON THE WHOLE TABLE, same two-step
+# shape @emlExtractColumn uses: @eml_strictNumericColumn is called once on
+# .dataCol$ across every row, not per group. When it comes back strict with
+# no unreadable cell, no row of the column can be locale-mangled, coerced,
+# leading-dot or unreadable -- not in this group's rows or any other's -- so
+# a single "Get all numbers in column:" read is safe for every group at
+# once, and the loop below only has to pick out the matching rows. Only
+# when that whole-column verdict is dirty does the loop fall to classifying
+# each matching row's cell individually with @eml_classifyCell, which is
+# the same per-cell classification every other extraction path in this file
+# uses, so a row is dropped here for the same stated reason it would be
+# dropped anywhere else.
+#
+# NOT "self [col] <> undefined", which is Praat's LENIENT test: it keeps
+# "1,5" (as 1) and "30%" (as 0.3). Survivors of that filter would reach the
+# strict numericiser, which rejects them -- exactly the failure
+# @eml_strictNumericColumn exists to head off before "Get all numbers in
+# column:" is ever called.
 # ============================================================================
 procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
-    # NOT "self [col] <> undefined", which is Praat's LENIENT test: it keeps
-    # "1,5" (as 1) and "30%" (as 0.3). Survivors of that filter reach the
-    # strict numericiser, which rejects them, and the procedure would then
-    # call exitScript: — tearing the whole run down from inside a helper,
-    # with a message about ranks, because one
-    # cell in one group was written in a European locale.
-    #
-    # @emlExtractColumn now applies exactly the same per-cell classification
-    # every other path uses, so the row is dropped for a stated reason and
-    # the analysis continues on the rows that are genuinely usable.
     .error$ = ""
-    @eml_groupSubset: .tableId, .groupCol$, .groupLabel$
-    .tempGroup = eml_groupSubset.subsetId
-    @emlExtractColumn: .tempGroup, .dataCol$
-    if emlExtractColumn.error$ <> ""
-        .error$ = emlExtractColumn.error$
+    .n = 0
+    .data# = zero# (0)
+    .nExcluded = 0
+    .note$ = ""
+
+    selectObject: .tableId
+    .nRows = Get number of rows
+    .nCols = Get number of columns
+
+    .colExists = 0
+    ; VECTOR-EXEMPT: cat1 -- iterates the table's COLUMNS (schema width), not its
+    ; observation rows, so it is bounded by a handful of columns and a vector form
+    ; buys nothing.
+    for .c from 1 to .nCols
+        selectObject: .tableId
+        .checkName$ = Get column label: .c
+        if .checkName$ = .dataCol$
+            .colExists = 1
+        endif
+    endfor
+
+    if .colExists = 0
+        .error$ = "Column not found: "
+        .error$ = .error$ + .dataCol$
+        goto GETGROUPDATA_DONE
+    endif
+
+    if .nRows = 0
+        goto GETGROUPDATA_DONE
+    endif
+
+    @eml_normalizeLabel: .groupLabel$
+    .wantNorm$ = eml_normalizeLabel.result$
+
+    @eml_strictNumericColumn: .tableId, .dataCol$
+    .fastPath = 0
+    if eml_strictNumericColumn.strict = 1
+        if eml_strictNumericColumn.unreadable = 0
+            .fastPath = 1
+        endif
+    endif
+
+    if .fastPath = 1
+        # Every row's data cell numericises strictly, so one C-level column
+        # read gives every group's values at once; the loop below only
+        # sorts rows into this group's vector by their (row-aligned) index.
+        selectObject: .tableId
+        .allData# = Get all numbers in column: .dataCol$
+        .data# = zero# (.nRows)
         .n = 0
-        .data# = zero# (0)
+        ; VECTOR-EXEMPT: cat2 -- the group match test has no Table vector
+        ; equivalent (no zero-object "rows where column equals" selector), so
+        ; picking this group's rows out of .allData# still walks the table once.
+        for .row from 1 to .nRows
+            selectObject: .tableId
+            .grp$ = Get value: .row, .groupCol$
+            @eml_normalizeLabel: .grp$
+            if eml_normalizeLabel.result$ = .wantNorm$
+                .n = .n + 1
+                .data#[.n] = .allData#[.row]
+            endif
+        endfor
+        if .n < .nRows and .n > 0
+            .data# = part# (.data#, 1, .n)
+        elsif .n = 0
+            .data# = zero# (0)
+        endif
         .nExcluded = 0
         .note$ = ""
     else
-        .n = emlExtractColumn.n
-        .data# = emlExtractColumn.data#
-        .nExcluded = emlExtractColumn.nUndefined
-        .note$ = emlExtractColumn.note$
+        # The column has at least one cell @eml_strictNumericColumn cannot
+        # trust, somewhere in the table. Every row is classified with
+        # @eml_classifyCell, but only rows whose group matches contribute to
+        # this group's vector, its skip count, or its note -- the tallies
+        # below are scoped to this group, not the whole table, so a clean
+        # group sitting beside a dirty one still gets .nExcluded = 0 and
+        # .note$ = "".
+        .data# = zero# (.nRows)
+        .n = 0
+        .nGroupRows = 0
+        .nEmpty = 0
+        .nLocale = 0
+        .nUnreadable = 0
+        .nCoerced = 0
+        .nLeadingDot = 0
+        .firstEmptyRow = 0
+        .firstLocaleRow = 0
+        .firstUnreadableRow = 0
+        .firstCoercedRow = 0
+        .firstLeadingDotRow = 0
+        .firstLocaleValue$ = ""
+        .firstUnreadableValue$ = ""
+        .firstCoercedValue$ = ""
+        .firstLeadingDotValue$ = ""
+
+        ; VECTOR-EXEMPT: cat2 -- per-cell classification (@eml_classifyCell
+        ; probes Praat's numericiser cell by cell); this is the dirty-column
+        ; path, not a reduction, and it also has to test each row's group
+        ; membership, which has no Table vector equivalent either.
+        for .row from 1 to .nRows
+            selectObject: .tableId
+            .grp$ = Get value: .row, .groupCol$
+            @eml_normalizeLabel: .grp$
+            if eml_normalizeLabel.result$ = .wantNorm$
+                .nGroupRows = .nGroupRows + 1
+                selectObject: .tableId
+                .cell$ = Get value: .row, .dataCol$
+                @eml_classifyCell: .cell$
+
+                if eml_classifyCell.kind = 0
+                    .n = .n + 1
+                    .data#[.n] = number (eml_classifyCell.trimmed$)
+                elsif eml_classifyCell.kind = 1
+                    .nEmpty = .nEmpty + 1
+                    if .firstEmptyRow = 0
+                        .firstEmptyRow = .nGroupRows
+                    endif
+                elsif eml_classifyCell.kind = 2
+                    .nLocale = .nLocale + 1
+                    if .firstLocaleRow = 0
+                        .firstLocaleRow = .nGroupRows
+                        .firstLocaleValue$ = eml_classifyCell.trimmed$
+                    endif
+                elsif eml_classifyCell.kind = 4
+                    .nCoerced = .nCoerced + 1
+                    if .firstCoercedRow = 0
+                        .firstCoercedRow = .nGroupRows
+                        .firstCoercedValue$ = eml_classifyCell.trimmed$
+                    endif
+                elsif eml_classifyCell.kind = 5
+                    .nLeadingDot = .nLeadingDot + 1
+                    if .firstLeadingDotRow = 0
+                        .firstLeadingDotRow = .nGroupRows
+                        .firstLeadingDotValue$ = eml_classifyCell.trimmed$
+                    endif
+                else
+                    .nUnreadable = .nUnreadable + 1
+                    if .firstUnreadableRow = 0
+                        .firstUnreadableRow = .nGroupRows
+                        .firstUnreadableValue$ = eml_classifyCell.trimmed$
+                    endif
+                endif
+            endif
+        endfor
+
+        if .n < .nRows and .n > 0
+            .data# = part# (.data#, 1, .n)
+        elsif .n = 0
+            .data# = zero# (0)
+        endif
+
+        .nExcluded = .nGroupRows - .n
+
+        @eml_auditNote: .nLocale, .firstLocaleRow, .firstLocaleValue$,
+            ... .nCoerced, .firstCoercedRow, .firstCoercedValue$,
+            ... .nLeadingDot, .firstLeadingDotRow, .firstLeadingDotValue$,
+            ... .nUnreadable, .firstUnreadableRow, .firstUnreadableValue$,
+            ... .nEmpty, .firstEmptyRow
+        .note$ = eml_auditNote.result$
     endif
-    removeObject: .tempGroup
+
+    label GETGROUPDATA_DONE
 endproc
 
 

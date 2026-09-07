@@ -1,0 +1,81 @@
+fixture	group_index	group_label	field	value
+gx01_blank_cell	1	A	vector	10.0000000000;12.0000000000
+gx01_blank_cell	1	A	group_order	1
+gx01_blank_cell	1	A	skipped	1
+gx01_blank_cell	1	A	error	
+gx01_blank_cell	1	A	note	1 cell(s) are empty (row 2 first). Treated as missing data.
+gx01_blank_cell	2	B	vector	5.0000000000;6.0000000000
+gx01_blank_cell	2	B	group_order	2
+gx01_blank_cell	2	B	skipped	0
+gx01_blank_cell	2	B	error	
+gx01_blank_cell	2	B	note	
+gx02_nonnumeric_text	1	A	vector	1.5000000000;2.5000000000
+gx02_nonnumeric_text	1	A	group_order	1
+gx02_nonnumeric_text	1	A	skipped	1
+gx02_nonnumeric_text	1	A	error	
+gx02_nonnumeric_text	1	A	note	1 cell(s) are not numeric in any locale (row 2: abc). Unrecognized nonnumeric token; excluded.
+gx02_nonnumeric_text	2	B	vector	3.0000000000
+gx02_nonnumeric_text	2	B	group_order	2
+gx02_nonnumeric_text	2	B	skipped	0
+gx02_nonnumeric_text	2	B	error	
+gx02_nonnumeric_text	2	B	note	
+gx03_whitespace_labels	1	Alpha	vector	1.0000000000;2.0000000000;3.0000000000
+gx03_whitespace_labels	1	Alpha	group_order	1
+gx03_whitespace_labels	1	Alpha	skipped	0
+gx03_whitespace_labels	1	Alpha	error	
+gx03_whitespace_labels	1	Alpha	note	
+gx03_whitespace_labels	2	Beta	vector	4.0000000000;5.0000000000
+gx03_whitespace_labels	2	Beta	group_order	2
+gx03_whitespace_labels	2	Beta	skipped	0
+gx03_whitespace_labels	2	Beta	error	
+gx03_whitespace_labels	2	Beta	note	
+gx04_case_labels	1	Male	vector	10.0000000000;20.0000000000;30.0000000000
+gx04_case_labels	1	Male	group_order	1
+gx04_case_labels	1	Male	skipped	0
+gx04_case_labels	1	Male	error	
+gx04_case_labels	1	Male	note	
+gx04_case_labels	2	Female	vector	40.0000000000
+gx04_case_labels	2	Female	group_order	2
+gx04_case_labels	2	Female	skipped	0
+gx04_case_labels	2	Female	error	
+gx04_case_labels	2	Female	note	
+gx05_singleton_group	1	Solo	vector	100.0000000000
+gx05_singleton_group	1	Solo	group_order	1
+gx05_singleton_group	1	Solo	skipped	0
+gx05_singleton_group	1	Solo	error	
+gx05_singleton_group	1	Solo	note	
+gx05_singleton_group	2	Many	vector	1.0000000000;2.0000000000;3.0000000000
+gx05_singleton_group	2	Many	group_order	2
+gx05_singleton_group	2	Many	skipped	0
+gx05_singleton_group	2	Many	error	
+gx05_singleton_group	2	Many	note	
+gx06_single_group_table	1	Only	vector	1.0000000000;2.0000000000;3.0000000000
+gx06_single_group_table	1	Only	group_order	1
+gx06_single_group_table	1	Only	skipped	0
+gx06_single_group_table	1	Only	error	
+gx06_single_group_table	1	Only	note	
+gx07_missing_column	1	X	vector	
+gx07_missing_column	1	X	group_order	1
+gx07_missing_column	1	X	skipped	0
+gx07_missing_column	1	X	error	Column not found: notacolumn
+gx07_missing_column	1	X	note	
+gx07_missing_column	2	Y	vector	
+gx07_missing_column	2	Y	group_order	2
+gx07_missing_column	2	Y	skipped	0
+gx07_missing_column	2	Y	error	Column not found: notacolumn
+gx07_missing_column	2	Y	note	
+gx08_numeric_looking_labels	1	1	vector	11.0000000000;12.0000000000
+gx08_numeric_looking_labels	1	1	group_order	1
+gx08_numeric_looking_labels	1	1	skipped	0
+gx08_numeric_looking_labels	1	1	error	
+gx08_numeric_looking_labels	1	1	note	
+gx08_numeric_looking_labels	2	2	vector	21.0000000000
+gx08_numeric_looking_labels	2	2	group_order	2
+gx08_numeric_looking_labels	2	2	skipped	0
+gx08_numeric_looking_labels	2	2	error	
+gx08_numeric_looking_labels	2	2	note	
+gx08_numeric_looking_labels	3	3	vector	31.0000000000
+gx08_numeric_looking_labels	3	3	group_order	3
+gx08_numeric_looking_labels	3	3	skipped	0
+gx08_numeric_looking_labels	3	3	error	
+gx08_numeric_looking_labels	3	3	note	
