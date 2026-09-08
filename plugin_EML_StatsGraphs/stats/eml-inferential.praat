@@ -2011,25 +2011,8 @@ procedure emlMannWhitneyU: .v1#, .v2#, .tails
 
             # Tie correction factor
             # T = sum(t_k^3 - t_k) for each tie group of size t_k
-            # Computed from the combined ranking
-            .tieCorrection = 0
-            if .hasTies = 1
-                # Sorted ranks, for counting consecutive equal-rank tie groups.
-                .sortedRanks# = sort# (.ranks#)
-
-                # Count consecutive equal ranks
-                .i = 1
-                while .i <= .nTotal
-                    .tieSize = 1
-                    while .i + .tieSize <= .nTotal and .sortedRanks#[.i + .tieSize] = .sortedRanks#[.i]
-                        .tieSize = .tieSize + 1
-                    endwhile
-                    if .tieSize > 1
-                        .tieCorrection = .tieCorrection + (.tieSize * .tieSize * .tieSize - .tieSize)
-                    endif
-                    .i = .i + .tieSize
-                endwhile
-            endif
+            # Already computed by @emlRankVector over the combined ranking.
+            .tieCorrection = emlRankVector.tieCorrectionSum
 
             # Variance with tie correction
             .varU = .n1 * .n2 * (.nTotal + 1) / 12
@@ -2694,25 +2677,10 @@ procedure emlWilcoxonSignedRank: .v1#, .v2#, .tails
 
                 .varT = .nNonzero * (.nNonzero + 1) * (2 * .nNonzero + 1) / 24
 
-                # Tie correction: subtract sum(t^3 - t)/48 for each tie group
+                # Tie correction: subtract sum(t^3 - t)/48 for each tie group.
+                # Already computed by @emlRankVector over the absolute diffs.
                 if .hasTies = 1
-                    # Sorted ranks, for counting consecutive equal-rank tie groups.
-                    .sortedRanks# = sort# (.ranks#)
-
-                    # Count consecutive equal ranks
-                    .tieCorrection = 0
-                    .i = 1
-                    while .i <= .nNonzero
-                        .tieSize = 1
-                        while .i + .tieSize <= .nNonzero and .sortedRanks#[.i + .tieSize] = .sortedRanks#[.i]
-                            .tieSize = .tieSize + 1
-                        endwhile
-                        if .tieSize > 1
-                            .tieCorrection = .tieCorrection + (.tieSize * .tieSize * .tieSize - .tieSize)
-                        endif
-                        .i = .i + .tieSize
-                    endwhile
-
+                    .tieCorrection = emlRankVector.tieCorrectionSum
                     .varT = .varT - .tieCorrection / 48
                 endif
 
