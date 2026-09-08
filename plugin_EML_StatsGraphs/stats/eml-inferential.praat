@@ -6082,15 +6082,18 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
 
                 if .gN[.g] > 0
                     .gMean[.g] = mean (.gData#)
+
+                    ; Corrected two-pass within-group sum of squares (Chan,
+                    ; Golub & LeVeque 1983), as in @emlOneWayAnova and
+                    ; @emlBrownForsythe: the second term is the error left
+                    ; in the group mean, removed rather than squared in.
+                    .centered# = .gData# - .gMean[.g]
+                    .sumDev = sum (.centered#)
+                    .ssWithin = .ssWithin + sum (.centered# * .centered#)
+                    ... - .sumDev * .sumDev / .gN[.g]
                 else
                     .gMean[.g] = undefined
                 endif
-
-                # Within-group SS: sum of (x - group_mean)^2
-                for .idx from 1 to .gN[.g]
-                    .dev = .gData#[.idx] - .gMean[.g]
-                    .ssWithin = .ssWithin + .dev * .dev
-                endfor
             endif
         endfor
 
