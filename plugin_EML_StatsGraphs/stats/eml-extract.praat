@@ -1241,16 +1241,17 @@ procedure eml_auditNote: .nLocale, .firstLocaleRow, .firstLocaleValue$,
         .result$ = .result$ + .sep$ + string$ (.nLocale)
         ... + " cell(s) use a comma where a decimal point belongs (row "
         ... + string$ (.firstLocaleRow) + ": " + .firstLocaleValue$
-        ... + "). Praat reads these as a different number, so they are "
-        ... + "excluded rather than guessed at. Replace the commas with "
-        ... + "points to use these values."
+        ... + "). Praat reads these as a different number (for example, "
+        ... + "1,5 becomes 1), so they are excluded rather than guessed at. "
+        ... + "Replace the commas with points to use these values."
         .sep$ = " "
     endif
     if .nCoerced > 0
         .result$ = .result$ + .sep$ + string$ (.nCoerced)
         ... + " cell(s) are read as a number other than the one written "
-        ... + "(row " + string$ (.firstCoercedRow) + ": "
-        ... + .firstCoercedValue$ + "). Excluded."
+        ... + "(for example, 1/2 becomes 1 and 30% becomes 0.3) (row "
+        ... + string$ (.firstCoercedRow) + ": " + .firstCoercedValue$
+        ... + "). Excluded."
         .sep$ = " "
     endif
     if .nLeadingDot > 0
