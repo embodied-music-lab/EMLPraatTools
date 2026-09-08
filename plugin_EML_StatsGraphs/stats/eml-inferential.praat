@@ -2076,305 +2076,6 @@ procedure emlMannWhitneyU: .v1#, .v2#, .tails
     endif
 endproc
 
-# ============================================================================
-# INTERNAL HELPER: @eml_hlTwoSampleW  — R's W(d), ported
-# ============================================================================
-# The standardised, continuity-corrected two-sample rank statistic that
-# R's wilcox.test inverts to build its asymptotic confidence interval,
-# ported line for line from R 4.3.3, src/library/stats/R/wilcox.test.R,
-# the "Asymptotic confidence interval for the location parameter" block
-# of wilcox.test.default:
-#
-#     W <- function(d) {
-#         dr <- rank(c(x - d, y))
-#         NTIES.CI <- table(dr)
-#         dz <- sum(dr[seq_along(x)]) - n.x * (n.x + 1) / 2 - n.x * n.y / 2
-#         CORRECTION.CI <- if (correct) sign(dz) * 0.5 else 0
-#         SIGMA.CI <- sqrt((n.x * n.y / 12) *
-#                          ((n.x + n.y + 1)
-#                           - sum(NTIES.CI^3 - NTIES.CI)
-#                           / ((n.x + n.y) * (n.x + n.y - 1))))
-#         (dz - CORRECTION.CI) / SIGMA.CI
-#     }
-#
-# Every piece above has a counterpart below and nothing is folded or
-# simplified on the way: dz is the shifted sample's U statistic measured
-# from its own null mean, the correction is the two-sided
-# sign(dz) * 0.5, and SIGMA.CI carries the TIE CORRECTION RECOMPUTED AT
-# THE SHIFTED DATA -- shifting group 1 by d creates and destroys ties, so
-# the variance is not the variance of the unshifted sample and cannot be
-# hoisted out of the loop. sum(NTIES^3 - NTIES) is exactly
-# @emlRankVector's .tieCorrectionSum, which is why the ranking is done
-# through that procedure rather than a second ranker written here.
-#
-# .correct exists because R's own code turns it off for ONE call: after
-# the interval is built, R sets correct <- FALSE and root-finds W for its
-# point estimate. This plugin does not take that path -- Fable's work
-# order pins the estimate to the median of the cross-differences on both
-# branches -- so every call from this file passes .correct = 1. The
-# parameter is kept so the ported shape is the shape R has.
-#
-# Input:
-#   .v1#     - group 1 (R's x)
-#   .v2#     - group 2 (R's y)
-#   .d       - the shift being tested
-#   .correct - 1 to apply the continuity correction, 0 not to
-#
-# Output:
-#   .value  - W(d), or undefined when SIGMA.CI is zero (every observation
-#             in the combined sample tied, where R warns and returns NaN)
-# ============================================================================
-
-procedure eml_hlTwoSampleW: .v1#, .v2#, .d, .correct
-    .n1 = size (.v1#)
-    .n2 = size (.v2#)
-    .nTotal = .n1 + .n2
-
-    # dr <- rank(c(x - d, y))
-    .shifted# = zero# (.nTotal)
-    for .i from 1 to .n1
-        .shifted#[.i] = .v1#[.i] - .d
-    endfor
-    for .i from 1 to .n2
-        .shifted#[.n1 + .i] = .v2#[.i]
-    endfor
-
-    @emlRankVector: .shifted#
-    .ranks# = emlRankVector.ranks#
-    .tieSum = emlRankVector.tieCorrectionSum
-
-    # dz <- sum(dr[seq_along(x)]) - n.x * (n.x + 1) / 2 - n.x * n.y / 2
-    .rankSum = 0
-    for .i from 1 to .n1
-        .rankSum = .rankSum + .ranks#[.i]
-    endfor
-    .dz = .rankSum - .n1 * (.n1 + 1) / 2 - .n1 * .n2 / 2
-
-    # CORRECTION.CI <- sign(dz) * 0.5   (two-sided; sign(0) is 0 in R)
-    .correction = 0
-    if .correct = 1
-        if .dz > 0
-            .correction = 0.5
-        elsif .dz < 0
-            .correction = -0.5
-        endif
-    endif
-
-    .sigma = sqrt ((.n1 * .n2 / 12) * ((.nTotal + 1)
-    ... - .tieSum / (.nTotal * (.nTotal - 1))))
-
-    if .sigma = 0
-        .value = undefined
-    else
-        .value = (.dz - .correction) / .sigma
-    endif
-endproc
-
-
-# ============================================================================
-# INTERNAL HELPER: @eml_hlZeroin  — R's uniroot, ported ONCE
-# ============================================================================
-# Brent's zeroin, ported from R 4.3.3's src/library/stats/src/zeroin.c,
-# function R_zeroin2 -- the routine R's uniroot() actually calls (through
-# .External2(C_zeroin2, ...)), given the two endpoint values it already
-# has. wilcox.test's interval is the root of wdiff(d) = W(d) - zq, and
-# ROOT-FINDING IS PART OF THE ALGORITHM, not an implementation detail
-# that may be swapped for another solver: W is a STEP function, so its
-# "root" is a jump location and WHICH point inside the jump comes back
-# is decided by the iteration path. A bisection written from scratch
-# would agree with R only to the width of a step. This one follows
-# R_zeroin2's iterates -- the swap, the inverse-quadratic branch, the
-# 0.75 * cb * q acceptance test, the tol_act floor on the step -- so the
-# two implementations share the sequence and not merely the vicinity.
-#
-# Praat has no function values, so the function under investigation is
-# not a parameter. R calls (*f)(b, info) at exactly one site inside the
-# loop; here that site calls @eml_hlTwoSampleW directly.
-#
-# THIS WAS A TWO-ARM SWITCH ON A .form PARAMETER, reused by both the
-# two-sample and the paired forms of @emlHodgesLehmann*. RULING_HL_FIX_WIRED
-# retired the paired arm: @emlHodgesLehmannPaired's normal-approximation
-# branch now delegates to @emlWilcoxonIntervalApprox
-# (eml-wilcoxon-interval.praat), which carries its own zeroin port, so this
-# procedure's one remaining caller is the two-sample form and the switch
-# (and the one-sample W it dispatched to, @eml_hlPairedW) went with it.
-#
-# Input:
-#   .v1#, .v2# - the two samples, passed through to @eml_hlTwoSampleW
-#   .ax, .bx   - the bracketing interval [a, b]
-#   .fa, .fb   - wdiff at those endpoints, already known to the caller
-#   .zq        - the quantile W is being inverted at (wdiff = W(d) - zq)
-#   .tol       - acceptable tolerance (R's tol.root = 1e-4)
-#   .maxit     - iteration ceiling (R's uniroot maxiter = 1000)
-#   .correct   - passed through to W
-#
-# Output:
-#   .root - the abscissa where wdiff changes sign
-# ============================================================================
-
-procedure eml_hlZeroin: .v1#, .v2#, .ax, .bx, .fa, .fb, .zq, .tol, .maxit, .correct
-    # EPSILON is C's DBL_EPSILON, 2^-52, which Praat has no name for.
-    .epsilon = 2.220446049250313e-16
-
-    .a = .ax
-    .b = .bx
-    .c = .a
-    .fc = .fa
-    .iter = .maxit + 1
-    .root = undefined
-    .done = 0
-
-    # First test if we have found a root at an endpoint
-    if .fa = 0
-        .root = .a
-        .done = 1
-    elsif .fb = 0
-        .root = .b
-        .done = 1
-    endif
-
-    while .done = 0 and .iter > 0
-        .iter = .iter - 1
-        # Distance from the last but one to the last approximation
-        .prevStep = .b - .a
-
-        # Swap data for b to be the best approximation. Transcribed in
-        # C's order: a = b, b = c, c = a leaves c holding the OLD b,
-        # because a has already been overwritten.
-        if abs (.fc) < abs (.fb)
-            .a = .b
-            .b = .c
-            .c = .a
-            .fa = .fb
-            .fb = .fc
-            .fc = .fa
-        endif
-
-        .tolAct = 2 * .epsilon * abs (.b) + .tol / 2
-        .newStep = (.c - .b) / 2
-
-        if abs (.newStep) <= .tolAct or .fb = 0
-            # Acceptable approximation is found
-            .root = .b
-            .done = 1
-        else
-            # Decide if the interpolation can be tried
-            if abs (.prevStep) >= .tolAct and abs (.fa) > abs (.fb)
-                .cb = .c - .b
-                if .a = .c
-                    # Only two distinct points: linear interpolation
-                    .t1 = .fb / .fa
-                    .p = .cb * .t1
-                    .q = 1 - .t1
-                else
-                    # Quadric inverse interpolation
-                    .q = .fa / .fc
-                    .t1 = .fb / .fc
-                    .t2 = .fb / .fa
-                    .p = .t2 * (.cb * .q * (.q - .t1) - (.b - .a) * (.t1 - 1))
-                    .q = (.q - 1) * (.t1 - 1) * (.t2 - 1)
-                endif
-                # p was calculated with the opposite sign; make p
-                # positive and assign the possible minus to q
-                if .p > 0
-                    .q = - .q
-                else
-                    .p = - .p
-                endif
-                # If b + p/q falls in [b, c] and is not too large
-                if .p < (0.75 * .cb * .q - abs (.tolAct * .q) / 2)
-                ... and .p < abs (.prevStep * .q / 2)
-                    .newStep = .p / .q
-                endif
-            endif
-
-            # Adjust the step to be not less than the tolerance
-            if abs (.newStep) < .tolAct
-                if .newStep > 0
-                    .newStep = .tolAct
-                else
-                    .newStep = - .tolAct
-                endif
-            endif
-
-            # Save the previous approximation, step to a new one
-            .a = .b
-            .fa = .fb
-            .b = .b + .newStep
-            # R's (*f)(b, info), the one function-pointer call in
-            # zeroin.c. Praat has no function values, so the pointer is
-            # this direct call in its place.
-            @eml_hlTwoSampleW: .v1#, .v2#, .b, .correct
-            .fb = eml_hlTwoSampleW.value - .zq
-
-            # Adjust c for it to have a sign opposite to that of b
-            if (.fb > 0 and .fc > 0) or (.fb < 0 and .fc < 0)
-                .c = .a
-                .fc = .fa
-            endif
-        endif
-    endwhile
-
-    if .done = 0
-        # Iterations exhausted. R returns b and flags Maxit = -1; there
-        # is no flag to return here and 1000 iterations of a bracketed
-        # Brent step is not a case this reaches, but the value returned
-        # is R's value returned.
-        .root = .b
-    endif
-endproc
-
-
-# ============================================================================
-# INTERNAL HELPER: @eml_hlTwoSampleRoot  — R's root(zq), ported
-# ============================================================================
-# R 4.3.3, wilcox.test.default, asymptotic two-sample branch:
-#
-#     root <- function(zq) {
-#         f.lower <- Wmumin - zq
-#         if (f.lower <= 0) return(mumin)
-#         f.upper <- Wmumax - zq
-#         if (f.upper >= 0) return(mumax)
-#         uniroot(wdiff, lower = mumin, upper = mumax,
-#                 f.lower = f.lower, f.upper = f.upper,
-#                 tol = tol.root, zq = zq)$root
-#     }
-#
-# THE TWO EARLY RETURNS ARE NOT GUARDS AGAINST BAD INPUT, they are part
-# of the answer: R's own comment says "in extreme cases we need to
-# return endpoints, e.g. wilcox.test(1, 2:60, conf.int = TRUE)". When
-# the sample cannot push the statistic past zq anywhere in
-# [mumin, mumax], the bound IS the endpoint, and a root finder called
-# on an unbracketed interval would instead fail. Dropping them turns a
-# legitimate wide interval into an error.
-#
-# Input:
-#   .v1#, .v2#      - the two groups
-#   .zq             - the quantile to invert at
-#   .mumin, .mumax  - min(x) - max(y) and max(x) - min(y)
-#   .wmin, .wmax    - W at those two endpoints, computed once by the caller
-#   .correct        - passed through to W
-#
-# Output:
-#   .result - the bound
-# ============================================================================
-
-procedure eml_hlTwoSampleRoot: .v1#, .v2#, .zq, .mumin, .mumax, .wmin, .wmax, .correct
-    .fLower = .wmin - .zq
-    if .fLower <= 0
-        .result = .mumin
-    else
-        .fUpper = .wmax - .zq
-        if .fUpper >= 0
-            .result = .mumax
-        else
-            @eml_hlZeroin: .v1#, .v2#, .mumin, .mumax, .fLower,
-            ... .fUpper, .zq, 1e-4, 1000, .correct
-            .result = eml_hlZeroin.root
-        endif
-    endif
-endproc
-
 
 # ============================================================================
 # @emlHodgesLehmannTwoSample
@@ -2408,11 +2109,11 @@ endproc
 #           k-th largest cross-differences, which is R's
 #           c(diffs[qu], diffs[ql + 1]).
 #
-#   normal approximation: R's continuity-corrected z inversion, ported.
-#           See @eml_hlTwoSampleW, @eml_hlTwoSampleRoot and
-#           @eml_hlZeroin above; the port is line-for-line and
-#           carries R's own step and tolerance, so the two share the
-#           method and not merely the answer.
+#   normal approximation: R's continuity-corrected z inversion, delegated
+#           whole to @emlWilcoxonIntervalApprox (eml-wilcoxon-interval.praat),
+#           the same module @emlHodgesLehmannPaired's normal-approximation
+#           branch delegates to. That module carries the W(d) and zeroin
+#           ports, so this file does not re-port either.
 #
 # THE CRITICAL RANK, in full, from R 4.3.3's exact two-sided branch:
 #
@@ -2571,42 +2272,21 @@ procedure emlHodgesLehmannTwoSample: .v1#, .v2#, .level
             .low = .sortedDiffs#[.k]
             .high = .sortedDiffs#[.nDiff + 1 - .k]
         else
-            # --- Normal approximation: R's z inversion, ported ---
+            # --- Normal approximation: delegated to
+            # @emlWilcoxonIntervalApprox, the module the paired branch
+            # (@emlHodgesLehmannPaired) already delegates to. .estimate is
+            # already set above -- the median of the cross-differences,
+            # the same quantity the module computes on its own two-sample
+            # branch -- so it is left alone here; only the bounds come
+            # from the call.
             .method$ = "normal approximation"
 
-            # mumin = min(x) - max(y) and mumax = max(x) - min(y) are the
-            # smallest and largest cross-differences -- the same two
-            # subtractions R performs, already in hand and already
-            # ordered.
-            .mumin = .sortedDiffs#[1]
-            .mumax = .sortedDiffs#[.nDiff]
-
-            @eml_hlTwoSampleW: .v1#, .v2#, .mumin, 1
-            .wmin = eml_hlTwoSampleW.value
-            @eml_hlTwoSampleW: .v1#, .v2#, .mumax, 1
-            .wmax = eml_hlTwoSampleW.value
-
-            if .wmin = undefined or .wmax = undefined
-                # SIGMA.CI = 0: every observation in the combined sample
-                # is tied, and there is no variance to standardise by. R
-                # warns here and hands NaN to its own root finder, which
-                # then fails on a missing value; this refuses in the
-                # shape @emlTTestInterval refuses, with the outputs left
-                # undefined and a reason given.
-                .error$ = "Cannot compute a confidence interval when "
-                ... + "every observation is tied"
+            @emlWilcoxonIntervalApprox: .v1#, .v2#, 0, .level
+            if emlWilcoxonIntervalApprox.error$ <> ""
+                .error$ = emlWilcoxonIntervalApprox.error$
             else
-                # qnorm(alpha/2, lower.tail = FALSE) is invGaussQ(alpha/2);
-                # qnorm(alpha/2) is its negation.
-                .zq = invGaussQ (.alpha / 2)
-
-                @eml_hlTwoSampleRoot: .v1#, .v2#, .zq, .mumin, .mumax,
-                ... .wmin, .wmax, 1
-                .low = eml_hlTwoSampleRoot.result
-
-                @eml_hlTwoSampleRoot: .v1#, .v2#, - .zq, .mumin, .mumax,
-                ... .wmin, .wmax, 1
-                .high = eml_hlTwoSampleRoot.result
+                .low = emlWilcoxonIntervalApprox.low
+                .high = emlWilcoxonIntervalApprox.high
             endif
         endif
     endif
@@ -3173,8 +2853,8 @@ endproc
 # bounds come back at a wider level than was asked for, and when alpha
 # reaches 1 the "interval" is the median of the differences twice. The
 # two-sample form has no such loop and this one has no early returns;
-# reusing @eml_hlTwoSampleRoot here would silently substitute one
-# structure for the other.
+# the two structures are kept apart inside @emlWilcoxonIntervalApprox's
+# own .paired branch, not reimplemented here.
 #
 # Arguments:
 #   .v1#   - numeric vector, condition 1

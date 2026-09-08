@@ -674,13 +674,20 @@ if (!canDrive) {
     #     still return an interval.
     #
     # What IS shared, and is asserted to be shared, is Brent's zeroin:
-    # @eml_hlZeroin exists once. RULING_HL_FIX_WIRED_2026-09-04 retired
-    # its .form switch along with @eml_hlPairedW, the one-sample W it
-    # dispatched to: the paired form's normal-approximation branch now
-    # delegates whole to @emlWilcoxonIntervalApprox
-    # (eml-wilcoxon-interval.praat), which carries its own zeroin port,
-    # so @eml_hlZeroin's one remaining caller is the two-sample form and
-    # its one dispatch is @eml_hlTwoSampleW.
+    # RULING_HL_FIX_WIRED_2026-09-04 retired @eml_hlZeroin's .form switch
+    # along with @eml_hlPairedW, the one-sample W it dispatched to, wiring
+    # the paired form's normal-approximation branch to delegate whole to
+    # @emlWilcoxonIntervalApprox (eml-wilcoxon-interval.praat), which
+    # carries its own zeroin port. The wave that follows
+    # (RULING_HL_WILCOXON_MERGE) finished the job: the two-sample form's
+    # normal-approximation branch now delegates the SAME way, so
+    # @eml_hlZeroin and @eml_hlTwoSampleW -- and the @eml_hlTwoSampleRoot
+    # wrapper that called them -- are gone from this file as procedures
+    # and as calls, not merely unreachable. The one zeroin and W(d) left
+    # in the tree are @eml_wciZeroin and @eml_wciW2 in
+    # eml-wilcoxon-interval.praat, and @eml_wciZeroin's .form switch is
+    # what now serves both the two-sample and paired uses that
+    # @eml_hlZeroin's did before.
     #
     # THE ORACLE for the interval is wilcox.test(x, y, paired = TRUE,
     # conf.int = TRUE, conf.level = 1 - alpha/m). The estimate is oracled
@@ -691,6 +698,8 @@ if (!canDrive) {
     # plugin's estimate to the median on BOTH branches.
     # -------------------------------------------------------------------
     inf_src <- readLines(INF, warn = FALSE)
+    wci_src <- readLines(file.path(plug, "stats", "eml-wilcoxon-interval.praat"),
+                          warn = FALSE)
 
     # -- PART 3.0: the PAIRED gate is one text, in two places -----------
     #
@@ -730,37 +739,54 @@ if (!canDrive) {
     # "THE ZEROIN PORT IS GENERAL ... REUSE, do not re-port ... re-porting
     # R's zeroin a second time would be the clearest possible violation."
     # RULING_HL_FIX_WIRED_2026-09-04 moved the paired form's root-finding
-    # out of this file entirely, to @emlWilcoxonIntervalApprox's own port
-    # -- so the property worth protecting is no longer "one zeroin in this
-    # file serves both forms" but "this file keeps exactly one zeroin, for
-    # the one form still ported here, and the dead helper delegation
-    # obsoleted (@eml_hlPairedW, and @eml_hlZeroin's .form switch) is
-    # actually GONE rather than left as unreachable code calling a
-    # deleted procedure."
-    check_true(V, "Brent's zeroin exists exactly once in the tree (@eml_hlZeroin)",
-               sum(grepl("^procedure eml_hlZeroin:", inf_src)) == 1 &&
-               !any(grepl("^procedure eml_hlTwoSampleZeroin", inf_src)))
-    check_true(V, "eml_hlZeroin's one dispatch site now calls only @eml_hlTwoSampleW, and @eml_hlPairedW -- the one-sample W the retired .form=2 arm alone used -- is gone from the file as a procedure and a call, not merely unreachable",
-               any(grepl("@eml_hlTwoSampleW: .v1#, .v2#, .b, .correct", inf_src, fixed = TRUE)) &&
+    # out of this file entirely, to @emlWilcoxonIntervalApprox's own port.
+    # RULING_HL_WILCOXON_MERGE finished the job: the two-sample form's
+    # normal-approximation branch now delegates the same way, so this
+    # file carries NEITHER a W(d) NOR a zeroin port any more -- both
+    # eml_hlTwoSampleW and eml_hlZeroin (and the eml_hlTwoSampleRoot
+    # wrapper that called them) are gone, as procedures and as calls, not
+    # merely unreachable. The one zeroin and the one W(d) left in the
+    # tree, @eml_wciZeroin and @eml_wciW2, live once each in
+    # eml-wilcoxon-interval.praat, and @eml_wciZeroin's .form switch is
+    # what now serves both the two-sample and paired uses that
+    # @eml_hlZeroin's switch served on the two-sample side alone.
+    check_true(V, "eml-inferential.praat carries no W(d) or zeroin port of its own any more",
+               !any(grepl("^procedure eml_hlTwoSampleW", inf_src)) &&
+               !any(grepl("^procedure eml_hlZeroin", inf_src)) &&
+               !any(grepl("^procedure eml_hlTwoSampleRoot", inf_src)) &&
                !any(grepl("^procedure eml_hlPairedW", inf_src)) &&
-               !any(grepl("@eml_hlPairedW:", inf_src, fixed = TRUE)) &&
-               !any(grepl("^procedure eml_hlZeroin: .form,", inf_src, fixed = TRUE)))
-    check_true(V, "the acceptance test that decides zeroin's iterates appears exactly once",
-               sum(grepl("0.75 * .cb * .q", inf_src, fixed = TRUE)) == 1)
-    # The paired procedure must still not reach @eml_hlTwoSampleRoot --
-    # whose endpoint early-returns are the two-sample structure -- and,
-    # post-delegation, must not reach @eml_hlZeroin either: its own
-    # normal-approximation root-finding no longer lives in this file at
-    # all, it lives in @emlWilcoxonIntervalApprox.
+               !any(grepl("eml_hlTwoSampleW:|eml_hlZeroin:|eml_hlTwoSampleRoot:|eml_hlPairedW:",
+                         inf_src)))
+    check_true(V, "Brent's zeroin exists exactly once in the tree (@eml_wciZeroin, eml-wilcoxon-interval.praat), with its .form switch intact",
+               sum(grepl("^procedure eml_wciZeroin:", wci_src)) == 1 &&
+               any(grepl("^\\s*\\.form = 1", wci_src) | grepl("if .form = 1", wci_src, fixed = TRUE)))
+    check_true(V, "the standardised two-sample W(d) exists exactly once in the tree (@eml_wciW2, eml-wilcoxon-interval.praat)",
+               sum(grepl("^procedure eml_wciW2:", wci_src)) == 1)
+    check_true(V, "the acceptance test that decides zeroin's iterates appears exactly once in the tree",
+               sum(grepl("0.75 * .cb * .q", inf_src, fixed = TRUE)) +
+               sum(grepl("0.75 * .cb * .q", wci_src, fixed = TRUE)) == 1)
+    # Neither Hodges-Lehmann branch reaches a local W/zeroin any more --
+    # both the two-sample and the paired forms delegate whole to
+    # @emlWilcoxonIntervalApprox, distinguished only by the .paired
+    # argument (0 vs 1).
+    hlt_at <- grep("^procedure emlHodgesLehmannTwoSample", inf_src)
+    hlt_end <- if (length(hlt_at) == 1)
+        hlt_at + which(inf_src[hlt_at:length(inf_src)] == "endproc")[1] - 1 else NA
+    check_true(V, "@emlHodgesLehmannTwoSample delegates its normal-approximation branch to @emlWilcoxonIntervalApprox and reaches no local W/zeroin helper",
+        !is.na(hlt_end) &&
+        any(grepl("@emlWilcoxonIntervalApprox: .v1#, .v2#, 0, .level",
+                  inf_src[hlt_at:hlt_end], fixed = TRUE)) &&
+        !any(grepl("eml_hlZeroin|eml_hlTwoSampleW|eml_hlTwoSampleRoot",
+                   inf_src[hlt_at:hlt_end])))
     hlp_at <- grep("^procedure emlHodgesLehmannPaired", inf_src)
     hlp_end <- if (length(hlp_at) == 1)
         hlp_at + which(inf_src[hlp_at:length(inf_src)] == "endproc")[1] - 1 else NA
-    check_true(V, "@emlHodgesLehmannPaired delegates its normal-approximation branch to @emlWilcoxonIntervalApprox and reaches neither @eml_hlZeroin nor @eml_hlTwoSampleRoot itself",
+    check_true(V, "@emlHodgesLehmannPaired delegates its normal-approximation branch to @emlWilcoxonIntervalApprox and reaches no local W/zeroin helper",
         !is.na(hlp_end) &&
         any(grepl("@emlWilcoxonIntervalApprox: .v1#, .v2#, 1, .level",
                   inf_src[hlp_at:hlp_end], fixed = TRUE)) &&
-        !any(grepl("eml_hlZeroin", inf_src[hlp_at:hlp_end], fixed = TRUE)) &&
-        !any(grepl("eml_hlTwoSampleRoot", inf_src[hlp_at:hlp_end], fixed = TRUE)))
+        !any(grepl("eml_hlZeroin|eml_hlTwoSampleW|eml_hlTwoSampleRoot",
+                   inf_src[hlp_at:hlp_end])))
 
     # -- PART 3a: the procedure itself, both paired cells ----------------
     set.seed(3345)
