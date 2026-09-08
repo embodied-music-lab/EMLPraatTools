@@ -22,7 +22,7 @@
 # Checks A through D carry a Fable ruling and FAIL the file when they fail:
 #   A  the six old names appear nowhere
 #   B  the six new names are defined and registered
-#   C  the registry holds 45 rows and the mixed-model row is excluded by an
+#   C  the registry holds 47 rows and the mixed-model row is excluded by an
 #      explicit entry rather than by deletion
 #   D  the two ordered recorder hooks exist
 #
@@ -199,8 +199,14 @@ for (p in RENAMES) {
 }
 
 # ---- C. registry shape ----------------------------------------------------
-cat("\n  ---- C. registry at 45 rows, mixed model excluded by entry ----\n")
-check_true(V, "registry holds exactly 45 data rows", length(regRows) == 45)
+cat("\n  ---- C. registry at 47 rows, mixed model excluded by entry ----\n")
+# 45 as of the settlement session's own close, +2 (B11 wave, 2026-09-08):
+# emlVectorsToTable and emlToTable, added by Fable's ruling on
+# validate/probes/vectors_to_table_probe.praat -- see REGISTRY.tsv's own
+# correction note for the ruling and validate/vectors_to_table_oracle.tsv
+# for the graded fixture rows. The literal below tracks REGISTRY.tsv's own
+# header count; a future row addition updates both together.
+check_true(V, "registry holds exactly 47 data rows", length(regRows) == 47)
 cat(sprintf("      registry data rows now: %d\n", length(regRows)))
 check_true(V, "emlRunLMMAnalysis absent from registry",
            sum(regNames == "emlRunLMMAnalysis") == 0)

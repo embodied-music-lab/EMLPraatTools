@@ -7992,6 +7992,218 @@ endproc
 
 
 # ============================================================================
+# @emlVectorsToTable: .names$#, .labels$#
+#   -> .tableId, .nRows, .nCols, .lengths#, .ok, .error$, .warning$
+# ============================================================================
+# THE ONE MECHANISM THAT SURVIVED PROBING. A user with data sitting in
+# script-level Praat vectors -- `patient# = { 1, 2, 3 }`, typed or built by
+# an earlier step -- wants a Table without hand-writing a `Create Table with
+# column names:` / `Set ... value:` loop every time. Two other mechanisms
+# were tried and both fail: the ragged vector literal `{ a#, b# }` HALTS THE
+# INTERPRETER the moment the two vectors differ in length ("The vectors have
+# to be of the same size, not 2 and 3" -- not a script error this procedure
+# could catch and turn into `.error$`, an uncatchable one), and the
+# object-based route (wrap each vector in its own one-column Table, then
+# look for a way to join them) buys nothing: Praat has no column-join for
+# Table objects, so it still ends in the same cell-by-cell copy this
+# procedure does, after first paying for N throwaway objects and their
+# cleanup. Full trace: validate/probes/vectors_to_table_probe.praat, blocks
+# 1a-1g.
+#
+# MATERIALISE-THEN-SUBSTITUTE IS MECHANISM 1, Fable's ruling on this probe.
+# `.names$#` never carries the vectors themselves -- Praat has no way to pass
+# a vector BY NAME as one argument slot without this trick -- it carries
+# their NAMES, and each is resolved with Praat's quoted-substitution
+# operator: `.name$` holds the text "patient#", and the line
+#     .v1# = 'name$'
+# is textually rewritten to `.v1# = patient#` before Praat parses it, so the
+# assignment is an ordinary vector-to-vector copy the interpreter never sees
+# as indirection at all. A `$#` name gets the same treatment into a `.v1$#`
+# local instead, which is how a string vector becomes a TEXT column.
+#
+# THE NAMES MUST BE SCRIPT-LEVEL VECTORS. Praat's substitution operator
+# resolves a bare `.foo` against whatever procedure is CURRENTLY EXECUTING --
+# this one -- not against the caller. A procedure that holds its data in its
+# own `.myLocal#` and passes the literal name ".myLocal#" through
+# `.names$#` gets a clean refusal here (`variableExists` returns 0 inside
+# THIS procedure's frame, because no local of that name exists in it), not a
+# silent wrong answer. Passed as `caller.myLocal#` -- the qualified form
+# Praat itself exposes once `@caller` has returned, the same form every
+# `.result`/`.error$` output in this codebase is read back through -- it
+# resolves correctly, because that name is script-visible, not
+# caller-frame-local. Block 1d of the probe measures both directions.
+#
+# LABELS. `.labels$#` names the output columns, one per `.names$#` entry,
+# same count; a `.labels$#` of size 0 means "strip the sigil and use the
+# bare name" (`patient#` -> `Patient` -- no, -> `patient`; `cond$#` ->
+# `cond`). A non-zero count that does not match `.names$#`'s count is a
+# refusal naming both counts, never a silent shortest-wins truncation.
+#
+# UNEQUAL LENGTHS ARE NOT A REFUSAL. `.nRows` is the longest vector; every
+# shorter column is padded out to it with blank cells -- undefined for a
+# numeric column, "" for a text one -- exactly as a ragged
+# @emlReshapeSeriesWide pivot leaves its shortest level's tail. `.lengths#`
+# reports each column's TRUE length before padding and `.warning$` names
+# which columns were stretched and by how many rows, so a caller can print it
+# or ignore it, but the row count itself is never a surprise the caller has
+# to go and compute independently.
+#
+# PLACEHOLDER COLUMN NAMES, THEN RENAMED -- the same move
+# @emlReshapeSeriesWide makes and for the same reason: `Create Table with
+# column names:` splits its spec string on spaces, so a label such as
+# "Reaction time (ms)" would silently become several columns if it were
+# fed to the constructor directly. `Set column label (index):` afterwards
+# takes the string whole.
+#
+# .error$ and .warning$ are independent: an unequal-length run can carry a
+# `.warning$` on an otherwise `.ok` result, and a refusal always carries
+# `.tableId = 0` beside its `.error$`. Single exit; .ok = (.error$ = "").
+# ============================================================================
+procedure emlVectorsToTable: .names$#, .labels$#
+    .error$ = ""
+    .warning$ = ""
+    .tableId = 0
+    .nRows = 0
+    .nCols = 0
+    .lengths# = zero# (0)
+    .nNames = size (.names$#)
+    .nLabels = size (.labels$#)
+
+    if .nLabels <> 0 and .nLabels <> .nNames
+        .error$ = "emlVectorsToTable: .names$# names " + string$ (.nNames)
+        ... + " vector(s) but .labels$# has " + string$ (.nLabels)
+        ... + " label(s) -- pass one label per name, or an empty vector to"
+        ... + " use the names with their sigil stripped."
+    endif
+
+    ; EVERY NAME IS CHECKED BEFORE ANYTHING IS BUILT, and only the first
+    ; missing one is reported -- the `.error$ = ""` guard on each iteration
+    ; stops the loop from clobbering that first name with a later one.
+    if .error$ = ""
+        for .i to .nNames
+            if .error$ = ""
+                .checkName$ = .names$# [.i]
+                if not variableExists (.checkName$)
+                    .error$ = "No vector named '" + .checkName$ + "' exists at script level"
+                endif
+            endif
+        endfor
+    endif
+
+    if .error$ = "" and .nNames > 0
+        .nCols = .nNames
+        .lengths# = zero# (.nCols)
+
+        ; ---- materialise-then-substitute: one local per named vector -----
+        for .i to .nCols
+            .name$ = .names$# [.i]
+            .isStr'.i' = (right$ (.name$, 2) = "$#")
+            if .isStr'.i' = 1
+                .v'.i'$# = '.name$'
+                .lengths# [.i] = size (.v'.i'$#)
+                .label'.i'$ = left$ (.name$, length (.name$) - 2)
+            else
+                .v'.i'# = '.name$'
+                .lengths# [.i] = size (.v'.i'#)
+                .label'.i'$ = left$ (.name$, length (.name$) - 1)
+            endif
+            if .nLabels > 0
+                .label'.i'$ = .labels$# [.i]
+            endif
+            if .lengths# [.i] > .nRows
+                .nRows = .lengths# [.i]
+            endif
+        endfor
+
+        ; ---- the table, placeholder names first, then renamed whole ------
+        .spec$ = "eml_vtt_c1"
+        for .i from 2 to .nCols
+            .spec$ = .spec$ + " eml_vtt_c" + string$ (.i)
+        endfor
+        .tableId = Create Table with column names: "eml_vectors_table", .nRows, .spec$
+        for .i to .nCols
+            Set column label (index): .i, .label'.i'$
+        endfor
+
+        ; ---- fill, padding every short column out to .nRows --------------
+        for .i to .nCols
+            if .isStr'.i' = 1
+                for .r to .lengths# [.i]
+                    Set string value: .r, .label'.i'$, .v'.i'$# [.r]
+                endfor
+                for .r from .lengths# [.i] + 1 to .nRows
+                    Set string value: .r, .label'.i'$, ""
+                endfor
+            else
+                for .r to .lengths# [.i]
+                    Set numeric value: .r, .label'.i'$, .v'.i'# [.r]
+                endfor
+                for .r from .lengths# [.i] + 1 to .nRows
+                    Set numeric value: .r, .label'.i'$, undefined
+                endfor
+            endif
+            if .lengths# [.i] < .nRows
+                .padBy = .nRows - .lengths# [.i]
+                if .warning$ <> ""
+                    .warning$ = .warning$ + " "
+                endif
+                .warning$ = .warning$ + "Column '" + .label'.i'$ + "' padded with "
+                ... + string$ (.padBy) + " empty row(s)."
+            endif
+        endfor
+    endif
+
+    if .tableId > 0
+        selectObject: .tableId
+    endif
+    .ok = (.error$ = "")
+endproc
+
+
+# ============================================================================
+# @emlToTable: .names$#, .labels$#  -> .tableId, .nRows, .nCols, .lengths#,
+#                                       .ok, .error$, .warning$
+# ============================================================================
+# THE WIDE-TABLE DOOR. @emlVectorsToTable is the kernel that does the actual
+# materialise-then-substitute work; this is its public name at the door
+# layer, the one the graphs form (and any script that starts from
+# script-level vectors rather than an already-loaded Table) calls. The
+# split matches every other kernel/door pair in this plugin
+# (@emlExtractPairedColumns / emlRunPairedAnalysis and kin): one
+# implementation, forwarded whole rather than re-typed, so the two cannot
+# drift apart.
+#
+# WHERE THE WIDE TABLE GOES NEXT, for the record: the Table this produces --
+# one column per named vector, one row per subject/observation -- is exactly
+# the shape emlRunPairedAnalysis (.col1$, .col2$) and
+# emlRunRepeatedMeasuresAnalysis's "wide" .format$ (.conditionCols$#) already
+# take, so it can be handed to either door directly with no further
+# reshaping. For a group-comparison FIGURE instead of a paired/RM test, the
+# same wide table goes on through @emlReshapeSeriesLong, which melts the
+# named columns into the long (time/series/value) shape the group drawing
+# doors are drawn from. One construction step, two consumers, and the doors
+# themselves never see how their Table was built.
+#
+# .ok = (.error$ = ""), forwarded from @emlVectorsToTable's own single exit.
+# ============================================================================
+procedure emlToTable: .names$#, .labels$#
+    .error$ = ""
+    .warning$ = ""
+    @emlVectorsToTable: .names$#, .labels$#
+    .tableId = emlVectorsToTable.tableId
+    .nRows = emlVectorsToTable.nRows
+    .nCols = emlVectorsToTable.nCols
+    .lengths# = emlVectorsToTable.lengths#
+    .warning$ = emlVectorsToTable.warning$
+    .error$ = emlVectorsToTable.error$
+    if .tableId > 0
+        selectObject: .tableId
+    endif
+    .ok = (.error$ = "")
+endproc
+
+
+# ============================================================================
 # @emlReshapeSeriesLong: .objectId, .timeCol$, .cols$
 #   -> .tableId, .nSeries, .nDataRows
 # ============================================================================

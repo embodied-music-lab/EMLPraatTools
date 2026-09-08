@@ -57,6 +57,8 @@ emlDrawGroupedViolin	graphs/eml-draw-procedures.praat		live	:6841	recorded.praat
 emlDrawGroupedBoxPlot	graphs/eml-draw-procedures.praat		live	:7166	recorded.praat:709
 emlDrawSpaghettiPlot	graphs/eml-draw-procedures.praat		live	:3496	recorded.praat:629
 emlRunAnnotationComparison	graphs/eml-annotation-procedures.praat	4524-4531	live	graphs/eml-annotation-procedures.praat:4524-4531	recorded.praat:1035
+emlVectorsToTable			EXEMPT	No recorder hook exists yet. Source 4 in REGISTRY.tsv, not 3: added by Fable's ruling on validate/probes/vectors_to_table_probe.praat as documented public surface, ahead of the graphs form's own call site and the recorder wiring, both of which are B11-wave follow-up work.	REGISTRY.tsv correction note, 2026-09-08
+emlToTable			EXEMPT	No recorder hook exists yet. Source 4 in REGISTRY.tsv, not 3: forwards whole to @emlVectorsToTable, which carries the same exemption for the same reason -- neither has a door to record from in this wave.	REGISTRY.tsv correction note, 2026-09-08
 emlReshapeSeriesLong	graphs/eml-graphs-form.praat	6172-6178,	code-trace	graphs/eml-graphs-form.praat:6172-6178, via `@emlRecordConvert`	Not exercised this session; source comment cites a prior measurement (harness/linetree's rec_subjects4 leg) I did not re-run
 emlReshapeSeriesWide	graphs/eml-graphs-form.praat	6355-6363	code-trace	graphs/eml-graphs-form.praat:6355-6363	Mirror of #31, not exercised this session
 emlCleanConvertedTable	graphs/eml-graph-procedures.praat	7920, 7938	live	graphs/eml-graph-procedures.praat:7920, 7938 (inside `@emlConvertForGraph`)	recorded.praat:969 (tor2table), :1002 (matrix2table)

@@ -2006,7 +2006,7 @@ scripts <- c(
                                  # claims: the six retired names appear
                                  # nowhere, the six canonical names are
                                  # defined and registered, the registry holds
-                                 # 45 rows with the mixed model excluded by an
+                                 # 47 rows with the mixed model excluded by an
                                  # explicit entry, the two ordered recorder
                                  # hooks exist, and the recorder's hand-kept
                                  # dispatch table agrees with the registry.

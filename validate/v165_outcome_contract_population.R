@@ -199,10 +199,16 @@ if (nrow(dispatch_rows)) cat(paste0("v165:   - ", dispatch_rows$name, "\n"), sep
 
 cat(sprintf("v165: NON-DRAW PUBLIC POPULATION: %d rows\n", nrow(nondraw_rows)))
 
+# 31 as of the ruling this file's header describes, +2 (B11 wave,
+# 2026-09-08): emlVectorsToTable and emlToTable, source {4} -- not {2,3},
+# so neither is a type-dispatch draw row and both land here. Both were
+# built to this exact contract from the start (REGISTRY.tsv's own
+# correction note for the ruling); this file still computes the population
+# fresh and audits it below rather than trusting that claim.
 check_true(V,
-           sprintf("the non-draw public population is exactly the ruling's 31 rows (found %d)",
+           sprintf("the non-draw public population is exactly the ruling's 33 rows (found %d)",
                    nrow(nondraw_rows)),
-           nrow(nondraw_rows) == 31L)
+           nrow(nondraw_rows) == 33L)
 
 # emlDrawQQPlot is the worked counter-example named in the header comment:
 # it must survive the exclusion (sources == {2} alone, not {2,3}).

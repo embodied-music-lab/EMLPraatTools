@@ -1,9 +1,20 @@
 # ==========================================================================
 # REGISTRY — EML Stats & Graphs public procedure surface
-# Compiled: 2026-09-01  |  45 rows (2026-09-02: emlRunLMMAnalysis's row
-# removed for 1.0; 2026-09-03: the three survey rows added -- see the
-# corrections below)
+# Compiled: 2026-09-01  |  47 rows (2026-09-02: emlRunLMMAnalysis's row
+# removed for 1.0; 2026-09-03: the three survey rows added; 2026-09-08: the
+# vectors-to-table pair added -- see the corrections below)
 # Ruling: mailbox/to-opus/RULING_PUBLIC_SURFACE_2026-09-01.md
+# Correction (2026-09-08, B11 wave, Fable's ruling on the vectors-to-table
+# probe): emlVectorsToTable and emlToTable join the registry -- the wide-
+# table door and the materialise-then-substitute kernel it delegates to
+# (plugin_EML_StatsGraphs/graphs/eml-graph-procedures.praat). Source 4, not
+# 1-3: neither has a recorder hook or a menu/wizard door yet -- the graphs
+# form's own call site and the recorder wiring are follow-up work, not done
+# in this wave. Added anyway, by ruling, because a technical user handing
+# either procedure their own script-level vectors is exactly the operation
+# Table S2 documents as public, independent of which door reaches it first.
+# See validate/probes/vectors_to_table_probe.praat for the mechanism trace
+# and validate/vectors_to_table_oracle.tsv for the graded fixture rows.
 # Correction (2026-09-01, Fable): emlRunReliabilityAnalysis's row removed --
 # "Table S2 documents working public surface; an unconditional-error stub is
 # not surface." It matches the emlRun* name pattern, so removing it moved it
@@ -45,6 +56,13 @@
 #                      wizard door presents it as an operation)
 #                  3 = the recorder (stats/eml-record.praat) emits a literal
 #                      call to this procedure into a generated user script
+#                  4 = added directly by a Fable ruling as documented public
+#                      surface, ahead of any door reaching it -- see that
+#                      row's correction note below for the ruling. Distinct
+#                      from 1-3, which are the original 1 September
+#                      compilation's own reachability tests; 4 is this
+#                      file's one honest way to record "public because ruled
+#                      public", not "public because measured reachable".
 #                A row can carry more than one source; this is the audit
 #                trail for why the boundary sits where it does, not a
 #                ranking. See the compiling agent's report for the full
@@ -119,6 +137,8 @@ emlDrawGroupedBoxPlot	graphs/eml-draw-procedures.praat	procedure emlDrawGroupedB
 emlDrawSpaghettiPlot	graphs/eml-draw-procedures.praat	procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .condCol$, .valueCol$, .idCol$, .groupCol$, .showMean, .vMin, .vMax	Spaghetti plot of one subject-per-line series across repeated conditions (EML Graphs type 13).	2,3
 emlDrawQQPlot	graphs/eml-draw-qq.praat	procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode	Normal Q-Q plot for one numeric vector; an adapter computing Blom quantiles onto the shared scatter machinery. Drawn directly from the normality-check door and the wizard, not through the EML Graphs type dispatch — and, unlike the thirteen graph types, never recorded (no recorder hook of any kind wraps its call sites).	2
 emlRunAnnotationComparison	graphs/eml-annotation-procedures.praat	procedure emlRunAnnotationComparison: .tableId, .dataCol$, .factorCol$, .alpha, .style$, .showNS, .showEffect, .testType$, .layoutMode	Runs the group-comparison test (t-test/Mann-Whitney/ANOVA/Kruskal-Wallis, with Tukey/Dunn) behind a figure's statistical-annotation brackets — the second path to the same statistics as the stats menu, reached from a figure's "annotate" toggle instead of a menu command. Found only by tracing the recorder; matches no emlRun* or emlDraw* naming convention.	3
+emlVectorsToTable	graphs/eml-graph-procedures.praat	procedure emlVectorsToTable: .names$#, .labels$#	Materialises named script-level Praat vectors (numeric # or string $#, any count) into one Table, one column per vector, padding any short column with blank cells. Materialise-then-substitute -- Fable's ruling on validate/probes/vectors_to_table_probe.praat.	4
+emlToTable	graphs/eml-graph-procedures.praat	procedure emlToTable: .names$#, .labels$#	The wide-table door: forwards to @emlVectorsToTable whole. Its output is the wide Table @emlRunPairedAnalysis and @emlRunRepeatedMeasuresAnalysis's "wide" .format$ already take directly, and @emlReshapeSeriesLong melts it to long form for the group drawing doors.	4
 emlReshapeSeriesLong	graphs/eml-graph-procedures.praat	procedure emlReshapeSeriesLong: .objectId, .timeCol$, .cols$#	Reshapes several wide measurement columns into the long (time, series, value) table the time-series drawing layer is drawn from.	3
 emlReshapeSeriesWide	graphs/eml-graph-procedures.praat	procedure emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$#	The mirror of emlReshapeSeriesLong — pivots a stacked (time, name, value) table into wide series columns for a two-axis time-series figure.	3
 emlCleanConvertedTable	graphs/eml-graph-procedures.praat	procedure emlCleanConvertedTable: .tableId	Replaces the "?" placeholders Praat's `To Table: "row"` writes for empty row/column labels, after a TableOfReal/Matrix -> Table auto-conversion done for drawing.	3

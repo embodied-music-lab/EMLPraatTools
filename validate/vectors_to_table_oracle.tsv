@@ -1,0 +1,69 @@
+fixture	field	value
+vtt01_equal_lengths	ok	1
+vtt01_equal_lengths	expectRefuse	0
+vtt01_equal_lengths	tableId_gt0	1
+vtt01_equal_lengths	nRows	3
+vtt01_equal_lengths	nCols	2
+vtt01_equal_lengths	lengths	3;3
+vtt01_equal_lengths	warning	
+vtt01_equal_lengths	error	
+vtt01_equal_lengths	cell_vtt01_patient_1	101
+vtt01_equal_lengths	cell_vtt01_patient_2	102
+vtt01_equal_lengths	cell_vtt01_patient_3	103
+vtt01_equal_lengths	cell_vtt01_age_1	30
+vtt01_equal_lengths	cell_vtt01_age_2	40
+vtt01_equal_lengths	cell_vtt01_age_3	50
+vtt02_unequal_lengths	ok	1
+vtt02_unequal_lengths	expectRefuse	0
+vtt02_unequal_lengths	tableId_gt0	1
+vtt02_unequal_lengths	nRows	4
+vtt02_unequal_lengths	nCols	2
+vtt02_unequal_lengths	lengths	2;4
+vtt02_unequal_lengths	warning	Column 'vtt02_short' padded with 2 empty row(s).
+vtt02_unequal_lengths	error	
+vtt02_unequal_lengths	cell_vtt02_short_1	1
+vtt02_unequal_lengths	cell_vtt02_short_2	2
+vtt02_unequal_lengths	cell_vtt02_short_3	--undefined--
+vtt02_unequal_lengths	cell_vtt02_short_4	--undefined--
+vtt02_unequal_lengths	cell_vtt02_long_1	10
+vtt02_unequal_lengths	cell_vtt02_long_2	20
+vtt02_unequal_lengths	cell_vtt02_long_3	30
+vtt02_unequal_lengths	cell_vtt02_long_4	40
+vtt03_string_vector	ok	1
+vtt03_string_vector	expectRefuse	0
+vtt03_string_vector	tableId_gt0	1
+vtt03_string_vector	nRows	3
+vtt03_string_vector	nCols	2
+vtt03_string_vector	lengths	3;3
+vtt03_string_vector	warning	
+vtt03_string_vector	error	
+vtt03_string_vector	cell_Condition_1	control
+vtt03_string_vector	cell_Condition_2	treated
+vtt03_string_vector	cell_Condition_3	treated
+vtt03_string_vector	cell_Score_1	1.5
+vtt03_string_vector	cell_Score_2	2.5
+vtt03_string_vector	cell_Score_3	3.5
+vtt04_missing_name	ok	0
+vtt04_missing_name	expectRefuse	1
+vtt04_missing_name	tableId_gt0	0
+vtt04_missing_name	nRows	0
+vtt04_missing_name	nCols	0
+vtt04_missing_name	lengths	
+vtt04_missing_name	warning	
+vtt04_missing_name	error	No vector named 'vtt04_nonexistent#' exists at script level
+vtt05_count_mismatch	ok	0
+vtt05_count_mismatch	expectRefuse	1
+vtt05_count_mismatch	tableId_gt0	0
+vtt05_count_mismatch	nRows	0
+vtt05_count_mismatch	nCols	0
+vtt05_count_mismatch	lengths	
+vtt05_count_mismatch	warning	
+vtt05_count_mismatch	error	emlVectorsToTable: .names$# names 2 vector(s) but .labels$# has 1 label(s) -- pass one label per name, or an empty vector to use the names with their sigil stripped.
+vtt06_empty_names	ok	1
+vtt06_empty_names	expectRefuse	0
+vtt06_empty_names	tableId_gt0	0
+vtt06_empty_names	nRows	0
+vtt06_empty_names	nCols	0
+vtt06_empty_names	lengths	
+vtt06_empty_names	warning	
+vtt06_empty_names	error	
