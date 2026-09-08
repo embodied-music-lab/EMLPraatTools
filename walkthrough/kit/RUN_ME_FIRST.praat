@@ -1531,18 +1531,20 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
         ... or .proc$ = "emlRunFriedmanAnalysis"
         # --- 12/13. REPEATED-MEASURES ANOVA (GG) / FRIEDMAN ----------------
         .doPostHoc = number (.posthoc$)
-        ; The kit's condition list is the internal "|"-delimited form; the
-        ; frozen public signature takes a string vector, so split once and
-        ; pass the vector to both the standalone extract and the door.
-        @eml_pipeSplit: .colA$
-        @emlExtractConditionMatrix: .tableId, eml_pipeSplit.v$#
+        ; AMENDMENT2_COMMA_FIELD: the kit's condition list is matrix.tsv's
+        ; comma-separated col_a; the frozen public signature takes a string
+        ; vector, so convert once with the one shared bridge
+        ; (@emlCommaListToVector, stats/eml-core-utilities.praat) and pass
+        ; the vector to both the standalone extract and the door.
+        @emlCommaListToVector: .colA$
+        @emlExtractConditionMatrix: .tableId, emlCommaListToVector.v$#
         if .proc$ = "emlRunRepeatedMeasuresAnalysis"
             @emlRunRepeatedMeasuresAnalysis: .tableId, "wide", "",
-            ... eml_pipeSplit.v$#, "", "", .doPostHoc, .adjust$
+            ... emlCommaListToVector.v$#, "", "", .doPostHoc, .adjust$
             .thisErr$ = emlRunRepeatedMeasuresAnalysis.error$
         else
             @emlRunFriedmanAnalysis: .tableId, "wide", "",
-            ... eml_pipeSplit.v$#, "", "", .doPostHoc, .adjust$
+            ... emlCommaListToVector.v$#, "", "", .doPostHoc, .adjust$
             .thisErr$ = ""
             if emlExtractConditionMatrix.error$ <> ""
                 .thisErr$ = emlExtractConditionMatrix.error$

@@ -1421,32 +1421,41 @@ if goal = 1
             @emlClearInfo
         endif
 
-        # Build the "|"-delimited condition list and count non-empty slots.
+        # The condition dropdowns build the string vector the frozen 8-arg
+        # signature takes, one slot per non-empty dropdown, straight from the
+        # selected names with no round trip through a delimited string.
+        # condList$ is kept as the comma list the plan display reads.
         condList$ = ""
         nCond = 0
         if condition_1$ <> "(none)"
-            condList$ = condList$ + condition_1$ + "|"
+            condList$ = condList$ + condition_1$ + ","
             nCond = nCond + 1
+            condName$ [nCond] = condition_1$
         endif
         if condition_2$ <> "(none)"
-            condList$ = condList$ + condition_2$ + "|"
+            condList$ = condList$ + condition_2$ + ","
             nCond = nCond + 1
+            condName$ [nCond] = condition_2$
         endif
         if condition_3$ <> "(none)"
-            condList$ = condList$ + condition_3$ + "|"
+            condList$ = condList$ + condition_3$ + ","
             nCond = nCond + 1
+            condName$ [nCond] = condition_3$
         endif
         if condition_4$ <> "(none)"
-            condList$ = condList$ + condition_4$ + "|"
+            condList$ = condList$ + condition_4$ + ","
             nCond = nCond + 1
+            condName$ [nCond] = condition_4$
         endif
         if condition_5$ <> "(none)"
-            condList$ = condList$ + condition_5$ + "|"
+            condList$ = condList$ + condition_5$ + ","
             nCond = nCond + 1
+            condName$ [nCond] = condition_5$
         endif
         if condition_6$ <> "(none)"
-            condList$ = condList$ + condition_6$ + "|"
+            condList$ = condList$ + condition_6$ + ","
             nCond = nCond + 1
+            condName$ [nCond] = condition_6$
         endif
 
         if nCond < 3
@@ -1458,13 +1467,19 @@ if goal = 1
             exitScript: ""
         endif
 
+        # The vector both branches below hand to the analysis, built from the
+        # dropdown selections directly.
+        condVec$# = empty$# (nCond)
+        for .ci to nCond
+            condVec$# [.ci] = condName$ [.ci]
+        endfor
+
         if test_approach = 1
             @wizardReportPlan: "Repeated measures (k conditions)",
             ... "not assessed", "RM-ANOVA (Greenhouse-Geisser)",
             ... "n/a", condList$, "", "", displayTable$
-            @eml_pipeSplit: condList$
             @emlRunRepeatedMeasuresAnalysis: tableId, "wide", "",
-            ... eml_pipeSplit.v$#, "", "", pairwise_post_hoc, adjustment$
+            ... condVec$#, "", "", pairwise_post_hoc, adjustment$
             if emlRunRepeatedMeasuresAnalysis.error$ <> ""
                 # An analysis error must not tear down the wizard. Return
                 # the user into the back-chain with every answer intact.
@@ -1479,9 +1494,8 @@ if goal = 1
             @wizardReportPlan: "Repeated measures (k conditions)",
             ... "not assessed", "Friedman test",
             ... "n/a", condList$, "", "", displayTable$
-            @eml_pipeSplit: condList$
             @emlRunFriedmanAnalysis: tableId, "wide", "",
-            ... eml_pipeSplit.v$#, "", "", pairwise_post_hoc, adjustment$
+            ... condVec$#, "", "", pairwise_post_hoc, adjustment$
             if emlRunFriedmanAnalysis.error$ <> ""
                 # An analysis error must not tear down the wizard. Return
                 # the user into the back-chain with every answer intact.

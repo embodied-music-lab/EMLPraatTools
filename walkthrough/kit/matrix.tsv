@@ -645,50 +645,50 @@ c0516	analysis	emlRunGroupedRegressionAnalysis	demo_3groups_input	SPL_dB	vibrato
 c0517	analysis	emlRunGroupedRegressionAnalysis	demo_3groups_input	SPL_dB	vibrato_rate_Hz	voice_type					alphabetical			emlRunRegressionAnalysis:vibrato_rate_Hz,SPL_dB	ok	reads emlLinearRegression.* from the overall fit; call it first		options
 c0518	analysis	emlRunGroupedRegressionAnalysis	v73_directional_input	idx	x	fam					discovery			emlRunRegressionAnalysis:x,idx	ok	reads emlLinearRegression.* from the overall fit; call it first		options
 c0519	analysis	emlRunGroupedRegressionAnalysis	v73_directional_input	idx	x	fam					alphabetical			emlRunRegressionAnalysis:x,idx	ok	reads emlLinearRegression.* from the overall fit; call it first		options
-c0520	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				0	holm						ok	adjustment unread with post hoc off		options
-c0521	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bonferroni						ok			options
-c0522	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok			options
-c0523	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bh						ok			options
-c0524	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				0	holm						ok	conditions reversed: post-hoc pair labels and signs flip; adjustment unread with post hoc off		options
-c0525	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bonferroni						ok	conditions reversed: post-hoc pair labels and signs flip		options
-c0526	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	holm						ok	conditions reversed: post-hoc pair labels and signs flip		options
-c0527	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bh						ok	conditions reversed: post-hoc pair labels and signs flip		options
-c0528	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				0	holm						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the F-ratio is undefined and the RM ANOVA refuses on both sides before adjust is ever read (posthoc off)		options
-c0529	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bonferroni						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the omnibus F-ratio is undefined and the RM ANOVA refuses on both sides before Bonferroni post hoc ever runs		options
-c0530	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	holm						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the omnibus F-ratio is undefined and the RM ANOVA refuses on both sides before Holm post hoc ever runs		options
-c0531	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bh						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the omnibus F-ratio is undefined and the RM ANOVA refuses on both sides before the BH post hoc ever runs		options
-c0532	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				0	holm						ok	n = 2; adjustment unread with post hoc off		options
-c0533	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bonferroni						ok	n = 2		options
-c0534	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	holm						ok	n = 2		options
-c0535	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bh						ok	n = 2		options
-c0536	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				0	holm						ok	k = 2, the floor the orchestrator allows; adjustment unread with post hoc off		options
-c0537	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bonferroni						ok	k = 2, the floor the orchestrator allows		options
-c0538	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	holm						ok	k = 2, the floor the orchestrator allows		options
-c0539	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bh						ok	k = 2, the floor the orchestrator allows		options
-c0540	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				0	holm						ok	adjustment unread with post hoc off		options
-c0541	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bonferroni						ok			options
-c0542	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok			options
-c0543	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft|SPL_medium|SPL_loud|				1	bh						ok			options
-c0544	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				0	holm						ok	conditions reversed: post-hoc pair labels and signs flip; adjustment unread with post hoc off		options
-c0545	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bonferroni						ok	conditions reversed: post-hoc pair labels and signs flip		options
-c0546	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	holm						ok	conditions reversed: post-hoc pair labels and signs flip		options
-c0547	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud|SPL_medium|SPL_soft|				1	bh						ok	conditions reversed: post-hoc pair labels and signs flip		options
-c0548	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				0	holm						ok	perfectly additive: zero subject x condition residual; adjustment unread with post hoc off		options
-c0549	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bonferroni						ok	perfectly additive: zero subject x condition residual		options
-c0550	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	holm						ok	perfectly additive: zero subject x condition residual		options
-c0551	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft|medium|loud|				1	bh						ok	perfectly additive: zero subject x condition residual		options
-c0552	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				0	holm						ok	n = 2; adjustment unread with post hoc off		options
-c0553	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bonferroni						ok	n = 2		options
-c0554	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	holm						ok	n = 2		options
-c0555	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft|medium|loud|				1	bh						ok	n = 2		options
-c0556	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				0	holm						ok	k = 2, the floor the orchestrator allows; adjustment unread with post hoc off		options
-c0557	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bonferroni						ok	k = 2, the floor the orchestrator allows		options
-c0558	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	holm						ok	k = 2, the floor the orchestrator allows		options
-c0559	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre|jitter_post|				1	bh						ok	k = 2, the floor the orchestrator allows		options
-c0560	analysis	emlRunRepeatedMeasuresAnalysis	rp_r3_paired_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						refuse	every value identical: no variance to partition		options
-c0561	analysis	emlRunFriedmanAnalysis	rp_r3_paired_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok	every value identical: no variance to partition; Friedman ranks and survives where RM-ANOVA refuses		options
-c0562	analysis	emlRunRepeatedMeasuresAnalysis	rp_r6_describe_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						refuse	zero subject x condition residual on the 4 complete rows		options
-c0563	analysis	emlRunFriedmanAnalysis	rp_r6_describe_input	SPL_soft|SPL_medium|SPL_loud|				1	holm						ok	zero subject x condition residual on the 4 complete rows; Friedman ranks and survives where RM-ANOVA refuses		options
+c0520	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft,SPL_medium,SPL_loud,				0	holm						ok	adjustment unread with post hoc off		options
+c0521	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft,SPL_medium,SPL_loud,				1	bonferroni						ok			options
+c0522	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						ok			options
+c0523	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_soft,SPL_medium,SPL_loud,				1	bh						ok			options
+c0524	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud,SPL_medium,SPL_soft,				0	holm						ok	conditions reversed: post-hoc pair labels and signs flip; adjustment unread with post hoc off		options
+c0525	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud,SPL_medium,SPL_soft,				1	bonferroni						ok	conditions reversed: post-hoc pair labels and signs flip		options
+c0526	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud,SPL_medium,SPL_soft,				1	holm						ok	conditions reversed: post-hoc pair labels and signs flip		options
+c0527	analysis	emlRunRepeatedMeasuresAnalysis	demo_rm3_input	SPL_loud,SPL_medium,SPL_soft,				1	bh						ok	conditions reversed: post-hoc pair labels and signs flip		options
+c0528	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft,medium,loud,				0	holm						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the F-ratio is undefined and the RM ANOVA refuses on both sides before adjust is ever read (posthoc off)		options
+c0529	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft,medium,loud,				1	bonferroni						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the omnibus F-ratio is undefined and the RM ANOVA refuses on both sides before Bonferroni post hoc ever runs		options
+c0530	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft,medium,loud,				1	holm						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the omnibus F-ratio is undefined and the RM ANOVA refuses on both sides before Holm post hoc ever runs		options
+c0531	analysis	emlRunRepeatedMeasuresAnalysis	rp_r1_rmanova_input	soft,medium,loud,				1	bh						refuse	all 4 subjects step by exactly +10.0 per condition: zero subject x condition residual, so the omnibus F-ratio is undefined and the RM ANOVA refuses on both sides before the BH post hoc ever runs		options
+c0532	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft,medium,loud,				0	holm						ok	n = 2; adjustment unread with post hoc off		options
+c0533	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft,medium,loud,				1	bonferroni						ok	n = 2		options
+c0534	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft,medium,loud,				1	holm						ok	n = 2		options
+c0535	analysis	emlRunRepeatedMeasuresAnalysis	rp_r2_rmanova_input	soft,medium,loud,				1	bh						ok	n = 2		options
+c0536	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre,jitter_post,				0	holm						ok	k = 2, the floor the orchestrator allows; adjustment unread with post hoc off		options
+c0537	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre,jitter_post,				1	bonferroni						ok	k = 2, the floor the orchestrator allows		options
+c0538	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre,jitter_post,				1	holm						ok	k = 2, the floor the orchestrator allows		options
+c0539	analysis	emlRunRepeatedMeasuresAnalysis	demo_paired_input	jitter_pre,jitter_post,				1	bh						ok	k = 2, the floor the orchestrator allows		options
+c0540	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft,SPL_medium,SPL_loud,				0	holm						ok	adjustment unread with post hoc off		options
+c0541	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft,SPL_medium,SPL_loud,				1	bonferroni						ok			options
+c0542	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						ok			options
+c0543	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_soft,SPL_medium,SPL_loud,				1	bh						ok			options
+c0544	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud,SPL_medium,SPL_soft,				0	holm						ok	conditions reversed: post-hoc pair labels and signs flip; adjustment unread with post hoc off		options
+c0545	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud,SPL_medium,SPL_soft,				1	bonferroni						ok	conditions reversed: post-hoc pair labels and signs flip		options
+c0546	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud,SPL_medium,SPL_soft,				1	holm						ok	conditions reversed: post-hoc pair labels and signs flip		options
+c0547	analysis	emlRunFriedmanAnalysis	demo_rm3_input	SPL_loud,SPL_medium,SPL_soft,				1	bh						ok	conditions reversed: post-hoc pair labels and signs flip		options
+c0548	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft,medium,loud,				0	holm						ok	perfectly additive: zero subject x condition residual; adjustment unread with post hoc off		options
+c0549	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft,medium,loud,				1	bonferroni						ok	perfectly additive: zero subject x condition residual		options
+c0550	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft,medium,loud,				1	holm						ok	perfectly additive: zero subject x condition residual		options
+c0551	analysis	emlRunFriedmanAnalysis	rp_r1_rmanova_input	soft,medium,loud,				1	bh						ok	perfectly additive: zero subject x condition residual		options
+c0552	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft,medium,loud,				0	holm						ok	n = 2; adjustment unread with post hoc off		options
+c0553	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft,medium,loud,				1	bonferroni						ok	n = 2		options
+c0554	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft,medium,loud,				1	holm						ok	n = 2		options
+c0555	analysis	emlRunFriedmanAnalysis	rp_r2_rmanova_input	soft,medium,loud,				1	bh						ok	n = 2		options
+c0556	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre,jitter_post,				0	holm						ok	k = 2, the floor the orchestrator allows; adjustment unread with post hoc off		options
+c0557	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre,jitter_post,				1	bonferroni						ok	k = 2, the floor the orchestrator allows		options
+c0558	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre,jitter_post,				1	holm						ok	k = 2, the floor the orchestrator allows		options
+c0559	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre,jitter_post,				1	bh						ok	k = 2, the floor the orchestrator allows		options
+c0560	analysis	emlRunRepeatedMeasuresAnalysis	rp_r3_paired_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						refuse	every value identical: no variance to partition		options
+c0561	analysis	emlRunFriedmanAnalysis	rp_r3_paired_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						ok	every value identical: no variance to partition; Friedman ranks and survives where RM-ANOVA refuses		options
+c0562	analysis	emlRunRepeatedMeasuresAnalysis	rp_r6_describe_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						refuse	zero subject x condition residual on the 4 complete rows		options
+c0563	analysis	emlRunFriedmanAnalysis	rp_r6_describe_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						ok	zero subject x condition residual on the 4 complete rows; Friedman ranks and survives where RM-ANOVA refuses		options
 c0566	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.90			ok			options
 c0567	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.95			ok			options
 c0568	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.99			ok			options

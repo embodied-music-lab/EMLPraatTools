@@ -11,7 +11,7 @@
 # Provides: @emlRankVector, @emlCountIf, @emlSubset, @emlUniqueValues,
 #   @emlFrequency, @emlCumulativeSum, @emlDiff, @emlLag, @emlBinData,
 #   @emlZScore, @emlRemoveUndefined, @emlSortWithIndex,
-#   @emlConcatenateVectors, @emlRepeatVector
+#   @emlConcatenateVectors, @emlRepeatVector, @emlCommaListToVector
 #
 # Internal helpers: @eml_sortPairsByValue
 #
@@ -1053,6 +1053,48 @@ endproc
 # Backstop GC: keep ONLY the space-separated ids in .keep$, remove all else.
 procedure emlKeepOnly: .keep$
     @eml_reap: -1, .keep$
+endproc
+
+# ============================================================================
+# @emlCommaListToVector
+# ============================================================================
+# The one comma-string to string-vector bridge for every door that collects
+# its list as free text instead of a native vector -- the repeated-measures
+# and Friedman doors' condition list, built by the wizard from its condition
+# dropdowns and by the kit runner from matrix.tsv's col_a field. Both callers
+# convert here, so the comma convention lives in one place.
+#
+# The split is the interpreter's own splitBy$#. This procedure adds the two
+# things it does not: it trims each item of surrounding whitespace and drops
+# every empty item, so a trailing comma or a doubled comma never becomes a
+# blank condition.
+#
+# Input:
+#   .s$  a comma-separated string, e.g. "SPL_soft, SPL_medium, SPL_loud".
+#
+# Output:
+#   .v$#  string vector of the non-empty items, each trimmed of leading and
+#         trailing whitespace.
+#   .n  size of .v$# (0 for an empty or all-comma input).
+#
+# WHAT THIS DOES NOT DO. It does not resolve names against a table, does not
+# de-duplicate, and does not case-fold. A caller that needs those decisions
+# makes them on the returned vector.
+# ============================================================================
+procedure emlCommaListToVector: .s$
+    .raw$# = splitBy$# (.s$, ",")
+    .n = 0
+    for .i to size (.raw$#)
+        .tok$ = replace_regex$ (.raw$# [.i], "^\s+|\s+$", "", 0)
+        if .tok$ <> ""
+            .n += 1
+            .part$ [.n] = .tok$
+        endif
+    endfor
+    .v$# = empty$# (.n)
+    for .i to .n
+        .v$# [.i] = .part$ [.i]
+    endfor
 endproc
 
 
