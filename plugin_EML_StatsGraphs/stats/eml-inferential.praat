@@ -4907,8 +4907,9 @@ procedure emlEpsilonSquared: .h, .n
         # which pushes the raw ratio above 1; hence the cap below.
         if .result > 1
             .capped = 1
+            @eml_fixed: .result, 6
             .warning$ = "Epsilon-squared came out as H / (N - 1) = "
-            ... + fixed$ (.result, 6) + ", which exceeds 1; it was "
+            ... + eml_fixed.result$ + ", which exceeds 1; it was "
             ... + "capped at 1."
             .result = 1
         endif

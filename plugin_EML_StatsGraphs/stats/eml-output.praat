@@ -3479,19 +3479,11 @@ endproc
 # ────────────────────────────────────────────────────────────────────────────
 procedure eml_saveMergeFormats: .list$, .more$
     .result$ = .list$
-    .rest$ = .more$ + ","
-    while index (.rest$, ",") > 0
-        .c = index (.rest$, ",")
-        .one$ = left$ (.rest$, .c - 1)
-        while startsWith (.one$, " ")
-            .one$ = right$ (.one$, length (.one$) - 1)
-        endwhile
-        if .one$ <> ""
-            @eml_saveAddFormat: .result$, .one$
-            .result$ = eml_saveAddFormat.result$
-        endif
-        .rest$ = right$ (.rest$, length (.rest$) - .c)
-    endwhile
+    @emlCommaListToVector: .more$
+    for .i to emlCommaListToVector.n
+        @eml_saveAddFormat: .result$, emlCommaListToVector.v$# [.i]
+        .result$ = eml_saveAddFormat.result$
+    endfor
 endproc
 
 
@@ -3655,23 +3647,16 @@ procedure eml_saveFormatRedirectLines: .missing$, .landed$, .fileList$
 
     # ONE SENTENCE PER FORMAT THAT DID NOT ARRIVE, naming it. A user who
     # ticked both extras and got one of them needs to know which.
-    .rest$ = .missing$ + ", "
-    while index (.rest$, ",") > 0
-        .c = index (.rest$, ",")
-        .one$ = left$ (.rest$, .c - 1)
-        while startsWith (.one$, " ")
-            .one$ = right$ (.one$, length (.one$) - 1)
-        endwhile
-        if .one$ <> ""
-            @emlWrapText: "Praat on this system did not write the " + .one$
-            ... + " file, so no " + .one$ + " was saved.", 62
-            for .wl from 1 to emlWrapText.nLines
-                .nLines = .nLines + 1
-                .line$ [.nLines] = emlWrapText.line$ [.wl]
-            endfor
-        endif
-        .rest$ = right$ (.rest$, length (.rest$) - .c)
-    endwhile
+    @emlCommaListToVector: .missing$
+    for .mi to emlCommaListToVector.n
+        .one$ = emlCommaListToVector.v$# [.mi]
+        @emlWrapText: "Praat on this system did not write the " + .one$
+        ... + " file, so no " + .one$ + " was saved.", 62
+        for .wl from 1 to emlWrapText.nLines
+            .nLines = .nLines + 1
+            .line$ [.nLines] = emlWrapText.line$ [.wl]
+        endfor
+    endfor
 
     # WHAT THIS PRESS DID WRITE -- read off the disk a moment ago rather than
     # inferred from the tickboxes, and said before any advice, because it is
@@ -5202,8 +5187,10 @@ endproc
 
 procedure emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
 ... .nUndefined, .parseNote$
-    .displayColumn$ = replace$ (.dataCol$, "_", " ", 0)
-    .displayTable$ = replace$ (.tableName$, "_", " ", 0)
+    @emlUnderscoreToSpace: .dataCol$
+    .displayColumn$ = emlUnderscoreToSpace.result$
+    @emlUnderscoreToSpace: .tableName$
+    .displayTable$ = emlUnderscoreToSpace.result$
 
     @emlReportHeader: "Descriptive Statistics"
 

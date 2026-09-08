@@ -213,8 +213,8 @@ scripts/eml-wizard.praat	4295	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 se
 scripts/eml-wizard.praat	4318	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 6 (deferred to the graphs/scripts round)
 stats/eml-anova-kernel.praat	1016	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-categorical.praat	118	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-categorical.praat	182	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-categorical.praat	195	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-categorical.praat	183	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-categorical.praat	196	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-core-utilities.praat	662	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-core-utilities.praat	663	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-inferential.praat	204	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
@@ -241,23 +241,23 @@ stats/eml-inferential.praat	4132	pending summation-canon ruling, AUDIT_PROCEDURE
 stats/eml-inferential.praat	4171	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-inferential.praat	4180	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-inferential.praat	4181	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6083	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6421	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6427	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	6084	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	6422	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-inferential.praat	6428	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6432	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6625	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6629	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	6429	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	6433	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	6626	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-inferential.praat	6630	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6919	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6921	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	6631	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	6920	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-inferential.praat	6922	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	7102	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	6923	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-inferential.praat	7103	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	7107	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	7104	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-inferential.praat	7108	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-inferential.praat	7109	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-inferential.praat	7110	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	7111	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-lmm.praat	1999	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-lmm.praat	2469	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
 stats/eml-psychometrics.praat	182	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
@@ -295,24 +295,19 @@ stats/eml-analysis.praat	3236	post-freeze ledger, recorder-text fixed$ bypass in
 stats/eml-analysis.praat	3462	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
 stats/eml-analysis.praat	3463	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
 stats/eml-analysis.praat	3465	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-analysis.praat	3623	pending B10 ruling
-stats/eml-analysis.praat	3671	pending B10 ruling
-stats/eml-analysis.praat	3750	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-analysis.praat	3751	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-analysis.praat	4113	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-analysis.praat	4114	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
+stats/eml-analysis.praat	3752	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
+stats/eml-analysis.praat	3753	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
+stats/eml-analysis.praat	4115	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
 stats/eml-analysis.praat	4116	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-analysis.praat	4117	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-analysis.praat	5178	post-freeze ledger, consolidate with eml_csvQuote/eml_rwQuote
-stats/eml-analysis.praat	5808	pending B10 ruling
-stats/eml-analysis.praat	5821	pending B10 ruling
-stats/eml-analysis.praat	5900	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-analysis.praat	5901	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
+stats/eml-analysis.praat	4118	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
+stats/eml-analysis.praat	4119	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
+stats/eml-analysis.praat	5180	post-freeze ledger, consolidate with eml_csvQuote/eml_rwQuote
+stats/eml-analysis.praat	5902	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
 stats/eml-analysis.praat	5903	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-analysis.praat	5904	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-analysis.praat	6152	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-analysis.praat	6153	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-categorical.praat	173	pending B10 ruling
+stats/eml-analysis.praat	5905	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
+stats/eml-analysis.praat	5906	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
+stats/eml-analysis.praat	6154	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
+stats/eml-analysis.praat	6155	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
 stats/eml-extract.praat	105	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
 stats/eml-extract.praat	222	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
 stats/eml-extract.praat	379	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
@@ -320,45 +315,16 @@ stats/eml-extract.praat	1340	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 sec
 stats/eml-extract.praat	1479	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
 stats/eml-extract.praat	1798	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
 stats/eml-extract.praat	2024	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
-stats/eml-inferential.praat	4911	pending B10 ruling
-stats/eml-lmm.praat	4412	pending B10 ruling
-stats/eml-lmm.praat	4415	pending B10 ruling
-stats/eml-lmm.praat	4416	pending B10 ruling
-stats/eml-lmm.praat	4417	pending B10 ruling
-stats/eml-lmm.praat	4418	pending B10 ruling
-stats/eml-lmm.praat	4430	pending B10 ruling
-stats/eml-lmm.praat	4431	pending B10 ruling
-stats/eml-lmm.praat	4432	pending B10 ruling
-stats/eml-lmm.praat	4433	pending B10 ruling
-stats/eml-lmm.praat	4434	pending B10 ruling
-stats/eml-lmm.praat	4467	pending B10 ruling
-stats/eml-lmm.praat	4473	pending B10 ruling
-stats/eml-lmm.praat	4478	pending B10 ruling
-stats/eml-lmm.praat	4479	pending B10 ruling
-stats/eml-lmm.praat	4510	pending B10 ruling
-stats/eml-lmm.praat	4511	pending B10 ruling
-stats/eml-lmm.praat	4512	pending B10 ruling
-stats/eml-lmm.praat	4513	pending B10 ruling
-stats/eml-lmm.praat	4638	pending B10 ruling
-stats/eml-lmm.praat	4641	pending B10 ruling
-stats/eml-lmm.praat	4660	pending B10 ruling
-stats/eml-lmm.praat	4661	pending B10 ruling
-stats/eml-output.praat	3483	pending B10 ruling
-stats/eml-output.praat	3484	pending B10 ruling
-stats/eml-output.praat	3659	pending B10 ruling
-stats/eml-output.praat	3660	pending B10 ruling
-stats/eml-output.praat	4226	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
-stats/eml-output.praat	4229	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
+stats/eml-output.praat	4211	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
+stats/eml-output.praat	4214	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
+stats/eml-output.praat	4222	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
+stats/eml-output.praat	4225	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
+stats/eml-output.praat	4228	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
+stats/eml-output.praat	4231	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
+stats/eml-output.praat	4234	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
 stats/eml-output.praat	4237	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
 stats/eml-output.praat	4240	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
 stats/eml-output.praat	4243	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
-stats/eml-output.praat	4246	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
-stats/eml-output.praat	4249	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
-stats/eml-output.praat	4252	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
-stats/eml-output.praat	4255	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
-stats/eml-output.praat	4258	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
-stats/eml-output.praat	5205	pending B10 ruling
-stats/eml-output.praat	5206	pending B10 ruling
 stats/eml-record.praat	2287	replay literal must round-trip the stored value
 stats/eml-record.praat	3006	load-order-forced local copy of eml_fixed; consolidation is the module-list post-freeze ledger item
 stats/eml-record.praat	5861	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
@@ -371,5 +337,3 @@ stats/eml-record.praat	5883	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 sect
 stats/eml-record.praat	5886	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
 stats/eml-record.praat	5889	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
 stats/eml-record.praat	5892	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
-stats/eml-wilcoxon-interval.praat	724	pending B10 ruling
-stats/eml-wilcoxon-interval.praat	726	pending B10 ruling

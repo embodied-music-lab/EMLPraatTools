@@ -3619,8 +3619,9 @@ procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .grou
                 if .pgSkipList$ <> ""
                     .pgSkipList$ = .pgSkipList$ + ", "
                 endif
+                @emlUnderscoreToSpace: .pgLabel$ [.pgI]
                 .pgSkipList$ = .pgSkipList$
-                ... + replace$ (.pgLabel$ [.pgI], "_", " ", 0)
+                ... + emlUnderscoreToSpace.result$
             else
                 .pgSkipMore = .pgSkipMore + 1
             endif
@@ -3668,7 +3669,8 @@ procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .grou
 
     for .pgI from 1 to .pgTotal
         if .pgN [.pgI] >= 3
-            .pgDisplay$ = replace$ (.pgLabel$ [.pgI], "_", " ", 0)
+            @emlUnderscoreToSpace: .pgLabel$ [.pgI]
+            .pgDisplay$ = emlUnderscoreToSpace.result$
             selectObject: .tableId
             @eml_getGroupPairedData: .tableId, .predCol$, .respCol$,
             ... .groupCol$, .pgLabel$ [.pgI]
@@ -5803,13 +5805,13 @@ procedure emlRMAnovaTest: .data##, .n, .k
         else
             .subjPhrase$ = string$ (.n) + " subjects"
         endif
+        @eml_fixed: 1 / (.k - 1), 4
         .warning$ = "n = " + .subjPhrase$ + ". Greenhouse-Geisser "
         ... + "epsilon is forced to its lower bound "
-        ... + fixed$ (1 / (.k - 1), 4) + " for any data at this n, so the "
+        ... + eml_fixed.result$ + " for any data at this n, so the "
         ... + "sphericity correction carries no information. Read F, p "
         ... + "and the corrected p as a description of the data in hand, "
         ... + "not as a test of anything beyond it."
-        @eml_fixed: 1 / (.k - 1), 4
         .warningPrinted$ = "n = " + .subjPhrase$ + ". "
         ... + "Greenhouse-Geisser epsilon is forced to its lower bound "
         ... + eml_fixed.result$ + " for any data at this n, so the "
@@ -5817,11 +5819,11 @@ procedure emlRMAnovaTest: .data##, .n, .k
         ... + "and the corrected p as a description of the data in hand, "
         ... + "not as a test of anything beyond it."
     elsif .ggEpsilon <= 1 / (.k - 1) + 1e-9
+        @eml_fixed: 1 / (.k - 1), 4
         .warning$ = "Greenhouse-Geisser epsilon is at its lower bound "
-        ... + fixed$ (1 / (.k - 1), 4) + ", the maximum possible departure "
+        ... + eml_fixed.result$ + ", the maximum possible departure "
         ... + "from sphericity. The corrected p is the most conservative "
         ... + "value the correction can produce."
-        @eml_fixed: 1 / (.k - 1), 4
         .warningPrinted$ = "Greenhouse-Geisser epsilon is at its lower bound "
         ... + eml_fixed.result$ + ", the maximum possible departure "
         ... + "from sphericity. The corrected p is the most conservative "

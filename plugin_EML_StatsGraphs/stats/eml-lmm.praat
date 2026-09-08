@@ -4409,13 +4409,22 @@ procedure emlLMMSummary
 
     # REML criterion
     if emlLMM.useREML
-        appendInfoLine: "REML criterion at convergence: ", fixed$ (emlLMM.deviance, 1)
+        @eml_fixed: emlLMM.deviance, 1
+        appendInfoLine: "REML criterion at convergence: ", eml_fixed.result$
     else
         appendInfoLine: "     AIC      BIC   logLik deviance"
-        appendInfoLine: fixed$ (emlLMM.aic, 1), "  ",
-            ... fixed$ (emlLMM.bic, 1), "  ",
-            ... fixed$ (emlLMM.logLik, 1), "  ",
-            ... fixed$ (emlLMM.deviance, 1)
+        @eml_fixed: emlLMM.aic, 1
+        .aic$ = eml_fixed.result$
+        @eml_fixed: emlLMM.bic, 1
+        .bic$ = eml_fixed.result$
+        @eml_fixed: emlLMM.logLik, 1
+        .logLik$ = eml_fixed.result$
+        @eml_fixed: emlLMM.deviance, 1
+        .deviance$ = eml_fixed.result$
+        appendInfoLine: .aic$, "  ",
+            ... .bic$, "  ",
+            ... .logLik$, "  ",
+            ... .deviance$
     endif
     appendInfoLine: ""
 
@@ -4427,11 +4436,21 @@ procedure emlLMMSummary
     .n75 = max (1, floor (.nVal * 0.75))
     appendInfoLine: "Scaled residuals:"
     appendInfoLine: "     Min       1Q   Median       3Q      Max"
-    appendInfoLine: fixed$ (.sortedScaled# [1], 4), "  ",
-        ... fixed$ (.sortedScaled# [.n25], 4), "  ",
-        ... fixed$ (.sortedScaled# [.n50], 4), "  ",
-        ... fixed$ (.sortedScaled# [.n75], 4), "  ",
-        ... fixed$ (.sortedScaled# [.nVal], 4)
+    @eml_fixed: .sortedScaled# [1], 4
+    .rMin$ = eml_fixed.result$
+    @eml_fixed: .sortedScaled# [.n25], 4
+    .r1Q$ = eml_fixed.result$
+    @eml_fixed: .sortedScaled# [.n50], 4
+    .rMed$ = eml_fixed.result$
+    @eml_fixed: .sortedScaled# [.n75], 4
+    .r3Q$ = eml_fixed.result$
+    @eml_fixed: .sortedScaled# [.nVal], 4
+    .rMax$ = eml_fixed.result$
+    appendInfoLine: .rMin$, "  ",
+        ... .r1Q$, "  ",
+        ... .rMed$, "  ",
+        ... .r3Q$, "  ",
+        ... .rMax$
     appendInfoLine: ""
 
     # Random effects
@@ -4464,19 +4483,28 @@ procedure emlLMMSummary
             for .pp from 1 to .padLen2
                 appendInfo: " "
             endfor
-            appendInfo: fixed$ (.var, 4), " ", fixed$ (.sd, 4)
+            @eml_fixed: .var, 4
+            .var$ = eml_fixed.result$
+            @eml_fixed: .sd, 4
+            .sd$ = eml_fixed.result$
+            appendInfo: .var$, " ", .sd$
             # Correlations
             if .kk > 1
                 .corr = emlLMM.varCov'.jj'## [.kk, 1] /
                     ... (sqrt (emlLMM.varCov'.jj'## [.kk, .kk]) *
                     ... sqrt (emlLMM.varCov'.jj'## [1, 1]))
-                appendInfo: "  ", fixed$ (.corr, 2)
+                @eml_fixed: .corr, 2
+                appendInfo: "  ", eml_fixed.result$
             endif
             appendInfoLine: ""
         endfor
     endfor
-    appendInfoLine: " Residual              ", fixed$ (emlLMM.sigma * emlLMM.sigma, 4),
-        ... " ", fixed$ (emlLMM.sigma, 4)
+    @eml_fixed: emlLMM.sigma * emlLMM.sigma, 4
+    .sigma2$ = eml_fixed.result$
+    @eml_fixed: emlLMM.sigma, 4
+    .sigma$ = eml_fixed.result$
+    appendInfoLine: " Residual              ", .sigma2$,
+        ... " ", .sigma$
     appendInfoLine: "Number of obs: ", .nVal
 
     # Group counts
@@ -4507,10 +4535,14 @@ procedure emlLMMSummary
         for .pp from 1 to .padLen
             appendInfo: " "
         endfor
-        appendInfo: fixed$ (emlLMM.beta# [.jj], 6), " "
-        appendInfo: fixed$ (emlLMM.seBeta# [.jj], 6), " "
-        appendInfo: fixed$ (emlLMM.dfBeta# [.jj], 2), " "
-        appendInfo: fixed$ (emlLMM.tBeta# [.jj], 3), " "
+        @eml_fixed: emlLMM.beta# [.jj], 6
+        appendInfo: eml_fixed.result$, " "
+        @eml_fixed: emlLMM.seBeta# [.jj], 6
+        appendInfo: eml_fixed.result$, " "
+        @eml_fixed: emlLMM.dfBeta# [.jj], 2
+        appendInfo: eml_fixed.result$, " "
+        @eml_fixed: emlLMM.tBeta# [.jj], 3
+        appendInfo: eml_fixed.result$, " "
         # Format p-value
         if emlLMM.pBeta# [.jj] < 2e-16
             appendInfo: "< 2e-16"
@@ -4634,11 +4666,13 @@ procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .d
     if .doR2
         @emlJohnsonR2
         appendInfoLine: ""
+        @eml_fixed: emlJohnsonR2.r2Marginal, 4
         .r2mLine$ = "Marginal R" + "^2" + " (fixed effects): "
-            ... + fixed$ (emlJohnsonR2.r2Marginal, 4)
+            ... + eml_fixed.result$
         appendInfoLine: .r2mLine$
+        @eml_fixed: emlJohnsonR2.r2Conditional, 4
         .r2cLine$ = "Conditional R" + "^2" + " (fixed + random): "
-            ... + fixed$ (emlJohnsonR2.r2Conditional, 4)
+            ... + eml_fixed.result$
         appendInfoLine: .r2cLine$
     endif
 
@@ -4657,8 +4691,10 @@ procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .d
         appendInfoLine: .ciHdr$
         for .j from 1 to emlLMM.nFixedCols
             .cn$ = emlModelMatrix.colName'.j'$
-            .lo$ = fixed$ (emlWaldCI.lower# [.j], 4)
-            .hi$ = fixed$ (emlWaldCI.upper# [.j], 4)
+            @eml_fixed: emlWaldCI.lower# [.j], 4
+            .lo$ = eml_fixed.result$
+            @eml_fixed: emlWaldCI.upper# [.j], 4
+            .hi$ = eml_fixed.result$
             .ciRow$ = "  " + .cn$ + ": [" + .lo$ + ", " + .hi$ + "]"
             appendInfoLine: .ciRow$
         endfor

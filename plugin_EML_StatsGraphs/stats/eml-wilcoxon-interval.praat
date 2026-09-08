@@ -719,11 +719,14 @@ procedure emlWilcoxonIntervalApprox: .v1#, .v2#, .paired, .level
                 # doubled even once, not only when it reaches alpha >= 1.
                 if .alphaUsed >= 1 or (1 - .level) < .alphaUsed * 0.75
                     .achievedLevel = 1 - min (1, .alphaUsed)
+                    @eml_fixed: .achievedLevel, 6
+                    .achievedLevel$ = eml_fixed.result$
+                    @eml_fixed: .level, 6
                     .warning$ = "Requested confidence level not achievable "
                     ... + "with this sample; achieved level "
-                    ... + fixed$ (.achievedLevel, 6)
+                    ... + .achievedLevel$
                     ... + " reported instead of the requested "
-                    ... + fixed$ (.level, 6) + "."
+                    ... + eml_fixed.result$ + "."
                 else
                     .achievedLevel = .level
                 endif

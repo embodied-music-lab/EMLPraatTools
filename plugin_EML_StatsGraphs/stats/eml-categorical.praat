@@ -167,10 +167,11 @@ procedure emlChiSquareIndependence: .observed##, .correction
                 endfor
             endfor
             if .nCellsBelow5 > 0
+                @eml_fixed: .minExpected, 4
                 .warning$ = "Expected counts below 5 in "
                 ... + string$ (.nCellsBelow5) + " of "
                 ... + string$ (.nRows * .nCols) + " cells (smallest "
-                ... + fixed$ (.minExpected, 4) + "); the chi-square "
+                ... + eml_fixed.result$ + "); the chi-square "
                 ... + "approximation may be poor."
             endif
 
