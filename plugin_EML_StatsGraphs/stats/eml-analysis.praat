@@ -3431,68 +3431,20 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
     endif
 
     if .error$ = ""
-        # Extract paired values, pairwise-delete undefined.
-        ;
-        ; Both columns are validated strict=0, so either MAY hold missing
-        ; cells -- but most real columns hold none. @eml_strictNumericColumn
-        ; probes each: when BOTH are strictly numeric (no missing, no
-        ; non-numeric cell), every row is a complete pair and the two
-        ; whole-column reads are row-aligned, so the clean case takes one
-        ; C-speed "Get all numbers in column:" per column with no per-row
-        ; sweep. Only when a column actually holds a hole does the pairwise
-        ; filter run per row -- "Get all numbers in column:" raises on a
-        ; missing cell and Praat has no boolean-mask vector index, so a
-        ; pairwise-complete drop cannot be vectorised. Proven bit-identical:
-        ; for a strict column the whole-column read equals the per-row sweep
-        ; in order and value.
-        @eml_strictNumericColumn: .tableId, .predCol$
-        .predStrict = eml_strictNumericColumn.strict
-        @eml_strictNumericColumn: .tableId, .depCol$
-        .depStrict = eml_strictNumericColumn.strict
-        .bothComplete = .predStrict and .depStrict
-
-        if .bothComplete
-            selectObject: .tableId
-            .xClean# = Get all numbers in column: .predCol$
-            .yClean# = Get all numbers in column: .depCol$
-            .nValid = .nRows
-        else
-            ; VECTOR-EXEMPT: cat2 -- count pass of the pairwise-complete filter;
-            ; runs only when a column has a hole, per row because the drop is
-            ; pairwise and Praat has no boolean-mask vector index.
-            .nValid = 0
-            for .iRow from 1 to .nRows
-                selectObject: .tableId
-                .xVal = Get value: .iRow, .predCol$
-                .yVal = Get value: .iRow, .depCol$
-                if .xVal <> undefined and .yVal <> undefined
-                    .nValid += 1
-                endif
-            endfor
-        endif
+        # Extract paired values, pairwise-delete undefined. One home for
+        # paired extraction: @emlExtractPairedColumns already carries the
+        # strict-column fast path (whole-column reads when neither column
+        # has a hole) and the row-wise pairwise-complete fallback, so this
+        # orchestrator does not reimplement either.
+        @emlExtractPairedColumns: .tableId, .predCol$, .depCol$
+        .xClean# = emlExtractPairedColumns.data1#
+        .yClean# = emlExtractPairedColumns.data2#
+        .nValid = emlExtractPairedColumns.n
 
         if .nValid < 3
             .error$ = "Need at least 3 non-missing paired observations (found "
             ... + string$ (.nValid) + ")."
         endif
-    endif
-
-    if .error$ = "" and not .bothComplete
-        .xClean# = zero# (.nValid)
-        .yClean# = zero# (.nValid)
-        .idx = 0
-        ; VECTOR-EXEMPT: cat2 -- fill pass of the pairwise-complete filter; per
-        ; row for the same reason as the count pass above.
-        for .iRow from 1 to .nRows
-            selectObject: .tableId
-            .xVal = Get value: .iRow, .predCol$
-            .yVal = Get value: .iRow, .depCol$
-            if .xVal <> undefined and .yVal <> undefined
-                .idx += 1
-                .xClean# [.idx] = .xVal
-                .yClean# [.idx] = .yVal
-            endif
-        endfor
     endif
 
     if .error$ = ""

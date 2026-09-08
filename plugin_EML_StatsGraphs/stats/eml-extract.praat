@@ -394,37 +394,39 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
     elsif .nRows = 0
         .n = 0
     else
-        # First pass: count complete pairs
-        .countComplete = 0
-        .countExcluded = 0
+        # Fast path: if both columns numericise strictly (every cell reads
+        # as the number it looks like, none empty/undefined/coerced), then
+        # every row is a complete pair by construction and the row-wise
+        # eml_readCell walk below is redundant -- Praat's own column
+        # numericiser gives the identical values in one call each. Checked
+        # with the same @eml_strictNumericColumn sentinel probe the row-wise
+        # path already relies on (via @eml_openColumn), so a column that
+        # would fail here is guaranteed to fail there too and fall through.
+        @eml_strictNumericColumn: .tableId, .col1$
+        .strict1 = eml_strictNumericColumn.strict
+        @eml_strictNumericColumn: .tableId, .col2$
+        .strict2 = eml_strictNumericColumn.strict
 
-        # This is the ROW-wise path. It must agree cell for cell with
-        # the column-wise paths above, so it reads through the same helper.
-        @eml_openColumn: .tableId, .col1$
-        .clean1 = eml_openColumn.clean
-        @eml_openColumn: .tableId, .col2$
-        .clean2 = eml_openColumn.clean
+        if .strict1 = 1 and .strict2 = 1
+            selectObject: .tableId
+            .data1# = Get all numbers in column: .col1$
+            selectObject: .tableId
+            .data2# = Get all numbers in column: .col2$
 
-        for .row from 1 to .nRows
-            @eml_readCell: .tableId, .row, .col1$, .clean1
-            .val1 = eml_readCell.value
-            @eml_readCell: .tableId, .row, .col2$, .clean2
-            .val2 = eml_readCell.value
+            .n = .nRows
+            .nExcludedRows = 0
+        else
+            # First pass: count complete pairs
+            .countComplete = 0
+            .countExcluded = 0
 
-            if .val1 <> undefined and .val2 <> undefined
-                .countComplete = .countComplete + 1
-            else
-                .countExcluded = .countExcluded + 1
-            endif
-        endfor
-        
-        # Allocate vectors
-        if .countComplete > 0
-            .data1# = zero#(.countComplete)
-            .data2# = zero#(.countComplete)
-            
-            # Second pass: populate
-            .idx = 0
+            # This is the ROW-wise path. It must agree cell for cell with
+            # the column-wise paths above, so it reads through the same helper.
+            @eml_openColumn: .tableId, .col1$
+            .clean1 = eml_openColumn.clean
+            @eml_openColumn: .tableId, .col2$
+            .clean2 = eml_openColumn.clean
+
             for .row from 1 to .nRows
                 @eml_readCell: .tableId, .row, .col1$, .clean1
                 .val1 = eml_readCell.value
@@ -432,15 +434,36 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
                 .val2 = eml_readCell.value
 
                 if .val1 <> undefined and .val2 <> undefined
-                    .idx = .idx + 1
-                    .data1#[.idx] = .val1
-                    .data2#[.idx] = .val2
+                    .countComplete = .countComplete + 1
+                else
+                    .countExcluded = .countExcluded + 1
                 endif
             endfor
+
+            # Allocate vectors
+            if .countComplete > 0
+                .data1# = zero#(.countComplete)
+                .data2# = zero#(.countComplete)
+
+                # Second pass: populate
+                .idx = 0
+                for .row from 1 to .nRows
+                    @eml_readCell: .tableId, .row, .col1$, .clean1
+                    .val1 = eml_readCell.value
+                    @eml_readCell: .tableId, .row, .col2$, .clean2
+                    .val2 = eml_readCell.value
+
+                    if .val1 <> undefined and .val2 <> undefined
+                        .idx = .idx + 1
+                        .data1#[.idx] = .val1
+                        .data2#[.idx] = .val2
+                    endif
+                endfor
+            endif
+
+            .n = .countComplete
+            .nExcludedRows = .countExcluded
         endif
-        
-        .n = .countComplete
-        .nExcludedRows = .countExcluded
     endif
 endproc
 
