@@ -23,6 +23,17 @@
 # initializer, alongside the `.error$`/`.warning$` inits, is tolerated: the
 # derivation always overwrites it, so it cannot report a stale outcome.
 #
+# THE FOURTEEN TYPE-DISPATCH DRAW ROWS ARE AUDITED TOO, SEPARATELY, FURTHER
+# DOWN. They are excluded from the "non-draw" population this file's name
+# still describes because, when this file was written, they carried no
+# contract at all. A later wave gave each of the fourteen the identical
+# single-exit contract this file enforces elsewhere, mirrored from the
+# diagnostic text each procedure already emitted to the Info window and its
+# on-figure disclosure box -- so a second population, audited with the exact
+# same audit_body() and the same three questions, keeps that promise
+# checked rather than merely made once and left unwatched. See "THE
+# TYPE-DISPATCH DRAW POPULATION" below.
+#
 # ---------------------------------------------------------------------------
 # THE POPULATION -- DERIVED FROM plugin_EML_StatsGraphs/REGISTRY.tsv, NOT
 # HARDCODED
@@ -327,6 +338,71 @@ cat(sprintf("\nv165: %d of %d non-draw public rows resolved; %d of those fully c
 check_true(V,
            sprintf("every resolved row in the non-draw population was audited (%d audited)", n_resolved),
            n_resolved > 0L)
+
+# ============================================================================
+# THE TYPE-DISPATCH DRAW POPULATION -- the 14 emlDraw* rows this file's
+# classifier excludes above (sources == {2,3}).
+#
+# WHY THIS IS HERE TOO, AND NOT JUST "NON-DRAW". The exclusion above exists
+# because the ruling's 31-row population was, at the time this file was
+# written, the only population that carried the contract: the fourteen
+# graphs/eml-draw-procedures.praat type-dispatch branches wrote their
+# diagnostics straight to the Info window and an on-figure disclosure box,
+# with no .ok/.error$/.warning$ of their own. A wave since then gave each of
+# the fourteen the identical single-exit contract, mirrored from the same
+# diagnostic text they already emitted -- so the population this file
+# audits is extended to match, rather than leaving the fourteen the one
+# corner of the public surface this check never looks at again. The 31-row
+# NON-DRAW assertion above is untouched: this is an ADDITIONAL population,
+# audited with the identical audit_body(), not a redefinition of the first.
+# ============================================================================
+
+dispatch_rows <- dispatch_rows[order(dispatch_rows$name), , drop = FALSE]
+
+check_true(V,
+           sprintf("the type-dispatch draw population is exactly 14 rows (found %d)",
+                   nrow(dispatch_rows)),
+           nrow(dispatch_rows) == 14L)
+
+n_draw_compliant <- 0L
+n_draw_resolved  <- 0L
+
+for (k in seq_len(nrow(dispatch_rows))) {
+    r <- dispatch_rows[k, ]
+    body <- extract_body(plug, r$file, r$name)
+    check_true(V, sprintf("[%s] resolves to exactly one procedure body in %s", r$name, r$file),
+               body$ok)
+    if (!body$ok) {
+        cat(sprintf("v165:   %s: %s\n", r$name, body$why))
+        next
+    }
+    n_draw_resolved <- n_draw_resolved + 1L
+    a <- audit_body(body$lines)
+
+    check_true(V, sprintf("[%s] initializes .error$ = \"\"", r$name), a$error_ok)
+    check_true(V, sprintf("[%s] initializes .warning$ = \"\"", r$name), a$warning_ok)
+    check_true(V, sprintf("[%s] derives .ok once via the single-exit form .ok = (.error$ = \"\")", r$name),
+               a$ok_ok)
+
+    missing <- character(0)
+    if (!a$error_ok)   missing <- c(missing, ".error$ (no `.error$ = \"\"` init found)")
+    if (!a$warning_ok) missing <- c(missing, ".warning$ (no `.warning$ = \"\"` init found)")
+    if (!a$ok_ok)      missing <- c(missing, sprintf(".ok (%s)", a$ok_why))
+
+    if (length(missing)) {
+        cat(sprintf("v165: FAIL %s (%s:%d-%d) -- missing/non-compliant: %s\n",
+                    r$name, r$file, body$start, body$end, paste(missing, collapse = "; ")))
+    } else {
+        n_draw_compliant <- n_draw_compliant + 1L
+    }
+}
+
+cat(sprintf("\nv165: %d of %d type-dispatch draw rows resolved; %d of those fully comply with the outcome contract.\n",
+            n_draw_resolved, nrow(dispatch_rows), n_draw_compliant))
+
+check_true(V,
+           sprintf("every resolved row in the type-dispatch draw population was audited (%d audited)", n_draw_resolved),
+           n_draw_resolved > 0L)
 
 # ============================================================================
 # THE SEEDED SELF-CHECK -- the audit function fires, on synthetic bodies

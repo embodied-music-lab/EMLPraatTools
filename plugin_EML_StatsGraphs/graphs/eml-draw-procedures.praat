@@ -503,6 +503,13 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Pitch contour"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window -- no new refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
 
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -527,11 +534,16 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
         .timeMax = .tMax
         # Clamp to object domain
         if .timeMin >= .endTime or .timeMax <= .startTime
-            appendInfoLine: "WARNING: Time range (",
-            ... fixed$ (.timeMin, 3), " – ", fixed$ (.timeMax, 3),
-            ... " s) outside Pitch domain (",
-            ... fixed$ (.startTime, 3), " – ", fixed$ (.endTime, 3),
-            ... " s). Using full domain."
+            .rangeWarning$ = "WARNING: Time range (" + fixed$ (.timeMin, 3)
+            ... + " – " + fixed$ (.timeMax, 3) + " s) outside Pitch domain ("
+            ... + fixed$ (.startTime, 3) + " – " + fixed$ (.endTime, 3)
+            ... + " s). Using full domain."
+            appendInfoLine: .rangeWarning$
+            if .warning$ = ""
+                .warning$ = .rangeWarning$
+            else
+                .warning$ = .warning$ + " " + .rangeWarning$
+            endif
             .timeMin = .startTime
             .timeMax = .endTime
         else
@@ -625,13 +637,19 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             .midPoint = (.dataFreqMin + .dataFreqMax) / 2
             .dataFreqMin = .midPoint - .minSpan / 2
             .dataFreqMax = .midPoint + .minSpan / 2
-            appendInfoLine: "NOTE: measured F0 spans ",
-            ... fixed$ (.dataSpan, 6), " ", .unitStr$,
-            ... " — under a tenth of a semitone, which is at or below what",
-            ... " the ear can resolve. The y-axis is drawn 0.1 semitones wide",
-            ... " rather than following the data, so the contour reads flat",
-            ... " instead of magnifying rounding noise to full frame height.",
-            ... " No measured value was changed."
+            .spanNote$ = "NOTE: measured F0 spans " + fixed$ (.dataSpan, 6)
+            ... + " " + .unitStr$
+            ... + " — under a tenth of a semitone, which is at or below what"
+            ... + " the ear can resolve. The y-axis is drawn 0.1 semitones wide"
+            ... + " rather than following the data, so the contour reads flat"
+            ... + " instead of magnifying rounding noise to full frame height."
+            ... + " No measured value was changed."
+            appendInfoLine: .spanNote$
+            if .warning$ = ""
+                .warning$ = .spanNote$
+            else
+                .warning$ = .warning$ + " " + .spanNote$
+            endif
         endif
         @emlComputeNiceStep: .dataFreqMax - (.dataFreqMin), emlSetAdaptiveTheme.targetTicksY
         .axisRoundTo = emlComputeNiceStep.step
@@ -721,6 +739,7 @@ procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             @emlRecordAxisNote: .freqMin, .freqMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 # ----------------------------------------------------------------------------
@@ -736,6 +755,13 @@ procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Waveform"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window -- no new refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
 
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
@@ -752,11 +778,16 @@ procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
         .timeMax = .tMax
         # Clamp to object domain
         if .timeMin >= .endTime or .timeMax <= .startTime
-            appendInfoLine: "WARNING: Time range (",
-            ... fixed$ (.timeMin, 3), " – ", fixed$ (.timeMax, 3),
-            ... " s) outside Sound domain (",
-            ... fixed$ (.startTime, 3), " – ", fixed$ (.endTime, 3),
-            ... " s). Using full domain."
+            .rangeWarning$ = "WARNING: Time range (" + fixed$ (.timeMin, 3)
+            ... + " – " + fixed$ (.timeMax, 3) + " s) outside Sound domain ("
+            ... + fixed$ (.startTime, 3) + " – " + fixed$ (.endTime, 3)
+            ... + " s). Using full domain."
+            appendInfoLine: .rangeWarning$
+            if .warning$ = ""
+                .warning$ = .rangeWarning$
+            else
+                .warning$ = .warning$ + " " + .rangeWarning$
+            endif
             .timeMin = .startTime
             .timeMax = .endTime
         else
@@ -853,6 +884,7 @@ procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
             @emlRecordAxisNote: .ampBottom, .ampTop
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 # ----------------------------------------------------------------------------
@@ -868,6 +900,13 @@ procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Spectrum"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window -- no new refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
 
     # Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -1042,6 +1081,7 @@ procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
             @emlRecordAxisNote: .powerMin, .powerMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 # ----------------------------------------------------------------------------
@@ -1060,6 +1100,13 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "LTAS"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window -- no new refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
 
     # Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -1318,6 +1365,7 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
             @emlRecordAxisNote: .powerMin, .powerMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 # ----------------------------------------------------------------------------
@@ -1349,6 +1397,11 @@ endproc
 # Requires: @emlInitializeDrawingDefaults (or manual global initialization).
 # Reads globals: emlPanelOriginX, emlPanelOriginY (via @emlSetAdaptiveTheme).
 procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .timeCol$, .valueCol$, .groupCol$, .tMin, .tMax, .vMin, .vMax
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window and the on-figure disclosure box -- no new
+    ; refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
     # The column test runs once, at procedure entry, because the flag is
     # read by loops that a conditional does not always reach. Same reader
     # as the analysis -- see @emlDrawColumnIsClean.
@@ -1394,6 +1447,9 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # or is not numeric must produce a figure with one axis and a sentence
     # saying why, not an abort in the middle of somebody's drawing.
     @emlSecondAxisGate: "Line chart"
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
     .secondOn = emlSecondAxisGate.honoured
     @emlSecondAxisRequest
     .secondCol$ = emlSecondAxisRequest.col$
@@ -1404,19 +1460,31 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     if .secondOn = 1
         if .secondCol$ = ""
             .secondOn = 0
-            appendInfoLine: "NOTE: a second right-hand y-axis was requested"
+            .secondNote$ = "NOTE: a second right-hand y-axis was requested"
             ... + " with no column named for it; the figure was drawn with"
             ... + " one y-axis."
+            appendInfoLine: .secondNote$
+            if .warning$ = ""
+                .warning$ = .secondNote$
+            else
+                .warning$ = .warning$ + " " + .secondNote$
+            endif
         endif
     endif
     if .secondOn = 1
         @emlCheckNumericColumn: .objectId, .secondCol$
         if emlCheckNumericColumn.isNumeric = 0
             .secondOn = 0
-            appendInfoLine: "NOTE: the second right-hand y-axis asked for"
+            .secondNote$ = "NOTE: the second right-hand y-axis asked for"
             ... + " column """ + .secondCol$ + """, which is missing or does"
             ... + " not contain numeric data; the figure was drawn with one"
             ... + " y-axis."
+            appendInfoLine: .secondNote$
+            if .warning$ = ""
+                .warning$ = .secondNote$
+            else
+                .warning$ = .warning$ + " " + .secondNote$
+            endif
         endif
     endif
     if .secondOn = 1
@@ -1711,9 +1779,15 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         endfor
         if .sSeeded = 0
             .secondOn = 0
-            appendInfoLine: "NOTE: the second right-hand y-axis asked for"
+            .secondNote$ = "NOTE: the second right-hand y-axis asked for"
             ... + " column """ + .secondCol$ + """, which holds no usable"
             ... + " (time, value) pair; the figure was drawn with one y-axis."
+            appendInfoLine: .secondNote$
+            if .warning$ = ""
+                .warning$ = .secondNote$
+            else
+                .warning$ = .warning$ + " " + .secondNote$
+            endif
         endif
     endif
 
@@ -1772,6 +1846,11 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         .yDataMax = 1
         .noDataMsg$ = "NOTE: Time series — no usable (time, value) pair; empty axes drawn."
         appendInfoLine: .noDataMsg$
+        if .warning$ = ""
+            .warning$ = .noDataMsg$
+        else
+            .warning$ = .warning$ + " " + .noDataMsg$
+        endif
     endif
 
     # X-axis: the data range, padded, and never rounded to nice numbers -- see
@@ -2251,19 +2330,33 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         ; would be wrong here: Time Series (with CI) does not draw a right-hand
         ; axis either.
         if .secondOn = 1
-            @emlDisclose: "Lines show the mean per time point.",
-            ... string$ (.nCollapsed) + " repeated observation(s) were averaged. "
+            .discloseShort$ = "Lines show the mean per time point."
+            .discloseAdvice$ = string$ (.nCollapsed) + " repeated observation(s) were averaged. "
             ... + "Intervals are not offered across two scales."
         else
-            @emlDisclose: "Line shows the mean per time point.",
-            ... string$ (.nCollapsed) + " repeated observation(s) were averaged. "
+            .discloseShort$ = "Line shows the mean per time point."
+            .discloseAdvice$ = string$ (.nCollapsed) + " repeated observation(s) were averaged. "
             ... + "Use Spaghetti Plot to show individual series, or Time Series "
             ... + "(with CI) to show the spread around each mean."
         endif
+        @emlDisclose: .discloseShort$, .discloseAdvice$
+        .discloseMsg$ = "Time series: " + .discloseShort$ + " " + .discloseAdvice$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     if .nSkippedRows > 0
-        @emlDisclose: string$ (.nSkippedRows)
-        ... + " row(s) skipped (missing or non-numeric value).", ""
+        .discloseShort$ = string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Time series: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
 
     # Quadrant scan for the disclosure block's corner. Independent of the
@@ -2344,6 +2437,7 @@ procedure emlDrawTimeSeries: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -2362,6 +2456,14 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Time series with CI"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window and the on-figure disclosure box -- no new
+    ; refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
 
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
@@ -2560,6 +2662,11 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
         .yDataMax = 1
         .noDataMsg$ = "NOTE: Time series (with CI) — no usable (time, value) pair; empty axes drawn."
         appendInfoLine: .noDataMsg$
+        if .warning$ = ""
+            .warning$ = .noDataMsg$
+        else
+            .warning$ = .warning$ + " " + .noDataMsg$
+        endif
     endif
 
     # Axis ranges
@@ -2781,7 +2888,13 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
             endif
         endfor
         if .maxN <= 1
-            appendInfoLine: "  NOTE: No repeated measures detected. CI not computed."
+            .noReplNote$ = "NOTE: No repeated measures detected. CI not computed."
+            appendInfoLine: "  " + .noReplNote$
+            if .warning$ = ""
+                .warning$ = .noReplNote$
+            else
+                .warning$ = .warning$ + " " + .noReplNote$
+            endif
         else
             appendInfoLine: "  Observations per time point: up to ", .maxN
         endif
@@ -2795,15 +2908,29 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
     #     draw procedures saying one sentence for one condition is what lets
     #     a reader recognise it; ten near-misses is not.
     if .nCollapsed > 0
-        @emlDisclose: "Line shows the mean; band shows the "
-        ... + fixed$ (100 * (1 - annotAlpha), 0) + "% CI.",
-        ... string$ (.nCollapsed) + " repeated observation(s) were averaged "
+        .discloseShort$ = "Line shows the mean; band shows the "
+        ... + fixed$ (100 * (1 - annotAlpha), 0) + "% CI."
+        .discloseAdvice$ = string$ (.nCollapsed) + " repeated observation(s) were averaged "
         ... + "into their time points. Use Spaghetti Plot to show the "
         ... + "individual series behind the mean."
+        @emlDisclose: .discloseShort$, .discloseAdvice$
+        .discloseMsg$ = "Time series (with CI): " + .discloseShort$ + " " + .discloseAdvice$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     if .nDroppedRows > 0
-        @emlDisclose: string$ (.nDroppedRows)
-        ... + " row(s) skipped (missing or non-numeric value).", ""
+        .discloseShort$ = string$ (.nDroppedRows)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Time series (with CI): " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
 
     # Quadrant scan for the disclosure block's corner.
@@ -2875,6 +3002,7 @@ procedure emlDrawTimeSeriesCI: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vp
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -2901,6 +3029,14 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Spaghetti plot"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window and the on-figure disclosure box -- no new
+    ; refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
     # The column test runs once, at procedure entry, because the flag is
     # read by loops that a conditional does not always reach. Same reader
     # as the analysis -- see @emlDrawColumnIsClean.
@@ -2938,7 +3074,13 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     .nRows = Get number of rows
 
     if .nCond < 2
-        appendInfoLine: "WARNING: Spaghetti plot requires at least 2 conditions. Found ", .nCond, "."
+        .condWarning$ = "WARNING: Spaghetti plot requires at least 2 conditions. Found " + string$ (.nCond) + "."
+        appendInfoLine: .condWarning$
+        if .warning$ = ""
+            .warning$ = .condWarning$
+        else
+            .warning$ = .warning$ + " " + .condWarning$
+        endif
     endif
 
     # ----------------------------------------------------------------
@@ -3019,6 +3161,11 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         .yDataMax = 1
         .noDataMsg$ = "NOTE: Spaghetti plot — no usable value; empty axes drawn."
         appendInfoLine: .noDataMsg$
+        if .warning$ = ""
+            .warning$ = .noDataMsg$
+        else
+            .warning$ = .warning$ + " " + .noDataMsg$
+        endif
     endif
     # Adaptive rounding grid: derive roundTo from a nice step over the data
     # range (the same nice-number logic the gridlines use) so fractional data
@@ -3350,8 +3497,15 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # A spaghetti plot draws the raw observations, so it has nothing to
     # confess about summarising. What it did not draw, it must still say.
     if .nSkippedRows > 0
-        @emlDisclose: string$ (.nSkippedRows)
-        ... + " row(s) skipped (missing or non-numeric value).", ""
+        .discloseShort$ = string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Spaghetti plot: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
 
     .dxMid = (.xMin + .xMax) / 2
@@ -3509,6 +3663,7 @@ procedure emlDrawSpaghettiPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -3525,6 +3680,14 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Bar chart"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window and the on-figure disclosure box -- no new
+    ; refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
 
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -3570,6 +3733,11 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
         .visibleMax = 1
         .noDataMsg$ = "NOTE: Bar chart — no usable value; empty axes drawn."
         appendInfoLine: .noDataMsg$
+        if .warning$ = ""
+            .warning$ = .noDataMsg$
+        else
+            .warning$ = .warning$ + " " + .noDataMsg$
+        endif
     endif
 
     # Step 3: Compute y-axis range (both 0 = auto)
@@ -3780,23 +3948,58 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
         endif
     endfor
     if .nAveragedGroups > 0
-        @emlDisclose: "Bars show the group mean, not individual values.",
-        ... "Use Violin Plot or Box Plot to show the distribution within "
+        .discloseShort$ = "Bars show the group mean, not individual values."
+        .discloseAdvice$ = "Use Violin Plot or Box Plot to show the distribution within "
         ... + "each group."
+        @emlDisclose: .discloseShort$, .discloseAdvice$
+        .discloseMsg$ = "Bar chart: " + .discloseShort$ + " " + .discloseAdvice$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
 
     if .errorMode = 1
-        @emlDisclose: "Error bars: +/-1 SE.", ""
+        .discloseShort$ = "Error bars: +/-1 SE."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Bar chart: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     elsif .errorMode = 2
-        @emlDisclose: "Error bars: +/-1 SD.", ""
+        .discloseShort$ = "Error bars: +/-1 SD."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Bar chart: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     elsif .errorMode = 3
-        @emlDisclose: "Error bars: " + .errorCol$ + " (custom).", ""
+        .discloseShort$ = "Error bars: " + .errorCol$ + " (custom)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Bar chart: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     if .nTruncated > 0
-        @emlDisclose: string$ (.nTruncated)
-        ... + " error bar(s) truncated at the axis limit.",
-        ... "The truncated ends carry an outward arrowhead instead of a "
+        .discloseShort$ = string$ (.nTruncated)
+        ... + " error bar(s) truncated at the axis limit."
+        .discloseAdvice$ = "The truncated ends carry an outward arrowhead instead of a "
         ... + "flat cap. Widen the value range to show them in full."
+        @emlDisclose: .discloseShort$, .discloseAdvice$
+        .discloseMsg$ = "Bar chart: " + .discloseShort$ + " " + .discloseAdvice$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     # THE UNDEFINED SENTINEL IS WHAT MAKES THESE TWO REACHABLE.
     # @emlMeasureBarData seeds emlBarData_mean[] and emlBarData_error[] to
@@ -3808,11 +4011,18 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # — and a whisker whose error is undefined simply does not appear. The
     # sentinel is set at the root, in @emlMeasureBarData.
     if .nSkippedErrors > 0
-        @emlDisclose: string$ (.nSkippedErrors)
-        ... + " error bar(s) not drawn (error undefined).",
-        ... "An error bar is undefined when the group holds a single "
+        .discloseShort$ = string$ (.nSkippedErrors)
+        ... + " error bar(s) not drawn (error undefined)."
+        .discloseAdvice$ = "An error bar is undefined when the group holds a single "
         ... + "observation, or when its custom error cell is missing. A bar "
         ... + "with no whisker is not a bar with zero spread."
+        @emlDisclose: .discloseShort$, .discloseAdvice$
+        .discloseMsg$ = "Bar chart: " + .discloseShort$ + " " + .discloseAdvice$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     # The group names are carried in .short$, on purpose: which group is
     # missing is the fact that lets a reader tell "no measurement" from
@@ -3822,15 +4032,29 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
     # emlBarData_nInvalidGroups equals .nSkippedBars by construction, so it is
     # not disclosed separately.
     if .nSkippedBars > 0
-        @emlDisclose: string$ (.nSkippedBars)
+        .discloseShort$ = string$ (.nSkippedBars)
         ... + " bar(s) not drawn (no usable observation): "
-        ... + .skippedBars$ + ".",
-        ... "Those group names appear on the x-axis with nothing above them. "
+        ... + .skippedBars$ + "."
+        .discloseAdvice$ = "Those group names appear on the x-axis with nothing above them. "
         ... + "A bar of height zero is a measured zero, not a missing group."
+        @emlDisclose: .discloseShort$, .discloseAdvice$
+        .discloseMsg$ = "Bar chart: " + .discloseShort$ + " " + .discloseAdvice$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     if emlBarData_nSkipped > 0
-        @emlDisclose: string$ (emlBarData_nSkipped)
-        ... + " row(s) skipped (missing or non-numeric value).", ""
+        .discloseShort$ = string$ (emlBarData_nSkipped)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Bar chart: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
 
     # Quadrant occupancy for the disclosure block's corner. A bar is not a
@@ -3890,6 +4114,7 @@ procedure emlDrawBarChart: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 # ----------------------------------------------------------------------------
@@ -3906,6 +4131,14 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Violin plot"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window and the on-figure disclosure box -- no new
+    ; refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
 
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -4004,6 +4237,11 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
         .globalMax = 1
         .noDataMsg$ = "NOTE: Violin plot — no usable value; empty axes drawn."
         appendInfoLine: .noDataMsg$
+        if .warning$ = ""
+            .warning$ = .noDataMsg$
+        else
+            .warning$ = .warning$ + " " + .noDataMsg$
+        endif
     endif
 
     # Extend range by largest per-group KDE bandwidth so violin
@@ -4114,12 +4352,26 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
     # user ticked Annotate and not only the Info window — a caveat only the
     # operator sees is not a caveat on the picture that leaves the building.
     if .nSkippedRows > 0
-        @emlDisclose: string$ (.nSkippedRows)
-        ... + " row(s) skipped (missing or non-numeric value).", ""
+        .discloseShort$ = string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Violin plot: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     if .nEmptyGroups > 0
-        @emlDisclose: string$ (.nEmptyGroups)
-        ... + " group(s) not drawn (no usable observation).", ""
+        .discloseShort$ = string$ (.nEmptyGroups)
+        ... + " group(s) not drawn (no usable observation)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Violin plot: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
 
     # Expose axis ranges for annotation bridge
@@ -4242,6 +4494,7 @@ procedure emlDrawViolinPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH,
             ... .vMin, .vMax, .nGroups
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -4399,6 +4652,14 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Scatter plot"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window and the on-figure disclosure box -- no new
+    ; refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
     ; What the scatter's own statistics produced, for the record. Empty when
     ; the figure carries no analysis, which the renderer then omits.
     .recFit$ = ""
@@ -4446,7 +4707,13 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
     endfor
 
     if .nValid < 2
-        appendInfoLine: "WARNING: Fewer than 2 valid data points for scatter plot."
+        .fewPointsWarning$ = "WARNING: Fewer than 2 valid data points for scatter plot."
+        appendInfoLine: .fewPointsWarning$
+        if .warning$ = ""
+            .warning$ = .fewPointsWarning$
+        else
+            .warning$ = .warning$ + " " + .fewPointsWarning$
+        endif
     endif
     # A scatter plot with a hole in it looks exactly like a scatter
     # plot. Count what did not become a dot; disclosed at the end of whichever
@@ -4872,11 +5139,27 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
         # Disclosure (v1.21) — joins the correlation and formula lines in
         # this path's own block, and only when the user ticked Annotate.
         if .nSkippedRows > 0
-            @emlDisclose: string$ (.nSkippedRows)
-            ... + " row(s) skipped (missing or non-numeric value).", ""
+            .discloseShort$ = string$ (.nSkippedRows)
+            ... + " row(s) skipped (missing or non-numeric value)."
+            @emlDisclose: .discloseShort$, ""
+            .discloseMsg$ = "Scatter plot: " + .discloseShort$
+            if .warning$ = ""
+                .warning$ = .discloseMsg$
+            else
+                .warning$ = .warning$ + " " + .discloseMsg$
+            endif
         endif
         @emlDiscloseClipped: .nOutside, .nValid, .xMin, .xMax, .yMin, .yMax,
         ... .axisXMin, .axisXMax, .axisYMin, .axisYMax
+        if .nOutside > 0
+            .discloseMsg$ = "Scatter plot: " + emlDiscloseClipped.short$
+            ... + " " + emlDiscloseClipped.advice$
+            if .warning$ = ""
+                .warning$ = .discloseMsg$
+            else
+                .warning$ = .warning$ + " " + .discloseMsg$
+            endif
+        endif
 
         # Draw annotation block
         if annotBlockN > 0
@@ -5416,13 +5699,20 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
                     annotBlockDraw$[annotBlockN] = .pgDraw$[.k]
                 endfor
             else
-                @emlDisclose: "Per-group stats (" + string$ (.nGroups)
-                ... + " groups): Info window only.",
-                ... string$ (.pgN) + " line(s) do not fit the "
+                .discloseShort$ = "Per-group stats (" + string$ (.nGroups)
+                ... + " groups): Info window only."
+                .discloseAdvice$ = string$ (.pgN) + " line(s) do not fit the "
                 ... + "20-line annotation block, so none were placed on the "
                 ... + "figure: a box that tall covers the data it describes, "
                 ... + "and a box holding only the first few groups would "
                 ... + "look complete. They follow here in full."
+                @emlDisclose: .discloseShort$, .discloseAdvice$
+                .discloseMsg$ = "Scatter plot: " + .discloseShort$ + " " + .discloseAdvice$
+                if .warning$ = ""
+                    .warning$ = .discloseMsg$
+                else
+                    .warning$ = .warning$ + " " + .discloseMsg$
+                endif
                 for .k from 1 to .pgN
                     appendInfoLine: "  " + .pgLabel$[.k]
                 endfor
@@ -5431,11 +5721,27 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
 
         # Disclosure (v1.21) — same line, this path's block.
         if .nSkippedRows > 0
-            @emlDisclose: string$ (.nSkippedRows)
-            ... + " row(s) skipped (missing or non-numeric value).", ""
+            .discloseShort$ = string$ (.nSkippedRows)
+            ... + " row(s) skipped (missing or non-numeric value)."
+            @emlDisclose: .discloseShort$, ""
+            .discloseMsg$ = "Scatter plot: " + .discloseShort$
+            if .warning$ = ""
+                .warning$ = .discloseMsg$
+            else
+                .warning$ = .warning$ + " " + .discloseMsg$
+            endif
         endif
         @emlDiscloseClipped: .nOutside, .nValid, .xMin, .xMax, .yMin, .yMax,
         ... .axisXMin, .axisXMax, .axisYMin, .axisYMax
+        if .nOutside > 0
+            .discloseMsg$ = "Scatter plot: " + emlDiscloseClipped.short$
+            ... + " " + emlDiscloseClipped.advice$
+            if .warning$ = ""
+                .warning$ = .discloseMsg$
+            else
+                .warning$ = .warning$ + " " + .discloseMsg$
+            endif
+        endif
 
         # Place annotation block and legend — adaptive corner selection
         .xMidQ = (.axisXMin + .axisXMax) / 2
@@ -5562,6 +5868,7 @@ procedure emlDrawScatterPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -5578,6 +5885,14 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Box plot"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window and the on-figure disclosure box -- no new
+    ; refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
 
     # Step 1: Set up theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -5673,6 +5988,11 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
         .globalMax = 1
         .noDataMsg$ = "NOTE: Box plot — no usable value; empty axes drawn."
         appendInfoLine: .noDataMsg$
+        if .warning$ = ""
+            .warning$ = .noDataMsg$
+        else
+            .warning$ = .warning$ + " " + .noDataMsg$
+        endif
     endif
     # Adaptive rounding grid: derive roundTo from a nice step over the data
     # range (the same nice-number logic the gridlines use) so fractional data
@@ -5754,12 +6074,26 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
     # other draw procedures, routed through @emlDisclose so the sentence also
     # reaches the figure when the user ticked Annotate.
     if .nSkippedRows > 0
-        @emlDisclose: string$ (.nSkippedRows)
-        ... + " row(s) skipped (missing or non-numeric value).", ""
+        .discloseShort$ = string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Box plot: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     if .nEmptyGroups > 0
-        @emlDisclose: string$ (.nEmptyGroups)
-        ... + " group(s) not drawn (no usable observation).", ""
+        .discloseShort$ = string$ (.nEmptyGroups)
+        ... + " group(s) not drawn (no usable observation)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Box plot: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
 
     # Expose axis ranges for annotation bridge
@@ -5838,6 +6172,7 @@ procedure emlDrawBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .c
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -5858,6 +6193,14 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Histogram"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window and the on-figure disclosure box -- no new
+    ; refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
     # @emlInitAlphaSprites is idempotent and cheap, and this procedure NEEDS
     # it: the overlay path calls @emlDrawAlphaRect, which reads
     # emlInitAlphaSprites.available. Without this, a GROUPED histogram aborts
@@ -5917,7 +6260,13 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     # @emlDrawGroupedViolin at v1.19 (C 96).
     .noData = 0
     if .nValid < 1
-        appendInfoLine: "WARNING: No valid data for histogram."
+        .noDataWarning$ = "WARNING: No valid data for histogram."
+        appendInfoLine: .noDataWarning$
+        if .warning$ = ""
+            .warning$ = .noDataWarning$
+        else
+            .warning$ = .warning$ + " " + .noDataWarning$
+        endif
         .noData = 1
     endif
 
@@ -6010,10 +6359,16 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     # histogram drawn at the default mode has nothing to disclose.
     if .nGroups = 1
         if .displayMode = 2
-            appendInfoLine: "NOTE: faceted display was requested and drawn "
+            .facetNote$ = "NOTE: faceted display was requested and drawn "
             ... + "overlapped. Faceting stacks one panel per group, and this "
             ... + "column yields a single group, so there is one panel. Give "
             ... + "a group column with two or more levels to see facets."
+            appendInfoLine: .facetNote$
+            if .warning$ = ""
+                .warning$ = .facetNote$
+            else
+                .warning$ = .warning$ + " " + .facetNote$
+            endif
         endif
         .hasGroups = 0
         .displayMode = 1
@@ -6340,8 +6695,15 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
     # the faceted branch restores the shared inner viewport and Axes: at the
     # end of its loop, and the non-faceted branch never left them.
     if .nRows > .nValid
-        @emlDisclose: string$ (.nRows - .nValid)
-        ... + " row(s) skipped (missing or non-numeric value).", ""
+        .discloseShort$ = string$ (.nRows - .nValid)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Histogram: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
 
     # Quadrant occupancy for the disclosure block's corner. Bars stand on
@@ -6467,6 +6829,7 @@ procedure emlDrawHistogram: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, 
             @emlRecordAxisNote: .axisXMin, .axisXMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -6484,6 +6847,14 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Grouped violin"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window and the on-figure disclosure box -- no new
+    ; refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
 
     # Step 1: Theme and palette
     @emlSetAdaptiveTheme: .vpW, .vpH
@@ -6652,6 +7023,11 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
         .globalMax = 1
         .noDataMsg$ = "NOTE: Grouped violin — no usable value; empty axes drawn."
         appendInfoLine: .noDataMsg$
+        if .warning$ = ""
+            .warning$ = .noDataMsg$
+        else
+            .warning$ = .warning$ + " " + .noDataMsg$
+        endif
     endif
 
     # Extend range by largest per-cell KDE bandwidth (violin tails)
@@ -6811,21 +7187,35 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
     # Step 10B: Disclosures (v1.21). The legend has taken corner1$;
     # @emlDiscloseEnd is told so and keeps the block out of it.
     if .nSkippedRows > 0
-        @emlDisclose: string$ (.nSkippedRows)
-        ... + " row(s) skipped (missing or non-numeric value).", ""
+        .discloseShort$ = string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Grouped violin: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     # The palette ceiling, said out loud. See Step 3.
     if .nSubsDropped > 0
-        @emlDisclose: string$ (.nSubsDropped)
+        .discloseShort$ = string$ (.nSubsDropped)
         ... + " sub-group(s) not drawn (palette holds "
-        ... + string$ (.maxSubs) + ").",
-        ... "Not drawn: " + .droppedSubs$ + " ("
+        ... + string$ (.maxSubs) + ")."
+        .discloseAdvice$ = "Not drawn: " + .droppedSubs$ + " ("
         ... + string$ (.nDroppedSubRows) + " row(s)). The palette defines "
         ... + string$ (.maxSubs) + " distinguishable styles — 8 hues x 3 "
         ... + "fill patterns (solid, diagonal hatch, dots) — so a further "
         ... + "sub-group would repeat a style already in the legend. Reduce "
         ... + "the sub-group column to " + string$ (.maxSubs) + " levels, or "
         ... + "draw the rest as a second figure."
+        @emlDisclose: .discloseShort$, .discloseAdvice$
+        .discloseMsg$ = "Grouped violin: " + .discloseShort$ + " " + .discloseAdvice$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .qTL, .qTR, .qBL, .qBR,
     ... .legendCorner$
@@ -6876,6 +7266,7 @@ procedure emlDrawGroupedViolin: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .v
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -6892,6 +7283,14 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     # @emlSecondAxisGate is the judge for all thirteen types and
     # says nothing at all when no second axis was asked for.
     @emlSecondAxisGate: "Grouped box plot"
+    ; OUTCOME CONTRACT. Mirrors the diagnostics this procedure already
+    ; emits to the Info window and the on-figure disclosure box -- no new
+    ; refusal path, single exit below.
+    .error$ = ""
+    .warning$ = ""
+    if emlSecondAxisRefused = 1
+        .warning$ = emlSecondAxisRefusal$
+    endif
 
     @emlSetAdaptiveTheme: .vpW, .vpH
     @emlSetColorPalette: .colorMode$
@@ -7029,6 +7428,11 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
         .globalMax = 1
         .noDataMsg$ = "NOTE: Grouped box plot — no usable value; empty axes drawn."
         appendInfoLine: .noDataMsg$
+        if .warning$ = ""
+            .warning$ = .noDataMsg$
+        else
+            .warning$ = .warning$ + " " + .noDataMsg$
+        endif
     endif
     # Adaptive rounding grid: derive roundTo from a nice step over the data
     # range (the same nice-number logic the gridlines use) so fractional data
@@ -7148,21 +7552,35 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
     # Disclosures (v1.21). The legend has taken corner1$; @emlDiscloseEnd is
     # told so and keeps the block out of it.
     if .nSkippedRows > 0
-        @emlDisclose: string$ (.nSkippedRows)
-        ... + " row(s) skipped (missing or non-numeric value).", ""
+        .discloseShort$ = string$ (.nSkippedRows)
+        ... + " row(s) skipped (missing or non-numeric value)."
+        @emlDisclose: .discloseShort$, ""
+        .discloseMsg$ = "Grouped box plot: " + .discloseShort$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     # The palette ceiling, in @emlDrawGroupedViolin's exact wording.
     if .nSubsDropped > 0
-        @emlDisclose: string$ (.nSubsDropped)
+        .discloseShort$ = string$ (.nSubsDropped)
         ... + " sub-group(s) not drawn (palette holds "
-        ... + string$ (.maxSubs) + ").",
-        ... "Not drawn: " + .droppedSubs$ + " ("
+        ... + string$ (.maxSubs) + ")."
+        .discloseAdvice$ = "Not drawn: " + .droppedSubs$ + " ("
         ... + string$ (.nDroppedSubRows) + " row(s)). The palette defines "
         ... + string$ (.maxSubs) + " distinguishable styles — 8 hues x 3 "
         ... + "fill patterns (solid, diagonal hatch, dots) — so a further "
         ... + "sub-group would repeat a style already in the legend. Reduce "
         ... + "the sub-group column to " + string$ (.maxSubs) + " levels, or "
         ... + "draw the rest as a second figure."
+        @emlDisclose: .discloseShort$, .discloseAdvice$
+        .discloseMsg$ = "Grouped box plot: " + .discloseShort$ + " " + .discloseAdvice$
+        if .warning$ = ""
+            .warning$ = .discloseMsg$
+        else
+            .warning$ = .warning$ + " " + .discloseMsg$
+        endif
     endif
     @emlDiscloseEnd: .xMin, .xMax, .yMin, .yMax, .qTL, .qTR, .qBL, .qBR,
     ... .legendCorner$
@@ -7209,6 +7627,7 @@ procedure emlDrawGroupedBoxPlot: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .
             @emlRecordAxisNote: .axisYMin, .axisYMax
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
