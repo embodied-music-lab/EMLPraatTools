@@ -6761,11 +6761,12 @@ procedure emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
     ; Gaussian log-likelihood in closed form, so AIC and BIC are the numbers R
     ; reports. k = nGroups fitted means + 1 residual variance.
     .rss = emlOneWayAnova.ssWithin
-    .logLik = -0.5 * .nobs * (ln (2 * pi) + ln (.rss / .nobs) + 1)
     .k = emlOneWayAnova.nGroups + 1
+    @emlGaussianLogLik: .rss, .nobs, .k
+    .logLik = emlGaussianLogLik.logLik
     @emlGlanceNum: "logLik", .logLik
-    @emlGlanceNum: "AIC", -2 * .logLik + 2 * .k
-    @emlGlanceNum: "BIC", -2 * .logLik + ln (.nobs) * .k
+    @emlGlanceNum: "AIC", emlGaussianLogLik.aic
+    @emlGlanceNum: "BIC", emlGaussianLogLik.bic
     @emlGlanceNum: "deviance", .rss
     @emlGlanceNum: "df.residual", emlOneWayAnova.dfWithin
     @emlGlanceNum: "nobs", .nobs
@@ -7391,9 +7392,10 @@ procedure emlDeclareRegressionResult: .tableName$, .depCol$, .predCol$,
 
     .n = emlLinearRegression.n
     .rss = emlLinearRegression.ssRes
-    .logLik = -0.5 * .n * (ln (2 * pi) + ln (.rss / .n) + 1)
     ; k = intercept + slope + residual variance
     .k = 3
+    @emlGaussianLogLik: .rss, .n, .k
+    .logLik = emlGaussianLogLik.logLik
     @emlGlanceNum: "r.squared", emlLinearRegression.rSquared
     @emlGlanceNum: "adj.r.squared",
     ... 1 - (1 - emlLinearRegression.rSquared) * (.n - 1) / (.n - 2)
@@ -7402,8 +7404,8 @@ procedure emlDeclareRegressionResult: .tableName$, .depCol$, .predCol$,
     @emlGlanceNum: "p.value",     emlLinearRegression.pF
     @emlGlanceNum: "df",          emlLinearRegression.dfReg
     @emlGlanceNum: "logLik",      .logLik
-    @emlGlanceNum: "AIC",         -2 * .logLik + 2 * .k
-    @emlGlanceNum: "BIC",         -2 * .logLik + ln (.n) * .k
+    @emlGlanceNum: "AIC",         emlGaussianLogLik.aic
+    @emlGlanceNum: "BIC",         emlGaussianLogLik.bic
     @emlGlanceNum: "deviance",    .rss
     @emlGlanceNum: "df.residual", emlLinearRegression.dfRes
     @emlGlanceNum: "nobs",        .n

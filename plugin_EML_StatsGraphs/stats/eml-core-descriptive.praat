@@ -13,7 +13,7 @@
 #   @emlVariance, @emlSD, @emlSEM, @emlSkewness, @emlKurtosis,
 #   @emlGeometricMean, @emlHarmonicMean, @emlTrimmedMean,
 #   @emlWinsorizedMean, @emlMAD, @emlRange, @emlCI, @emlDescribe,
-#   @emlShapiroWilk, @eml_swPoly, @eml_hasUndefined
+#   @emlShapiroWilk, @eml_swPoly, @eml_hasUndefined, @emlGaussianLogLik
 #
 # All procedures use the "eml" prefix (EML Stats) to avoid
 # namespace collisions with user scripts.
@@ -890,4 +890,27 @@ procedure emlShapiroWilk: .data#
             endif
         endif
     endif
+endproc
+
+
+# ----------------------------------------------------------------------------
+# @emlGaussianLogLik
+# Gaussian/OLS log-likelihood, AIC and BIC for a least-squares fit — the
+# closed-form numbers R reports for lm() and aov() via logLik()/AIC()/BIC().
+# Input:  rss  — residual sum of squares
+#         nobs — number of observations
+#         k    — number of fitted parameters, INCLUDING the residual
+#                variance (e.g. intercept + slope + sigma^2 = 3 for simple
+#                linear regression; nGroups means + sigma^2 for one-way ANOVA)
+# Output: .logLik — Gaussian maximum log-likelihood
+#         .aic    — Akaike information criterion
+#         .bic    — Bayesian (Schwarz) information criterion
+# Formula: logLik = -0.5 * nobs * (ln(2*pi) + ln(rss/nobs) + 1)
+#          AIC = -2 * logLik + 2 * k
+#          BIC = -2 * logLik + ln(nobs) * k
+# ----------------------------------------------------------------------------
+procedure emlGaussianLogLik: .rss, .nobs, .k
+    .logLik = -0.5 * .nobs * (ln (2 * pi) + ln (.rss / .nobs) + 1)
+    .aic = -2 * .logLik + 2 * .k
+    .bic = -2 * .logLik + ln (.nobs) * .k
 endproc
