@@ -3926,11 +3926,10 @@ procedure emlBootstrapCI: .level, .nBoot
             for .ii from 1 to .nValid
                 .validCol# [.ii] = .col# [.ii]
             endfor
-            .sorted# = sort# (.validCol#)
-            .loI = max (1, floor (.nValid * .alpha / 2))
-            .hiI = min (.nValid, ceiling (.nValid * (1 - .alpha / 2)))
-            .lowerBeta# [.jj] = .sorted# [.loI]
-            .upperBeta# [.jj] = .sorted# [.hiI]
+            @emlPercentile: .validCol#, .alpha / 2 * 100
+            .lowerBeta# [.jj] = emlPercentile.result
+            @emlPercentile: .validCol#, (1 - .alpha / 2) * 100
+            .upperBeta# [.jj] = emlPercentile.result
         else
             .lowerBeta# [.jj] = undefined
             .upperBeta# [.jj] = undefined
@@ -3951,11 +3950,10 @@ procedure emlBootstrapCI: .level, .nBoot
         for .ii from 1 to .nValidSig
             .validSig# [.ii] = .sigCol# [.ii]
         endfor
-        .sorted# = sort# (.validSig#)
-        .loI = max (1, floor (.nValidSig * .alpha / 2))
-        .hiI = min (.nValidSig, ceiling (.nValidSig * (1 - .alpha / 2)))
-        .lowerSigma = .sorted# [.loI]
-        .upperSigma = .sorted# [.hiI]
+        @emlPercentile: .validSig#, .alpha / 2 * 100
+        .lowerSigma = emlPercentile.result
+        @emlPercentile: .validSig#, (1 - .alpha / 2) * 100
+        .upperSigma = emlPercentile.result
     else
         .lowerSigma = undefined
         .upperSigma = undefined
@@ -4431,18 +4429,16 @@ procedure emlLMMSummary
     # Scaled residuals
     @emlLMMResiduals
     .sortedScaled# = sort# (emlLMMResiduals.scaled#)
-    .n25 = max (1, floor (.nVal * 0.25))
-    .n50 = max (1, floor (.nVal * 0.50))
-    .n75 = max (1, floor (.nVal * 0.75))
+    @emlQuartiles: emlLMMResiduals.scaled#
     appendInfoLine: "Scaled residuals:"
     appendInfoLine: "     Min       1Q   Median       3Q      Max"
     @eml_fixed: .sortedScaled# [1], 4
     .rMin$ = eml_fixed.result$
-    @eml_fixed: .sortedScaled# [.n25], 4
+    @eml_fixed: emlQuartiles.q1, 4
     .r1Q$ = eml_fixed.result$
-    @eml_fixed: .sortedScaled# [.n50], 4
+    @eml_fixed: emlQuartiles.q2, 4
     .rMed$ = eml_fixed.result$
-    @eml_fixed: .sortedScaled# [.n75], 4
+    @eml_fixed: emlQuartiles.q3, 4
     .r3Q$ = eml_fixed.result$
     @eml_fixed: .sortedScaled# [.nVal], 4
     .rMax$ = eml_fixed.result$
