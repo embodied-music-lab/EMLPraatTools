@@ -1470,12 +1470,20 @@ procedure emlValidateNumericColumn: .tableId, .columnName$
         # Per-cell pass over EVERY row (no sampling). Two things are
         # counted at once: the lenient verdict (does the cell coerce to a
         # number at all) and the coercion hazards (does the cell coerce to
-        # something other than what it looks like).
-        .nComma = 0
-        .nSlash = 0
-        .nInnerSpace = 0
-        .nPercent = 0
+        # something other than what it looks like) -- the latter via
+        # @eml_classifyCell, the single place that decision is made (see its
+        # header). Kinds 2 (locale), 4 (coerced) and 5 (leadingDot) are the
+        # hazard kinds a written value survives as something else; kind 3
+        # (unreadable) is plain non-numeric text and is not a hazard here.
+        .nLocale = 0
+        .firstLocaleRow = 0
+        .firstLocaleValue$ = ""
+        .nCoercedKind = 0
+        .firstCoercedRow = 0
+        .firstCoercedValue$ = ""
         .nLeadingDot = 0
+        .firstLeadingDotRow = 0
+        .firstLeadingDotValue$ = ""
         for .row from 1 to .nRows
             selectObject: .tableId
             .val = Get value: .row, .columnName$
@@ -1488,39 +1496,28 @@ procedure emlValidateNumericColumn: .tableId, .columnName$
                 .nMissing = .nMissing + 1
             endif
 
-            @eml_normalizeLabel: .cell$
-            .trimmed$ = eml_normalizeLabel.result$
-            .isHazard = 0
-            if .trimmed$ <> ""
-                if index (.trimmed$, ",") > 0
-                    .nComma = .nComma + 1
-                    .isHazard = 1
+            @eml_classifyCell: .cell$
+            if eml_classifyCell.kind = 2
+                .nLocale = .nLocale + 1
+                if .firstLocaleRow = 0
+                    .firstLocaleRow = .row
+                    .firstLocaleValue$ = eml_classifyCell.trimmed$
                 endif
-                if index (.trimmed$, "/") > 0
-                    .nSlash = .nSlash + 1
-                    .isHazard = 1
+            elsif eml_classifyCell.kind = 4
+                .nCoercedKind = .nCoercedKind + 1
+                if .firstCoercedRow = 0
+                    .firstCoercedRow = .row
+                    .firstCoercedValue$ = eml_classifyCell.trimmed$
                 endif
-                if index (.trimmed$, " ") > 0
-                    .nInnerSpace = .nInnerSpace + 1
-                    .isHazard = 1
+            elsif eml_classifyCell.kind = 5
+                .nLeadingDot = .nLeadingDot + 1
+                if .firstLeadingDotRow = 0
+                    .firstLeadingDotRow = .row
+                    .firstLeadingDotValue$ = eml_classifyCell.trimmed$
                 endif
-                if index (.trimmed$, "%") > 0
-                    .nPercent = .nPercent + 1
-                    .isHazard = 1
-                endif
-                if left$ (.trimmed$, 1) = "."
-                    .nLeadingDot = .nLeadingDot + 1
-                    .isHazard = 1
-                endif
-                if left$ (.trimmed$, 2) = "-." or left$ (.trimmed$, 2) = "+."
-                    .nLeadingDot = .nLeadingDot + 1
-                    .isHazard = 1
-                endif
-            endif
-            if .isHazard = 1
-                .nCoerced = .nCoerced + 1
             endif
         endfor
+        .nCoerced = .nLocale + .nCoercedKind + .nLeadingDot
 
         # Strict verdict: after the rows that do not coerce to a number
         # have been dropped (which is what every extraction path does
@@ -1576,45 +1573,18 @@ procedure emlValidateNumericColumn: .tableId, .columnName$
             endfor
         endif
 
-        # Build the coercion warning. The European decimal comma comes
-        # first deliberately: it is the only hazard here that yields a
-        # plausible WRONG NUMBER ("1,5" reads as 1) rather than a dropped
-        # row, so it is the one that corrupts results silently.
-        .warn$ = ""
-        .sep$ = ""
-        if .nComma > 0
-            .commaMsg$ = " cell(s) contain a comma: a European decimal"
-            .commaMsg$ = .commaMsg$ + " comma is read as a plain integer"
-            .commaMsg$ = .commaMsg$ + " (1,5 becomes 1) — wrong value, not"
-            .commaMsg$ = .commaMsg$ + " a dropped row."
-            .warn$ = .warn$ + .sep$ + string$ (.nComma) + .commaMsg$
-            .sep$ = " "
-        endif
-        if .nSlash > 0
-            .slashMsg$ = " cell(s) contain '/': a fraction is truncated"
-            .slashMsg$ = .slashMsg$ + " at the slash (1/2 becomes 1)."
-            .warn$ = .warn$ + .sep$ + string$ (.nSlash) + .slashMsg$
-            .sep$ = " "
-        endif
-        if .nInnerSpace > 0
-            .spaceMsg$ = " cell(s) contain an internal space: the value is"
-            .spaceMsg$ = .spaceMsg$ + " truncated there (2 3 becomes 2)."
-            .warn$ = .warn$ + .sep$ + string$ (.nInnerSpace) + .spaceMsg$
-            .sep$ = " "
-        endif
-        if .nPercent > 0
-            .pctMsg$ = " cell(s) contain '%': read as a proportion"
-            .pctMsg$ = .pctMsg$ + " (30% becomes 0.3)."
-            .warn$ = .warn$ + .sep$ + string$ (.nPercent) + .pctMsg$
-            .sep$ = " "
-        endif
-        if .nLeadingDot > 0
-            .dotMsg$ = " cell(s) start with a bare decimal point: not"
-            .dotMsg$ = .dotMsg$ + " numeric to Praat (.5 is dropped)."
-            .warn$ = .warn$ + .sep$ + string$ (.nLeadingDot) + .dotMsg$
-            .sep$ = " "
-        endif
-        .coercionWarning$ = .warn$
+        # Render the coercion warning through @eml_auditNote -- the same
+        # renderer @emlAuditColumn and @eml_getGroupData use for the
+        # identical tallies, so the wording cannot drift between callers.
+        # Unreadable and empty cells are scoped out here (pass 0/""): this
+        # warning is about coercion hazards, not about missing data, which
+        # is already covered by .message$ elsewhere in this procedure.
+        @eml_auditNote: .nLocale, .firstLocaleRow, .firstLocaleValue$,
+            ... .nCoercedKind, .firstCoercedRow, .firstCoercedValue$,
+            ... .nLeadingDot, .firstLeadingDotRow, .firstLeadingDotValue$,
+            ... 0, 0, "",
+            ... 0, 0
+        .coercionWarning$ = eml_auditNote.result$
 
         if .nNumeric > 0
             .valid = 1
