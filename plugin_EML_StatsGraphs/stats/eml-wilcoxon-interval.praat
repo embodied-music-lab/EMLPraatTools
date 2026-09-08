@@ -575,12 +575,8 @@ procedure emlWilcoxonIntervalApprox: .v1#, .v2#, .paired, .level
         endfor
         .sortedDiffs# = sort# (.diffs#)
 
-        if .nDiff mod 2 = 1
-            .estimate = .sortedDiffs#[(.nDiff + 1) / 2]
-        else
-            .mid = .nDiff / 2
-            .estimate = (.sortedDiffs#[.mid] + .sortedDiffs#[.mid + 1]) / 2
-        endif
+        @emlMedian: .sortedDiffs#
+        .estimate = emlMedian.result
 
         .mumin = .sortedDiffs#[1]
         .mumax = .sortedDiffs#[.nDiff]
@@ -650,12 +646,8 @@ procedure emlWilcoxonIntervalApprox: .v1#, .v2#, .paired, .level
         endfor
         .sortedWalsh# = sort# (.walsh#)
 
-        if .nWalsh mod 2 = 1
-            .estimate = .sortedWalsh#[(.nWalsh + 1) / 2]
-        else
-            .mid = .nWalsh / 2
-            .estimate = (.sortedWalsh#[.mid] + .sortedWalsh#[.mid + 1]) / 2
-        endif
+        @emlMedian: .sortedWalsh#
+        .estimate = emlMedian.result
 
         .nNonzero = 0
         for .i from 1 to .n1
@@ -751,13 +743,8 @@ procedure emlWilcoxonIntervalApprox: .v1#, .v2#, .paired, .level
                     # achieved at all. R returns the median of the
                     # (zero-stripped) differences -- NOT of the Walsh
                     # averages -- as both bounds.
-                    if .nNonzero mod 2 = 1
-                        .medNz = .sortedNz#[(.nNonzero + 1) / 2]
-                    else
-                        .midNz = .nNonzero / 2
-                        .medNz = (.sortedNz#[.midNz]
-                        ... + .sortedNz#[.midNz + 1]) / 2
-                    endif
+                    @emlMedian: .sortedNz#
+                    .medNz = emlMedian.result
                     .low = .medNz
                     .high = .medNz
                 endif
