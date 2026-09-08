@@ -5455,7 +5455,7 @@ procedure eml_rmResolveMatrix: .tableId, .format$, .subjectCol$, .conditionCols$
     .k = emlExtractConditionMatrix.k
     .data## = emlExtractConditionMatrix.data##
     .nExcluded = emlExtractConditionMatrix.nExcluded
-    .parseNote$ = eml_rmResolveMatrix.parseNote$
+    .parseNote$ = emlExtractConditionMatrix.parseNote$
     for .j from 1 to .k
         .colLabel$ [.j] = emlExtractConditionMatrix.colLabel$ [.j]
     endfor
