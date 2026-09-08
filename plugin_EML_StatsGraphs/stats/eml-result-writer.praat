@@ -139,7 +139,7 @@
 # WARNING TRAILS EVEN alternative, the same relative place it already holds
 # in emlVocabGlance$ below. It is not a broom name in either frame: the
 # glance version is one warning per MODEL (@emlDeclareRMResult's sphericity
-# caveat); the tidy version, used by @emlDeclareFriedmanPostHoc, is one
+# caveat); the tidy version, used by @emlDeclarePostHoc's "friedman" kind, is one
 # per ROW -- a post-hoc pair whose confidence interval fell back to the
 # normal approximation and could not reach the requested level. Same word,
 # same column position in both frames, because it is the same kind of fact:

@@ -6050,7 +6050,7 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .format$,
         if .doPostHoc = 1
             if variableExists ("emlRMPostHoc.nPairs")
                 if emlRMPostHoc.nPairs > 0
-                    @emlDeclareRMPostHoc
+                    @emlDeclarePostHoc: "rm"
                     @emlResultStageExtra: "posthoc"
                 endif
             endif
@@ -6239,7 +6239,7 @@ procedure emlRunFriedmanAnalysis: .tableId, .format$,
         if .doPostHoc = 1
             if variableExists ("emlRMPostHoc.nPairs")
                 if emlRMPostHoc.nPairs > 0
-                    @emlDeclareFriedmanPostHoc
+                    @emlDeclarePostHoc: "friedman"
                     @emlResultStageExtra: "posthoc"
                 endif
             endif
@@ -7678,7 +7678,13 @@ endproc
 # Post-hoc pair labels are INTEGERS indexing emlExtractConditionMatrix.colLabel$,
 # not strings -- the contrast text is built inline by the printer and stored
 # nowhere, so it is rebuilt here.
-procedure emlDeclareRMPostHoc
+#
+# .kind$ selects the test family: "rm" (paired t, no per-pair warning column)
+# or "friedman" (Wilcoxon signed rank, plus the Hodges-Lehmann disclosure
+# column). Both call sites share every other line -- the pair loop, the
+# contrast text, and the p-value columns -- so the family only changes the
+# method label and whether the warning column is emitted.
+procedure emlDeclarePostHoc: .kind$
     @emlTidyClear
     for .i from 1 to emlRMPostHoc.nPairs
         .a = emlRMPostHoc.pairLabelA [.i]
@@ -7688,7 +7694,18 @@ procedure emlDeclareRMPostHoc
         ... + "-" + emlExtractConditionMatrix.colLabel$ [.b]
         @emlTidyNum: "p.value",     emlRMPostHoc.rawP# [.i]
         @emlTidyNum: "adj.p.value", emlRMPostHoc.adj# [.i]
-        @emlTidyStr: "method", "Paired t (" + emlRMPostHoc.adjUsed$ + ")"
+        if .kind$ = "rm"
+            @emlTidyStr: "method", "Paired t (" + emlRMPostHoc.adjUsed$ + ")"
+        else
+            @emlTidyStr: "method", "Wilcoxon signed rank ("
+            ... + emlRMPostHoc.adjUsed$ + ")"
+            ; THE SAME DISCLOSURE the pair's printed row carries: empty for a
+            ; pair whose method held at the requested level, and otherwise
+            ; @emlHodgesLehmannPaired's own caveat sentence, verbatim. A reader
+            ; who exports the CSV and never sees the report still learns which
+            ; pairs' intervals sit at a level short of the one requested.
+            @emlTidyStr: "warning", emlRMPostHoc.hlWarnFlat$ [.i]
+        endif
     endfor
 endproc
 
@@ -7716,28 +7733,6 @@ procedure emlDeclareFriedmanResult: .tableName$, .n, .k
     @emlGlanceNum: "n.conditions", .k
     @emlGlanceNum: "nobs",       .n * .k
     @emlGlanceStr: "method",     "Friedman rank sum test"
-endproc
-
-
-procedure emlDeclareFriedmanPostHoc
-    @emlTidyClear
-    for .i from 1 to emlRMPostHoc.nPairs
-        .a = emlRMPostHoc.pairLabelA [.i]
-        .b = emlRMPostHoc.pairLabelB [.i]
-        @emlTidyRow: "condition"
-        @emlTidyStr: "contrast", emlExtractConditionMatrix.colLabel$ [.a]
-        ... + "-" + emlExtractConditionMatrix.colLabel$ [.b]
-        @emlTidyNum: "p.value",     emlRMPostHoc.rawP# [.i]
-        @emlTidyNum: "adj.p.value", emlRMPostHoc.adj# [.i]
-        @emlTidyStr: "method", "Wilcoxon signed rank ("
-        ... + emlRMPostHoc.adjUsed$ + ")"
-        ; THE SAME DISCLOSURE the pair's printed row carries: empty for a
-        ; pair whose method held at the requested level, and otherwise
-        ; @emlHodgesLehmannPaired's own caveat sentence, verbatim. A reader
-        ; who exports the CSV and never sees the report still learns which
-        ; pairs' intervals sit at a level short of the one requested.
-        @emlTidyStr: "warning", emlRMPostHoc.hlWarnFlat$ [.i]
-    endfor
 endproc
 
 
