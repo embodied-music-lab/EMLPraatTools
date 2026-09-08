@@ -2059,6 +2059,27 @@ scripts <- c(
                                  # analysis.praat's PostHoc loop carries
                                  # .warning$/.achievedLevel through; that
                                  # file is held by another wave.
+    ,
+    "v167_duplicate_bodies.R"    # DRY lint (ORDER_DRY_LINT_AND_AUDIT_FIXES
+                                 # part A): near-identical procedure bodies.
+                                 # Masks strings/numbers/.locals, shingles,
+                                 # Jaccard; FAILs any pair >= 0.80 not in
+                                 # validate/canon/duplicate_allowlist.tsv,
+                                 # reports 0.50-0.80 as INFO. Ships a fixture
+                                 # pair that must FAIL. RED on the audit's
+                                 # named duplicates until each B wave folds
+                                 # its pair; that red is the work order.
+    ,
+    "v169_canonical_home.R"      # DRY lint (same order, part A): a code line
+                                 # that reimplements a canon helper's job
+                                 # outside the file or procedure meant to own
+                                 # it. Reads validate/canon/helper_homes.tsv
+                                 # (pattern, home, allowlist). Green now; the
+                                 # allowlist mirrors the post-freeze ledger,
+                                 # the summation-canon hold and the named
+                                 # exemptions, plus the B10 formatting sites
+                                 # (reason "pending B10 ruling") that B10
+                                 # repoints and removes.
 )
 
 # ---------------------------------------------------------------------------

@@ -1,1 +1,2 @@
 proc_a	proc_b	reason
+eml_csvQuote	eml_rwQuote	post-freeze ledger, eml_csvQuote/eml_rwQuote consolidation deferred (ORDER_DRY_LINT_AND_AUDIT_FIXES_2026-09-08 line 32: their difference is documented, consolidation is post-freeze)
