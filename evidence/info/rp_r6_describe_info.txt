@@ -1,46 +1,5 @@
-══════════════════════════════════════════════
-  EML Stats : Descriptive Statistics
-  Sun Aug 16 03:06:17 2026
-══════════════════════════════════════════════
-
-  Table               r6 nonnumeric in measure
-  Column              SPL soft
-  N (valid)           4
-  N (excluded)        1
-  1 cell(s) are not numeric in any locale (row 3: n/a). This is
-  a type error, not missing data.
 
 
-  ── Central Tendency ────────────────────────
-  Mean                72.3000
-  Median              72.3000
-  SEM                 1.0042
-
-
-  ── Dispersion ──────────────────────────────
-  SD                  2.0083
-  Variance            4.0333
-  Range               4.4000
-  Min                 70.1000
-  Max                 74.5000
-
-
-  ── Quartiles ───────────────────────────────
-  Q1                  70.9250
-  Q2 (Median)         72.3000
-  Q3                  73.6750
-  IQR                 2.7500
-
-
-  ── Distribution Shape ──────────────────────
-  Skewness            0.0000
-  Kurtosis (excess)   -3.3000
-
-
-  ── 95% Confidence Interval ─────────────────
-  Lower               69.1043
-  Upper               75.4957
-
-  Conventions: quartiles R type 7 · SD & variance n-1
-  · rank tests average tied ranks (tie-corrected).
-══════════════════════════════════════════════
+emlRunDescriptiveAnalysis.ok = 0
+emlRunDescriptiveAnalysis.error$ = "Data column "SPL_soft" has a cell that is not numeric, at row 3: "n/a"."
+emlRunDescriptiveAnalysis.remedy$ = ""

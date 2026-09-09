@@ -3,21 +3,21 @@ gx01_blank_cell	1	A	vector	10.0000000000;12.0000000000
 gx01_blank_cell	1	A	group_order	1
 gx01_blank_cell	1	A	skipped	1
 gx01_blank_cell	1	A	error	
-gx01_blank_cell	1	A	note	1 cell(s) are empty (row 2 first). Treated as missing data.
+gx01_blank_cell	1	A	note	
 gx01_blank_cell	2	B	vector	5.0000000000;6.0000000000
 gx01_blank_cell	2	B	group_order	2
 gx01_blank_cell	2	B	skipped	0
 gx01_blank_cell	2	B	error	
 gx01_blank_cell	2	B	note	
-gx02_nonnumeric_text	1	A	vector	1.5000000000;2.5000000000
+gx02_nonnumeric_text	1	A	vector	
 gx02_nonnumeric_text	1	A	group_order	1
-gx02_nonnumeric_text	1	A	skipped	1
-gx02_nonnumeric_text	1	A	error	
-gx02_nonnumeric_text	1	A	note	1 cell(s) are not numeric in any locale (row 2: abc). Unrecognized nonnumeric token; excluded.
-gx02_nonnumeric_text	2	B	vector	3.0000000000
+gx02_nonnumeric_text	1	A	skipped	0
+gx02_nonnumeric_text	1	A	error	Data column "value" has a cell that is not numeric, at row 2: "abc".
+gx02_nonnumeric_text	1	A	note	
+gx02_nonnumeric_text	2	B	vector	
 gx02_nonnumeric_text	2	B	group_order	2
 gx02_nonnumeric_text	2	B	skipped	0
-gx02_nonnumeric_text	2	B	error	
+gx02_nonnumeric_text	2	B	error	Data column "value" has a cell that is not numeric, at row 2: "abc".
 gx02_nonnumeric_text	2	B	note	
 gx03_whitespace_labels	1	Alpha	vector	1.0000000000;2.0000000000;3.0000000000
 gx03_whitespace_labels	1	Alpha	group_order	1

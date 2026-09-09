@@ -1,43 +1,5 @@
-══════════════════════════════════════════════
-  EML Stats : Normality Assessment
-  Tue Sep  8 23:53:03 2026
-══════════════════════════════════════════════
-
-  Table               kit cleandata l2 normality input
-  Column              value
-  N                   9
-  Excluded (missing)  1
 
 
-  ── Descriptive Statistics ──────────────────
-  Mean                12.5556
-  SD                  1.6040
-  Median              12.6000
-
-
-  ── Distribution Shape ──────────────────────
-  Skewness            -0.0835
-  Kurtosis (excess)   -1.0426
-  → Skewness within typical limits (criterion: |skew| < 2)
-  → Kurtosis within typical limits (criterion: |excess kurt| < 7)
-
-
-  ── Shapiro-Wilk Test ───────────────────────
-  W                   0.9789
-  p                   .958
-  → Does not reject normality (p >= 0.05)
-
-
-  ── Recommendation ──────────────────────────
-  Shapiro-Wilk does not reject normality (p >= .05), and skewness and
-  kurtosis are within the thresholds.
-  → Parametric tests (t-test, ANOVA, Pearson r) are recommended.
-  What was checked: the marginal distribution of this column. Parametric
-  tests assume normality of the model RESIDUALS, which is not the same
-  distribution and is not examined here.
-
-  Conventions: quartiles R type 7 · SD & variance n-1
-  · rank tests average tied ranks (tie-corrected).
-  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
-  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
-══════════════════════════════════════════════
+emlRunNormalityAnalysis.ok = 0
+emlRunNormalityAnalysis.error$ = "Data column "value" has a cell that is not numeric, at row 3: "??"."
+emlRunNormalityAnalysis.remedy$ = ""

@@ -55,16 +55,40 @@ procedure driveOne: .csv$, .out$, .kind$
     t = Read Table from comma-separated file: .csv$
     if .kind$ = "twogroup"
         @emlRunTwoGroupAnalysis: t, "value", "group", "both", 0
+        .error$ = emlRunTwoGroupAnalysis.error$
+        .remedy$ = emlRunTwoGroupAnalysis.remedy$
+        .doorOk = emlRunTwoGroupAnalysis.ok
     elsif .kind$ = "anova"
         @emlRunAnovaAnalysis: t, "value", "group", 1
+        .error$ = emlRunAnovaAnalysis.error$
+        .remedy$ = emlRunAnovaAnalysis.remedy$
+        .doorOk = emlRunAnovaAnalysis.ok
     elsif .kind$ = "correlation"
         @emlRunCorrelationAnalysis: t, "x", "y", "both"
+        .error$ = emlRunCorrelationAnalysis.error$
+        .remedy$ = emlRunCorrelationAnalysis.remedy$
+        .doorOk = emlRunCorrelationAnalysis.ok
     elsif .kind$ = "regression"
         @emlRunRegressionAnalysis: t, "dep", "pred"
+        .error$ = emlRunRegressionAnalysis.error$
+        .remedy$ = emlRunRegressionAnalysis.remedy$
+        .doorOk = emlRunRegressionAnalysis.ok
     endif
     text$ = info$ ()
     if left$ (text$, 1) = newline$
         text$ = right$ (text$, length (text$) - 1)
+    endif
+    ; LEVEL 2 REFUSES (9 Sep 2026 ruling): a refusal prints no report to the
+    ; Info window at all (the orchestrator jumps to its END label before the
+    ; reporter runs), so the ONLY account of a refused run is its own
+    ; .error$/.remedy$ pair -- exactly what a live GUI run would have handed
+    ; to @emlErrorDialog. Appended unconditionally (harmless on a run that
+    ; computed: both are "" there and add nothing a check reads).
+    if .error$ <> ""
+        text$ = text$ + newline$ + newline$
+        ... + .kind$ + ".ok = " + string$ (.doorOk) + newline$
+        ... + .kind$ + ".error$ = """ + .error$ + """" + newline$
+        ... + .kind$ + ".remedy$ = """ + .remedy$ + """"
     endif
     writeFile: .out$, text$
     removeObject: t

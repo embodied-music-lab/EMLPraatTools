@@ -1,48 +1,5 @@
-══════════════════════════════════════════════
-  EML Stats : Paired Comparison
-  Tue Sep  8 23:53:03 2026
-══════════════════════════════════════════════
-
-  Table               kit cleandata l2 paired input
-  Column 1            pre
-  Column 2            post
-  N (pairs)           5
-
-  pre: Mean = 12.960, SD = 2.281, Median = 13.400
-  post: Mean = 15.040, SD = 2.434, Median = 15.600
-  Sign: every difference below is pre minus post, and t, z and the
-  effect sizes carry that direction.
 
 
-  ── Paired t-test ───────────────────────────
-  t                   -28.305
-  df                  4
-  p                   < .001  (9.27e-06)
-  Mean diff (pre − post) -2.0800
-  SD of differences   0.1643
-
-
-  ── Effect Size ─────────────────────────────
-  Cohen's dz          -12.658
-  r (from t)          -0.998
-  Magnitude           large effect
-
-
-  ── Wilcoxon Signed-Rank Test ───────────────
-  T+                  0.0
-  T-                  15.0
-  z                   -1.905
-  p                   .057
-  p method            normal approximation (ties present)
-
-
-  ── Nonparametric Effect Size ───────────────
-  Matched-pairs r     -1.000
-  Magnitude           large effect
-
-  Conventions: quartiles R type 7 · SD & variance n-1
-  · rank tests average tied ranks (tie-corrected).
-  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
-  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
-══════════════════════════════════════════════
-  Note: 1 row(s) excluded for missing data (analyzed n = 5 complete pairs).
+emlRunPairedAnalysis.ok = 0
+emlRunPairedAnalysis.error$ = "First column "pre" has a cell that is not numeric, at row 3: "??"."
+emlRunPairedAnalysis.remedy$ = ""

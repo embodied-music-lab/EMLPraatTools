@@ -50,6 +50,15 @@ text$ = info$ ()
 if left$ (text$, 1) = newline$
     text$ = right$ (text$, length (text$) - 1)
 endif
+; LEVEL 2 REFUSES (9 Sep 2026 ruling): a refusal prints no report at all, so
+; the .error$/.remedy$ pair is appended -- what a live GUI run would have
+; handed to @emlErrorDialog. Harmless (both "") on a run that computed.
+if emlRunKruskalWallisAnalysis.error$ <> ""
+    text$ = text$ + newline$ + newline$
+    ... + "emlRunKruskalWallisAnalysis.ok = " + string$ (emlRunKruskalWallisAnalysis.ok) + newline$
+    ... + "emlRunKruskalWallisAnalysis.error$ = """ + emlRunKruskalWallisAnalysis.error$ + """" + newline$
+    ... + "emlRunKruskalWallisAnalysis.remedy$ = """ + emlRunKruskalWallisAnalysis.remedy$ + """"
+endif
 writeFile: "../info/kit_cleandata_l2_kruskal_info.txt", text$
 removeObject: t
 
@@ -58,7 +67,9 @@ writeInfo: ""
 t = Read Table from comma-separated file: "../csv/kit_cleandata_l2_twoway_input.csv"
 @emlRunTwoWayAnalysis: t, "value", "f1", "f2", 3
 text$ = info$ () + newline$ + newline$
-... + "emlRunTwoWayAnalysis.error$ = """ + emlRunTwoWayAnalysis.error$ + """"
+... + "emlRunTwoWayAnalysis.ok = " + string$ (emlRunTwoWayAnalysis.ok) + newline$
+... + "emlRunTwoWayAnalysis.error$ = """ + emlRunTwoWayAnalysis.error$ + """" + newline$
+... + "emlRunTwoWayAnalysis.remedy$ = """ + emlRunTwoWayAnalysis.remedy$ + """"
 if left$ (text$, 1) = newline$
     text$ = right$ (text$, length (text$) - 1)
 endif
@@ -73,6 +84,12 @@ text$ = info$ ()
 if left$ (text$, 1) = newline$
     text$ = right$ (text$, length (text$) - 1)
 endif
+if emlRunNormalityAnalysis.error$ <> ""
+    text$ = text$ + newline$ + newline$
+    ... + "emlRunNormalityAnalysis.ok = " + string$ (emlRunNormalityAnalysis.ok) + newline$
+    ... + "emlRunNormalityAnalysis.error$ = """ + emlRunNormalityAnalysis.error$ + """" + newline$
+    ... + "emlRunNormalityAnalysis.remedy$ = """ + emlRunNormalityAnalysis.remedy$ + """"
+endif
 writeFile: "../info/kit_cleandata_l2_normality_info.txt", text$
 removeObject: t
 
@@ -84,6 +101,12 @@ text$ = info$ ()
 if left$ (text$, 1) = newline$
     text$ = right$ (text$, length (text$) - 1)
 endif
+if emlRunPairedAnalysis.error$ <> ""
+    text$ = text$ + newline$ + newline$
+    ... + "emlRunPairedAnalysis.ok = " + string$ (emlRunPairedAnalysis.ok) + newline$
+    ... + "emlRunPairedAnalysis.error$ = """ + emlRunPairedAnalysis.error$ + """" + newline$
+    ... + "emlRunPairedAnalysis.remedy$ = """ + emlRunPairedAnalysis.remedy$ + """"
+endif
 writeFile: "../info/kit_cleandata_l2_paired_info.txt", text$
 removeObject: t
 
@@ -93,7 +116,9 @@ t = Read Table from comma-separated file: "../csv/kit_cleandata_l2_reliability_i
 items$# = { "item1", "item2", "item3" }
 @emlRunReliabilityAnalysis: t, items$#, 0.95, 0
 text$ = info$ () + newline$ + newline$
-... + "emlRunReliabilityAnalysis.error$ = """ + emlRunReliabilityAnalysis.error$ + """"
+... + "emlRunReliabilityAnalysis.ok = " + string$ (emlRunReliabilityAnalysis.ok) + newline$
+... + "emlRunReliabilityAnalysis.error$ = """ + emlRunReliabilityAnalysis.error$ + """" + newline$
+... + "emlRunReliabilityAnalysis.remedy$ = """ + emlRunReliabilityAnalysis.remedy$ + """"
 if left$ (text$, 1) = newline$
     text$ = right$ (text$, length (text$) - 1)
 endif
@@ -105,7 +130,9 @@ writeInfo: ""
 t = Read Table from comma-separated file: "../csv/kit_cleandata_l2_categorical_input.csv"
 @emlRunCategoricalAnalysis: t, "rowvar", "colvar", "count", 1
 text$ = info$ () + newline$ + newline$
-... + "emlRunCategoricalAnalysis.error$ = """ + emlRunCategoricalAnalysis.error$ + """"
+... + "emlRunCategoricalAnalysis.ok = " + string$ (emlRunCategoricalAnalysis.ok) + newline$
+... + "emlRunCategoricalAnalysis.error$ = """ + emlRunCategoricalAnalysis.error$ + """" + newline$
+... + "emlRunCategoricalAnalysis.remedy$ = """ + emlRunCategoricalAnalysis.remedy$ + """"
 if left$ (text$, 1) = newline$
     text$ = right$ (text$, length (text$) - 1)
 endif
@@ -118,8 +145,11 @@ t = Read Table from comma-separated file: "../csv/kit_cleandata_l2_rm_input.csv"
 conds$# = { "soft", "medium", "loud" }
 @emlRunRepeatedMeasuresAnalysis: t, "wide", "", conds$#, "", "", 0, "holm"
 text$ = info$ () + newline$ + newline$
+... + "emlRunRepeatedMeasuresAnalysis.ok = " + string$ (emlRunRepeatedMeasuresAnalysis.ok) + newline$
 ... + "emlRunRepeatedMeasuresAnalysis.error$ = """
-... + emlRunRepeatedMeasuresAnalysis.error$ + """"
+... + emlRunRepeatedMeasuresAnalysis.error$ + """" + newline$
+... + "emlRunRepeatedMeasuresAnalysis.remedy$ = """
+... + emlRunRepeatedMeasuresAnalysis.remedy$ + """"
 if left$ (text$, 1) = newline$
     text$ = right$ (text$, length (text$) - 1)
 endif

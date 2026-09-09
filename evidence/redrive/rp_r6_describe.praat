@@ -45,4 +45,16 @@ text$ = info$ ()
 if left$ (text$, 1) = newline$
     text$ = right$ (text$, length (text$) - 1)
 endif
+; RE-DRIVEN 9 Sep 2026 under CORRECTION_LEVEL2_IS_A_REFUSAL: row 3's "n/a" is
+; a LEVEL 2 cell, so this now refuses the whole column via
+; @emlRequireNumericColumn instead of printing "N (valid) 4 / N (excluded) 1"
+; -- no report is printed at all. The .ok/.error$/.remedy$ triple is
+; appended, exactly what a live GUI run would have handed to
+; @emlErrorDialog.
+if emlRunDescriptiveAnalysis.error$ <> ""
+    text$ = text$ + newline$ + newline$
+    ... + "emlRunDescriptiveAnalysis.ok = " + string$ (emlRunDescriptiveAnalysis.ok) + newline$
+    ... + "emlRunDescriptiveAnalysis.error$ = """ + emlRunDescriptiveAnalysis.error$ + """" + newline$
+    ... + "emlRunDescriptiveAnalysis.remedy$ = """ + emlRunDescriptiveAnalysis.remedy$ + """"
+endif
 writeFile: "../info/rp_r6_describe_info.txt", text$

@@ -178,27 +178,28 @@ check_true("v15", "no column here has severe shape, so this table cannot separat
 # DATA-CLEANING WAVE — level-2 fixture for this door (no level-1: the repair
 # is proved once, in the extraction layer)
 #
-# Built 8 September 2026 under RULING_DATA_CLEANING_POLICY. Driven headlessly
-# by evidence/redrive/kit_cleandata_other_doors.praat against
-# validate/redpath/kit_cleandata_l2_normality.csv (10 rows, one "??").
-# @emlRunNormalityAnalysis reads its Data column with strict = 0, so the bad
-# cell drops that one row under the complete-case convention and the door
-# prints "Excluded (missing)  1" directly under N -- the refusal text this
-# fixture asserts on, alongside the recomputed Shapiro-Wilk statistic.
+# RE-DERIVED 9 September 2026 under CORRECTION_LEVEL2_IS_A_REFUSAL. Driven
+# headlessly by evidence/redrive/kit_cleandata_other_doors.praat against
+# validate/redpath/kit_cleandata_l2_normality.csv (10 rows, one "??" at
+# row 3). @emlRunNormalityAnalysis reads its Data column through
+# @emlRequireNumericColumn with strict = 0, but level-2 now refuses
+# unconditionally regardless of strict, so the bad cell REFUSES the whole
+# analysis -- no Shapiro-Wilk statistic is ever computed and N never reaches
+# a "reduced" value of 9. .remedy$ reads "" here (orchestrators do not
+# forward it -- see v08's level-2 comment; the text itself is proved at its
+# source, see v170's categorical case).
 # ============================================================================
 
-nrd  <- read_input("kit_cleandata_l2_normality_input.csv")
 nrcap <- capture("kit_cleandata_l2_normality_info.txt")
-nrv <- suppressWarnings(as.numeric(nrd$value))
-nrv <- nrv[!is.na(nrv)]
-check_true("v15-cleandata", "the fixture's one unreadable cell (\"??\") leaves 9 usable values",
-           length(nrv) == 9L)
-check("v15-cleandata", "L2: N is 9 -- the unreadable cell is refused",
-      printed(nrcap, "N"), length(nrv), tol = 0)
-check("v15-cleandata", "L2: Excluded (missing) names exactly 1 row",
-      printed(nrcap, "Excluded (missing)"), 1, tol = 0)
-sw2 <- shapiro.test(nrv)
-check("v15-cleandata", "L2: Shapiro-Wilk W over the 9 usable values",
-      printed(nrcap, "W"), unname(sw2$statistic), tol = 5e-3)
+nrcapflat <- paste(trimws(nrcap$lines), collapse = " ")
+check_true("v15-cleandata", "L2: no report is printed -- the refusal happens before Shapiro-Wilk is computed",
+           !any(grepl("^N", trimws(nrcap$lines))))
+check_true("v15-cleandata", "L2: emlRunNormalityAnalysis.ok = 0",
+           any(grepl("emlRunNormalityAnalysis.ok = 0", nrcap$lines, fixed = TRUE)))
+check_true("v15-cleandata", "L2: the three-part .error$ names the column, row 3, and the literal \"??\"",
+           grepl('emlRunNormalityAnalysis.error$ = "Data column "value" has a cell that is not numeric, at row 3: "??"."',
+                 nrcapflat, fixed = TRUE))
+check_true("v15-cleandata", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('emlRunNormalityAnalysis.remedy$ = ""', nrcap$lines, fixed = TRUE)))
 
 if (!exists("EML_SUITE")) { eml_report("v15 normality orchestrator"); eml_exit() }

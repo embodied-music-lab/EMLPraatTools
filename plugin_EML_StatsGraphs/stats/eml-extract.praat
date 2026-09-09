@@ -72,17 +72,27 @@
 #   columnName$ - name of the column to extract
 #
 # Output:
-#   .data#      - vector of values (length = number of rows). LEVEL 1 cells
-#                 (decimal comma, digit grouping, bare leading point) are
-#                 repaired in place here; see .warning$.
+#   .data#      - vector of values (length = number of rows kept). LEVEL 1
+#                 cells (decimal comma, digit grouping, bare leading point)
+#                 are repaired in place here; see .warning$. GENUINELY EMPTY
+#                 cells are excluded and counted in .nUndefined, as always.
 #   .n          - number of values extracted
-#   .nUndefined - count of undefined/non-numeric values (LEVEL 2, refused)
-#   .note$      - LEVEL 2 disclosure (@emlAuditColumn.note$), "" if nothing
-#                 was refused
-#   .warning$   - LEVEL 1 disclosure (@emlAuditColumn.warning$), "" if
-#                 nothing was repaired
+#   .nUndefined - count of excluded (empty) cells, when .ok = 1. Meaningless
+#                 when .ok = 0: the column was refused, nothing was read.
+#   .note$      - "" always now: a LEVEL 2 cell refuses (.error$/.ok) rather
+#                 than being disclosed and excluded. Kept for interface
+#                 stability.
+#   .warning$   - LEVEL 1 disclosure (@emlAuditColumn.warning$), plus (9 Sep
+#                 2026 ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE)
+#                 @eml_emptyCellDisclosure's sentence when .nUndefined > 0
+#                 counted a genuinely empty cell; "" if neither happened
 #   .nRepaired  - cells changed under LEVEL 1
-#   .error$     - error message if column doesn't exist, else ""
+#   .ok         - (.error$ = ""), Praat's single-exit success flag
+#   .error$     - "" on success; else the column doesn't exist, OR (9 Sep
+#                 2026 ruling) a LEVEL 2 cell refused it -- names the
+#                 column, the first offending row, and its literal value
+#   .remedy$    - set alongside .error$ on a LEVEL 2 refusal: names
+#                 @emlRunCleanData and the menu item that runs it
 # ============================================================================
 procedure emlExtractColumn: .tableId, .columnName$
     # Initialize outputs
@@ -97,6 +107,7 @@ procedure emlExtractColumn: .tableId, .columnName$
     .warning$ = ""
     .nRepaired = 0
     .error$ = ""
+    .remedy$ = ""
     .data# = zero#(0)
 
     # Select table and get dimensions
@@ -169,16 +180,52 @@ procedure emlExtractColumn: .tableId, .columnName$
             .note$ = emlAuditColumn.note$
             .warning$ = emlAuditColumn.warning$
             .nRepaired = emlAuditColumn.nRepaired
-            .data# = zero#(.nRows)
-            ; VECTOR-EXEMPT: cat1 -- per-cell numeric classification (@eml_readCell probes
-            ; Praat's numericiser cell by cell); this is the dirty-column path, not a reduction.
-            for .row from 1 to .nRows
-                @eml_readCell: .tableId, .row, .columnName$, .fastPath
-                if eml_readCell.value <> undefined
-                    .n = .n + 1
-                    .data#[.n] = eml_readCell.value
+
+            # LEVEL 2 REFUSES, ON EVERY DOOR (9 Sep 2026 ruling): a column
+            # with even one unreadable cell is not read at all -- no
+            # disclose-and-exclude, no partial vector. @emlAuditColumn's
+            # single column-wide pass above already found it; asking again
+            # per row here would just be a second copy of the same decision.
+            if emlAuditColumn.nLevel2 > 0
+                @eml_level2Refusal: "Column", .columnName$,
+                    ... emlAuditColumn.firstLevel2Row,
+                    ... emlAuditColumn.firstLevel2Value$
+                .error$ = eml_level2Refusal.error$
+                .remedy$ = eml_level2Refusal.remedy$
+                .data# = zero#(0)
+                .n = 0
+            else
+                .data# = zero#(.nRows)
+                ; VECTOR-EXEMPT: cat1 -- per-cell numeric classification (@eml_readCell probes
+                ; Praat's numericiser cell by cell); this is the dirty-column path, not a reduction.
+                # No cell reached here can be LEVEL 2 (kind 5, 6 or 7): the
+                # refusal above already took this branch if the column held
+                # one, so every undefined @eml_readCell.value left is a
+                # genuinely EMPTY cell (kind 1), which stays excluded and
+                # counted exactly as today.
+                for .row from 1 to .nRows
+                    @eml_readCell: .tableId, .row, .columnName$, .fastPath
+                    if eml_readCell.value <> undefined
+                        .n = .n + 1
+                        .data#[.n] = eml_readCell.value
+                    endif
+                endfor
+
+                # EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
+                # ANSWER_LEVEL2_EMPTY_CELL_NOTE): appended to the LEVEL 1
+                # warning already captured above, through the one shared
+                # builder every extraction entry point and @eml_getGroupData
+                # use, so the wording cannot drift between them.
+                @eml_emptyCellDisclosure: .nEmpty, .columnName$,
+                    ... emlAuditColumn.firstEmptyRow
+                if eml_emptyCellDisclosure.note$ <> ""
+                    if .warning$ <> ""
+                        .warning$ = .warning$ + " " + eml_emptyCellDisclosure.note$
+                    else
+                        .warning$ = eml_emptyCellDisclosure.note$
+                    endif
                 endif
-            endfor
+            endif
         endif
 
         .nUndefined = .nRows - .n
@@ -190,6 +237,7 @@ procedure emlExtractColumn: .tableId, .columnName$
             .data# = zero#(0)
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -269,10 +317,21 @@ endproc
 #   .group2#    - data vector for label2$
 #   .n1         - size of group 1
 #   .n2         - size of group 2
-#   .nExcluded  - rows matching neither label, or a LEVEL 2 measure cell
-#   .note$      - LEVEL 2 disclosure for .measureCol$, "" if nothing refused
-#   .warning$   - LEVEL 1 disclosure for .measureCol$, "" if nothing repaired
-#   .error$     - error message if any
+#   .nExcluded  - rows matching neither label, or with a genuinely empty
+#                 .measureCol$ cell, when .ok = 1
+#   .note$      - "" always now: a LEVEL 2 cell refuses (.error$/.ok) rather
+#                 than being disclosed and excluded. Kept for interface
+#                 stability.
+#   .warning$   - LEVEL 1 disclosure for .measureCol$, plus (9 Sep 2026
+#                 ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE)
+#                 @eml_emptyCellDisclosure's sentence when .measureCol$ held
+#                 a genuinely empty cell; "" if neither happened
+#   .ok         - (.error$ = ""), Praat's single-exit success flag
+#   .error$     - "" on success; else the table is empty, OR (9 Sep 2026
+#                 ruling) a LEVEL 2 cell in .measureCol$ refused it -- names
+#                 the column, the first offending row, and its literal value
+#   .remedy$    - set alongside .error$ on a LEVEL 2 refusal: names
+#                 @emlRunCleanData and the menu item that runs it
 # ============================================================================
 procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, .label2$
     # Initialize outputs
@@ -282,6 +341,7 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
     .note$ = ""
     .warning$ = ""
     .error$ = ""
+    .remedy$ = ""
     .group1# = zero#(0)
     .group2# = zero#(0)
 
@@ -292,21 +352,50 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
     if .nRows = 0
         .error$ = "Table is empty"
     else
-        # First pass: count members of each group
-        .count1 = 0
-        .count2 = 0
-        .countExcluded = 0
-
         # One decision per column, then one read path per cell.
         @eml_openColumn: .tableId, .measureCol$
         .measureClean = eml_openColumn.clean
 
         if .measureClean = 0
             @emlAuditColumn: .tableId, .measureCol$
-            .note$ = emlAuditColumn.note$
             .warning$ = emlAuditColumn.warning$
-        endif
 
+            # LEVEL 2 REFUSES, ON EVERY DOOR (9 Sep 2026 ruling): a column
+            # with even one unreadable cell is not read at all -- no
+            # disclose-and-exclude, no partial vector.
+            if emlAuditColumn.nLevel2 > 0
+                @eml_level2Refusal: "Measure column", .measureCol$,
+                    ... emlAuditColumn.firstLevel2Row,
+                    ... emlAuditColumn.firstLevel2Value$
+                .error$ = eml_level2Refusal.error$
+                .remedy$ = eml_level2Refusal.remedy$
+            else
+                # EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
+                # ANSWER_LEVEL2_EMPTY_CELL_NOTE): through the same shared
+                # builder @emlExtractColumn and @eml_getGroupData use.
+                @eml_emptyCellDisclosure: emlAuditColumn.nEmpty, .measureCol$,
+                    ... emlAuditColumn.firstEmptyRow
+                if eml_emptyCellDisclosure.note$ <> ""
+                    if .warning$ <> ""
+                        .warning$ = .warning$ + " " + eml_emptyCellDisclosure.note$
+                    else
+                        .warning$ = eml_emptyCellDisclosure.note$
+                    endif
+                endif
+            endif
+        endif
+    endif
+
+    if .error$ = "" and .nRows > 0
+        # First pass: count members of each group
+        .count1 = 0
+        .count2 = 0
+        .countExcluded = 0
+
+        # No cell reached below can be LEVEL 2 (kind 5, 6 or 7): the refusal
+        # above already fired if .measureCol$ held one, so every undefined
+        # @eml_readCell.value left is a genuinely EMPTY cell (kind 1), which
+        # stays excluded and counted exactly as today.
         for .row from 1 to .nRows
             selectObject: .tableId
             .grp$ = Get value: .row, .groupCol$
@@ -359,6 +448,7 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
         .n2 = .count2
         .nExcluded = .countExcluded
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -377,13 +467,23 @@ endproc
 #                   are repaired in place; see .warning$.
 #   .data2#       - second column values (complete pairs only)
 #   .n            - number of complete pairs
-#   .nExcludedRows - rows with missing values, or a LEVEL 2 cell in either
-#                   column
-#   .note$        - LEVEL 2 disclosure across both columns, "" if nothing
-#                   refused
-#   .warning$     - LEVEL 1 disclosure across both columns, "" if nothing
-#                   repaired
-#   .error$       - error message if columns don't exist
+#   .nExcludedRows - rows with a genuinely empty cell in either column, when
+#                   .ok = 1
+#   .note$        - "" always now: a LEVEL 2 cell refuses (.error$/.ok)
+#                   rather than being disclosed and excluded. Kept for
+#                   interface stability.
+#   .warning$     - LEVEL 1 disclosure across both columns, plus (9 Sep 2026
+#                   ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE)
+#                   @eml_emptyCellDisclosure's sentence for each column that
+#                   held a genuinely empty cell (both can appear); "" if
+#                   none of that happened
+#   .ok           - (.error$ = ""), Praat's single-exit success flag
+#   .error$       - "" on success; else a column doesn't exist, OR (9 Sep
+#                   2026 ruling) a LEVEL 2 cell in .col1$ or .col2$ refused
+#                   it -- names the column, the first offending row, and its
+#                   literal value. .col1$ is checked first.
+#   .remedy$      - set alongside .error$ on a LEVEL 2 refusal: names
+#                   @emlRunCleanData and the menu item that runs it
 # ============================================================================
 procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
     # Initialize outputs
@@ -392,6 +492,7 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
     .note$ = ""
     .warning$ = ""
     .error$ = ""
+    .remedy$ = ""
     .data1# = zero#(0)
     .data2# = zero#(0)
     
@@ -445,10 +546,6 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
             .n = .nRows
             .nExcludedRows = 0
         else
-            # First pass: count complete pairs
-            .countComplete = 0
-            .countExcluded = 0
-
             # This is the ROW-wise path. It must agree cell for cell with
             # the column-wise paths above, so it reads through the same helper.
             @eml_openColumn: .tableId, .col1$
@@ -456,47 +553,86 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
             @eml_openColumn: .tableId, .col2$
             .clean2 = eml_openColumn.clean
 
+            .col1Empty = 0
+            .col1EmptyRow = 0
+            .col2Empty = 0
+            .col2EmptyRow = 0
+
             if .clean1 = 0
                 @emlAuditColumn: .tableId, .col1$
-                .note$ = emlAuditColumn.note$
                 .warning$ = emlAuditColumn.warning$
-            endif
-            if .clean2 = 0
-                @emlAuditColumn: .tableId, .col2$
-                if emlAuditColumn.note$ <> ""
-                    if .note$ <> ""
-                        .note$ = .note$ + " "
-                    endif
-                    .note$ = .note$ + emlAuditColumn.note$
+
+                # LEVEL 2 REFUSES, ON EVERY DOOR (9 Sep 2026 ruling): a
+                # column with even one unreadable cell is not read at all --
+                # no disclose-and-exclude, no partial vector. .col1$ is
+                # checked before .col2$, so a caller with both dirty is told
+                # about the first-named column.
+                if emlAuditColumn.nLevel2 > 0
+                    @eml_level2Refusal: "First column", .col1$,
+                        ... emlAuditColumn.firstLevel2Row,
+                        ... emlAuditColumn.firstLevel2Value$
+                    .error$ = eml_level2Refusal.error$
+                    .remedy$ = eml_level2Refusal.remedy$
+                else
+                    .col1Empty = emlAuditColumn.nEmpty
+                    .col1EmptyRow = emlAuditColumn.firstEmptyRow
                 endif
+            endif
+            if .error$ = "" and .clean2 = 0
+                @emlAuditColumn: .tableId, .col2$
                 if emlAuditColumn.warning$ <> ""
                     if .warning$ <> ""
                         .warning$ = .warning$ + " "
                     endif
                     .warning$ = .warning$ + emlAuditColumn.warning$
                 endif
+
+                if emlAuditColumn.nLevel2 > 0
+                    @eml_level2Refusal: "Second column", .col2$,
+                        ... emlAuditColumn.firstLevel2Row,
+                        ... emlAuditColumn.firstLevel2Value$
+                    .error$ = eml_level2Refusal.error$
+                    .remedy$ = eml_level2Refusal.remedy$
+                else
+                    .col2Empty = emlAuditColumn.nEmpty
+                    .col2EmptyRow = emlAuditColumn.firstEmptyRow
+                endif
             endif
 
-            for .row from 1 to .nRows
-                @eml_readCell: .tableId, .row, .col1$, .clean1
-                .val1 = eml_readCell.value
-                @eml_readCell: .tableId, .row, .col2$, .clean2
-                .val2 = eml_readCell.value
-
-                if .val1 <> undefined and .val2 <> undefined
-                    .countComplete = .countComplete + 1
-                else
-                    .countExcluded = .countExcluded + 1
+            # EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
+            # ANSWER_LEVEL2_EMPTY_CELL_NOTE), one call per column through
+            # the same shared builder every extraction entry point uses --
+            # both can fire, since the pairing does not stop a genuinely
+            # empty cell from sitting in each column independently.
+            if .error$ = ""
+                @eml_emptyCellDisclosure: .col1Empty, .col1$, .col1EmptyRow
+                if eml_emptyCellDisclosure.note$ <> ""
+                    if .warning$ <> ""
+                        .warning$ = .warning$ + " " + eml_emptyCellDisclosure.note$
+                    else
+                        .warning$ = eml_emptyCellDisclosure.note$
+                    endif
                 endif
-            endfor
+                @eml_emptyCellDisclosure: .col2Empty, .col2$, .col2EmptyRow
+                if eml_emptyCellDisclosure.note$ <> ""
+                    if .warning$ <> ""
+                        .warning$ = .warning$ + " " + eml_emptyCellDisclosure.note$
+                    else
+                        .warning$ = eml_emptyCellDisclosure.note$
+                    endif
+                endif
+            endif
 
-            # Allocate vectors
-            if .countComplete > 0
-                .data1# = zero#(.countComplete)
-                .data2# = zero#(.countComplete)
+            if .error$ = ""
+                # First pass: count complete pairs
+                .countComplete = 0
+                .countExcluded = 0
 
-                # Second pass: populate
-                .idx = 0
+                # No cell reached below can be LEVEL 2 (kind 5, 6 or 7): the
+                # refusal above already fired if either column held one, so
+                # every undefined @eml_readCell.value left is a genuinely
+                # EMPTY cell (kind 1), which stays excluded and counted
+                # exactly as today.
                 for .row from 1 to .nRows
                     @eml_readCell: .tableId, .row, .col1$, .clean1
                     .val1 = eml_readCell.value
@@ -504,17 +640,39 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
                     .val2 = eml_readCell.value
 
                     if .val1 <> undefined and .val2 <> undefined
-                        .idx = .idx + 1
-                        .data1#[.idx] = .val1
-                        .data2#[.idx] = .val2
+                        .countComplete = .countComplete + 1
+                    else
+                        .countExcluded = .countExcluded + 1
                     endif
                 endfor
-            endif
 
-            .n = .countComplete
-            .nExcludedRows = .countExcluded
+                # Allocate vectors
+                if .countComplete > 0
+                    .data1# = zero#(.countComplete)
+                    .data2# = zero#(.countComplete)
+
+                    # Second pass: populate
+                    .idx = 0
+                    for .row from 1 to .nRows
+                        @eml_readCell: .tableId, .row, .col1$, .clean1
+                        .val1 = eml_readCell.value
+                        @eml_readCell: .tableId, .row, .col2$, .clean2
+                        .val2 = eml_readCell.value
+
+                        if .val1 <> undefined and .val2 <> undefined
+                            .idx = .idx + 1
+                            .data1#[.idx] = .val1
+                            .data2#[.idx] = .val2
+                        endif
+                    endfor
+                endif
+
+                .n = .countComplete
+                .nExcludedRows = .countExcluded
+            endif
         endif
     endif
+    .ok = (.error$ = "")
 endproc
 
 
@@ -940,20 +1098,36 @@ endproc
 # cannot be spoofed, and does not depend on reimplementing Praat's own
 # numeric-string grammar in script.
 #
+# A PERCENT SIGN DEFEATS THE SENTINEL, THE ONE CELL SHAPE THAT DOES. Praat's
+# OWN numeric grammar accepts "30%" directly (as 0.3) -- verified against
+# Praat 6.6.30 -- so a column holding nothing else irregular does not
+# trigger rank substitution at all: the sentinel probe below would come back
+# proving "real numericisation" while a percent cell sits in the column
+# reading as a number a hundred times smaller than the one written, with the
+# per-cell classifier that exists to catch exactly this (@eml_classifyCell's
+# percent-before-strictness test) never reached. Comma, a bare fraction and
+# an inner space all fail Praat's grammar outright and correctly force rank
+# substitution (verified); percent is the one exception, so it is found by
+# the same string scan that finds empty/undefined cells, below, rather than
+# left to the sentinel.
+#
 # Arguments:
 #   .tableId     - ID of the Table object
 #   .columnName$ - name of the column to test
 #
 # Output:
-#   .strict      - 1 if the column numericises, 0 if it would return ranks
+#   .strict      - 1 if the column numericises to the cells' own literal
+#                  values, 0 if it would return ranks OR silently coerce a
+#                  percent cell
 #   .unreadable  - 1 if a cell is empty or undefined (which makes
 #                  "Get all numbers in column:" raise a hard error)
-#   .firstBadRow - row of the first empty/undefined cell, else 0
+#   .firstBadRow - row of the first empty/undefined/percent cell, else 0
 # ============================================================================
 procedure eml_strictNumericColumn: .tableId, .columnName$
     .strict = 0
     .unreadable = 0
     .firstBadRow = 0
+    .hasPercent = 0
 
     selectObject: .tableId
     .nRows = Get number of rows
@@ -961,6 +1135,9 @@ procedure eml_strictNumericColumn: .tableId, .columnName$
     if .nRows > 0
         # Empty and undefined cells make the numericiser raise instead of
         # returning ranks, so they have to be found by string scan first.
+        # PERCENT CELLS ride along in the same scan, for the reason given
+        # above: unlike every other LEVEL 2 shape, "%" does not make the
+        # sentinel probe below detect it.
         #
         # ALL THREE SPELLINGS OF "NOT A VALUE", not two. Praat renders an
         # undefined Table cell as the single character "?" — which is what
@@ -999,10 +1176,15 @@ procedure eml_strictNumericColumn: .tableId, .columnName$
                     .unreadable = 1
                     .firstBadRow = .row
                 endif
+            elsif index (.cell$, "%") > 0
+                if .unreadable = 0 and .hasPercent = 0
+                    .firstBadRow = .row
+                endif
+                .hasPercent = 1
             endif
         endfor
 
-        if .unreadable = 0
+        if .unreadable = 0 and .hasPercent = 0
             selectObject: .tableId
             .probeId = Copy: "eml_numericProbe"
             Append row
@@ -1362,6 +1544,79 @@ endproc
 
 
 # ============================================================================
+# @eml_level2Refusal (internal helper)
+# ============================================================================
+# THE refusal wording for a LEVEL 2 cell, ONE HOME so every door that refuses
+# says it identically (9 Sep 2026, CORRECTION_LEVEL2_IS_A_REFUSAL). The
+# refuse-or-repair DECISION itself is @eml_cleanVerdict's; this procedure
+# only renders the sentence once a caller has already found .nLevel2 > 0
+# (@emlAuditColumn), so the wording cannot drift between the four extraction
+# entry points and @emlRequireNumericColumn.
+#
+# Arguments:
+#   .role$       - what this column is TO THE CALLER, capitalised and
+#                  leading the message: "Data column", "Measure column",
+#                  "First column", "Column".
+#   .columnName$ - the column's name
+#   .row         - the first offending row (@emlAuditColumn.firstLevel2Row)
+#   .value$      - that row's literal cell contents
+#                  (@emlAuditColumn.firstLevel2Value$)
+#
+# Output:
+#   .error$  - one sentence naming the column, the row, and the value
+#   .remedy$ - names @emlRunCleanData and the menu item that runs it
+# ============================================================================
+procedure eml_level2Refusal: .role$, .columnName$, .row, .value$
+    .error$ = .role$ + " """ + .columnName$
+    ... + """ has a cell that is not numeric, at row " + string$ (.row)
+    ... + ": """ + .value$ + """."
+    .remedy$ = "Run emlRunCleanData, or the ""Check & repair data..."" "
+    ... + "menu item, to repair or identify this cell."
+endproc
+
+
+# ============================================================================
+# @eml_emptyCellDisclosure (internal helper)
+# ============================================================================
+# THE empty-cell disclosure wording, ONE HOME so every extraction entry
+# point says it identically (9 Sep 2026, ANSWER_LEVEL2_EMPTY_CELL_NOTE
+# ruling). A genuinely empty cell is not a refusal -- it stays excluded and
+# counted exactly as it did before CORRECTION_LEVEL2_IS_A_REFUSAL -- but
+# @emlExtractColumn/@emlExtractGroupVectors/@emlExtractPairedColumns/
+# @eml_getGroupData used to fold that count into the same @eml_auditNote
+# sentence a LEVEL 2 cell got, and now that LEVEL 2 refuses instead of
+# being disclosed, an empty cell's own count was left with nowhere to go:
+# .note$ is "" by design (see those procedures' own headers). The ruling
+# is that "as today" governs what the user is TOLD, not that raw field, so
+# the count is restored here -- with the column and the first row, not the
+# count alone -- into .warning$, which every one of those procedures now
+# appends this to.
+#
+# Called ONLY where a caller has already found .nEmpty > 0 (or trivially
+# handles .nEmpty = 0 by getting "" back); it does not itself decide
+# whether a cell is empty, the same division of labour @eml_level2Refusal
+# has with @emlAuditColumn above.
+#
+# Arguments:
+#   .nEmpty      - count of genuinely empty cells (0 renders "")
+#   .columnName$ - the column they were found in
+#   .firstRow    - the first empty cell's row, in the table this count was
+#                  gathered over
+#
+# Output:
+#   .note$ - "N cell(s) empty in '<column>' (row R first); treated as
+#            missing", or "" when .nEmpty = 0
+# ============================================================================
+procedure eml_emptyCellDisclosure: .nEmpty, .columnName$, .firstRow
+    .note$ = ""
+    if .nEmpty > 0
+        .note$ = string$ (.nEmpty) + " cell(s) empty in '" + .columnName$
+        ... + "' (row " + string$ (.firstRow) + " first); treated as missing"
+    endif
+endproc
+
+
+# ============================================================================
 # @emlAuditColumn
 # ============================================================================
 # Classify EVERY cell of a column and report the conditions separately, with
@@ -1396,12 +1651,28 @@ endproc
 #   .nLeadingDot - always 0. Kept for interface stability; a bare leading
 #     point is never refused under the ruling, so nothing is ever tallied
 #     here now. (Superseded by .nRepaired / .warning$ below.)
+#   .nLevel2  - .nLocale + .nUnreadable + .nCoerced: every LEVEL 2 cell in
+#               the column, regardless of which of the three kinds it is.
+#               THE REFUSAL TEST every caller now asks (9 Sep 2026 ruling,
+#               CORRECTION_LEVEL2_IS_A_REFUSAL): a column is refused, not
+#               disclosed-and-excluded, the moment this is > 0.
+#   .firstLevel2Row / .firstLevel2Value$ - the FIRST row (in row order,
+#               whichever of the three kinds it is) with a LEVEL 2 cell, and
+#               its literal contents. 0 / "" when .nLevel2 = 0. This is the
+#               row and value @eml_level2Refusal names; it is not one of
+#               .firstLocaleRow / .firstUnreadableRow / .firstCoercedRow,
+#               which stay per-kind for .note$'s wording below and are not
+#               necessarily the same row when a column has more than one
+#               LEVEL 2 kind.
 #   .firstEmptyRow / .firstLocaleRow / .firstUnreadableRow / .firstCoercedRow
 #   .firstLocaleValue$ / .firstUnreadableValue$ / .firstCoercedValue$
 #   .commaMode - the column's @emlCommaColumnMode.mode (0 on the fast path)
 #   .note$    - user-facing LEVEL 2 sentences (@eml_auditNote), one per
-#               refusal condition present, "" if nothing was refused.
-#               Callers print it verbatim.
+#               refusal condition present, "" if nothing was refused. Kept
+#               for interface stability and for callers describing a column
+#               that is not about to be read (e.g. an audit report); a
+#               caller about to READ the column refuses on .nLevel2 instead
+#               of printing this and continuing.
 #   .warning$ - user-facing LEVEL 1 sentences (@eml_repairNote), one per
 #               repair condition present, "" if nothing was repaired.
 #   .error$   - column not found
@@ -1416,15 +1687,18 @@ procedure emlAuditColumn: .tableId, .columnName$
     .nUnreadable = 0
     .nCoerced = 0
     .nLeadingDot = 0
+    .nLevel2 = 0
     .firstEmptyRow = 0
     .firstLocaleRow = 0
     .firstUnreadableRow = 0
     .firstCoercedRow = 0
     .firstLeadingDotRow = 0
+    .firstLevel2Row = 0
     .firstLocaleValue$ = ""
     .firstUnreadableValue$ = ""
     .firstCoercedValue$ = ""
     .firstLeadingDotValue$ = ""
+    .firstLevel2Value$ = ""
     .commaMode = 0
     .note$ = ""
     .warning$ = ""
@@ -1526,17 +1800,32 @@ procedure emlAuditColumn: .tableId, .columnName$
                 .firstLocaleRow = .row
                 .firstLocaleValue$ = eml_cleanVerdict.trimmed$
             endif
+            .nLevel2 = .nLevel2 + 1
+            if .firstLevel2Row = 0
+                .firstLevel2Row = .row
+                .firstLevel2Value$ = eml_cleanVerdict.trimmed$
+            endif
         elsif eml_cleanVerdict.kind = 7
             .nCoerced = .nCoerced + 1
             if .firstCoercedRow = 0
                 .firstCoercedRow = .row
                 .firstCoercedValue$ = eml_cleanVerdict.trimmed$
             endif
+            .nLevel2 = .nLevel2 + 1
+            if .firstLevel2Row = 0
+                .firstLevel2Row = .row
+                .firstLevel2Value$ = eml_cleanVerdict.trimmed$
+            endif
         else
             .nUnreadable = .nUnreadable + 1
             if .firstUnreadableRow = 0
                 .firstUnreadableRow = .row
                 .firstUnreadableValue$ = eml_cleanVerdict.trimmed$
+            endif
+            .nLevel2 = .nLevel2 + 1
+            if .firstLevel2Row = 0
+                .firstLevel2Row = .row
+                .firstLevel2Value$ = eml_cleanVerdict.trimmed$
             endif
         endif
     endfor
@@ -2126,14 +2415,40 @@ endproc
 #                every LEVEL 1 repair (decimal comma, digit grouping, bare
 #                leading point)
 #   .data#     - vector of values, repaired in place; see .warning$
-#   .nExcluded - group rows dropped for a LEVEL 2 data cell
-#   .note$     - LEVEL 2 disclosure for the dropped rows (@eml_auditNote),
-#                "" if nothing was refused
+#   .nExcluded - group rows with a genuinely empty .dataCol$ cell, when
+#                .ok = 1
+#   .note$     - "" always now: a LEVEL 2 cell refuses (.error$/.ok) rather
+#                than being disclosed and excluded. Kept for interface
+#                stability.
 #   .warning$  - LEVEL 1 disclosure, "" if nothing in the column was
 #                repaired. Column-wide (@emlAuditColumn), not scoped to this
 #                group the way .note$ is: a repair anywhere in .dataCol$ is
 #                worth knowing about even from a group it did not touch.
-#   .error$    - "" on success
+#                Plus (9 Sep 2026 ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE)
+#                @eml_emptyCellDisclosure's sentence when THIS group had a
+#                genuinely empty .dataCol$ cell of its own -- that part IS
+#                scoped to this group, unlike the repair sentence above,
+#                because a group with no empty cell of its own should not
+#                be told about one that belongs to a different group.
+#   .emptyNote$ - JUST the group-scoped empty-cell sentence above, without
+#                the column-wide LEVEL 1 repair sentence -- "" when this
+#                group had no empty cell of its own. A caller comparing
+#                several groups on the SAME column (the two-group door calls
+#                this procedure once per group) needs this, not .warning$:
+#                the LEVEL 1 half of .warning$ is column-wide and would
+#                repeat itself once per group if every call's .warning$ were
+#                concatenated, where .emptyNote$ has nothing to repeat.
+#   .ok        - (.error$ = ""), Praat's single-exit success flag
+#   .error$    - "" on success; else the column doesn't exist, OR (9 Sep
+#                2026 ruling) a LEVEL 2 cell ANYWHERE in .dataCol$ refused it
+#                -- names the column, the first offending row (in the whole
+#                table, not just this group), and its literal value. This is
+#                a column-wide refusal, same as @emlExtractColumn's: a
+#                LEVEL 2 cell in a row belonging to a DIFFERENT group still
+#                refuses, because the column is not usable for any group
+#                until it is repaired.
+#   .remedy$   - set alongside .error$ on a LEVEL 2 refusal: names
+#                @emlRunCleanData and the menu item that runs it
 #
 # Group rows are matched on the normalised label (see @eml_normalizeLabel)
 # so this agrees with @emlCountGroups.
@@ -2159,11 +2474,13 @@ endproc
 # ============================================================================
 procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
     .error$ = ""
+    .remedy$ = ""
     .n = 0
     .data# = zero# (0)
     .nExcluded = 0
     .note$ = ""
     .warning$ = ""
+    .emptyNote$ = ""
 
     selectObject: .tableId
     .nRows = Get number of rows
@@ -2230,14 +2547,29 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
         .nExcluded = 0
         .note$ = ""
     else
+        # LEVEL 2 REFUSES, ON EVERY DOOR (9 Sep 2026 ruling), and it is a
+        # COLUMN-WIDE question, exactly like @emlExtractColumn's and
+        # @emlRequireNumericColumn's: a LEVEL 2 cell anywhere in .dataCol$
+        # refuses before any group's vector is built, not only when it
+        # falls in THIS group's rows. One audit answers it.
+        @emlAuditColumn: .tableId, .dataCol$
+        if emlAuditColumn.nLevel2 > 0
+            @eml_level2Refusal: "Data column", .dataCol$,
+                ... emlAuditColumn.firstLevel2Row,
+                ... emlAuditColumn.firstLevel2Value$
+            .error$ = eml_level2Refusal.error$
+            .remedy$ = eml_level2Refusal.remedy$
+            goto GETGROUPDATA_DONE
+        endif
+
         # The column has at least one cell @eml_strictNumericColumn cannot
-        # trust, somewhere in the table. Every row is decided with
+        # trust, somewhere in the table, but (the refusal above having
+        # passed) nothing in it is LEVEL 2 -- every dirty cell is a LEVEL 1
+        # repair or a genuinely empty cell. Every row is decided with
         # @eml_cleanVerdict, fed the column's @emlCommaColumnMode verdict
         # once, exactly as @eml_openColumn feeds @eml_readCell -- but only
-        # rows whose group matches contribute to this group's vector, its
-        # skip count, or its note -- the tallies below are scoped to this
-        # group, not the whole table, so a clean group sitting beside a
-        # dirty one still gets .nExcluded = 0 and .note$ = "".
+        # rows whose group matches contribute to this group's vector or its
+        # skip count, which are scoped to this group, not the whole table.
         @emlCommaColumnMode: .tableId, .dataCol$
         .commaMode = emlCommaColumnMode.mode
 
@@ -2245,16 +2577,11 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
         .n = 0
         .nGroupRows = 0
         .nEmpty = 0
-        .nLocale = 0
-        .nUnreadable = 0
-        .nCoerced = 0
         .firstEmptyRow = 0
-        .firstLocaleRow = 0
-        .firstUnreadableRow = 0
-        .firstCoercedRow = 0
-        .firstLocaleValue$ = ""
-        .firstUnreadableValue$ = ""
-        .firstCoercedValue$ = ""
+        # emlAuditColumn.warning$ from the column-wide refusal check above
+        # is already exactly this column's LEVEL 1 disclosure -- it does not
+        # need a second @emlAuditColumn call to re-derive.
+        .warning$ = emlAuditColumn.warning$
 
         ; VECTOR-EXEMPT: cat2 -- per-cell decision (@eml_cleanVerdict probes
         ; Praat's numericiser cell by cell); this is the dirty-column path,
@@ -2270,32 +2597,24 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
                 .cell$ = Get value: .row, .dataCol$
                 @eml_cleanVerdict: .cell$, .commaMode
 
+                # No cell reached here can be LEVEL 2 (kind 5, 6 or 7): the
+                # column-wide refusal above already returned if .dataCol$
+                # held one anywhere in the table, so every remaining kind is
+                # 0 (clean), 1 (genuinely empty -- stays excluded and
+                # counted, as today) or a LEVEL 1 repair (2, 3, 4).
                 if eml_cleanVerdict.kind = 0 or eml_cleanVerdict.kind = 2
                 ... or eml_cleanVerdict.kind = 3 or eml_cleanVerdict.kind = 4
                     .n = .n + 1
                     .data#[.n] = eml_cleanVerdict.value
-                elsif eml_cleanVerdict.kind = 1
+                else
                     .nEmpty = .nEmpty + 1
                     if .firstEmptyRow = 0
-                        .firstEmptyRow = .nGroupRows
-                    endif
-                elsif eml_cleanVerdict.kind = 5
-                    .nLocale = .nLocale + 1
-                    if .firstLocaleRow = 0
-                        .firstLocaleRow = .nGroupRows
-                        .firstLocaleValue$ = eml_cleanVerdict.trimmed$
-                    endif
-                elsif eml_cleanVerdict.kind = 7
-                    .nCoerced = .nCoerced + 1
-                    if .firstCoercedRow = 0
-                        .firstCoercedRow = .nGroupRows
-                        .firstCoercedValue$ = eml_cleanVerdict.trimmed$
-                    endif
-                else
-                    .nUnreadable = .nUnreadable + 1
-                    if .firstUnreadableRow = 0
-                        .firstUnreadableRow = .nGroupRows
-                        .firstUnreadableValue$ = eml_cleanVerdict.trimmed$
+                        # THE TABLE ROW, not the group-relative count: the
+                        # same row-numbering convention every other
+                        # disclosure in this file uses (@emlAuditColumn,
+                        # @eml_level2Refusal), so a reader who goes to look
+                        # finds the row this names.
+                        .firstEmptyRow = .row
                     endif
                 endif
             endif
@@ -2309,18 +2628,25 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
 
         .nExcluded = .nGroupRows - .n
 
-        @eml_auditNote: .nLocale, .firstLocaleRow, .firstLocaleValue$,
-            ... .nCoerced, .firstCoercedRow, .firstCoercedValue$,
-            ... 0, 0, "",
-            ... .nUnreadable, .firstUnreadableRow, .firstUnreadableValue$,
-            ... .nEmpty, .firstEmptyRow
-        .note$ = eml_auditNote.result$
-
-        @emlAuditColumn: .tableId, .dataCol$
-        .warning$ = emlAuditColumn.warning$
+        # EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
+        # ANSWER_LEVEL2_EMPTY_CELL_NOTE), through the same shared builder
+        # every extraction entry point uses -- scoped to THIS group's own
+        # empty cells (.nEmpty above), not the whole column, since a group
+        # that has none of its own empty cells should not be told about
+        # another group's.
+        @eml_emptyCellDisclosure: .nEmpty, .dataCol$, .firstEmptyRow
+        .emptyNote$ = eml_emptyCellDisclosure.note$
+        if eml_emptyCellDisclosure.note$ <> ""
+            if .warning$ <> ""
+                .warning$ = .warning$ + " " + eml_emptyCellDisclosure.note$
+            else
+                .warning$ = eml_emptyCellDisclosure.note$
+            endif
+        endif
     endif
 
     label GETGROUPDATA_DONE
+    .ok = (.error$ = "")
 endproc
 
 
@@ -2345,6 +2671,13 @@ endproc
 #   .nExcluded - group rows dropped for a missing X or Y
 #   .dataX#    - aligned X values
 #   .dataY#    - aligned Y values
+#   .warning$  - @emlExtractPairedColumns.warning$ from the group's subset
+#                table, forwarded as-is (9 Sep 2026 ruling,
+#                ANSWER_LEVEL2_EMPTY_CELL_NOTE): "" on error. Any row it
+#                names is relative to the GROUP'S subset, not .tableId --
+#                @emlExtractPairedColumns ran on the temporary copy
+#                @eml_groupSubset built, which has no record of which
+#                original row each of its own rows came from.
 #   .error$    - "" on success
 #
 # Group rows are selected on the normalised label (see @eml_groupSubset).
@@ -2357,6 +2690,7 @@ procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLa
     # exitScript: teardown, but @emlExtractPairedColumns,
     # which reads both columns through @eml_readCell.
     .error$ = ""
+    .warning$ = ""
     @eml_groupSubset: .tableId, .groupCol$, .groupLabel$
     .tempGroup = eml_groupSubset.subsetId
     @emlExtractPairedColumns: .tempGroup, .colX$, .colY$
@@ -2371,6 +2705,13 @@ procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLa
         .dataX# = emlExtractPairedColumns.data1#
         .dataY# = emlExtractPairedColumns.data2#
         .nExcluded = emlExtractPairedColumns.nExcludedRows
+        # ROW NUMBERS HERE ARE RELATIVE TO THE GROUP SUBSET, not the
+        # original table: @emlExtractPairedColumns ran on .tempGroup, a
+        # copy holding only this group's rows in their original relative
+        # order, and it has no way to know the row each one came from in
+        # .tableId. Good enough to locate the cell within the group; a
+        # caller needing the table-wide row would have to re-derive it.
+        .warning$ = emlExtractPairedColumns.warning$
     endif
     removeObject: .tempGroup
 endproc

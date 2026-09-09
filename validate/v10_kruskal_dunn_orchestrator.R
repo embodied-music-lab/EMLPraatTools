@@ -177,25 +177,29 @@ check_true("v10", "the three post-hoc matrices rank the pairs identically",
 # DATA-CLEANING WAVE — level-2 fixture for this door (no level-1: the repair
 # is proved once, in the extraction layer)
 #
-# Built 8 September 2026 under RULING_DATA_CLEANING_POLICY. Driven headlessly
-# by evidence/redrive/kit_cleandata_other_doors.praat against
+# RE-DERIVED 9 September 2026 under CORRECTION_LEVEL2_IS_A_REFUSAL. Driven
+# headlessly by evidence/redrive/kit_cleandata_other_doors.praat against
 # validate/redpath/kit_cleandata_l2_kruskal.csv: Low's data column carries
 # one "??" cell, unreadable in any locale, alongside two clean cells.
-# @emlRunKruskalWallisAnalysis reads the Data column with strict = 0, so the
-# bad cell does not refuse the whole analysis -- it drops that one row under
-# the existing complete-case convention, and Low's Group Mean Ranks row is
-# the refusal text this door relays: N = 2, not 3.
+# @emlRunKruskalWallisAnalysis reads the Data column through
+# @emlRequireNumericColumn with strict = 0, but level-2 now refuses
+# unconditionally regardless of strict, so the bad cell REFUSES the whole
+# analysis -- no Group Mean Ranks table is ever built, and Low never reaches
+# a "reduced N of 2". .remedy$ reads "" here (orchestrators do not forward
+# it -- see v08's level-2 comment; the text itself is proved at its source,
+# see v170's categorical case).
 # ============================================================================
 
-kwd  <- read_input("kit_cleandata_l2_kruskal_input.csv")
 kwcap <- capture("kit_cleandata_l2_kruskal_info.txt")
-kwLow <- suppressWarnings(as.numeric(kwd$value[kwd$group == "Low"]))
-kwLow <- kwLow[!is.na(kwLow)]
-check_true("v10-cleandata", "the fixture's one unreadable cell (\"??\") leaves Low with 2 clean values",
-           length(kwLow) == 2L)
-check("v10-cleandata", "L2: Low N is 2 in the Group Mean Ranks table -- the unreadable cell is refused",
-      printed(kwcap, "Low", 1), length(kwLow), tol = 0)
-check("v10-cleandata", "L2: Mid and High keep their full N of 3",
-      printed(kwcap, "Mid", 1), 3, tol = 0)
+kwcapflat <- paste(trimws(kwcap$lines), collapse = " ")
+check_true("v10-cleandata", "L2: no report is printed -- the refusal happens before any group is ranked",
+           !any(grepl("Low", kwcap$lines, fixed = TRUE)))
+check_true("v10-cleandata", "L2: emlRunKruskalWallisAnalysis.ok = 0",
+           any(grepl("emlRunKruskalWallisAnalysis.ok = 0", kwcap$lines, fixed = TRUE)))
+check_true("v10-cleandata", "L2: the three-part .error$ names the column, row 3, and the literal \"??\"",
+           grepl('emlRunKruskalWallisAnalysis.error$ = "Data column "value" has a cell that is not numeric, at row 3: "??"."',
+                 kwcapflat, fixed = TRUE))
+check_true("v10-cleandata", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('emlRunKruskalWallisAnalysis.remedy$ = ""', kwcap$lines, fixed = TRUE)))
 
 if (!exists("EML_SUITE")) { eml_report("v10 Kruskal-Wallis + Dunn"); eml_exit() }

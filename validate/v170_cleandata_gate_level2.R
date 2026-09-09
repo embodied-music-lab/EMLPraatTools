@@ -33,95 +33,100 @@ if (!exists("eml_report")) {
 }
 
 # ---------------------------------------------------------------------------
-# PAIRED — @emlRunPairedAnalysis. Both columns are checked with strict = 0
-# (see eml-analysis.praat:2873/2878), so an unreadable cell in one column
-# drops that row under the same complete-case convention paired comparisons
-# already used, and the door prints an explicit exclusion sentence -- the
-# same wording @emlRunCorrelationAnalysis uses.
+# PAIRED — @emlRunPairedAnalysis. RE-DERIVED 9 September 2026 under
+# CORRECTION_LEVEL2_IS_A_REFUSAL: both columns were checked with strict = 0
+# (eml-analysis.praat:2873/2878), which used to mean an unreadable cell in
+# one column dropped that row under complete-case. Level 2 now refuses
+# unconditionally regardless of strict, so the door REFUSES on col1's ("pre")
+# unreadable cell instead: @emlExtractPairedColumns' dirty-column path audits
+# .col1$ first and refuses with role "First column" before .col2$ is even
+# looked at, so no pair is ever built and no report is printed. .remedy$
+# reads "" here (orchestrators do not forward it -- see v08's level-2
+# comment; the text itself is proved at its source, see the categorical
+# block below).
 # ---------------------------------------------------------------------------
-pd  <- read_input("kit_cleandata_l2_paired_input.csv")
 pcap <- capture("kit_cleandata_l2_paired_info.txt")
-keep_p <- !is.na(suppressWarnings(as.numeric(pd$pre)))
-p_pre <- as.numeric(pd$pre[keep_p])
-p_post <- pd$post[keep_p]
-check_true("v170-paired", "the fixture's one unreadable cell (\"??\") leaves 5 complete pairs",
-           length(p_pre) == 5L)
-check("v170-paired", "L2: N (pairs) is 5 -- the unreadable cell is refused",
-      printed(pcap, "N (pairs)"), length(p_pre), tol = 0)
-tt_p <- t.test(p_pre, p_post, paired = TRUE)
-check("v170-paired", "L2: paired t over the reduced sample",
-      printed(pcap, "t"), unname(tt_p$statistic), tol = 5e-3)
-check_true("v170-paired", "L2: the door's own exclusion sentence names 1 row and 5 complete pairs",
-           any(grepl("1 row(s) excluded for missing data (analyzed n = 5 complete pairs)",
-                     pcap$lines, fixed = TRUE)))
+pcapflat <- paste(trimws(pcap$lines), collapse = " ")
+check_true("v170-paired", "L2: no report is printed -- the refusal happens before either column is read",
+           !any(grepl("^N", trimws(pcap$lines))))
+check_true("v170-paired", "L2: emlRunPairedAnalysis.ok = 0",
+           any(grepl("emlRunPairedAnalysis.ok = 0", pcap$lines, fixed = TRUE)))
+check_true("v170-paired", "L2: the three-part .error$ names the first column, row 3, and the literal \"??\"",
+           grepl('emlRunPairedAnalysis.error$ = "First column "pre" has a cell that is not numeric, at row 3: "??"."',
+                 pcapflat, fixed = TRUE))
+check_true("v170-paired", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('emlRunPairedAnalysis.remedy$ = ""', pcap$lines, fixed = TRUE)))
 
 # ---------------------------------------------------------------------------
-# REPEATED MEASURES — @emlRunRepeatedMeasuresAnalysis (wide format). Its
-# complete-case matrix is resolved by @eml_rmResolveMatrix, which reads
-# every condition column row-wise through the same @eml_cleanVerdict path
-# (via eml_readCell) as every other extraction entry point; an unreadable
-# cell drops that SUBJECT (the whole row), not just one condition value,
-# because the RM design needs every condition present to keep a subject.
+# REPEATED MEASURES — @emlRunRepeatedMeasuresAnalysis (wide format).
+# RE-DERIVED 9 September 2026: its complete-case matrix used to be resolved
+# by dropping any SUBJECT (whole row) whose condition cell was unreadable.
+# Level 2 now refuses unconditionally: @eml_getGroupData's non-fast-path
+# branch (which @eml_rmResolveMatrix's per-condition read goes through) runs
+# one column-wide audit on the "medium" condition column up front and
+# refuses with role "Condition column" before any subject matrix is built,
+# so no RM-ANOVA is ever computed. .remedy$ reads "" here (orchestrators do
+# not forward it -- see v08's level-2 comment; the text itself is proved at
+# its source, see the categorical block below).
 # ---------------------------------------------------------------------------
-rmd  <- read_input("kit_cleandata_l2_rm_input.csv")
 rmcap <- capture("kit_cleandata_l2_rm_info.txt")
-rm_keep <- !is.na(suppressWarnings(as.numeric(rmd$medium)))
-check_true("v170-rm", "the fixture's one unreadable cell (\"??\") leaves 5 of 6 complete subjects",
-           sum(rm_keep) == 5L)
-check_true("v170-rm", "L2: the report states 5 complete cases",
-           any(grepl("Subjects (complete cases) n = 5", rmcap$lines, fixed = TRUE)))
-check_true("v170-rm", "L2: the door's own exclusion note names 1 row excluded",
-           any(grepl("Note: 1 row(s) excluded for missing data (analyzed n = 5 complete cases)",
-                     rmcap$lines, fixed = TRUE)))
-check_true("v170-rm", "L2: the parse note names the offending column, row and value",
-           any(grepl("medium: 1 cell(s) are not numeric in any locale (row 3: ??)",
-                     rmcap$lines, fixed = TRUE)))
-rm_dat <- as.matrix(rmd[rm_keep, c("soft", "medium", "loud")])
-storage.mode(rm_dat) <- "numeric"
-f_rm <- rm_anova(rm_dat)
-check("v170-rm", "L2: RM-ANOVA F over the 5 retained subjects",
-      printed_eq(rmcap, "F(2, 8) ="), f_rm$F, tol = 5e-3)
+rmcapflat <- paste(trimws(rmcap$lines), collapse = " ")
+check_true("v170-rm", "L2: no report is printed -- the refusal happens before any subject matrix is built",
+           !any(grepl("Subjects", rmcap$lines, fixed = TRUE)))
+check_true("v170-rm", "L2: emlRunRepeatedMeasuresAnalysis.ok = 0",
+           any(grepl("emlRunRepeatedMeasuresAnalysis.ok = 0", rmcap$lines, fixed = TRUE)))
+check_true("v170-rm", "L2: the three-part .error$ names the condition column, row 3, and the literal \"??\"",
+           grepl('emlRunRepeatedMeasuresAnalysis.error$ = "Condition column "medium" has a cell that is not numeric, at row 3: "??"."',
+                 rmcapflat, fixed = TRUE))
+check_true("v170-rm", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('emlRunRepeatedMeasuresAnalysis.remedy$ = ""', rmcap$lines, fixed = TRUE)))
 
 # ---------------------------------------------------------------------------
-# RELIABILITY (survey ITEMS) — @emlRunReliabilityAnalysis. Each item column
-# is checked with strict = 0 (eml-analysis.praat:4255), and a respondent
-# missing any item is dropped from the complete-case matrix, disclosed in
-# its own wording ("assessed n = X of Y respondents").
+# RELIABILITY (survey ITEMS) — @emlRunReliabilityAnalysis. RE-DERIVED
+# 9 September 2026: each item column used to be checked with strict = 0
+# (eml-analysis.praat:4255) and a respondent missing any item was dropped
+# from the complete-case matrix. Level 2 now refuses unconditionally on
+# item1's unreadable cell, with role "Item column 1", before Cronbach's
+# alpha is ever computed. .remedy$ reads "" here (orchestrators do not
+# forward it -- see v08's level-2 comment; the text itself is proved at its
+# source, see the categorical block below).
 # ---------------------------------------------------------------------------
-rel  <- read_input("kit_cleandata_l2_reliability_input.csv")
 relcap <- capture("kit_cleandata_l2_reliability_info.txt")
-rel_keep <- !is.na(suppressWarnings(as.numeric(rel$item1)))
-check_true("v170-reliability", "the fixture's one unreadable cell (\"??\") leaves 5 of 6 complete respondents",
-           sum(rel_keep) == 5L)
-check_true("v170-reliability", "L2: the report states 5 respondents were assessed",
-           any(grepl("respondents (n) = 5", relcap$lines, fixed = TRUE)))
-check_true("v170-reliability", "L2: the door's own exclusion note names 1 row and 5 of 6 respondents",
-           any(grepl("1 row(s) excluded for missing data (assessed n = 5 of 6 respondents)",
-                     paste(trimws(relcap$lines), collapse = " "), fixed = TRUE)))
-items_kept <- as.matrix(rel[rel_keep, c("item1", "item2", "item3")])
-storage.mode(items_kept) <- "numeric"
-k_items <- ncol(items_kept)
-item_var <- apply(items_kept, 2, var)
-total_var <- var(rowSums(items_kept))
-alpha_r <- (k_items / (k_items - 1)) * (1 - sum(item_var) / total_var)
-check("v170-reliability", "L2: Cronbach's alpha over the 5 retained respondents",
-      printed_eq(relcap, "Cronbach's alpha ="), alpha_r, tol = 5e-3)
+relcapflat <- paste(trimws(relcap$lines), collapse = " ")
+check_true("v170-reliability", "L2: no report is printed -- the refusal happens before Cronbach's alpha is computed",
+           !any(grepl("respondents", relcap$lines, fixed = TRUE)))
+check_true("v170-reliability", "L2: emlRunReliabilityAnalysis.ok = 0",
+           any(grepl("emlRunReliabilityAnalysis.ok = 0", relcap$lines, fixed = TRUE)))
+check_true("v170-reliability", "L2: the three-part .error$ names item column 1, row 3, and the literal \"??\"",
+           grepl('emlRunReliabilityAnalysis.error$ = "Item column 1 "item1" has a cell that is not numeric, at row 3: "??"."',
+                 relcapflat, fixed = TRUE))
+check_true("v170-reliability", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('emlRunReliabilityAnalysis.remedy$ = ""', relcap$lines, fixed = TRUE)))
 
 # ---------------------------------------------------------------------------
-# CATEGORICAL (survey COUNTS) — @emlRunCategoricalAnalysis. UNIQUE among
-# these four: its count column is checked with strict = 1
+# CATEGORICAL (survey COUNTS) — @emlRunCategoricalAnalysis. UNCHANGED IN
+# BEHAVIOUR: its count column was already checked with strict = 1
 # (eml-analysis.praat:4524), because the chi-square kernel reads it as a
-# whole with no per-cell drop available. One unreadable count cell refuses
-# the ENTIRE table, the same way two-way's data column does -- see v11's
-# level-2 block for the parallel case. The refusal text is the literal
-# .error$ string, captured by the driver immediately after the call.
+# whole with no per-cell drop available, so one unreadable count cell was
+# already refusing the ENTIRE table before this correction -- the same way
+# two-way's data column does (see v11's level-2 block for the parallel
+# case). RE-DERIVED ANYWAY, 9 September 2026: the WORDING changed, the same
+# way it changed for two-way -- @emlRequireNumericColumn now tests
+# emlAuditColumn.nLevel2 > 0 before it ever consults .strict, so a "??" cell
+# is caught by the new @eml_level2Refusal branch and gets the three-part
+# column/row/value sentence, not the old whole-column "is not numeric in
+# every row" wording. The refusal text is the literal .error$ string,
+# captured by the driver immediately after the call.
 # ---------------------------------------------------------------------------
 catcap <- capture("kit_cleandata_l2_categorical_info.txt")
 catflat <- paste(trimws(catcap$lines), collapse = " ")
 check_true("v170-categorical", "L2: categorical refuses the whole table on one unreadable count cell (strict column read)",
-           grepl("not numeric in every row", catflat, fixed = TRUE))
-check_true("v170-categorical", "and names the offending row and value",
-           grepl("row 3: ??", catflat, fixed = TRUE))
+           grepl('emlRunCategoricalAnalysis.error$ = "Count column "count" has a cell that is not numeric, at row 3: "??"."',
+                 catflat, fixed = TRUE))
+check_true("v170-categorical", "L2: emlRunCategoricalAnalysis.ok = 0",
+           any(grepl("emlRunCategoricalAnalysis.ok = 0", catcap$lines, fixed = TRUE)))
+check_true("v170-categorical", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('emlRunCategoricalAnalysis.remedy$ = ""', catcap$lines, fixed = TRUE)))
 check_true("v170-categorical", "and the refusal is the door's own .error$, not a silent pass",
            grepl("emlRunCategoricalAnalysis.error$ = \"", catflat, fixed = TRUE) &&
            !grepl("emlRunCategoricalAnalysis.error$ = \"\"", catflat, fixed = TRUE))

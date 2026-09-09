@@ -217,6 +217,11 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     endif
     .g1# = eml_getGroupData.data#
     .n1 = eml_getGroupData.n
+    ; EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE):
+    ; @eml_getGroupData already built the sentence, through the one shared
+    ; builder every extraction entry point uses -- this door only has to
+    ; carry it, once per group, into its own .warning$ and the report below.
+    .warning$ = eml_getGroupData.warning$
     @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .group2$
     if eml_getGroupData.error$ <> ""
         .error$ = eml_getGroupData.error$
@@ -224,6 +229,17 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     endif
     .g2# = eml_getGroupData.data#
     .n2 = eml_getGroupData.n
+    ; group2's .warning$ would repeat the SAME column-wide LEVEL 1 sentence
+    ; group1's already carried into .warning$ above -- @eml_getGroupData's
+    ; .emptyNote$ is the group-scoped remainder only, so appending it here
+    ; cannot duplicate what group1 already contributed.
+    if eml_getGroupData.emptyNote$ <> ""
+        if .warning$ <> ""
+            .warning$ = .warning$ + " " + eml_getGroupData.emptyNote$
+        else
+            .warning$ = eml_getGroupData.emptyNote$
+        endif
+    endif
 
     if .n1 < 2 or .n2 < 2
         .error$ = "Each group needs at least 2 observations. Group """ + .group1$ + """: n=" + string$ (.n1) + ", group """ + .group2$ + """: n=" + string$ (.n2)
@@ -319,6 +335,10 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
 
     @emlCSVInit
     @emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .group1$, .group2$, .n1, .mean1, .sd1, .median1, .n2, .mean2, .sd2, .median2, .effType$
+
+    if .warning$ <> ""
+        appendInfoLine: "  Note: " + .warning$
+    endif
 
     if .ttErr$ <> ""
         .ttNote$ = "  Parametric results omitted — t-test failed: " + .ttErr$
@@ -2894,6 +2914,12 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     .v2# = emlExtractPairedColumns.data2#
     .n = emlExtractPairedColumns.n
     .nExcluded = emlExtractPairedColumns.nExcludedRows
+    ; EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE):
+    ; @emlExtractPairedColumns already built the sentence (one call per
+    ; column, through the one shared builder every extraction entry point
+    ; uses) -- this door only has to carry it into its own .warning$ and
+    ; the report below.
+    .warning$ = emlExtractPairedColumns.warning$
 
     if .n < 2
         .error$ = "Need at least 2 complete paired observations."
@@ -3016,7 +3042,12 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     endif
 
     if .nExcluded > 0
-        .exclNote$ = "  Note: " + string$ (.nExcluded) + " row(s) excluded for missing data (analyzed n = " + string$ (.n) + " complete pairs)."
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
+        ; ANSWER_LEVEL2_EMPTY_CELL_NOTE): .warning$ (above, from
+        ; @emlExtractPairedColumns) already names the column and the first
+        ; row -- a bare count is not the disclosure the ruling requires, so
+        ; it is not printed on its own any more.
+        .exclNote$ = "  Note: " + .warning$ + " (analyzed n = " + string$ (.n) + " complete pairs)."
         appendInfoLine: .exclNote$
     endif
 
@@ -3144,6 +3175,9 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     .dataY# = emlExtractPairedColumns.data2#
     .n = emlExtractPairedColumns.n
     .nExcluded = emlExtractPairedColumns.nExcludedRows
+    ; EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE):
+    ; see the identical comment in @emlRunPairedAnalysis.
+    .warning$ = emlExtractPairedColumns.warning$
 
     if .n < 3
         .error$ = "Need at least 3 complete pairs for correlation."
@@ -3205,7 +3239,10 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     endif
 
     if .nExcluded > 0
-        .exclNote$ = "  Note: " + string$ (.nExcluded) + " row(s) excluded for missing data (analyzed n = " + string$ (.n) + " complete pairs)."
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
+        ; ANSWER_LEVEL2_EMPTY_CELL_NOTE): see the identical comment in
+        ; @emlRunPairedAnalysis.
+        .exclNote$ = "  Note: " + .warning$ + " (analyzed n = " + string$ (.n) + " complete pairs)."
         appendInfoLine: .exclNote$
     endif
 
@@ -3307,6 +3344,13 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     .data# = emlExtractColumn.data#
     .nValid = emlExtractColumn.n
     .nUndefined = emlExtractColumn.nUndefined
+    ; EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE):
+    ; @emlExtractColumn.note$ is "" now by design -- a LEVEL 2 cell refuses
+    ; rather than being disclosed here, so .nUndefined on this success path
+    ; can only be a genuinely empty cell, and @emlExtractColumn.warning$ is
+    ; where that sentence now lives (through the one shared builder every
+    ; extraction entry point uses).
+    .warning$ = emlExtractColumn.warning$
 
     if .nValid < 1
         .error$ = "Column """ + .dataCol$ + """ contains no valid numeric values."
@@ -3320,7 +3364,7 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     # @emlExtractColumn has the breakdown, so pass it through rather
     # than recomputing it here and risking a second, disagreeing account.
     @emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
-    ... .nUndefined, emlExtractColumn.note$
+    ... .nUndefined, .warning$
 
     # EXPORTABLE. The Save panel offers a CSV only when there is something
     # to export, so an orchestrator that fills neither collector leaves the
@@ -3440,6 +3484,10 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         .xClean# = emlExtractPairedColumns.data1#
         .yClean# = emlExtractPairedColumns.data2#
         .nValid = emlExtractPairedColumns.n
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
+        ; ANSWER_LEVEL2_EMPTY_CELL_NOTE): see the identical comment in
+        ; @emlRunPairedAnalysis.
+        .warning$ = emlExtractPairedColumns.warning$
 
         if .nValid < 3
             .error$ = "Need at least 3 non-missing paired observations (found "
@@ -3473,6 +3521,10 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         @emlCSVInit
         @emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
         ... .nValid, .nUndefined
+
+        if .warning$ <> ""
+            appendInfoLine: "  Note: " + .warning$
+        endif
 
         @emlResultClearExtras
         @emlDeclareRegressionResult: .tableName$, .depCol$, .predCol$,
@@ -4030,6 +4082,9 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         .error$ = emlExtractColumn.error$
     endif
     .nValid = emlExtractColumn.n
+    ; EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE):
+    ; see the identical comment in @emlRunDescriptiveAnalysis.
+    .warning$ = emlExtractColumn.warning$
 
     if .error$ = "" and .nValid < 3
         .error$ = "Need at least 3 non-missing values (found "
@@ -4097,6 +4152,9 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         endif
         @emlReportNormalityAnalysis: .tableName$, .dataCol$,
         ... .nValid, .nUndefined
+        if .warning$ <> ""
+            appendInfoLine: "  Note: " + .warning$
+        endif
     endif
 
     if .error$ = ""

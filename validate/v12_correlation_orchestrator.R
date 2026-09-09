@@ -108,11 +108,16 @@ check_true("v12", "printed rho < printed r, so the blocks are not swapped",
 #
 # LEVEL 1: row 3's x-cell carries "3,2", the ONLY comma in column x -- read
 # unambiguously as mode 1 (decimal) and repaired to 3.2. N is 8.
-# LEVEL 2: the same cell is "??" -- refused under the SAME complete-case
-# convention @emlExtractPairedColumns already used before this ruling. Here
-# the door DOES print an explicit sentence -- "Note: 1 row(s) excluded for
-# missing data (analyzed n = 7 complete pairs)" -- which is the refusal text
-# this fixture asserts on directly, in addition to N and the recomputed r.
+#
+# LEVEL 2 -- RE-DERIVED 9 September 2026 under CORRECTION_LEVEL2_IS_A_REFUSAL:
+# the same cell is "??", which now REFUSES the whole door instead of the
+# old "1 row(s) excluded for missing data (analyzed n = 7 complete pairs)"
+# complete-case wording. @emlRunCorrelationAnalysis checks column x through
+# @emlRequireNumericColumn with role "X column" (eml-analysis.praat:3124)
+# before column y is even looked at, so no pair is ever built and no report
+# is printed. .remedy$ reads "" here (orchestrators do not forward it -- see
+# v08's level-2 comment; the text itself is proved at its source, see v170's
+# categorical case).
 # ============================================================================
 
 # --- LEVEL 1: the decimal comma is repaired, not excluded -------------------
@@ -129,22 +134,17 @@ check("v12-cleandata", "L1: Pearson r over the repaired data",
 check_true("v12-cleandata", "L1: no exclusion note is printed",
            !any(grepl("excluded", ccap1$lines, fixed = TRUE)))
 
-# --- LEVEL 2: the unreadable cell is refused, exactly as before ------------
-cd2  <- read_input("kit_cleandata_l2_correlation_input.csv")
+# --- LEVEL 2: the unreadable cell now refuses the whole door ---------------
 ccap2 <- capture("kit_cleandata_l2_correlation_info.txt")
-keep2 <- !is.na(suppressWarnings(as.numeric(cd2$x)))
-cx2 <- as.numeric(cd2$x[keep2])
-cy2 <- cd2$y[keep2]
-check_true("v12-cleandata", "the fixture's one unreadable cell (\"??\") leaves 7 complete pairs",
-           length(cx2) == 7L)
-check("v12-cleandata", "L2: N is 7 -- the unreadable cell is refused",
-      printed(ccap2, "N"), length(cx2), tol = 0)
-check("v12-cleandata", "L2: Pearson r over the reduced sample",
-      printed(ccap2, "r"), cor(cx2, cy2), tol = 5e-4)
-check_true("v12-cleandata", "L2: the door's own exclusion sentence names 1 row and 7 complete pairs",
-           any(grepl("1 row(s) excluded for missing data (analyzed n = 7 complete pairs)",
-                     ccap2$lines, fixed = TRUE)))
-check("v12-cleandata", "L1 and L2 give different N -- the repair, not a coincidence, moved the count",
-      printed(ccap1, "N"), printed(ccap2, "N"), tol = 0, expect = "differ")
+ccap2flat <- paste(trimws(ccap2$lines), collapse = " ")
+check_true("v12-cleandata", "L2: no report is printed -- the refusal happens before either column is read",
+           !any(grepl("^N", trimws(ccap2$lines))))
+check_true("v12-cleandata", "L2: correlation.ok = 0",
+           any(grepl("correlation.ok = 0", ccap2$lines, fixed = TRUE)))
+check_true("v12-cleandata", "L2: the three-part .error$ names column x, row 3, and the literal \"??\"",
+           grepl('correlation.error$ = "X column "x" has a cell that is not numeric, at row 3: "??"."',
+                 ccap2flat, fixed = TRUE))
+check_true("v12-cleandata", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('correlation.remedy$ = ""', ccap2$lines, fixed = TRUE)))
 
 if (!exists("EML_SUITE")) { eml_report("v12 correlation orchestrator"); eml_exit() }
