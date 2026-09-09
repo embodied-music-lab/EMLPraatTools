@@ -72,9 +72,16 @@
 #   columnName$ - name of the column to extract
 #
 # Output:
-#   .data#      - vector of values (length = number of rows)
+#   .data#      - vector of values (length = number of rows). LEVEL 1 cells
+#                 (decimal comma, digit grouping, bare leading point) are
+#                 repaired in place here; see .warning$.
 #   .n          - number of values extracted
-#   .nUndefined - count of undefined/non-numeric values
+#   .nUndefined - count of undefined/non-numeric values (LEVEL 2, refused)
+#   .note$      - LEVEL 2 disclosure (@emlAuditColumn.note$), "" if nothing
+#                 was refused
+#   .warning$   - LEVEL 1 disclosure (@emlAuditColumn.warning$), "" if
+#                 nothing was repaired
+#   .nRepaired  - cells changed under LEVEL 1
 #   .error$     - error message if column doesn't exist, else ""
 # ============================================================================
 procedure emlExtractColumn: .tableId, .columnName$
@@ -87,6 +94,8 @@ procedure emlExtractColumn: .tableId, .columnName$
     .nCoerced = 0
     .nLeadingDot = 0
     .note$ = ""
+    .warning$ = ""
+    .nRepaired = 0
     .error$ = ""
     .data# = zero#(0)
 
@@ -158,6 +167,8 @@ procedure emlExtractColumn: .tableId, .columnName$
             .nCoerced = emlAuditColumn.nCoerced
             .nLeadingDot = emlAuditColumn.nLeadingDot
             .note$ = emlAuditColumn.note$
+            .warning$ = emlAuditColumn.warning$
+            .nRepaired = emlAuditColumn.nRepaired
             .data# = zero#(.nRows)
             ; VECTOR-EXEMPT: cat1 -- per-cell numeric classification (@eml_readCell probes
             ; Praat's numericiser cell by cell); this is the dirty-column path, not a reduction.
@@ -258,7 +269,9 @@ endproc
 #   .group2#    - data vector for label2$
 #   .n1         - size of group 1
 #   .n2         - size of group 2
-#   .nExcluded  - rows matching neither label
+#   .nExcluded  - rows matching neither label, or a LEVEL 2 measure cell
+#   .note$      - LEVEL 2 disclosure for .measureCol$, "" if nothing refused
+#   .warning$   - LEVEL 1 disclosure for .measureCol$, "" if nothing repaired
 #   .error$     - error message if any
 # ============================================================================
 procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, .label2$
@@ -266,14 +279,16 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
     .n1 = 0
     .n2 = 0
     .nExcluded = 0
+    .note$ = ""
+    .warning$ = ""
     .error$ = ""
     .group1# = zero#(0)
     .group2# = zero#(0)
-    
+
     # Select table and get row count
     selectObject: .tableId
     .nRows = Get number of rows
-    
+
     if .nRows = 0
         .error$ = "Table is empty"
     else
@@ -281,10 +296,16 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
         .count1 = 0
         .count2 = 0
         .countExcluded = 0
-        
+
         # One decision per column, then one read path per cell.
         @eml_openColumn: .tableId, .measureCol$
         .measureClean = eml_openColumn.clean
+
+        if .measureClean = 0
+            @emlAuditColumn: .tableId, .measureCol$
+            .note$ = emlAuditColumn.note$
+            .warning$ = emlAuditColumn.warning$
+        endif
 
         for .row from 1 to .nRows
             selectObject: .tableId
@@ -304,7 +325,7 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
                 .countExcluded = .countExcluded + 1
             endif
         endfor
-        
+
         # Allocate vectors
         if .count1 > 0
             .group1# = zero#(.count1)
@@ -312,11 +333,11 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
         if .count2 > 0
             .group2# = zero#(.count2)
         endif
-        
+
         # Second pass: populate vectors
         .idx1 = 0
         .idx2 = 0
-        
+
         for .row from 1 to .nRows
             selectObject: .tableId
             .grp$ = Get value: .row, .groupCol$
@@ -333,7 +354,7 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
                 endif
             endif
         endfor
-        
+
         .n1 = .count1
         .n2 = .count2
         .nExcluded = .countExcluded
@@ -352,16 +373,24 @@ endproc
 #   col2$   - name of second column
 #
 # Output:
-#   .data1#       - first column values (complete pairs only)
+#   .data1#       - first column values (complete pairs only). LEVEL 1 cells
+#                   are repaired in place; see .warning$.
 #   .data2#       - second column values (complete pairs only)
 #   .n            - number of complete pairs
-#   .nExcludedRows - rows with missing values
+#   .nExcludedRows - rows with missing values, or a LEVEL 2 cell in either
+#                   column
+#   .note$        - LEVEL 2 disclosure across both columns, "" if nothing
+#                   refused
+#   .warning$     - LEVEL 1 disclosure across both columns, "" if nothing
+#                   repaired
 #   .error$       - error message if columns don't exist
 # ============================================================================
 procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
     # Initialize outputs
     .n = 0
     .nExcludedRows = 0
+    .note$ = ""
+    .warning$ = ""
     .error$ = ""
     .data1# = zero#(0)
     .data2# = zero#(0)
@@ -426,6 +455,27 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
             .clean1 = eml_openColumn.clean
             @eml_openColumn: .tableId, .col2$
             .clean2 = eml_openColumn.clean
+
+            if .clean1 = 0
+                @emlAuditColumn: .tableId, .col1$
+                .note$ = emlAuditColumn.note$
+                .warning$ = emlAuditColumn.warning$
+            endif
+            if .clean2 = 0
+                @emlAuditColumn: .tableId, .col2$
+                if emlAuditColumn.note$ <> ""
+                    if .note$ <> ""
+                        .note$ = .note$ + " "
+                    endif
+                    .note$ = .note$ + emlAuditColumn.note$
+                endif
+                if emlAuditColumn.warning$ <> ""
+                    if .warning$ <> ""
+                        .warning$ = .warning$ + " "
+                    endif
+                    .warning$ = .warning$ + emlAuditColumn.warning$
+                endif
+            endif
 
             for .row from 1 to .nRows
                 @eml_readCell: .tableId, .row, .col1$, .clean1
@@ -1148,27 +1198,52 @@ endproc
 # Every extraction path in this file reads through here, which is the point:
 # the row-wise paths (condition matrices, paired columns) and the column-wise
 # paths (single column, group vectors) cannot otherwise be relied on to give
-# the same account of the same cell, and before this they did not.
+# the same account of the same cell, and before this they did not. It is also
+# every draw-layer and analysis-layer caller's OWN path (graphs/*.praat,
+# stats/eml-analysis.praat) -- this procedure's SIGNATURE stays exactly the
+# four arguments it always took, so every one of those callers inherits the
+# 8 Sep 2026 refuse-or-repair ruling with no edit of its own, per the ruling's
+# own answer on where the fix lives.
 #
 # Arguments:
 #   .tableId, .row, .columnName$
 #   .clean - @eml_openColumn's verdict for this column
 #
 # Output:
-#   .value - the number, or undefined
+#   .value      - the number, or undefined when the cell is LEVEL 2 (refused)
+#   .repaired   - 1 when .value required a LEVEL 1 repair (decimal comma,
+#                 digit grouping, or a bare leading point), 0 otherwise
+#   .repairKind$ - "decimal comma" / "digit grouping" / "bare leading point",
+#                 "" when .repaired = 0
+#   .trimmed$   - the cell's literal contents, trimmed; "" on the fast path
 # ============================================================================
 procedure eml_readCell: .tableId, .row, .columnName$, .clean
     selectObject: .tableId
     if .clean = 1
         .value = Get value: .row, .columnName$
+        .repaired = 0
+        .repairKind$ = ""
+        .trimmed$ = ""
     else
         .cell$ = Get value: .row, .columnName$
-        @eml_classifyCell: .cell$
-        if eml_classifyCell.kind = 0
-            .value = number (eml_classifyCell.trimmed$)
-        else
-            .value = undefined
+        # A comma column's mode is a whole-column question (@emlCommaColumnMode)
+        # and this signature takes no column-level argument to carry it in --
+        # unchanged on purpose, see above -- so it is decided here, but only
+        # when the cell actually has a comma: every other LEVEL 2/refused kind
+        # (empty, unreadable, a percent) and the bare-leading-point LEVEL 1
+        # repair need no column context at all, and skipping the column scan
+        # for them is the difference between one comma column costing a probe
+        # and every dirty cell in the table costing one.
+        .commaMode = 0
+        if index (.cell$, ",") > 0
+            @emlCommaColumnMode: .tableId, .columnName$
+            .commaMode = emlCommaColumnMode.mode
         endif
+        @eml_cleanVerdict: .cell$, .commaMode
+        .value = eml_cleanVerdict.value
+        .repaired = eml_cleanVerdict.repaired
+        .repairKind$ = eml_cleanVerdict.repairKind$
+        .trimmed$ = eml_cleanVerdict.trimmed$
         # LEAVE THE CALLER'S TABLE SELECTED. The slow path goes through
         # @eml_strictOneCell, which creates a probe Table and removeObject:s
         # it -- and `removeObject:` leaves NOTHING selected. So on return the
@@ -1304,16 +1379,38 @@ endproc
 #   .columnName$ - name of the column to audit
 #
 # Output:
-#   .nRows, .nValid, .nEmpty, .nLocale, .nUnreadable, .nCoerced
+#   .nRows    - rows in the column
+#   .nValid   - USABLE cells: already clean, plus every LEVEL 1 repair
+#               (decimal comma, digit grouping, bare leading point)
+#   .nStrict  - cells that are ALREADY the number they look like, with no
+#               repair of any kind. This is what Praat's own whole-column
+#               numericiser can trust -- it never sees a repair, only the
+#               literal cell -- so a caller guarding that path (see
+#               @emlRequireNumericColumn's .strict = 1) tests THIS, not
+#               .nValid.
+#   .nRepaired - .nValid - .nStrict: cells changed under LEVEL 1
+#   .nEmpty, .nLocale, .nUnreadable, .nCoerced
+#     .nLocale now counts only comma cells LEVEL 2 refuses (the column's
+#     @emlCommaColumnMode is 0 or 3, or ambiguous), not every comma cell --
+#     a repaired comma cell is not excluded, so it is not in this count.
+#   .nLeadingDot - always 0. Kept for interface stability; a bare leading
+#     point is never refused under the ruling, so nothing is ever tallied
+#     here now. (Superseded by .nRepaired / .warning$ below.)
 #   .firstEmptyRow / .firstLocaleRow / .firstUnreadableRow / .firstCoercedRow
 #   .firstLocaleValue$ / .firstUnreadableValue$ / .firstCoercedValue$
-#   .note$  - user-facing sentences, one per condition present, "" if the
-#             column is clean. Callers print it verbatim.
-#   .error$ - column not found
+#   .commaMode - the column's @emlCommaColumnMode.mode (0 on the fast path)
+#   .note$    - user-facing LEVEL 2 sentences (@eml_auditNote), one per
+#               refusal condition present, "" if nothing was refused.
+#               Callers print it verbatim.
+#   .warning$ - user-facing LEVEL 1 sentences (@eml_repairNote), one per
+#               repair condition present, "" if nothing was repaired.
+#   .error$   - column not found
 # ============================================================================
 procedure emlAuditColumn: .tableId, .columnName$
     .nRows = 0
     .nValid = 0
+    .nStrict = 0
+    .nRepaired = 0
     .nEmpty = 0
     .nLocale = 0
     .nUnreadable = 0
@@ -1328,7 +1425,9 @@ procedure emlAuditColumn: .tableId, .columnName$
     .firstUnreadableValue$ = ""
     .firstCoercedValue$ = ""
     .firstLeadingDotValue$ = ""
+    .commaMode = 0
     .note$ = ""
+    .warning$ = ""
     .error$ = ""
 
     selectObject: .tableId
@@ -1357,65 +1456,112 @@ procedure emlAuditColumn: .tableId, .columnName$
         if eml_strictNumericColumn.strict = 1
             if eml_strictNumericColumn.unreadable = 0
                 .nValid = .nRows
+                .nStrict = .nRows
                 goto AUDIT_DONE
             endif
         endif
     endif
 
+    @emlCommaColumnMode: .tableId, .columnName$
+    .commaMode = emlCommaColumnMode.mode
+
+    .nDecimalRepaired = 0
+    .nGroupedRepaired = 0
+    .nDotRepaired = 0
+    .firstDecimalRow = 0
+    .firstDecimalRaw$ = ""
+    .firstDecimalValue = 0
+    .firstGroupedRow = 0
+    .firstGroupedRaw$ = ""
+    .firstGroupedValue = 0
+    .firstDotRow = 0
+    .firstDotRaw$ = ""
+    .firstDotValue = 0
+
     ; VECTOR-EXEMPT: cat2 -- only reached when the fast path above has already
-    ; ruled the column impure. Each cell must be routed through @eml_classifyCell's
-    ; per-cell locale / coercion / leading-dot / empty logic, which has no Table
-    ; vector equivalent; the kind counts and first-row diagnostics it produces
-    ; cannot come from a column reduction.
+    ; ruled the column impure. Each cell must be routed through
+    ; @eml_cleanVerdict's per-cell refuse-or-repair decision, which has no
+    ; Table vector equivalent; the kind counts and first-row diagnostics it
+    ; produces cannot come from a column reduction.
     for .row from 1 to .nRows
         selectObject: .tableId
         .cell$ = Get value: .row, .columnName$
-        @eml_classifyCell: .cell$
+        @eml_cleanVerdict: .cell$, .commaMode
 
-        if eml_classifyCell.kind = 0
+        if eml_cleanVerdict.kind = 0
             .nValid = .nValid + 1
-        elsif eml_classifyCell.kind = 1
+            .nStrict = .nStrict + 1
+        elsif eml_cleanVerdict.kind = 1
             .nEmpty = .nEmpty + 1
             if .firstEmptyRow = 0
                 .firstEmptyRow = .row
             endif
-        elsif eml_classifyCell.kind = 2
+        elsif eml_cleanVerdict.kind = 2
+            .nValid = .nValid + 1
+            .nDecimalRepaired = .nDecimalRepaired + 1
+            if .firstDecimalRow = 0
+                .firstDecimalRow = .row
+                .firstDecimalRaw$ = eml_cleanVerdict.trimmed$
+                .firstDecimalValue = eml_cleanVerdict.value
+            endif
+        elsif eml_cleanVerdict.kind = 3
+            .nValid = .nValid + 1
+            .nGroupedRepaired = .nGroupedRepaired + 1
+            if .firstGroupedRow = 0
+                .firstGroupedRow = .row
+                .firstGroupedRaw$ = eml_cleanVerdict.trimmed$
+                .firstGroupedValue = eml_cleanVerdict.value
+            endif
+        elsif eml_cleanVerdict.kind = 4
+            .nValid = .nValid + 1
+            .nDotRepaired = .nDotRepaired + 1
+            if .firstDotRow = 0
+                .firstDotRow = .row
+                .firstDotRaw$ = eml_cleanVerdict.trimmed$
+                .firstDotValue = eml_cleanVerdict.value
+            endif
+        elsif eml_cleanVerdict.kind = 5
             .nLocale = .nLocale + 1
             if .firstLocaleRow = 0
                 .firstLocaleRow = .row
-                .firstLocaleValue$ = eml_classifyCell.trimmed$
+                .firstLocaleValue$ = eml_cleanVerdict.trimmed$
             endif
-        elsif eml_classifyCell.kind = 4
+        elsif eml_cleanVerdict.kind = 7
             .nCoerced = .nCoerced + 1
             if .firstCoercedRow = 0
                 .firstCoercedRow = .row
-                .firstCoercedValue$ = eml_classifyCell.trimmed$
-            endif
-        elsif eml_classifyCell.kind = 5
-            .nLeadingDot = .nLeadingDot + 1
-            if .firstLeadingDotRow = 0
-                .firstLeadingDotRow = .row
-                .firstLeadingDotValue$ = eml_classifyCell.trimmed$
+                .firstCoercedValue$ = eml_cleanVerdict.trimmed$
             endif
         else
             .nUnreadable = .nUnreadable + 1
             if .firstUnreadableRow = 0
                 .firstUnreadableRow = .row
-                .firstUnreadableValue$ = eml_classifyCell.trimmed$
+                .firstUnreadableValue$ = eml_cleanVerdict.trimmed$
             endif
         endif
     endfor
 
-    # The note is rendered by @eml_auditNote from these tallies -- see that
-    # procedure for the wording and the ordering rule. @eml_getGroupData
+    .nRepaired = .nDecimalRepaired + .nGroupedRepaired + .nDotRepaired
+
+    # The note is rendered by @eml_auditNote from the REFUSAL tallies -- see
+    # that procedure for the wording and the ordering rule. @eml_getGroupData
     # renders its own group-scoped tallies through the same call, so the two
-    # cannot drift into different wording for the same condition.
+    # cannot drift into different wording for the same condition. The third
+    # slot (once .nLeadingDot / a refusal) is always 0 here: a bare leading
+    # point is never refused under the ruling.
     @eml_auditNote: .nLocale, .firstLocaleRow, .firstLocaleValue$,
         ... .nCoerced, .firstCoercedRow, .firstCoercedValue$,
-        ... .nLeadingDot, .firstLeadingDotRow, .firstLeadingDotValue$,
+        ... 0, 0, "",
         ... .nUnreadable, .firstUnreadableRow, .firstUnreadableValue$,
         ... .nEmpty, .firstEmptyRow
     .note$ = eml_auditNote.result$
+
+    # The warning is rendered by @eml_repairNote from the REPAIR tallies --
+    # the LEVEL 1 mirror of .note$ above.
+    @eml_repairNote: .nDecimalRepaired, .firstDecimalRow, .firstDecimalRaw$, .firstDecimalValue,
+        ... .nGroupedRepaired, .firstGroupedRow, .firstGroupedRaw$, .firstGroupedValue,
+        ... .nDotRepaired, .firstDotRow, .firstDotRaw$, .firstDotValue
+    .warning$ = eml_repairNote.result$
 
     label AUDIT_DONE
 endproc
@@ -1976,11 +2122,17 @@ endproc
 #   groupLabel$ - label value to match
 #
 # Output:
-#   .n         - number of valid (non-undefined) observations
-#   .data#     - vector of values
-#   .nExcluded - group rows dropped for a non-numeric data cell
-#   .note$     - remedy text for the dropped rows (@eml_auditNote), "" if
-#                nothing was dropped
+#   .n         - number of valid (non-undefined) observations, including
+#                every LEVEL 1 repair (decimal comma, digit grouping, bare
+#                leading point)
+#   .data#     - vector of values, repaired in place; see .warning$
+#   .nExcluded - group rows dropped for a LEVEL 2 data cell
+#   .note$     - LEVEL 2 disclosure for the dropped rows (@eml_auditNote),
+#                "" if nothing was refused
+#   .warning$  - LEVEL 1 disclosure, "" if nothing in the column was
+#                repaired. Column-wide (@emlAuditColumn), not scoped to this
+#                group the way .note$ is: a repair anywhere in .dataCol$ is
+#                worth knowing about even from a group it did not touch.
 #   .error$    - "" on success
 #
 # Group rows are matched on the normalised label (see @eml_normalizeLabel)
@@ -1993,11 +2145,11 @@ endproc
 # leading-dot or unreadable -- not in this group's rows or any other's -- so
 # a single "Get all numbers in column:" read is safe for every group at
 # once, and the loop below only has to pick out the matching rows. Only
-# when that whole-column verdict is dirty does the loop fall to classifying
-# each matching row's cell individually with @eml_classifyCell, which is
-# the same per-cell classification every other extraction path in this file
-# uses, so a row is dropped here for the same stated reason it would be
-# dropped anywhere else.
+# when that whole-column verdict is dirty does the loop fall to deciding
+# each matching row's cell individually with @eml_cleanVerdict, which is
+# the same refuse-or-repair decision every other extraction path in this
+# file uses, so a row is dropped or repaired here for the same stated
+# reason it would be anywhere else.
 #
 # NOT "self [col] <> undefined", which is Praat's LENIENT test: it keeps
 # "1,5" (as 1) and "30%" (as 0.3). Survivors of that filter would reach the
@@ -2011,6 +2163,7 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
     .data# = zero# (0)
     .nExcluded = 0
     .note$ = ""
+    .warning$ = ""
 
     selectObject: .tableId
     .nRows = Get number of rows
@@ -2078,12 +2231,16 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
         .note$ = ""
     else
         # The column has at least one cell @eml_strictNumericColumn cannot
-        # trust, somewhere in the table. Every row is classified with
-        # @eml_classifyCell, but only rows whose group matches contribute to
-        # this group's vector, its skip count, or its note -- the tallies
-        # below are scoped to this group, not the whole table, so a clean
-        # group sitting beside a dirty one still gets .nExcluded = 0 and
-        # .note$ = "".
+        # trust, somewhere in the table. Every row is decided with
+        # @eml_cleanVerdict, fed the column's @emlCommaColumnMode verdict
+        # once, exactly as @eml_openColumn feeds @eml_readCell -- but only
+        # rows whose group matches contribute to this group's vector, its
+        # skip count, or its note -- the tallies below are scoped to this
+        # group, not the whole table, so a clean group sitting beside a
+        # dirty one still gets .nExcluded = 0 and .note$ = "".
+        @emlCommaColumnMode: .tableId, .dataCol$
+        .commaMode = emlCommaColumnMode.mode
+
         .data# = zero# (.nRows)
         .n = 0
         .nGroupRows = 0
@@ -2091,20 +2248,17 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
         .nLocale = 0
         .nUnreadable = 0
         .nCoerced = 0
-        .nLeadingDot = 0
         .firstEmptyRow = 0
         .firstLocaleRow = 0
         .firstUnreadableRow = 0
         .firstCoercedRow = 0
-        .firstLeadingDotRow = 0
         .firstLocaleValue$ = ""
         .firstUnreadableValue$ = ""
         .firstCoercedValue$ = ""
-        .firstLeadingDotValue$ = ""
 
-        ; VECTOR-EXEMPT: cat2 -- per-cell classification (@eml_classifyCell
-        ; probes Praat's numericiser cell by cell); this is the dirty-column
-        ; path, not a reduction, and it also has to test each row's group
+        ; VECTOR-EXEMPT: cat2 -- per-cell decision (@eml_cleanVerdict probes
+        ; Praat's numericiser cell by cell); this is the dirty-column path,
+        ; not a reduction, and it also has to test each row's group
         ; membership, which has no Table vector equivalent either.
         for .row from 1 to .nRows
             selectObject: .tableId
@@ -2114,39 +2268,34 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
                 .nGroupRows = .nGroupRows + 1
                 selectObject: .tableId
                 .cell$ = Get value: .row, .dataCol$
-                @eml_classifyCell: .cell$
+                @eml_cleanVerdict: .cell$, .commaMode
 
-                if eml_classifyCell.kind = 0
+                if eml_cleanVerdict.kind = 0 or eml_cleanVerdict.kind = 2
+                ... or eml_cleanVerdict.kind = 3 or eml_cleanVerdict.kind = 4
                     .n = .n + 1
-                    .data#[.n] = number (eml_classifyCell.trimmed$)
-                elsif eml_classifyCell.kind = 1
+                    .data#[.n] = eml_cleanVerdict.value
+                elsif eml_cleanVerdict.kind = 1
                     .nEmpty = .nEmpty + 1
                     if .firstEmptyRow = 0
                         .firstEmptyRow = .nGroupRows
                     endif
-                elsif eml_classifyCell.kind = 2
+                elsif eml_cleanVerdict.kind = 5
                     .nLocale = .nLocale + 1
                     if .firstLocaleRow = 0
                         .firstLocaleRow = .nGroupRows
-                        .firstLocaleValue$ = eml_classifyCell.trimmed$
+                        .firstLocaleValue$ = eml_cleanVerdict.trimmed$
                     endif
-                elsif eml_classifyCell.kind = 4
+                elsif eml_cleanVerdict.kind = 7
                     .nCoerced = .nCoerced + 1
                     if .firstCoercedRow = 0
                         .firstCoercedRow = .nGroupRows
-                        .firstCoercedValue$ = eml_classifyCell.trimmed$
-                    endif
-                elsif eml_classifyCell.kind = 5
-                    .nLeadingDot = .nLeadingDot + 1
-                    if .firstLeadingDotRow = 0
-                        .firstLeadingDotRow = .nGroupRows
-                        .firstLeadingDotValue$ = eml_classifyCell.trimmed$
+                        .firstCoercedValue$ = eml_cleanVerdict.trimmed$
                     endif
                 else
                     .nUnreadable = .nUnreadable + 1
                     if .firstUnreadableRow = 0
                         .firstUnreadableRow = .nGroupRows
-                        .firstUnreadableValue$ = eml_classifyCell.trimmed$
+                        .firstUnreadableValue$ = eml_cleanVerdict.trimmed$
                     endif
                 endif
             endif
@@ -2162,10 +2311,13 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
 
         @eml_auditNote: .nLocale, .firstLocaleRow, .firstLocaleValue$,
             ... .nCoerced, .firstCoercedRow, .firstCoercedValue$,
-            ... .nLeadingDot, .firstLeadingDotRow, .firstLeadingDotValue$,
+            ... 0, 0, "",
             ... .nUnreadable, .firstUnreadableRow, .firstUnreadableValue$,
             ... .nEmpty, .firstEmptyRow
         .note$ = eml_auditNote.result$
+
+        @emlAuditColumn: .tableId, .dataCol$
+        .warning$ = emlAuditColumn.warning$
     endif
 
     label GETGROUPDATA_DONE
@@ -3048,6 +3200,305 @@ procedure emlCommaColumnMode: .tableId, .columnName$
     endif
 
     label COMMA_MODE_DONE
+endproc
+
+
+# ============================================================================
+# @eml_cleanVerdict (internal helper)
+# ============================================================================
+# THE refuse-or-repair decision for one cell, settled by ruling on 8 Sep 2026
+# (RULING_DATA_CLEANING_TWO_ITEMS): LEVEL 1 (repair on the fly, disclosed)
+# covers exactly three cases -- a decimal comma, digit grouping, and a bare
+# leading point. Everything else -- an empty cell, a placeholder, a percent
+# or other silent coercion, genuinely unreadable text, or a comma a column
+# cannot read either way -- is LEVEL 2 (refused): read exactly as
+# @eml_classifyCell already reads it, unrepaired.
+#
+# ONE HOME, NOT A NEW ONE. This composes two procedures that already decide
+# every part of this: @eml_classifyCell answers what a cell IS (its kind is
+# reused whole for kinds 0, 1, 3 and 4 below), and @emlCommaColumnMode answers
+# what a comma in THIS column means -- a column question, not a cell one, so
+# it is computed once by the caller (@eml_openColumn) and handed in here as
+# .commaMode. Neither is reimplemented.
+#
+# WHY A COMMA CELL IS NOT TRUSTED TO @eml_classifyCell's OWN kind. Its kind 2
+# ("locale") fires whenever swapping the comma for a point happens to pass
+# the strict-numeric probe -- true of "1,5" AND of "1,234", regardless of
+# whether the column's OTHER cells prove "1,234" is really digit grouping.
+# Genuine grouping ("12,345,678") does not even reach kind 2: the swap
+# ("12.345.678") fails strict and @eml_classifyCell falls through to kind 4
+# ("coerced"). So a comma cell's fate cannot be read off its own kind; every
+# comma cell is re-decided here from .commaMode instead, before .kind ever
+# enters the branch below.
+#
+# Arguments:
+#   .raw$      - the cell's literal contents
+#   .commaMode - the column's @emlCommaColumnMode.mode (0 when the column has
+#                no comma, or was never probed because it did not need to be)
+#
+# Output:
+#   .kind        0 clean            (already the number it looks like)
+#                1 empty             LEVEL 2 -- missing data
+#                2 decimal comma     LEVEL 1 -- repaired
+#                3 digit grouping    LEVEL 1 -- repaired
+#                4 bare leading point LEVEL 1 -- repaired
+#                5 comma, unrepairable LEVEL 2 -- column mode is 0 or 3, or
+#                  the cell's shape does not match what the column mode says
+#                6 unreadable        LEVEL 2 -- not a number in any locale
+#                7 coerced           LEVEL 2 -- a number OTHER than the one
+#                  written (a percent, a fraction, "2 3"), with no comma
+#   .value     - the numeric value for kind 0, 2, 3 or 4; undefined otherwise
+#   .repaired  - 1 for kind 2, 3 or 4; 0 otherwise
+#   .repairKind$ - "decimal comma" / "digit grouping" / "bare leading point",
+#                "" when .repaired = 0
+#   .trimmed$  - .raw$ with surrounding whitespace removed (case preserved)
+# ============================================================================
+procedure eml_cleanVerdict: .raw$, .commaMode
+    @eml_classifyCell: .raw$
+    .trimmed$ = eml_classifyCell.trimmed$
+    .value = undefined
+    .repaired = 0
+    .repairKind$ = ""
+
+    if eml_classifyCell.kind = 0
+        .kind = 0
+        .value = number (.trimmed$)
+    elsif eml_classifyCell.kind = 1
+        .kind = 1
+    elsif index (.trimmed$, ",") > 0
+        .kind = 5
+        if .commaMode = 1
+            .swapped$ = replace$ (.trimmed$, ",", ".", 0)
+            @eml_strictOneCell: .swapped$
+            if eml_strictOneCell.strict = 1
+                .value = number (.swapped$)
+                .kind = 2
+                .repaired = 1
+                .repairKind$ = "decimal comma"
+            endif
+        elsif .commaMode = 2
+            .stripped$ = replace$ (.trimmed$, ",", "", 0)
+            @eml_strictOneCell: .stripped$
+            if eml_strictOneCell.strict = 1
+                .value = number (.stripped$)
+                .kind = 3
+                .repaired = 1
+                .repairKind$ = "digit grouping"
+            endif
+        endif
+    elsif eml_classifyCell.kind = 5
+        # Bare leading point -- LEVEL 1 always, per the ruling: repaired and
+        # disclosed exactly like the decimal comma, never a column question.
+        .kind = 4
+        .value = eml_classifyCell.recovered
+        .repaired = 1
+        .repairKind$ = "bare leading point"
+    elsif eml_classifyCell.kind = 4
+        .kind = 7
+    else
+        .kind = 6
+    endif
+endproc
+
+
+# ============================================================================
+# @eml_repairNote (internal helper)
+# ============================================================================
+# Render the user-facing disclosure sentences for one set of LEVEL 1 repair
+# tallies -- the mirror of @eml_auditNote, which renders the LEVEL 2 refusal
+# tallies. Kept separate rather than folded into @eml_auditNote because the
+# two answer different questions ("what was excluded" vs "what was changed")
+# and a column can have both at once: an ambiguous comma column with a
+# separate bare-leading-point cell reports one refusal and one repair, in two
+# different fields (.note$ and .warning$), not one sentence pretending to be
+# both.
+#
+# Arguments:
+#   .nDecimal, .firstDecimalRow, .firstDecimalRaw$, .firstDecimalValue
+#   .nGrouped, .firstGroupedRow, .firstGroupedRaw$, .firstGroupedValue
+#   .nDot,     .firstDotRow,     .firstDotRaw$,     .firstDotValue
+#
+# Output:
+#   .result$ - the assembled disclosure, "" if every tally is zero
+# ============================================================================
+procedure eml_repairNote: .nDecimal, .firstDecimalRow, .firstDecimalRaw$, .firstDecimalValue,
+    ... .nGrouped, .firstGroupedRow, .firstGroupedRaw$, .firstGroupedValue,
+    ... .nDot, .firstDotRow, .firstDotRaw$, .firstDotValue
+    .result$ = ""
+    .sep$ = ""
+    if .nDecimal > 0
+        .result$ = .result$ + .sep$ + string$ (.nDecimal)
+        ... + " cell(s) used a comma where a decimal point belongs (row "
+        ... + string$ (.firstDecimalRow) + ": """ + .firstDecimalRaw$
+        ... + """) and were repaired -- read as the point-separated value "
+        ... + "(row " + string$ (.firstDecimalRow) + ": "
+        ... + string$ (.firstDecimalValue) + ")."
+        .sep$ = " "
+    endif
+    if .nGrouped > 0
+        .result$ = .result$ + .sep$ + string$ (.nGrouped)
+        ... + " cell(s) grouped digits in threes with a comma (row "
+        ... + string$ (.firstGroupedRow) + ": """ + .firstGroupedRaw$
+        ... + """) and were repaired -- read with the comma(s) removed "
+        ... + "(row " + string$ (.firstGroupedRow) + ": "
+        ... + string$ (.firstGroupedValue) + ")."
+        .sep$ = " "
+    endif
+    if .nDot > 0
+        .result$ = .result$ + .sep$ + string$ (.nDot)
+        ... + " cell(s) began with a bare decimal point (row "
+        ... + string$ (.firstDotRow) + ": """ + .firstDotRaw$
+        ... + """) and were repaired -- read with a leading zero (row "
+        ... + string$ (.firstDotRow) + ": " + string$ (.firstDotValue) + ")."
+    endif
+endproc
+
+
+# ============================================================================
+# @emlRunCleanData
+# ============================================================================
+# THE data-cleaning door. Applies every LEVEL 1 repair in a Table -- decimal
+# comma, digit grouping, and a bare leading point -- using the identical
+# refuse-or-repair decision the extraction procedures make at read time
+# (@eml_cleanVerdict, fed one @emlCommaColumnMode verdict per column, exactly
+# as @eml_openColumn feeds it to @eml_readCell). LEVEL 2 cells -- empty,
+# unreadable, a percent or other coercion, or a comma a column cannot read
+# either way -- are left exactly as they are: refused, not guessed at.
+#
+# PERCENT IS NOT IN THIS LIST. The 8 September 2026 ruling
+# (RULING_DATA_CLEANING_TWO_ITEMS) keeps it a menu-only choice in
+# scripts/eml-check-data.praat: a recorded script cannot replay a choice
+# between "30% means 30" and "30% means 0.3", so this procedure never makes
+# that choice for a caller, and its signature carries no third argument for
+# it. Placeholder text ("n/a" -> empty) is likewise not this procedure's
+# concern -- it is already excluded at read time whether or not the literal
+# cell is ever rewritten, so turning it into a genuinely empty cell is a
+# table-editing convenience that scripts/eml-check-data.praat still offers on
+# its own, not a refuse-or-repair question this door answers.
+#
+# Arguments:
+#   .tableId - ID of the Table object
+#   .mode$   - "copy": .tableId is untouched; a new repaired Table is made
+#              "in place": .tableId is repaired directly
+#
+# Output:
+#   .error$    - "" on success; set (with .remedy$) if .tableId is not a
+#                Table, or if .mode$ is neither "copy" nor "in place" -- in
+#                either case .workId stays 0 and nothing is touched
+#   .warning$  - always "" (no warning path; carried for the outcome
+#                contract's shape)
+#   .remedy$   - a menu item or next step to try, set alongside .error$
+#   .ok        - (.error$ = ""), Praat's single-exit success flag
+#   .workId    - the repaired Table's ID: a new object for "copy", .tableId
+#                itself for "in place"; 0 on refusal
+#   .nRepaired - cells changed across the whole table
+#   .nRefused  - LEVEL 2 cells left exactly as they were
+#   .report$   - one line per column that had any repairable cell, "" if no
+#                column in the table had one
+# ============================================================================
+procedure emlRunCleanData: .tableId, .mode$
+    .error$ = ""
+    .warning$ = ""
+    .remedy$ = ""
+    .workId = 0
+    .nRepaired = 0
+    .nRefused = 0
+    .report$ = ""
+
+    selectObject: .tableId
+    .full$ = selected$ ()
+    .sp = index (.full$, " ")
+    if .sp > 0
+        .sourceType$ = left$ (.full$, .sp - 1)
+    else
+        .sourceType$ = .full$
+    endif
+
+    if .sourceType$ <> "Table"
+        .error$ = "emlRunCleanData: .tableId is a " + .sourceType$
+        ... + ", not a Table."
+        .remedy$ = "Select a Table object and call emlRunCleanData again."
+    elsif .mode$ <> "copy" and .mode$ <> "in place"
+        .error$ = "emlRunCleanData: .mode$ must be ""copy"" or ""in "
+        ... + "place"" (got """ + .mode$ + """)."
+        .remedy$ = "Pass ""copy"" or ""in place"" for .mode$."
+    endif
+
+    if .error$ = ""
+        .sourceName$ = selected$ ("Table")
+
+        .workId = .tableId
+        if .mode$ = "copy"
+            selectObject: .tableId
+            .workId = Copy: .sourceName$ + "_repaired"
+        endif
+
+        selectObject: .workId
+        .nRows = Get number of rows
+        .nCols = Get number of columns
+
+        for .c from 1 to .nCols
+            selectObject: .workId
+            .col$ = Get column label: .c
+
+            @emlCommaColumnMode: .workId, .col$
+            .commaMode = emlCommaColumnMode.mode
+
+            .colDecimal = 0
+            .colGrouped = 0
+            .colDot = 0
+            .colRefused = 0
+
+            for .row from 1 to .nRows
+                selectObject: .workId
+                .raw$ = Get value: .row, .col$
+                @eml_cleanVerdict: .raw$, .commaMode
+
+                if eml_cleanVerdict.repaired = 1
+                    selectObject: .workId
+                    Set string value: .row, .col$, string$ (eml_cleanVerdict.value)
+                    .nRepaired = .nRepaired + 1
+                    if eml_cleanVerdict.kind = 2
+                        .colDecimal = .colDecimal + 1
+                    elsif eml_cleanVerdict.kind = 3
+                        .colGrouped = .colGrouped + 1
+                    else
+                        .colDot = .colDot + 1
+                    endif
+                elsif eml_cleanVerdict.kind = 5 or eml_cleanVerdict.kind = 6
+                ... or eml_cleanVerdict.kind = 7
+                    .nRefused = .nRefused + 1
+                    .colRefused = .colRefused + 1
+                endif
+            endfor
+
+            if .colDecimal + .colGrouped + .colDot > 0
+                .colWhat$ = ""
+                .colSep$ = ""
+                if .colDecimal > 0
+                    .colWhat$ = .colWhat$ + .colSep$ + string$ (.colDecimal)
+                    ... + " decimal comma"
+                    .colSep$ = ", "
+                endif
+                if .colGrouped > 0
+                    .colWhat$ = .colWhat$ + .colSep$ + string$ (.colGrouped)
+                    ... + " digit grouping"
+                    .colSep$ = ", "
+                endif
+                if .colDot > 0
+                    .colWhat$ = .colWhat$ + .colSep$ + string$ (.colDot)
+                    ... + " bare leading point"
+                endif
+                .report$ = .report$ + "  """ + .col$ + """: "
+                ... + string$ (.colDecimal + .colGrouped + .colDot)
+                ... + " cell(s) repaired (" + .colWhat$ + ")." + newline$
+            endif
+        endfor
+
+        selectObject: .workId
+    endif
+
+    .ok = (.error$ = "")
 endproc
 
 

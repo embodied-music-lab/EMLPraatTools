@@ -1,0 +1,12 @@
+Reliability (Cronbach's alpha) -- kit_cleandata_l2_reliability_input
+  Items (k) = 3, respondents (n) = 5
+  Cronbach's alpha = 0.9036, 95% CI [0.5130, 0.9893]
+  Note: 1 row(s) excluded for missing data (assessed n = 5 of 6
+  respondents).
+  Alpha if item deleted:
+    item1 = 0.7500
+    item2 = 0.8936
+    item3 = 0.9189
+
+
+emlRunReliabilityAnalysis.error$ = ""

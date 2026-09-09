@@ -127,4 +127,19 @@ check("v14", "printed CI half-width equals t * printed SEM",
       (printed(cap, "Upper") - printed(cap, "Lower")) / 2,
       tcrit * printed(cap, "SEM"), tol = 5e-4)
 
+# ============================================================================
+# DATA-CLEANING WAVE — this door's level-2 fixture
+#
+# The dedicated fixture for @emlRunDescriptiveAnalysis's refusal path is
+# validate/v07_redpath_degenerate_inputs.R's R6 case (re-derived 8 September
+# 2026 for this same wave, alongside test-extract.praat's D96 block): a
+# placeholder ("n/a") and an empty cell are still refused after the ruling,
+# while a decimal-comma cell in the same column is now repaired instead of
+# refused. See that file's R6 section for the driven capture
+# (evidence/info/rp_r6_parse_conditions_info.txt) and the assertions on
+# N (valid) / N (excluded) and the exclusion sentences it prints. Not
+# duplicated here to avoid a second, potentially disagreeing account of the
+# same door.
+# ============================================================================
+
 if (!exists("EML_SUITE")) { eml_report("v14 descriptive orchestrator"); eml_exit() }

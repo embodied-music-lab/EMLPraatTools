@@ -199,14 +199,16 @@ for (p in RENAMES) {
 }
 
 # ---- C. registry shape ----------------------------------------------------
-cat("\n  ---- C. registry at 47 rows, mixed model excluded by entry ----\n")
+cat("\n  ---- C. registry at 48 rows, mixed model excluded by entry ----\n")
 # 45 as of the settlement session's own close, +2 (B11 wave, 2026-09-08):
 # emlVectorsToTable and emlToTable, added by Fable's ruling on
 # validate/probes/vectors_to_table_probe.praat -- see REGISTRY.tsv's own
 # correction note for the ruling and validate/vectors_to_table_oracle.tsv
-# for the graded fixture rows. The literal below tracks REGISTRY.tsv's own
-# header count; a future row addition updates both together.
-check_true(V, "registry holds exactly 47 data rows", length(regRows) == 47)
+# for the graded fixture rows. +1 more (data-cleaning-door wave,
+# 2026-09-09): emlRunCleanData, the data-cleaning door -- see REGISTRY.tsv's
+# own correction note. The literal below tracks REGISTRY.tsv's own header
+# count; a future row addition updates both together.
+check_true(V, "registry holds exactly 48 data rows", length(regRows) == 48)
 cat(sprintf("      registry data rows now: %d\n", length(regRows)))
 check_true(V, "emlRunLMMAnalysis absent from registry",
            sum(regNames == "emlRunLMMAnalysis") == 0)

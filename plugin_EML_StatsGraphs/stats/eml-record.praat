@@ -1452,6 +1452,77 @@ endproc
 
 
 # ----------------------------------------------------------------------------
+# @emlRecordCleanData: .sourceId, .targetId, .mode$
+# scripts/eml-check-data.praat's table-mode repair, recorded as its own step
+# -- the door is @emlRunCleanData (stats/eml-extract.praat), settled by the
+# 8 Sep 2026 ruling (RULING_DATA_CLEANING_TWO_ITEMS): decimal comma, digit
+# grouping and a bare leading point, repaired unconditionally and disclosed.
+#
+# TWO MODES, ONE OF THEM @emlRecordConvert's SHAPE. "copy" produces a NEW
+# object the same way an acoustic conversion does -- the manifest must name
+# the SOURCE the user actually selected, not the derived Table @emlRunClean-
+# Data built from it, exactly the problem @emlRecordConvert exists to solve
+# for a Pitch/Spectrum/Ltas -- so this reuses that shape rather than a second
+# implementation of it: same step kind, same derived-object bookkeeping,
+# only the phrase and the emitted call differ. "in place" mutates .sourceId
+# itself; there is no derived object to register, so that half is skipped.
+#
+# PERCENT NEVER APPEARS HERE. The ruling's second item keeps it a menu-only
+# choice: a recorded script cannot replay "leave it" vs. "divide by 100" vs.
+# "drop the sign", so the emitted call is the bare two-argument door and the
+# record says so under Details, not a parameter this procedure could not
+# faithfully replay in the first place.
+#
+# Arguments:
+#   .sourceId the Table the user selected
+#   .targetId the repaired Table: a NEW object for "copy", .sourceId itself
+#             for "in place" (ignored in that case)
+#   .mode$    "copy" or "in place" -- passed straight through to the emitted
+#             @emlRunCleanData call
+# ----------------------------------------------------------------------------
+procedure emlRecordCleanData: .sourceId, .targetId, .mode$
+    @emlRecordInit
+    if emlRecordActive = 0
+        goto END_RECORD_CLEAN_DATA
+    endif
+
+    ; Cleared FIRST, same reason as @emlRecordConvert: a clean recorded while
+    ; a previous conversion is still registered must not inherit its pairing.
+    emlRecordDerivedId = 0
+    emlRecordDerivedFrom$ = ""
+
+    @emlRecordSource: .sourceId
+    .from$ = emlRecordCurrentSource$
+
+    .code$ = "@emlRunCleanData: data, """ + .mode$ + """"
+    .detail$ = "Repaired " + .from$
+    ... + " (decimal comma, digit grouping, bare leading point)."
+    .why$ = "Percent cells are never touched here -- that stays a menu-only "
+    ... + "choice this recording cannot replay."
+
+    if .mode$ = "copy"
+        selectObject: .targetId
+        .to$ = selected$ ()
+        @emlRecordStep: "convert",
+        ... "Cleaned " + .from$ + " into " + .to$ + ".", .why$, .code$,
+        ... "In the GUI: Check & repair data..., then Apply to = a copy."
+
+        ; Registered only AFTER the step is recorded, same as @emlRecordConvert:
+        ; @emlRecordStep reads emlRecordStepDerived$, and the clean itself ran
+        ; on the SOURCE.
+        emlRecordDerivedId = .targetId
+        emlRecordDerivedFrom$ = .from$
+    else
+        @emlRecordStep: "convert", "Cleaned " + .from$ + " in place.", .why$,
+        ... .code$,
+        ... "In the GUI: Check & repair data..., then Apply to = this Table."
+    endif
+
+    label END_RECORD_CLEAN_DATA
+endproc
+
+
+# ----------------------------------------------------------------------------
 # @emlRecordCreateStep: .objectId, .label$, .detail$, .caveat$, .code$, .api$
 #
 # A TABLE COMING INTO EXISTENCE, RECORDED AS A STEP.

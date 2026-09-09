@@ -170,43 +170,46 @@ if emlCheckDataScheme.report$ = ""
     exitScript: ""
 endif
 
-# Count what is repairable, per condition, across the whole table.
+# Decimal comma, digit grouping, and a bare leading point are no longer a
+# choice this script offers -- the 8 Sep 2026 ruling makes all three LEVEL 1
+# (repaired and disclosed, unconditionally) wherever a cell is read, and
+# @emlRunCleanData is the one place that repair happens. This script is a
+# thin wrapper around it: the PREVIEW below (mode "copy") both counts what it
+# will do and, if the user goes on to choose "A copy", becomes that copy --
+# built once, not twice.
+#
+# Placeholder text ("n/a" -> empty) and percent are still this script's own
+# concern -- ambiguous, off by default or menu-only, never something
+# @emlRunCleanData decides (percent stays menu-only per the ruling's second
+# item: a recorded script cannot replay a choice between "30% means 30" and
+# "30% means 0.3").
 @emlTableColumnNames: tableId
 nCols = emlTableColumnNames.nCols
 
-nComma = 0
-nDot = 0
 nPlaceholder = 0
 nPercent = 0
 
 selectObject: tableId
 nRows = Get number of rows
 
-nCommaAmbig = 0
 for iCol from 1 to nCols
     col$ = emlTableColumnNames.name$ [iCol]
-    @emlCommaColumnMode: tableId, col$
-    commaMode [iCol] = emlCommaColumnMode.mode
-    commaWhy$ [iCol] = emlCommaColumnMode.why$
     for iRow from 1 to nRows
         selectObject: tableId
         raw$ = Get value: iRow, col$
         @emlRepairClassify: raw$
-        if emlRepairClassify.kind = 1
-            if commaMode [iCol] = 3
-                nCommaAmbig = nCommaAmbig + 1
-            else
-                nComma = nComma + 1
-            endif
-        elsif emlRepairClassify.kind = 2
-            nDot = nDot + 1
-        elsif emlRepairClassify.kind = 3
+        if emlRepairClassify.kind = 3
             nPlaceholder = nPlaceholder + 1
         elsif emlRepairClassify.kind = 4
             nPercent = nPercent + 1
         endif
     endfor
 endfor
+
+@emlRunCleanData: tableId, "copy"
+previewId = emlRunCleanData.workId
+nRepaired = emlRunCleanData.nRepaired
+cleanReport$ = emlRunCleanData.report$
 
 writeInfoLine: "DATA CHECK — ", tableName$
 appendInfoLine: ""
@@ -228,30 +231,18 @@ endif
 
 appendInfoLine: emlCheckDataScheme.report$
 
-if nCommaAmbig > 0
+if nRepaired > 0
     appendInfoLine: ""
-    appendInfoLine: "COMMA CELLS THAT CANNOT BE READ EITHER WAY: ",
-    ... nCommaAmbig
-    for iCol from 1 to nCols
-        if commaMode [iCol] = 3
-            appendInfoLine: "  Column """,
-            ... emlTableColumnNames.name$ [iCol], """: ", commaWhy$ [iCol],
-            ... "."
-        endif
-    endfor
-    appendInfoLine: "  Praat reads a comma cell by truncating at the comma, "
-    ... + "so 1,234 becomes 1 —"
-    appendInfoLine: "  there is no thousands-separator reading to fall back "
-    ... + "on. These cells are"
-    appendInfoLine: "  excluded from analysis. Edit them by hand, or re-"
-    ... + "export with an English"
-    appendInfoLine: "  (United States) locale."
+    appendInfoLine: "REPAIRED AUTOMATICALLY (decimal comma, digit grouping, "
+    ... + "bare leading point):"
+    appendInfo: cleanReport$
 endif
 
-if nComma + nDot + nPlaceholder + nPercent = 0
+if nRepaired + nPlaceholder + nPercent = 0
     appendInfoLine: "None of these can be repaired automatically — each "
     ... + "needs a decision"
     appendInfoLine: "about what the value was meant to be."
+    removeObject: previewId
     exitScript: ""
 endif
 
@@ -264,16 +255,14 @@ procedure plural: .n, .word$
 endproc
 
 beginPause: "Repair — " + tableName$
-    @plural: nComma + nDot + nPlaceholder + nPercent, "cell"
+    @plural: nRepaired + nPlaceholder + nPercent, "cell"
     comment: "Found " + plural.s$ + " that can be repaired. The full report is in the"
-    comment: "Info window. Choose which repairs to apply:"
-    if nComma > 0
-        @plural: nComma, "cell"
-        boolean: "Repair comma cells (" + plural.s$ + ")", 1
-    endif
-    if nDot > 0
-        @plural: nDot, "cell"
-        boolean: "Leading zero on bare points (" + plural.s$ + ")", 1
+    comment: "Info window."
+    if nRepaired > 0
+        @plural: nRepaired, "cell"
+        comment: plural.s$ + " with a decimal comma, digit grouping, or a bare "
+        ... + "leading point will"
+        comment: "be repaired automatically -- this is not a choice."
     endif
     if nPlaceholder > 0
         @plural: nPlaceholder, "cell"
@@ -295,18 +284,11 @@ beginPause: "Repair — " + tableName$
         option: "This Table, in place"
 clicked = endPause: "Cancel", "Repair", 2, 1
 if clicked = 1
+    removeObject: previewId
     exitScript: ""
 endif
 
-doComma = 0
-doDot = 0
 doPlaceholder = 0
-if nComma > 0
-    doComma = repair_comma_cells
-endif
-if nDot > 0
-    doDot = leading_zero_on_bare_points
-endif
 if nPlaceholder > 0
     doPlaceholder = placeholders_to_empty
 endif
@@ -315,15 +297,18 @@ if nPercent > 0
     pctMode = percent_cells
 endif
 
-workId = tableId
 workName$ = tableName$
 if apply_to = 1
-    selectObject: tableId
-    workId = Copy: tableName$ + "_repaired"
+    # The preview scan above already IS this copy -- built once.
+    workId = previewId
     workName$ = tableName$ + "_repaired"
+else
+    removeObject: previewId
+    @emlRunCleanData: tableId, "in place"
+    workId = emlRunCleanData.workId
 endif
 
-nFixed = 0
+nFixed = nRepaired
 for iCol from 1 to nCols
     col$ = emlTableColumnNames.name$ [iCol]
     for iRow from 1 to nRows
@@ -333,18 +318,7 @@ for iCol from 1 to nCols
         k = emlRepairClassify.kind
         new$ = ""
         act = 0
-        if k = 1 and doComma = 1 and commaMode [iCol] = 1
-            # decimal comma
-            new$ = replace$ (emlRepairClassify.fixed$, ",", ".", 0)
-            act = 1
-        elsif k = 1 and doComma = 1 and commaMode [iCol] = 2
-            # digit grouping
-            new$ = replace$ (emlRepairClassify.fixed$, ",", "", 0)
-            act = 1
-        elsif k = 2 and doDot = 1
-            new$ = emlRepairClassify.fixed$
-            act = 1
-        elsif k = 3 and doPlaceholder = 1
+        if k = 3 and doPlaceholder = 1
             new$ = ""
             act = 1
         elsif k = 4 and pctMode > 1

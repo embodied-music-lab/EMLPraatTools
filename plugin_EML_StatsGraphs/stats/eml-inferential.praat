@@ -4431,7 +4431,9 @@ endproc
 #                      per-row drop to fall back on.
 #
 # Output:
-#   .error$ - refusal message, or "" if the column may be analysed.
+#   .error$   - refusal message, or "" if the column may be analysed.
+#   .warning$ - LEVEL 1 disclosure (@emlAuditColumn.warning$): non-fatal,
+#               "" when nothing in the column needed a repair.
 #
 # A column that does not exist and a table with no rows both return "". A
 # column that is not there has no type to diagnose: that question belongs to
@@ -4445,6 +4447,7 @@ procedure emlRequireNumericColumn: .tableId, .role$, .columnName$, .strict
     .nRows = 0
     .nValid = 0
     .note$ = ""
+    .warning$ = ""
 
     @emlAuditColumn: .tableId, .columnName$
     ; Praat does not short-circuit `and`, so these are nested rather than
@@ -4452,8 +4455,16 @@ procedure emlRequireNumericColumn: .tableId, .role$, .columnName$, .strict
     ; not found.
     if emlAuditColumn.error$ = ""
         .nRows = emlAuditColumn.nRows
+        # THE SAME REFUSE-OR-REPAIR DECISION AS THE EXTRACTION PROCEDURES,
+        # by construction rather than by a second implementation:
+        # @emlAuditColumn's .nValid is @eml_cleanVerdict's own verdict,
+        # tallied -- the identical decision @eml_readCell makes at read time
+        # (8 Sep 2026 ruling). A column of nothing but repairable decimal
+        # commas is USABLE data now, not "holds no numbers", because the
+        # extraction procedures it feeds would repair every one of them.
         .nValid = emlAuditColumn.nValid
         .note$ = emlAuditColumn.note$
+        .warning$ = emlAuditColumn.warning$
 
         if .nRows > 0
             if .nValid = 0
@@ -4463,7 +4474,14 @@ procedure emlRequireNumericColumn: .tableId, .role$, .columnName$, .strict
                     .error$ = .error$ + " " + .note$
                 endif
             elsif .strict = 1
-                if .nValid < .nRows
+                # NOT .nValid here. This branch guards callers that read the
+                # column through Praat's OWN whole-column numericiser (see
+                # the .strict argument doc below), which sees only the
+                # literal Table cell and gets no benefit from any repair
+                # this plugin makes in memory -- so the gate must still ask
+                # whether every cell is ALREADY the number it looks like,
+                # which is exactly @emlAuditColumn.nStrict.
+                if emlAuditColumn.nStrict < .nRows
                     .error$ = .role$ + " """ + .columnName$
                     ... + """ is not numeric in every row. This test reads "
                     ... + "the column as a whole, so one unusable cell "

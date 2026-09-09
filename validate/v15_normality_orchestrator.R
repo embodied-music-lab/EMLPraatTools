@@ -174,4 +174,31 @@ check_true("v15", "no column here has severe shape, so this table cannot separat
            all(sapply(d[sapply(d, is.numeric)], function(v)
                abs(skewness_g1(v)) < SKEW_T && abs(excess_kurtosis(v)) < KURT_T)))
 
+# ============================================================================
+# DATA-CLEANING WAVE — level-2 fixture for this door (no level-1: the repair
+# is proved once, in the extraction layer)
+#
+# Built 8 September 2026 under RULING_DATA_CLEANING_POLICY. Driven headlessly
+# by evidence/redrive/kit_cleandata_other_doors.praat against
+# validate/redpath/kit_cleandata_l2_normality.csv (10 rows, one "??").
+# @emlRunNormalityAnalysis reads its Data column with strict = 0, so the bad
+# cell drops that one row under the complete-case convention and the door
+# prints "Excluded (missing)  1" directly under N -- the refusal text this
+# fixture asserts on, alongside the recomputed Shapiro-Wilk statistic.
+# ============================================================================
+
+nrd  <- read_input("kit_cleandata_l2_normality_input.csv")
+nrcap <- capture("kit_cleandata_l2_normality_info.txt")
+nrv <- suppressWarnings(as.numeric(nrd$value))
+nrv <- nrv[!is.na(nrv)]
+check_true("v15-cleandata", "the fixture's one unreadable cell (\"??\") leaves 9 usable values",
+           length(nrv) == 9L)
+check("v15-cleandata", "L2: N is 9 -- the unreadable cell is refused",
+      printed(nrcap, "N"), length(nrv), tol = 0)
+check("v15-cleandata", "L2: Excluded (missing) names exactly 1 row",
+      printed(nrcap, "Excluded (missing)"), 1, tol = 0)
+sw2 <- shapiro.test(nrv)
+check("v15-cleandata", "L2: Shapiro-Wilk W over the 9 usable values",
+      printed(nrcap, "W"), unname(sw2$statistic), tol = 5e-3)
+
 if (!exists("EML_SUITE")) { eml_report("v15 normality orchestrator"); eml_exit() }

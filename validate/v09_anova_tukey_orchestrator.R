@@ -225,4 +225,60 @@ ss_w2 <- sum(sapply(g, function(v) sum((v - mean(v))^2)))
 check("v09", "SS between, hand-rolled", ss_b, ss_b2, tol = 1e-9)
 check("v09", "SS within, hand-rolled",  ss_w, ss_w2, tol = 1e-9)
 
+# ============================================================================
+# DATA-CLEANING WAVE — level-1 / level-2 fixtures for this door
+#
+# Built 8 September 2026, driven the same way as v08's block above:
+# @emlRunAnovaAnalysis is a plain procedure (no beginPause:), called directly
+# by evidence/redrive/kit_cleandata_named_doors.praat against
+# validate/redpath/kit_cleandata_{l1,l2}_anova.csv (3 groups, 3 rows each).
+#
+# LEVEL 1: Low's data column carries "11,3", the ONLY comma in that column
+# (mode 1, decimal) -- repaired to 11.3, Low's analysed N is 3.
+# LEVEL 2: the same cell is "??" -- refused, Low's analysed N drops to 2. As
+# with two-group, @emlRunAnovaAnalysis's own "row(s) excluded" sentence is
+# reserved for a blank GROUP cell; the per-group N column in the Group
+# Descriptives block is the refusal text this door relays for a bad DATA
+# cell, and it feeds directly into a smaller df within-group and a shifted F.
+# ============================================================================
+
+# --- LEVEL 1: the decimal comma is repaired, not excluded -------------------
+a1  <- read_input("kit_cleandata_l1_anova_input.csv")
+acap1 <- capture("kit_cleandata_l1_anova_info.txt")
+low1 <- as.numeric(gsub(",", ".", a1$value[a1$group == "Low"]))
+mid1 <- a1$value[a1$group == "Mid"]
+hi1  <- a1$value[a1$group == "High"]
+check_true("v09-cleandata", "the fixture's one comma cell parses as 11.3 once repaired",
+           any(low1 == 11.3))
+check("v09-cleandata", "L1: Low N is 3 -- the comma cell is analysed, not dropped",
+      printed(acap1, "Low", 1), length(low1), tol = 0)
+check("v09-cleandata", "L1: Low mean includes the repaired 11.3",
+      printed(acap1, "Low", 2), mean(low1), tol = 5e-3)
+f1 <- summary(aov(value ~ group, data = data.frame(
+    value = c(low1, as.numeric(mid1), as.numeric(hi1)),
+    group = a1$group)))[[1]]
+check("v09-cleandata", "L1: omnibus F over the repaired data",
+      printed(acap1, "F", 1, 1), f1[["F value"]][1], tol = 5e-3)
+
+# --- LEVEL 2: the unreadable cell is refused, exactly as before ------------
+a2  <- read_input("kit_cleandata_l2_anova_input.csv")
+acap2 <- capture("kit_cleandata_l2_anova_info.txt")
+low2 <- suppressWarnings(as.numeric(a2$value[a2$group == "Low"]))
+low2 <- low2[!is.na(low2)]
+mid2 <- a2$value[a2$group == "Mid"]
+hi2  <- a2$value[a2$group == "High"]
+check_true("v09-cleandata", "the fixture's one unreadable cell (\"??\") leaves Low with 2 clean values",
+           length(low2) == 2L)
+check("v09-cleandata", "L2: Low N is 2 -- the unreadable cell is refused",
+      printed(acap2, "Low", 1), length(low2), tol = 0)
+check("v09-cleandata", "L2: Low mean is over the 2 refused-clean values only",
+      printed(acap2, "Low", 2), mean(low2), tol = 5e-3)
+f2 <- summary(aov(value ~ group, data = data.frame(
+    value = c(low2, as.numeric(mid2), as.numeric(hi2)),
+    group = c(rep("Low", length(low2)), a2$group[a2$group != "Low"]))))[[1]]
+check("v09-cleandata", "L2: omnibus F over the reduced sample",
+      printed(acap2, "F", 1, 1), f2[["F value"]][1], tol = 5e-3)
+check("v09-cleandata", "L1 and L2 give different Low N -- the repair, not a coincidence, moved the count",
+      printed(acap1, "Low", 1), printed(acap2, "Low", 1), tol = 0, expect = "differ")
+
 if (!exists("EML_SUITE")) { eml_report("v09 ANOVA + Tukey orchestrator"); eml_exit() }

@@ -97,4 +97,54 @@ check("v12", "the two printed t statistics are not the same number",
 check_true("v12", "printed rho < printed r, so the blocks are not swapped",
            printed(cap, "rho") < printed(cap, "r"))
 
+# ============================================================================
+# DATA-CLEANING WAVE — level-1 / level-2 fixtures for this door
+#
+# Built 8 September 2026, driven like v08's block above:
+# @emlRunCorrelationAnalysis is a plain procedure, called directly by
+# evidence/redrive/kit_cleandata_named_doors.praat against
+# validate/redpath/kit_cleandata_{l1,l2}_correlation.csv (8 rows, x and y
+# columns increasing together).
+#
+# LEVEL 1: row 3's x-cell carries "3,2", the ONLY comma in column x -- read
+# unambiguously as mode 1 (decimal) and repaired to 3.2. N is 8.
+# LEVEL 2: the same cell is "??" -- refused under the SAME complete-case
+# convention @emlExtractPairedColumns already used before this ruling. Here
+# the door DOES print an explicit sentence -- "Note: 1 row(s) excluded for
+# missing data (analyzed n = 7 complete pairs)" -- which is the refusal text
+# this fixture asserts on directly, in addition to N and the recomputed r.
+# ============================================================================
+
+# --- LEVEL 1: the decimal comma is repaired, not excluded -------------------
+cd1  <- read_input("kit_cleandata_l1_correlation_input.csv")
+ccap1 <- capture("kit_cleandata_l1_correlation_info.txt")
+cx1 <- as.numeric(gsub(",", ".", cd1$x))
+cy1 <- cd1$y
+check_true("v12-cleandata", "the fixture's one comma cell parses as 3.2 once repaired",
+           any(cx1 == 3.2))
+check("v12-cleandata", "L1: N is 8 -- the comma cell is analysed, not dropped",
+      printed(ccap1, "N"), length(cx1), tol = 0)
+check("v12-cleandata", "L1: Pearson r over the repaired data",
+      printed(ccap1, "r"), cor(cx1, cy1), tol = 5e-4)
+check_true("v12-cleandata", "L1: no exclusion note is printed",
+           !any(grepl("excluded", ccap1$lines, fixed = TRUE)))
+
+# --- LEVEL 2: the unreadable cell is refused, exactly as before ------------
+cd2  <- read_input("kit_cleandata_l2_correlation_input.csv")
+ccap2 <- capture("kit_cleandata_l2_correlation_info.txt")
+keep2 <- !is.na(suppressWarnings(as.numeric(cd2$x)))
+cx2 <- as.numeric(cd2$x[keep2])
+cy2 <- cd2$y[keep2]
+check_true("v12-cleandata", "the fixture's one unreadable cell (\"??\") leaves 7 complete pairs",
+           length(cx2) == 7L)
+check("v12-cleandata", "L2: N is 7 -- the unreadable cell is refused",
+      printed(ccap2, "N"), length(cx2), tol = 0)
+check("v12-cleandata", "L2: Pearson r over the reduced sample",
+      printed(ccap2, "r"), cor(cx2, cy2), tol = 5e-4)
+check_true("v12-cleandata", "L2: the door's own exclusion sentence names 1 row and 7 complete pairs",
+           any(grepl("1 row(s) excluded for missing data (analyzed n = 7 complete pairs)",
+                     ccap2$lines, fixed = TRUE)))
+check("v12-cleandata", "L1 and L2 give different N -- the repair, not a coincidence, moved the count",
+      printed(ccap1, "N"), printed(ccap2, "N"), tol = 0, expect = "differ")
+
 if (!exists("EML_SUITE")) { eml_report("v12 correlation orchestrator"); eml_exit() }

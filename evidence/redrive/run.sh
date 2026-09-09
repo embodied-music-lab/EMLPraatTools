@@ -48,9 +48,15 @@ run_one() {
 }
 
 case "${1:-all}" in
-    all)              run_one wizard_rm3; run_one rp_r6_describe ;;
+    all)              run_one wizard_rm3; run_one rp_r6_describe
+                      run_one rp_r6_parse_conditions
+                      run_one kit_cleandata_named_doors
+                      run_one kit_cleandata_other_doors ;;
     wizard_rm3)       run_one wizard_rm3 ;;
     rp_r6_describe)   run_one rp_r6_describe ;;
+    rp_r6_parse_conditions) run_one rp_r6_parse_conditions ;;
+    kit_cleandata_named_doors) run_one kit_cleandata_named_doors ;;
+    kit_cleandata_other_doors) run_one kit_cleandata_other_doors ;;
     *) echo "redrive: unknown leg '$1'" >&2; exit 1 ;;
 esac
 

@@ -120,4 +120,35 @@ ss_b <- sum(table(d$task) * (b_m - gm)^2)
 check("v11", "SS voice_type, hand-rolled", ss[["voice_type"]], ss_a, tol = 1e-8)
 check("v11", "SS task, hand-rolled",       ss[["task"]],       ss_b, tol = 1e-8)
 
+# ============================================================================
+# DATA-CLEANING WAVE — level-2 fixture for this door (no level-1: the repair
+# is proved once, in the extraction layer)
+#
+# Built 8 September 2026 under RULING_DATA_CLEANING_POLICY. Two-way is
+# UNIQUE among these doors: its data column is checked with strict = 1 (see
+# @emlTwoWayAnova in eml-inferential.praat), because the kernel it calls
+# reads the column as a whole with no per-row drop to fall back on. So a
+# single unreadable cell does not shrink one cell's N the way it does for
+# Kruskal-Wallis or ANOVA -- it refuses the ENTIRE analysis, and the refusal
+# text is the literal .error$ string this door hands to @emlErrorDialog.
+#
+# Driven headlessly by evidence/redrive/kit_cleandata_other_doors.praat
+# against validate/redpath/kit_cleandata_l2_twoway.csv (2x2 design, 3 reps
+# per cell, one "??" in the data column). No Info-window report is produced
+# on this path -- refusal happens before @emlReportTwoWayAnova is ever
+# called -- so the capture is the .error$ string itself, written by the
+# driver immediately after the call, which is exactly what a live GUI run
+# would have handed to @emlErrorDialog.
+# ============================================================================
+
+twcap2 <- capture("kit_cleandata_l2_twoway_info.txt")
+tw2flat <- paste(trimws(twcap2$lines), collapse = " ")
+check_true("v11-cleandata", "L2: two-way refuses the whole analysis on one unreadable data cell (strict column read)",
+           grepl("not numeric in every row", tw2flat, fixed = TRUE))
+check_true("v11-cleandata", "and names the offending row and value",
+           grepl("row 3: ??", tw2flat, fixed = TRUE))
+check_true("v11-cleandata", "and the refusal is the door's own .error$, not a silent pass",
+           grepl("emlRunTwoWayAnalysis.error$ = \"", tw2flat, fixed = TRUE) &&
+           !grepl("emlRunTwoWayAnalysis.error$ = \"\"", tw2flat, fixed = TRUE))
+
 if (!exists("EML_SUITE")) { eml_report("v11 two-way ANOVA orchestrator"); eml_exit() }

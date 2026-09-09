@@ -173,4 +173,29 @@ check_true("v10", "the three post-hoc matrices rank the pairs identically",
            which.max(abs(c(dn$z["Soprano","Mezzo"], dn$z["Soprano","Alto"],
                            dn$z["Mezzo","Alto"]))))
 
+# ============================================================================
+# DATA-CLEANING WAVE — level-2 fixture for this door (no level-1: the repair
+# is proved once, in the extraction layer)
+#
+# Built 8 September 2026 under RULING_DATA_CLEANING_POLICY. Driven headlessly
+# by evidence/redrive/kit_cleandata_other_doors.praat against
+# validate/redpath/kit_cleandata_l2_kruskal.csv: Low's data column carries
+# one "??" cell, unreadable in any locale, alongside two clean cells.
+# @emlRunKruskalWallisAnalysis reads the Data column with strict = 0, so the
+# bad cell does not refuse the whole analysis -- it drops that one row under
+# the existing complete-case convention, and Low's Group Mean Ranks row is
+# the refusal text this door relays: N = 2, not 3.
+# ============================================================================
+
+kwd  <- read_input("kit_cleandata_l2_kruskal_input.csv")
+kwcap <- capture("kit_cleandata_l2_kruskal_info.txt")
+kwLow <- suppressWarnings(as.numeric(kwd$value[kwd$group == "Low"]))
+kwLow <- kwLow[!is.na(kwLow)]
+check_true("v10-cleandata", "the fixture's one unreadable cell (\"??\") leaves Low with 2 clean values",
+           length(kwLow) == 2L)
+check("v10-cleandata", "L2: Low N is 2 in the Group Mean Ranks table -- the unreadable cell is refused",
+      printed(kwcap, "Low", 1), length(kwLow), tol = 0)
+check("v10-cleandata", "L2: Mid and High keep their full N of 3",
+      printed(kwcap, "Mid", 1), 3, tol = 0)
+
 if (!exists("EML_SUITE")) { eml_report("v10 Kruskal-Wallis + Dunn"); eml_exit() }

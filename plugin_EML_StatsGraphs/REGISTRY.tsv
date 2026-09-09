@@ -1,8 +1,9 @@
 # ==========================================================================
 # REGISTRY — EML Stats & Graphs public procedure surface
-# Compiled: 2026-09-01  |  47 rows (2026-09-02: emlRunLMMAnalysis's row
+# Compiled: 2026-09-01  |  48 rows (2026-09-02: emlRunLMMAnalysis's row
 # removed for 1.0; 2026-09-03: the three survey rows added; 2026-09-08: the
-# vectors-to-table pair added -- see the corrections below)
+# vectors-to-table pair added; 2026-09-08: emlRunCleanData added, the
+# data-cleaning door -- see the corrections below)
 # Ruling: mailbox/to-opus/RULING_PUBLIC_SURFACE_2026-09-01.md
 # Correction (2026-09-08, B11 wave, Fable's ruling on the vectors-to-table
 # probe): emlVectorsToTable and emlToTable join the registry -- the wide-
@@ -159,6 +160,7 @@ emlRunFriedmanAnalysis	stats/eml-analysis.praat	procedure emlRunFriedmanAnalysis
 emlRunReliabilityAnalysis	stats/eml-analysis.praat	procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfluence	Cronbach's alpha over a set of item columns, with a confidence interval, alpha-if-item-deleted, and an optional respondent-influence check. Rows with missing items are dropped and the count is disclosed.	1,3
 emlRunCategoricalAnalysis	stats/eml-analysis.praat	procedure emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$, .countCol$, .correction	Chi-square test of independence over two category columns, with Cramer's V and an optional Yates correction. An empty .countCol$ tallies raw rows; a named one reads pre-aggregated counts.	1,3
 emlRunProportionAnalysis	stats/eml-analysis.praat	procedure emlRunProportionAnalysis: .tableId, .col$, .successValue$, .countCol$, .confidence	One proportion with a Wilson score interval. An empty .countCol$ tallies raw rows; a named one reads pre-aggregated counts, which is how summary data such as "37 yes, 83 no" enters.	1,3
+emlRunCleanData	stats/eml-extract.praat	procedure emlRunCleanData: .tableId, .mode$	The data-cleaning door: repairs every LEVEL 1 cell in a Table -- decimal comma, digit grouping, a bare leading point -- using the same refuse-or-repair decision the extraction procedures make at read time (RULING_DATA_CLEANING_TWO_ITEMS_2026-09-08). .mode$ is "copy" (leaves the Table untouched, repairs a new one) or "in place"; percent stays a menu-only choice in scripts/eml-check-data.praat and is never a third argument here. Reached from the "Check & repair data..." menu door (scripts/eml-check-data.praat, table mode) and emitted by the recorder (@emlRecordCleanData, stats/eml-record.praat) for both modes.	1,2,3
 emlDrawF0Contour	graphs/eml-draw-procedures.praat	procedure emlDrawF0Contour: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .tMin, .tMax, .fMin, .fMax, .yUnit	F0 contour figure (EML Graphs type 1) for a Pitch object.	2,3
 emlDrawWaveform	graphs/eml-draw-procedures.praat	procedure emlDrawWaveform: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .tMin, .tMax, .aMin, .aMax	Waveform figure (EML Graphs type 2) for a Sound object.	2,3
 emlDrawSpectrum	graphs/eml-draw-procedures.praat	procedure emlDrawSpectrum: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colorMode$, .gridMode, .fMin, .fMax, .pMin, .pMax	Spectrum figure (EML Graphs type 3) for a Spectrum object.	2,3

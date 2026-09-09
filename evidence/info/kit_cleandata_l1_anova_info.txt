@@ -1,0 +1,63 @@
+══════════════════════════════════════════════
+  EML Stats : One-Way ANOVA
+  Tue Sep  8 23:52:56 2026
+══════════════════════════════════════════════
+
+  Table               kit cleandata l1 anova input
+  Data column         value
+  Group column        group
+  Groups              3
+  Group order: table order (Low, Mid, High).
+
+
+  ── ANOVA Table ─────────────────────────────
+
+Source              SS              df    MS              F           p
+Between             155.04          2     77.52           214.0153    < .001
+Within              2.17            6     0.36            
+Total               157.22          8     
+
+  F                   214.0153
+  p                   < .001  (2.64e-06)
+  Effect size         eta-squared = 0.9862
+  Equal spread        Brown-Forsythe F(2, 6) = 0.0000
+  Equal-spread p      p = 1.000
+
+
+  ── Group Descriptives ──────────────────────
+  Group         N     Mean      SD        Median    
+  Low           3     10.73     0.60      10.80     
+  Mid           3     15.83     0.60      15.90     
+  High          3     20.90     0.60      20.90     
+
+
+  ── Tukey HSD Pairwise Comparisons (p-values) ───
+
+              Low         Mid         High        
+Low           ---         < .001      < .001      
+Mid           < .001      ---         < .001      
+High          < .001      < .001      ---         
+
+
+  ── Tukey HSD Mean Differences (95% family-wise CI) ───
+
+Comparison                Difference    95% CI
+Low − Mid                 -5.1000       [-6.6078, -3.5922]
+Low − High                -10.1667      [-11.6744, -8.6589]
+Mid − High                -5.0667       [-6.5744, -3.5589]
+
+
+  ── Pairwise Effect Sizes (Cohen's d) ───────
+
+              Low         Mid         High        
+Low           ---         -8.461      -16.905     
+Mid           8.461       ---         -8.425      
+High          16.905      8.425       ---         
+  Row minus column: a negative d means the ROW group's mean is lower
+  than the COLUMN group's. |d| is the effect size.
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
+══════════════════════════════════════════════

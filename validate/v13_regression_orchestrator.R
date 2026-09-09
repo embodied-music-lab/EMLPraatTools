@@ -142,4 +142,54 @@ check("v13", "reversing predictor and response changes the slope",
 check("v13", "but leaves the printed R-squared unchanged, which is why direction needs its own check",
       printed(cap, "R-squared"), summary(rev_fit)$r.squared, tol = 5e-5)
 
+# ============================================================================
+# DATA-CLEANING WAVE — level-1 / level-2 fixtures for this door
+#
+# Built 8 September 2026, driven like v08's block above:
+# @emlRunRegressionAnalysis is a plain procedure, called directly by
+# evidence/redrive/kit_cleandata_named_doors.praat against
+# validate/redpath/kit_cleandata_{l1,l2}_regression.csv (predictor "pred",
+# response "dep", 8 rows, a near-perfect line).
+#
+# LEVEL 1: row 3's pred-cell carries "3,4", the ONLY comma in column pred --
+# read unambiguously as mode 1 (decimal) and repaired to 3.4. N is 8, and the
+# door prints no "Excluded" line.
+# LEVEL 2: the same cell is "??" -- refused. The door prints
+# "Excluded (missing)  1" directly under N, which is the refusal text this
+# fixture asserts on, alongside the recomputed fit over the 7 remaining rows.
+# ============================================================================
+
+# --- LEVEL 1: the decimal comma is repaired, not excluded -------------------
+rd1  <- read_input("kit_cleandata_l1_regression_input.csv")
+rcap1 <- capture("kit_cleandata_l1_regression_info.txt")
+rx1 <- as.numeric(gsub(",", ".", rd1$pred))
+ry1 <- rd1$dep
+check_true("v13-cleandata", "the fixture's one comma cell parses as 3.4 once repaired",
+           any(rx1 == 3.4))
+check("v13-cleandata", "L1: N is 8 -- the comma cell is analysed, not dropped",
+      printed(rcap1, "N"), length(rx1), tol = 0)
+fit1 <- lm(ry1 ~ rx1)
+check("v13-cleandata", "L1: slope over the repaired data",
+      printed(rcap1, "pred", 1), unname(coef(fit1)[2]), tol = 5e-4)
+check_true("v13-cleandata", "L1: no \"Excluded\" line is printed",
+           !any(grepl("^  Excluded", rcap1$lines)))
+
+# --- LEVEL 2: the unreadable cell is refused, exactly as before ------------
+rd2  <- read_input("kit_cleandata_l2_regression_input.csv")
+rcap2 <- capture("kit_cleandata_l2_regression_info.txt")
+keep2 <- !is.na(suppressWarnings(as.numeric(rd2$pred)))
+rx2 <- as.numeric(rd2$pred[keep2])
+ry2 <- rd2$dep[keep2]
+check_true("v13-cleandata", "the fixture's one unreadable cell (\"??\") leaves 7 usable rows",
+           length(rx2) == 7L)
+check("v13-cleandata", "L2: N is 7 -- the unreadable cell is refused",
+      printed(rcap2, "N"), length(rx2), tol = 0)
+check("v13-cleandata", "L2: Excluded (missing) names exactly 1 row",
+      printed(rcap2, "Excluded (missing)"), 1, tol = 0)
+fit2 <- lm(ry2 ~ rx2)
+check("v13-cleandata", "L2: slope over the reduced sample",
+      printed(rcap2, "pred", 1), unname(coef(fit2)[2]), tol = 5e-4)
+check("v13-cleandata", "L1 and L2 give different N -- the repair, not a coincidence, moved the count",
+      printed(rcap1, "N"), printed(rcap2, "N"), tol = 0, expect = "differ")
+
 if (!exists("EML_SUITE")) { eml_report("v13 regression orchestrator"); eml_exit() }

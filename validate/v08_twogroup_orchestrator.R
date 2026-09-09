@@ -126,4 +126,60 @@ check_true("v08", "rank-biserial sign agrees with Cohen's d",
 check("v08", "printed rank-biserial is NOT the printed Cohen's d",
       rb, printed(cap, "Cohen's d"), tol = 5e-4, expect = "differ")
 
+# ============================================================================
+# DATA-CLEANING WAVE — level-1 / level-2 fixtures for this door
+#
+# Built 8 September 2026 under RULING_DATA_CLEANING_POLICY /
+# RULING_DATA_CLEANING_TWO_ITEMS. @emlRunTwoGroupAnalysis is called directly
+# (it takes no beginPause:, so it runs under `praat --run` with no GUI) by
+# evidence/redrive/kit_cleandata_named_doors.praat, which produced both
+# captures below from validate/redpath/kit_cleandata_{l1,l2}_twogroup.csv.
+#
+# LEVEL 1: Control's data column carries "90,2", the ONLY comma in that
+# column, so @emlCommaColumnMode reads it unambiguously as mode 1 (decimal)
+# and it is repaired to 90.2 on the fly -- Control's analysed N is 5, not 4.
+#
+# LEVEL 2: the identical table with that cell replaced by "??", which is not
+# a number in any locale. It stays refused under the existing complete-case
+# convention -- Control's analysed N drops to 4, and every downstream
+# statistic (Welch t, Mann-Whitney U, both effect sizes) is over the 4
+# remaining values. The reduced Group N line IS the refusal text this door
+# relays -- @emlRunTwoGroupAnalysis has no separate "N excluded" sentence for
+# a bad DATA cell (that wording is reserved for a blank GROUP cell), so the
+# per-group N column is what a reader sees change.
+# ============================================================================
+
+# --- LEVEL 1: the decimal comma is repaired, not excluded -------------------
+d1   <- read_input("kit_cleandata_l1_twogroup_input.csv")
+cap1 <- capture("kit_cleandata_l1_twogroup_info.txt")
+ctl1 <- as.numeric(gsub(",", ".", d1$value[d1$group == "Control"]))
+pat1 <- as.numeric(d1$value[d1$group == "Patient"])
+check_true("v08-cleandata", "the fixture's one comma cell parses as 90.2 once repaired",
+           any(ctl1 == 90.2))
+check("v08-cleandata", "L1: Control N is 5 -- the comma cell is analysed, not dropped",
+      printed(cap1, "Control", 1), length(ctl1), tol = 0)
+check("v08-cleandata", "L1: Control mean includes the repaired 90.2",
+      printed(cap1, "Control", 2), mean(ctl1), tol = 5e-3)
+tt1 <- t.test(ctl1, pat1, var.equal = FALSE)
+check("v08-cleandata", "L1: Welch t over the repaired data",
+      printed(cap1, "t"), unname(tt1$statistic), tol = 5e-4)
+
+# --- LEVEL 2: the unreadable cell is refused, exactly as before ------------
+d2   <- read_input("kit_cleandata_l2_twogroup_input.csv")
+cap2 <- capture("kit_cleandata_l2_twogroup_info.txt")
+ctl2 <- suppressWarnings(as.numeric(d2$value[d2$group == "Control"]))
+ctl2 <- ctl2[!is.na(ctl2)]
+pat2 <- as.numeric(d2$value[d2$group == "Patient"])
+check_true("v08-cleandata", "the fixture's one unreadable cell (\"??\") is dropped by R's own coercion too",
+           length(ctl2) == 4L)
+check("v08-cleandata", "L2: Control N is 4 -- the unreadable cell is refused",
+      printed(cap2, "Control", 1), length(ctl2), tol = 0)
+check("v08-cleandata", "L2: Control mean is over the 4 refused-clean values only",
+      printed(cap2, "Control", 2), mean(ctl2), tol = 5e-3)
+tt2 <- t.test(ctl2, pat2, var.equal = FALSE)
+check("v08-cleandata", "L2: Welch t over the reduced sample",
+      printed(cap2, "t"), unname(tt2$statistic), tol = 5e-4)
+check("v08-cleandata", "L1 and L2 give different Control N -- the repair, not a coincidence, moved the count",
+      printed(cap1, "Control", 1), printed(cap2, "Control", 1), tol = 0, expect = "differ")
+
 if (!exists("EML_SUITE")) { eml_report("v08 two-group orchestrator"); eml_exit() }

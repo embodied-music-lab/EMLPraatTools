@@ -206,11 +206,14 @@ cat(sprintf("v165: NON-DRAW PUBLIC POPULATION: %d rows\n", nrow(nondraw_rows)))
 # both land here. Both were built to this exact contract from the start
 # (REGISTRY.tsv's own correction note for the ruling); this file still
 # computes the population fresh and audits it below rather than trusting
-# that claim.
+# that claim. +1 more (data-cleaning-door wave, 2026-09-09):
+# emlRunCleanData (sources {1,2,3} -- an emlRun* entry point, a menu door,
+# and the recorder all admit it) -- not exactly {2,3}, so it lands here
+# too, now carrying the identical contract this file enforces.
 check_true(V,
-           sprintf("the non-draw public population is exactly the ruling's 33 rows (found %d)",
+           sprintf("the non-draw public population is exactly the ruling's 34 rows (found %d)",
                    nrow(nondraw_rows)),
-           nrow(nondraw_rows) == 33L)
+           nrow(nondraw_rows) == 34L)
 
 # emlDrawQQPlot is the worked counter-example named in the header comment:
 # it must survive the exclusion (sources == {2} alone, not {2,3}).

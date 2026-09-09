@@ -395,9 +395,24 @@ check_true("R6", "the offending value is a string, not an empty cell",
 # The fix is one classifier, @eml_classifyCell, used by every extraction
 # entry point in eml-extract.praat — the row-wise readers as well as the
 # column-wise ones, which is what the author asked for. It also changed a
-# result: "73,4" used to coerce to 73 and enter the mean. It is now excluded
+# result: "73,4" used to coerce to 73 and enter the mean. It was excluded
 # and named, because 1,234 is 1.234 to a European reader and 1234 to an
 # American one and the plugin has no basis to choose.
+#
+# RE-DERIVED 8 September 2026 under RULING_DATA_CLEANING_TWO_ITEMS
+# (RULING_DATA_CLEANING_POLICY, refined by the two-item ruling of 8 Sep).
+# "73,4" is the ONLY comma in this column, so @emlCommaColumnMode reads it
+# unambiguously as mode 1 (decimal) -- there is no other comma cell to make
+# it ambiguous or to prove digit grouping instead. Per the ruling that is now
+# LEVEL 1: repaired to 73.4 on the fly and folded into the analysed data,
+# not excluded. The placeholder ("n/a", row 3) and the empty cell (row 5)
+# are untouched by the ruling -- they remain LEVEL 2 refusals under the same
+# complete-case convention as before, which is what keeps this case a
+# refusal case at all: it is what the placeholder row now proves alone.
+# Re-driven with evidence/redrive/rp_r6_parse_conditions.praat (mirroring
+# rp_r6_describe.praat's shape), producing a fresh
+# evidence/info/rp_r6_parse_conditions_info.txt against the UNCHANGED input
+# csv -- the input needed no edit, only the plugin's reading of it changed.
 r6cap <- capture("rp_r6_parse_conditions_info.txt")
 # The parse note is word-wrapped to the report width, so a sentence spans
 # lines and a line-by-line grep would miss it. Collapse to one string first;
@@ -410,34 +425,39 @@ check_true("R6", "one cell is an unparseable string", r6drv$SPL_soft[3] == "n/a"
 check_true("R6", "one cell is a decimal comma", r6drv$SPL_soft[4] == "73,4")
 check_true("R6", "one cell is empty", r6drv$SPL_soft[5] == "")
 
-check("R6", "D96 FIXED: N (valid) counts only the 3 clean cells",
-      printed(r6cap, "N (valid)"), 3, tol = 0)
-check("R6", "N (excluded) counts the other 3",
-      printed(r6cap, "N (excluded)"), 3, tol = 0)
-check_true("R6", "the decimal comma is reported as its own condition",
-           grepl("comma where a decimal point belongs", r6flat, fixed = TRUE))
-check_true("R6", "and the offending row and value are named",
-           grepl("row 4: 73,4", r6flat, fixed = TRUE))
-check_true("R6", "the unparseable string is reported separately",
+check("R6", "D96 RE-DERIVED: N (valid) now counts the repaired comma cell too (4 of 6)",
+      printed(r6cap, "N (valid)"), 4, tol = 0)
+check("R6", "N (excluded) now counts only the placeholder and the empty cell (2 of 6)",
+      printed(r6cap, "N (excluded)"), 2, tol = 0)
+check_true("R6", "the decimal comma is NO LONGER reported as an exclusion",
+           !grepl("comma where a decimal point belongs", r6flat, fixed = TRUE))
+check_true("R6", "row 4's value is not named among the excluded cells",
+           !grepl("row 4: 73,4", r6flat, fixed = TRUE))
+check_true("R6", "the unparseable string is still reported separately",
            grepl("not numeric in any locale", r6flat, fixed = TRUE))
-check_true("R6", "and named as a type error rather than missing data",
-           grepl("type error, not missing data", r6flat, fixed = TRUE))
+check_true("R6", "and still named as an unrecognized token, not missing data",
+           grepl("Unrecognized nonnumeric token; excluded", r6flat, fixed = TRUE))
 check_true("R6", "and its row and value are named",
            grepl("row 3: n/a", r6flat, fixed = TRUE))
-check_true("R6", "the empty cell is reported as missing data",
+check_true("R6", "the empty cell is still reported as missing data",
            grepl("cell(s) are empty (row 5 first)", r6flat, fixed = TRUE))
-check_true("R6", "the three conditions are three distinct sentences",
-           length(gregexpr("cell(s)", r6flat, fixed = TRUE)[[1]]) == 3L)
+check_true("R6", "only the two refusal conditions remain -- one fewer sentence than before the comma repair",
+           length(gregexpr("cell(s)", r6flat, fixed = TRUE)[[1]]) == 2L)
 
-# The mean must be the mean of the three CLEAN values. If "73,4" had been
-# coerced the way it was before, the mean would be 72.45 instead of 72.2667 —
-# a difference no other number in the report would contradict.
-clean <- as.numeric(r6drv$SPL_soft[c(1, 2, 6)])
-check("R6", "mean is over the clean values only",
-      printed(r6cap, "Mean"), mean(clean), tol = 5e-4)
-with_coerced <- c(clean, 73)
-check("R6", "and is NOT the mean that coercing the comma cell would give",
-      mean(clean), mean(with_coerced), tol = 5e-3, expect = "differ")
+# The mean must now be the mean of the FOUR usable values: the three clean
+# cells plus the repaired comma cell read as 73.4 (not 73, and not excluded).
+repaired <- as.numeric(ifelse(r6drv$SPL_soft == "73,4", "73.4", r6drv$SPL_soft))
+clean4 <- repaired[c(1, 2, 4, 6)]
+check_true("R6", "the repaired value is 73.4, not 73 and not excluded",
+           clean4[3] == 73.4)
+check("R6", "mean is over the four usable values, comma cell repaired",
+      printed(r6cap, "Mean"), mean(clean4), tol = 5e-4)
+clean3 <- as.numeric(r6drv$SPL_soft[c(1, 2, 6)])
+check("R6", "and is NOT the old three-clean-cell mean that excluding the comma cell gave",
+      mean(clean4), mean(clean3), tol = 5e-3, expect = "differ")
+with_coerced <- c(clean3, 73)
+check("R6", "nor the pre-classifier mean that coerced the comma to 73",
+      mean(clean4), mean(with_coerced), tol = 5e-3, expect = "differ")
 
 # --- R7: small-range measure -----------------------------------------------
 # Not driven. This is an axis case, testable only by looking at a figure, and

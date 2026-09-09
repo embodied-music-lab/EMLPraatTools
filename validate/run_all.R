@@ -2080,6 +2080,21 @@ scripts <- c(
                                  # exemptions, plus the B10 formatting sites
                                  # (reason "pending B10 ruling") that B10
                                  # repoints and removes.
+    ,
+    "v170_cleandata_gate_level2.R" # data-cleaning wave (RULING_DATA_
+                                 # CLEANING_POLICY / RULING_DATA_CLEANING_
+                                 # TWO_ITEMS, 8 Sep 2026): the one level-2
+                                 # fixture each for the four shared-gate
+                                 # doors with no v-numbered home of their
+                                 # own -- paired, repeated measures,
+                                 # reliability (survey items) and
+                                 # categorical (survey counts). The four
+                                 # named doors' level-1/level-2 fixtures live
+                                 # in v08/v09/v12/v13; the other three
+                                 # shared-gate doors with a home file
+                                 # (descriptives, normality, Kruskal-Wallis,
+                                 # two-way) carry their level-2 fixture in
+                                 # v14/v15/v10/v11 respectively.
 )
 
 # ---------------------------------------------------------------------------

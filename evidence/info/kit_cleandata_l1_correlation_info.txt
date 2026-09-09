@@ -1,0 +1,35 @@
+══════════════════════════════════════════════
+  EML Stats : Correlation Analysis
+  Tue Sep  8 23:53:02 2026
+══════════════════════════════════════════════
+
+  Table               kit cleandata l1 correlation input
+  Column X            x
+  Column Y            y
+  N                   8
+
+
+  ── Pearson Correlation ─────────────────────
+  r                   0.9994
+  R-squared           0.9988
+  t                   70.593
+  df                  6
+  p                   < .001  (5.44e-10)
+  p method            t distribution
+  95% CI for r        [0.9965, 0.9999]
+  Magnitude           large effect
+
+
+  ── Spearman Correlation ────────────────────
+  rho                 1.0000
+  t                   --undefined--
+  df                  6
+  p                   < .001  (4.96e-05)
+  p method            exact
+  Magnitude           large effect
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
+══════════════════════════════════════════════

@@ -533,22 +533,35 @@ for d96i from 1 to 5
 endfor
 
 @emlExtractColumn: d96t, "pre"
-@assertEqualNum: "D96 column reader keeps 4 of 5 in pre", 4,
-... emlExtractColumn.n, 0
-@assertEqualNum: "D96 column reader attributes the drop to a decimal comma",
-... 1, emlExtractColumn.nLocale, 0
-@assertTrue: "D96 column reader names the offending value",
-... index (emlExtractColumn.note$, "12,5") > 0
-@assertTrue: "D96 the excluded comma value is NOT in the data",
+# RE-DERIVED 8 September 2026 under RULING_DATA_CLEANING_TWO_ITEMS: "12,5" is
+# the ONLY comma in this column, so @emlCommaColumnMode reads it unambiguously
+# as mode 1 (decimal) and @eml_cleanVerdict repairs it to 12.5 on the fly --
+# LEVEL 1, not the LEVEL 2 exclusion this block used to assert. It is folded
+# into the data, disclosed in .warning$ rather than .note$, and no longer
+# counted in .nLocale (which now means only LEVEL-2-refused comma cells).
+@assertEqualNum: "D96 column reader now keeps all 5 of 5 in pre (comma repaired)",
+... 5, emlExtractColumn.n, 0
+@assertEqualNum: "D96 column reader no longer attributes anything to a refused comma",
+... 0, emlExtractColumn.nLocale, 0
+@assertEqualNum: "D96 column reader counts exactly one LEVEL 1 repair",
+... 1, emlExtractColumn.nRepaired, 0
+@assertEqualStr: "D96 column reader no longer refuses -- .note$ is empty",
+... "", emlExtractColumn.note$
+@assertTrue: "D96 the repair is disclosed in .warning$, naming the offending value",
+... index (emlExtractColumn.warning$, "12,5") > 0
+@assertTrue: "D96 the repaired comma value IS in the data now",
 ... emlExtractColumn.n = size (emlExtractColumn.data#)
 # The fixture's last value is 20 and not 14 for a reason. With 14 the two
 # readings give the SAME mean -- 12 either way -- so the check would pass
-# whether or not the comma cell was excluded, which is worse than no check.
-# With 20 the clean mean is 13.5 and the coerced mean is 13.2, and the two
-# assertions below can only both hold under the corrected behaviour.
-@assertEqualNum: "D96 pre mean is over the clean values only",
-... 13.5, mean (emlExtractColumn.data#), tolerance
-@assertTrue: "D96 and is NOT the mean coercing 12,5 to 12 would give",
+# whether or not the comma cell was repaired, which is worse than no check.
+# With 20 the OLD excluded-comma mean was 13.5 (over 4 clean values) and the
+# pre-classifier coerced-to-12 mean was 13.2; the repaired mean over all 5
+# values, reading "12,5" as 12.5, is 13.3 -- distinct from both.
+@assertEqualNum: "D96 pre mean is over all 5 values, comma repaired to 12.5",
+... 13.3, mean (emlExtractColumn.data#), tolerance
+@assertTrue: "D96 and is NOT the old excluded-comma mean (13.5)",
+... abs (mean (emlExtractColumn.data#) - 13.5) > 0.01
+@assertTrue: "D96 and is NOT the mean coercing 12,5 to 12 would give (13.2)",
 ... abs (mean (emlExtractColumn.data#) - 13.2) > 0.01
 
 @emlExtractColumn: d96t, "post"
@@ -560,14 +573,19 @@ endfor
 ... emlExtractColumn.nLocale, 0
 
 @emlExtractPairedColumns: d96t, "pre", "post"
-@assertEqualNum: "D96 row-wise reader keeps 3 complete pairs", 3,
+# RE-DERIVED 8 September 2026: row 3's pre-cell ("12,5") is now repaired to
+# 12.5 rather than excluded, so it is a complete pair too. Only row 4 (empty
+# post-cell) is still missing data -- the paired reader now keeps 4 of 5, not
+# 3, and excludes 1 row, not 2.
+@assertEqualNum: "D96 row-wise reader keeps 4 complete pairs (comma repaired)", 4,
 ... emlExtractPairedColumns.n, 0
-@assertEqualNum: "D96 row-wise reader excludes 2 rows", 2,
+@assertEqualNum: "D96 row-wise reader excludes 1 row (post's empty cell only)", 1,
 ... emlExtractPairedColumns.nExcludedRows, 0
-@assertTrue: "D96 row-wise x agrees with the column-wise reading",
+@assertTrue: "D96 row-wise x agrees with the column-wise reading, comma repaired to 12.5",
 ... emlExtractPairedColumns.data1# [1] = 10 and
 ... emlExtractPairedColumns.data1# [2] = 11 and
-... emlExtractPairedColumns.data1# [3] = 20
+... emlExtractPairedColumns.data1# [3] = 12.5 and
+... emlExtractPairedColumns.data1# [4] = 20
 
 removeObject: d96t
 

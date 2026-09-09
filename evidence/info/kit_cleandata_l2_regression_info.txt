@@ -1,0 +1,39 @@
+══════════════════════════════════════════════
+  EML Stats : Simple Linear Regression
+  Tue Sep  8 23:53:03 2026
+══════════════════════════════════════════════
+
+  Table               kit cleandata l2 regression input
+  Response (Y)        dep
+  Predictor (X)       pred
+  N                   7
+  Excluded (missing)  1
+
+
+  ── Model ───────────────────────────────────
+  Equation            y = 2.0370x + 3.1543
+  R                   0.9996
+  R-squared           0.9991
+  Adj. R-squared      0.9990
+  Residual SE         0.1676
+
+
+  ── Overall Model Test (F) ──────────────────
+  F(1,5)              5824.6506
+  p                   < .001  (7.32e-09)
+
+
+  ── Coefficients ────────────────────────────
+
+  Term                Estimate      SE            t           p           95% CI
+  (Intercept)         3.1543        0.1409        22.392      < .001      [2.7922, 3.5165]
+  pred                2.0370        0.0267        76.319      < .001      [1.9683, 2.1056]
+
+  Direction: positive (cases with higher pred tend to have higher dep)
+  Model fit: R-squared = 0.9991 -- the fitted model accounts for 99.9% of the variance in dep in this sample, a large effect by Cohen's R-squared benchmarks
+
+  Conventions: quartiles R type 7 · SD & variance n-1
+  · rank tests average tied ranks (tie-corrected).
+  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
+  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
+══════════════════════════════════════════════
