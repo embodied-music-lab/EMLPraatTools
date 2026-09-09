@@ -677,10 +677,23 @@ def build_quantile_grid():
                 cells.append((k, df, alpha))
     return cells
 
-FWD_FIELDS = ["type", "tier", "k", "df", "p_target", "q",
+FWD_FIELDS = ["type", "tier", "k", "df", "p_target", "seed_target", "q",
               "mpmath_p", "mpmath_dps", "mpmath_quad_tier", "mpmath_agree_prev_tier",
               "mpmath_converged", "scipy_p", "mc_p", "mc_se", "mc_n",
               "r_ptukey_p", "r_in_verified_domain", "wall_sec"]
+# seed_target ADDED 9 Sep 2026, ORDER_GRID_RELABEL / ANSWER_GRID_RELABEL_SCOPE
+# (Ian). p_target is the row's LABEL -- its own actual probability (forward:
+# copied from mpmath_p; quantile: the solved-for alpha, unchanged, since
+# quantile rows never carried the seed/actual mismatch -- see the TSV's own
+# provenance header for the measured check). seed_target is the ORIGINAL
+# nominal value main() asked scipy.stats.studentized_range.isf() to hit when
+# picking q for a forward cell (for a quantile cell it coincides with
+# p_target by construction, since that row IS solved to its target). Kept
+# separate, not derived at read time, because it is what load_existing()
+# below must key its checkpoint/resume dedup on: p_target is no longer a
+# stable seed identifier for a forward cell once it is populated from the
+# row's own converged mpmath_p (which build_forward_grid()'s cell list does
+# not, and should not, enumerate).
 
 def load_existing(path):
     done = set()
@@ -688,7 +701,13 @@ def load_existing(path):
         with open(path) as f:
             r = csv.DictReader((ln for ln in f if not ln.startswith("#")), delimiter="\t")
             for row in r:
-                key = (row["type"], row["k"], row["df"], row.get("p_target", ""))
+                # Dedup key uses seed_target (the nominal value this file's
+                # own grid cell lists enumerate), falling back to p_target
+                # for a pre-relabel file that has no seed_target column yet.
+                seed = row.get("seed_target", None)
+                if seed is None:
+                    seed = row.get("p_target", "")
+                key = (row["type"], row["k"], row["df"], seed)
                 done.add(key)
     return done
 
@@ -761,8 +780,16 @@ def main():
             print("R call failed:", e, file=sys.stderr)
             rval = float("nan")
         indom = r_in_domain(qGuess, k, df, rval) if math.isfinite(rval) else False
-        row = dict(type="forward", tier=tier, k=k, df=df, p_target=pt, q=qGuess,
-                   mpmath_p=ev["value"], mpmath_dps=ev["dps"], mpmath_quad_tier=ev["tier"],
+        # p_target is the LABEL: the row's own actual probability, i.e.
+        # ev["value"] again -- NOT the nominal seed pt, which is preserved
+        # in seed_target instead (ORDER_GRID_RELABEL, 9 Sep 2026; see
+        # FWD_FIELDS' comment above and the TSV's own provenance header).
+        # Forward rows are still seeded from scipy's isf, not solved --
+        # that is unchanged and undocumented nowhere else has moved -- but
+        # the label they carry is never allowed to silently diverge from
+        # what they actually evaluate to again.
+        row = dict(type="forward", tier=tier, k=k, df=df, p_target=ev["value"], seed_target=pt,
+                   q=qGuess, mpmath_p=ev["value"], mpmath_dps=ev["dps"], mpmath_quad_tier=ev["tier"],
                    mpmath_agree_prev_tier=ev["agree"], mpmath_converged=ev["converged"],
                    scipy_p=sp, mc_p=mcP, mc_se=mcSE, mc_n=mcN,
                    r_ptukey_p=rval, r_in_verified_domain=indom, wall_sec=round(wall, 3))
@@ -805,7 +832,11 @@ def main():
             print("R call failed:", e, file=sys.stderr)
             rval = float("nan")
         indom = r_in_domain(qStar, k, df, rval) if math.isfinite(rval) else False
-        row = dict(type="quantile", tier="Q", k=k, df=df, p_target=alpha, q=qStar,
+        # seed_target == p_target here: a quantile row is solved TO its
+        # target (invert_q_for_p), so seed and label never diverge the way
+        # a forward row's did. Carried anyway for column-count uniformity
+        # with forward rows -- see FWD_FIELDS' comment above.
+        row = dict(type="quantile", tier="Q", k=k, df=df, p_target=alpha, seed_target=alpha, q=qStar,
                    mpmath_p=ev["value"], mpmath_dps=ev["dps"], mpmath_quad_tier=ev["tier"],
                    mpmath_agree_prev_tier=ev["agree"], mpmath_converged=ev["converged"],
                    scipy_p=sp, mc_p=mcP, mc_se=mcSE, mc_n=mcN,
@@ -909,10 +940,20 @@ HEADER = """# srange_reference.tsv -- far-tail studentized-range reference grid.
 #   a reader can check the inversion's own consistency directly).
 # tier: which coverage tier this cell came from (A=broad, B=far-tail-focus,
 #   Q=quantile grid) -- see build_srange_reference.py's build_*_grid.
-# k, df: distribution parameters. p_target: the p this cell targets (forward:
-#   what q was chosen to hit; quantile: what q was solved for). q: the
-#   studentized-range statistic evaluated at (forward) or solved for
-#   (quantile).
+# k, df: distribution parameters. p_target: the row's LABEL, ITS OWN ACTUAL
+#   probability -- forward: copied verbatim from mpmath_p (a forward row's q
+#   is seeded from scipy's isf, not solved; the label is the truth that q
+#   evaluates to, never the seed asked for); quantile: the alpha this cell
+#   was solved for (quantile rows genuinely solve q to hit p_target, so no
+#   copying is needed there -- see mpmath_agree_prev_tier). seed_target: the
+#   ORIGINAL nominal value main() asked scipy's isf to hit when picking a
+#   forward q (equal to p_target for a quantile row, by construction).
+#   ORDER_GRID_RELABEL / ANSWER_GRID_RELABEL_SCOPE, 9 Sep 2026: p_target and
+#   seed_target used to be the same column on forward rows, and the seed was
+#   frequently NOT the row's actual probability with nothing on the row
+#   saying so -- see srange_reference.tsv's own provenance header for the
+#   measured extent. q: the studentized-range statistic evaluated at
+#   (forward) or solved for (quantile).
 # mpmath_p: this file's own converged reference value of P(Q>q).
 # mpmath_dps: working decimal precision used for the accepted evaluation.
 # mpmath_quad_tier: which escalation tier (1-8, TIERS in the builder) the
