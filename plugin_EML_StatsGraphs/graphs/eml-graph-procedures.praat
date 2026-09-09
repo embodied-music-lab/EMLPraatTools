@@ -7847,6 +7847,11 @@ procedure emlConvertForGraph: .sourceId, .targetType$, .pitchFloor, .pitchTop
     .temporary = 0
     .code$ = ""
     .why$ = ""
+    ; Set by the TableOfReal/Matrix arm below, which records itself through
+    ; @emlToTable's own recorder wiring -- the guard on the outer
+    ; @emlRecordConvert call after the dispatch stops that conversion from
+    ; being recorded a second time under an empty .code$/.why$.
+    .alreadyRecorded = 0
 
     selectObject: .sourceId
     .full$ = selected$ ()
@@ -7950,35 +7955,24 @@ procedure emlConvertForGraph: .sourceId, .targetType$, .pitchFloor, .pitchTop
             .temporary = 1
         endif
 
-    elsif .srcType$ = "TableOfReal"
+    elsif .srcType$ = "TableOfReal" or .srcType$ = "Matrix"
         if .targetType$ = "Table"
-            .result = To Table: "row"
-            @emlCleanConvertedTable: .result
-            .code$ = "data = To Table: ""row""" + newline$
-            ... + "@emlCleanConvertedTable: data"
-            .why$ = "Kept as a working object rather than removed after "
-            ... + "drawing, so the session goes on using the Table."
+            ; @emlToTable IS THE ONE HOME FOR TableOfReal/Matrix -> Table,
+            ; for both this door and the graphs form's own object dispatch
+            ; (graphs/eml-graphs-form.praat). It records itself -- guarded
+            ; on the recorder's presence exactly as this procedure is --
+            ; so no second @emlRecordConvert call is made below for this
+            ; arm; making one here too would record the same conversion
+            ; twice under two different step descriptions.
+            .noNames$# = empty$# (0)
+            @emlToTable: .sourceId, .noNames$#
+            .result = emlToTable.tableId
             .temporary = 0
-        endif
-
-    elsif .srcType$ = "Matrix"
-        if .targetType$ = "Table"
-            .tmpTor = To TableOfReal
-            .result = To Table: "row"
-            removeObject: .tmpTor
-            @emlCleanConvertedTable: .result
-            .code$ = "tmp = To TableOfReal" + newline$
-            ... + "data = To Table: ""row""" + newline$
-            ... + "removeObject: tmp" + newline$
-            ... + "selectObject: data" + newline$
-            ... + "@emlCleanConvertedTable: data"
-            .why$ = "A Matrix reaches a Table through a TableOfReal. Kept as "
-            ... + "a working object rather than removed after drawing."
-            .temporary = 0
+            .alreadyRecorded = 1
         endif
     endif
 
-    if .result > 0 and variableExists ("emlRecordLoaded")
+    if .result > 0 and .alreadyRecorded = 0 and variableExists ("emlRecordLoaded")
         @emlRecordInit
         if emlRecordActive = 1
             @emlRecordConvert: .sourceId, .result, .code$, .why$
@@ -8161,41 +8155,352 @@ endproc
 
 
 # ============================================================================
-# @emlToTable: .names$#, .labels$#  -> .tableId, .nRows, .nCols, .lengths#,
-#                                       .ok, .error$, .warning$
+# @emlReadLtasBins: .ltasId  ->  .nBins, .frequencies#, .levels#
 # ============================================================================
-# THE WIDE-TABLE DOOR. @emlVectorsToTable is the kernel that does the actual
-# materialise-then-substitute work; this is its public name at the door
-# layer, the one the graphs form (and any script that starts from
-# script-level vectors rather than an already-loaded Table) calls. The
-# split matches every other kernel/door pair in this plugin
-# (@emlExtractPairedColumns / emlRunPairedAnalysis and kin): one
-# implementation, forwarded whole rather than re-typed, so the two cannot
-# drift apart.
+# THE ONE PLACE AN LTAS IS READ BIN BY BIN. `Get number of bins` /
+# `Get frequency from bin number` / `Get value in bin` is the same triple
+# @emlDrawLTAS's Poles and Speckles layers used to run inline, once each --
+# two copies of one loop that happened to agree because nobody had changed
+# one without the other yet. @emlToTable's Ltas arm needs the identical
+# read (frequency, level, every bin, in bin order), so rather than add a
+# third copy this became the one home for it: both draw layers and the
+# table door call here, and a frequency mismatch or a bin miscounted is a
+# bug in this procedure and nowhere else.
 #
-# WHERE THE WIDE TABLE GOES NEXT, for the record: the Table this produces --
-# one column per named vector, one row per subject/observation -- is exactly
-# the shape emlRunPairedAnalysis (.col1$, .col2$) and
-# emlRunRepeatedMeasuresAnalysis's "wide" .format$ (.conditionCols$#) already
-# take, so it can be handed to either door directly with no further
-# reshaping. For a group-comparison FIGURE instead of a paired/RM test, the
-# same wide table goes on through @emlReshapeSeriesLong, which melts the
-# named columns into the long (time/series/value) shape the group drawing
-# doors are drawn from. One construction step, two consumers, and the doors
-# themselves never see how their Table was built.
-#
-# .ok = (.error$ = ""), forwarded from @emlVectorsToTable's own single exit.
+# .frequencies# [.i] is exactly `Get frequency from bin number: .i` --
+# never recomputed from a bandwidth-times-index formula, which is the
+# guarantee @emlToTable's Ltas arm rests on. .levels# [.i] is
+# `Get value in bin: .i`, undefined exactly where Praat reports it
+# undefined; nothing here filters or clamps -- that judgment (visible
+# range, axis clamping) belongs to whichever caller is drawing or
+# tabulating, not to the read.
 # ============================================================================
-procedure emlToTable: .names$#, .labels$#
+procedure emlReadLtasBins: .ltasId
+    selectObject: .ltasId
+    .nBins = Get number of bins
+    .frequencies# = zero# (.nBins)
+    .levels# = zero# (.nBins)
+    for .iBin to .nBins
+        selectObject: .ltasId
+        .frequencies# [.iBin] = Get frequency from bin number: .iBin
+        .levels# [.iBin] = Get value in bin: .iBin
+    endfor
+endproc
+
+
+# ============================================================================
+# @emlBuildFrameTable: .col1#, .col2#, .label1$, .label2$  ->  .tableId, .nRows
+# ============================================================================
+# THE ONE TWO-COLUMN NUMERIC TABLE BUILDER @emlToTable'S FRAME-BASED ARMS
+# SHARE. Ltas/Spectrum (frequency, level) and Pitch/Intensity/Harmonicity
+# (time, value) all reduce to "two same-length numeric vectors, two default
+# column names" once their own extraction has run; this is that last step,
+# written once rather than five times. It is NOT @emlVectorsToTable: that
+# door materialises vectors it is handed only the SCRIPT-LEVEL NAME of
+# (see that procedure's header) -- exactly what an extractor's local
+# `.data#`/`.times#` are not -- so a caller already holding the vectors
+# themselves comes here instead.
+#
+# .col1# and .col2# must be the same length; every one of @emlToTable's
+# callers guarantees this because both vectors come out of the same
+# extraction pass (one timestamp and one value per surviving frame/bin).
+# .label1$/.label2$ must contain no space -- true of every default name
+# @emlToTable passes ("time_s", "frequency_Hz", "level_dB", "pitch_Hz",
+# "intensity_dB", "hnr_dB") -- because `Create Table with column names:`
+# splits its spec string on whitespace.
+# ============================================================================
+procedure emlBuildFrameTable: .col1#, .col2#, .label1$, .label2$
+    .nRows = size (.col1#)
+    .tableId = Create Table with column names: "eml_frame_table", .nRows,
+    ... .label1$ + " " + .label2$
+    for .r to .nRows
+        Set numeric value: .r, .label1$, .col1# [.r]
+        Set numeric value: .r, .label2$, .col2# [.r]
+    endfor
+endproc
+
+
+# ============================================================================
+# @emlToTable: .objectId, .columnNames$#
+#   -> .tableId, .nRows, .nCols, .sourceType$, .ok, .error$, .warning$,
+#      .remedy$
+# ============================================================================
+# THE OBJECT-TO-TABLE DOOR. One procedure that takes WHATEVER THE USER HAS
+# SELECTED and hands back a Table, or refuses and says what to do instead.
+# Dispatch reads the selected object's class the same way
+# @emlConvertForGraph already does -- `selected$ ()`'s leading token, up to
+# the first space -- so the two never drift onto two different ideas of
+# "what class is this".
+#
+#   Table        - a COPY, names applied; the source is never touched.
+#   TableOfReal  - `To Table: "row"` then @emlCleanConvertedTable: row
+#                  labels become column 1 (default name "row"), the
+#                  TableOfReal's own column labels are kept unless renamed.
+#   Matrix       - `To TableOfReal` then the TableOfReal path; the
+#                  intermediate TableOfReal is removed. Columns arrive
+#                  numbered (a Matrix carries no column names), so
+#                  .columnNames$# is expected here even though it is never
+#                  required; .warning$ says the x/y sampling (domain, dx,
+#                  dy) is not carried into the Table, only the cell values.
+#   Ltas         - @emlReadLtasBins, then @emlBuildFrameTable into
+#                  frequency_Hz / level_dB. THE FREQUENCIES ARE EXACTLY
+#                  `Get frequency from bin number`, never recomputed.
+#   Spectrum     - `To Ltas (1-to-1)` FIRST (never the real/imaginary
+#                  parts), then the Ltas path verbatim on the result, which
+#                  is then removed; .warning$ names the intermediate step.
+#   Pitch        - @emlExtractPitchValues (stats/eml-extract.praat) into
+#                  time_s / pitch_Hz; dropped (unvoiced) frames are counted
+#                  in .warning$, not walked a second time here.
+#   Intensity    - @emlExtractIntensityFrames into time_s / intensity_dB.
+#   Harmonicity  - @emlExtractHarmonicityFrames into time_s / hnr_dB;
+#                  dropped (undefined) frames are counted in .warning$.
+#   Formant      - Praat's native `Formant: Down to Table`, full F1..Fn /
+#                  B1..Bn table (frame number = no, time = yes,
+#                  intensity = no, number of formants = yes,
+#                  bandwidths = yes, every decimals argument at
+#                  emlToTable_formantDecimals, measured live against
+#                  /usr/local/bin/praat6630 -- see validate/ for the probe).
+#                  @emlExtractFormantValues is per-single-formant and is
+#                  not this arm's tool: the point of this arm is the WHOLE
+#                  table, every formant and bandwidth column at once.
+#   Sound        - refused. A Sound is audio, not a table; .error$ names
+#                  what to convert to first (Pitch/Intensity/Harmonicity/
+#                  Spectrum/Ltas) and .remedy$ says so again as an
+#                  instruction.
+#   anything else - refused, naming the class; .remedy$ set.
+#
+# .columnNames$# ("applied in column order when given"): size 0 keeps every
+# default name above; a non-zero size must equal the built table's OWN
+# column count or the call is refused -- .error$ and .remedy$ both name the
+# count actually found -- and a table already built when the mismatch is
+# discovered is removed before the refusal returns, so a bad call never
+# leaks an orphan object into the session. This one count-check, run once
+# after every arm above has finished building, is why no arm above tests
+# .columnNames$# itself.
+#
+# .ok = (.error$ = ""); .remedy$ is set on every refusal, alongside
+# .error$, never on a success. RECORDED exactly as @emlConvertForGraph
+# records its own conversions: guarded on the recorder's PRESENCE (this
+# file must stay loadable without eml-record.praat), and only when a
+# Table was actually produced.
+# ============================================================================
+procedure emlToTable: .objectId, .columnNames$#
     .error$ = ""
     .warning$ = ""
-    @emlVectorsToTable: .names$#, .labels$#
-    .tableId = emlVectorsToTable.tableId
-    .nRows = emlVectorsToTable.nRows
-    .nCols = emlVectorsToTable.nCols
-    .lengths# = emlVectorsToTable.lengths#
-    .warning$ = emlVectorsToTable.warning$
-    .error$ = emlVectorsToTable.error$
+    .remedy$ = ""
+    .tableId = 0
+    .nRows = 0
+    .nCols = 0
+    .sourceType$ = ""
+    .code$ = ""
+    .why$ = ""
+    .nNames = size (.columnNames$#)
+
+    ; THE MAXIMUM `Formant: Down to Table` ACCEPTS FOR ITS THREE DECIMALS
+    ; ARGUMENTS. Measured live against /usr/local/bin/praat6630 6.6.30: the
+    ; command enforces no upper bound at all (tested to 10000 decimals,
+    ; every call succeeds), so "the maximum" here is a chosen ceiling, not
+    ; a wall the command stops us at. 20 decimal places is comfortably past
+    ; an IEEE-754 double's ~15-17 significant-digit precision -- beyond
+    ; that point every further digit the command prints is a rendering of
+    ; the double's own binary rounding, not additional information about
+    ; the formant -- so it is the highest request that still means
+    ; something, and it is named once here rather than typed three times
+    ; below.
+    .formantDecimals = 20
+
+    selectObject: .objectId
+    .full$ = selected$ ()
+    .sp = index (.full$, " ")
+    if .sp > 0
+        .sourceType$ = left$ (.full$, .sp - 1)
+    else
+        .sourceType$ = .full$
+    endif
+
+    if .sourceType$ = "Table"
+        .srcName$ = mid$ (.full$, .sp + 1, 1000000)
+        .tableId = Copy: .srcName$
+        .code$ = "data = Copy: """ + .srcName$ + """"
+        .why$ = "A Table converts to a Table by copying it -- the source "
+        ... + "is left untouched."
+
+    elsif .sourceType$ = "TableOfReal"
+        .tableId = To Table: "row"
+        @emlCleanConvertedTable: .tableId
+        .warning$ = emlCleanConvertedTable.warning$
+        .code$ = "data = To Table: ""row""" + newline$
+        ... + "@emlCleanConvertedTable: data"
+        .why$ = "Row labels become column 1 (default name ""row""); the "
+        ... + "TableOfReal's own column labels are kept."
+
+    elsif .sourceType$ = "Matrix"
+        .tmpTor = To TableOfReal
+        .tableId = To Table: "row"
+        removeObject: .tmpTor
+        @emlCleanConvertedTable: .tableId
+        .warning$ = emlCleanConvertedTable.warning$
+        .matrixNote$ = "A Matrix reaches a Table through a TableOfReal; the "
+        ... + "x/y sampling (domain, dx, dy) is not carried into the "
+        ... + "Table, only the cell values and default row/column "
+        ... + "numbering."
+        if .warning$ <> ""
+            .warning$ = .warning$ + " " + .matrixNote$
+        else
+            .warning$ = .matrixNote$
+        endif
+        .code$ = "tmp = To TableOfReal" + newline$
+        ... + "data = To Table: ""row""" + newline$
+        ... + "removeObject: tmp" + newline$
+        ... + "selectObject: data" + newline$
+        ... + "@emlCleanConvertedTable: data"
+        .why$ = "A Matrix carries no column names of its own, so columns "
+        ... + "arrive numbered. " + .matrixNote$
+
+    elsif .sourceType$ = "Ltas"
+        @emlReadLtasBins: .objectId
+        @emlBuildFrameTable: emlReadLtasBins.frequencies#,
+        ... emlReadLtasBins.levels#, "frequency_Hz", "level_dB"
+        .tableId = emlBuildFrameTable.tableId
+        .code$ = "@emlReadLtasBins: data" + newline$
+        ... + "@emlBuildFrameTable: emlReadLtasBins.frequencies#, "
+        ... + "emlReadLtasBins.levels#, ""frequency_Hz"", ""level_dB"""
+        ... + newline$ + "data = emlBuildFrameTable.tableId"
+        .why$ = "One row per LTAS bin; frequency is ""Get frequency from "
+        ... + "bin number"", level is ""Get value in bin""."
+
+    elsif .sourceType$ = "Spectrum"
+        .tmpLtas = To Ltas (1-to-1)
+        @emlReadLtasBins: .tmpLtas
+        removeObject: .tmpLtas
+        @emlBuildFrameTable: emlReadLtasBins.frequencies#,
+        ... emlReadLtasBins.levels#, "frequency_Hz", "level_dB"
+        .tableId = emlBuildFrameTable.tableId
+        .warning$ = "Converted via To Ltas (1-to-1) before reading bins, "
+        ... + "so the table reflects the LTAS's own bin resolution, not a "
+        ... + "raw real/imaginary readout of the Spectrum."
+        .code$ = "tmp = To Ltas (1-to-1)" + newline$
+        ... + "@emlReadLtasBins: tmp" + newline$
+        ... + "removeObject: tmp" + newline$
+        ... + "@emlBuildFrameTable: emlReadLtasBins.frequencies#, "
+        ... + "emlReadLtasBins.levels#, ""frequency_Hz"", ""level_dB"""
+        ... + newline$ + "data = emlBuildFrameTable.tableId"
+        .why$ = "A Spectrum reaches the bin-read path via To Ltas "
+        ... + "(1-to-1) -- one LTAS bin per spectral bin, no rebinning --"
+        ... + " never via the real/imaginary parts."
+
+    elsif .sourceType$ = "Pitch"
+        @emlExtractPitchValues: .objectId, "Hertz"
+        @emlBuildFrameTable: emlExtractPitchValues.times#,
+        ... emlExtractPitchValues.data#, "time_s", "pitch_Hz"
+        .tableId = emlBuildFrameTable.tableId
+        if emlExtractPitchValues.nUnvoiced > 0
+            .warning$ = string$ (emlExtractPitchValues.nUnvoiced) + " of "
+            ... + string$ (emlExtractPitchValues.nTotal) + " frame(s) were "
+            ... + "unvoiced and dropped."
+        endif
+        .code$ = "@emlExtractPitchValues: data, ""Hertz""" + newline$
+        ... + "@emlBuildFrameTable: emlExtractPitchValues.times#, "
+        ... + "emlExtractPitchValues.data#, ""time_s"", ""pitch_Hz"""
+        ... + newline$ + "data = emlBuildFrameTable.tableId"
+        .why$ = "One row per voiced frame; unvoiced frames carry no F0 "
+        ... + "and are dropped rather than written as an empty cell."
+
+    elsif .sourceType$ = "Intensity"
+        @emlExtractIntensityFrames: .objectId
+        @emlBuildFrameTable: emlExtractIntensityFrames.times#,
+        ... emlExtractIntensityFrames.data#, "time_s", "intensity_dB"
+        .tableId = emlBuildFrameTable.tableId
+        .code$ = "@emlExtractIntensityFrames: data" + newline$
+        ... + "@emlBuildFrameTable: emlExtractIntensityFrames.times#, "
+        ... + "emlExtractIntensityFrames.data#, ""time_s"", "
+        ... + """intensity_dB""" + newline$
+        ... + "data = emlBuildFrameTable.tableId"
+        .why$ = "One row per Intensity frame."
+
+    elsif .sourceType$ = "Harmonicity"
+        @emlExtractHarmonicityFrames: .objectId
+        @emlBuildFrameTable: emlExtractHarmonicityFrames.times#,
+        ... emlExtractHarmonicityFrames.data#, "time_s", "hnr_dB"
+        .tableId = emlBuildFrameTable.tableId
+        if emlExtractHarmonicityFrames.nUndefined > 0
+            .warning$ = string$ (emlExtractHarmonicityFrames.nUndefined)
+            ... + " of " + string$ (emlExtractHarmonicityFrames.nTotal)
+            ... + " frame(s) had no harmonicity estimate and were dropped."
+        endif
+        .code$ = "@emlExtractHarmonicityFrames: data" + newline$
+        ... + "@emlBuildFrameTable: emlExtractHarmonicityFrames.times#, "
+        ... + "emlExtractHarmonicityFrames.data#, ""time_s"", ""hnr_dB"""
+        ... + newline$ + "data = emlBuildFrameTable.tableId"
+        .why$ = "One row per defined Harmonicity frame; frames with no "
+        ... + "harmonicity estimate are dropped rather than written as an "
+        ... + "empty cell."
+
+    elsif .sourceType$ = "Formant"
+        .tableId = Down to Table: "no", "yes", .formantDecimals, "no",
+        ... .formantDecimals, "yes", .formantDecimals, "yes"
+        .warning$ = "Frame number omitted; time, formant count, every "
+        ... + "F1..Fn frequency and B1..Bn bandwidth included, all at "
+        ... + string$ (.formantDecimals) + " decimal places."
+        .code$ = "data = Down to Table: ""no"", ""yes"", "
+        ... + string$ (.formantDecimals) + ", ""no"", "
+        ... + string$ (.formantDecimals) + ", ""yes"", "
+        ... + string$ (.formantDecimals) + ", ""yes"""
+        .why$ = "Praat's native Formant table: every formant and "
+        ... + "bandwidth column the object carries, not one formant "
+        ... + "picked out (that is @emlExtractFormantValues's job, not "
+        ... + "this door's)."
+
+    elsif .sourceType$ = "Sound"
+        .error$ = "emlToTable: a Sound is audio, not tabular data -- it "
+        ... + "has no rows or columns to hand back."
+        .remedy$ = "Convert first -- To Pitch, To Intensity, To "
+        ... + "Harmonicity, To Spectrum or To Ltas -- then call emlToTable "
+        ... + "on the result."
+
+    else
+        .error$ = "emlToTable: does not know how to make a Table from a "
+        ... + .sourceType$ + "."
+        .remedy$ = "Select a Table, TableOfReal, Matrix, Ltas, Spectrum, "
+        ... + "Pitch, Intensity, Harmonicity or Formant object and call "
+        ... + "emlToTable again."
+    endif
+
+    ; ---- ONE COUNT CHECK AND RENAME, for every arm that built a table ----
+    ; .columnNames$# is never read above this line: every arm's own
+    ; default names are set first, and this is the only place that
+    ; overrides them, so a caller can never observe an arm that half
+    ; applied a rename before discovering the count was wrong.
+    if .error$ = "" and .tableId > 0
+        selectObject: .tableId
+        .nCols = Get number of columns
+        .nRows = Get number of rows
+        if .nNames > 0 and .nNames <> .nCols
+            .error$ = "emlToTable: .columnNames$# has " + string$ (.nNames)
+            ... + " name(s) but the table built from this " + .sourceType$
+            ... + " has " + string$ (.nCols) + " column(s) -- pass one "
+            ... + "name per column, in order, or an empty vector to keep "
+            ... + "the default names."
+            .remedy$ = "Pass exactly " + string$ (.nCols) + " name(s) in "
+            ... + ".columnNames$#, in column order, or an empty vector."
+            removeObject: .tableId
+            .tableId = 0
+            .nRows = 0
+            .nCols = 0
+        elsif .nNames > 0
+            for .i to .nCols
+                Rename column (by number): .i, .columnNames$# [.i]
+            endfor
+        endif
+    endif
+
+    if .tableId > 0 and variableExists ("emlRecordLoaded")
+        @emlRecordInit
+        if emlRecordActive = 1
+            @emlRecordConvert: .objectId, .tableId, .code$, .why$
+        endif
+    endif
+
     if .tableId > 0
         selectObject: .tableId
     endif

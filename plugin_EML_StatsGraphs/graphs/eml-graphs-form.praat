@@ -1104,25 +1104,28 @@ procedure emlDetectContext
         contextObjectName$ = selected$ ("Table")
         contextObjectType$ = "Table"
     elsif numberOfSelected ("TableOfReal") = 1
-        # Convert TableOfReal → Table; Table persists as the working object
+        # Convert TableOfReal → Table; Table persists as the working object.
+        # @emlToTable is the one home for this conversion (also used by
+        # @emlConvertForGraph's own TableOfReal arm) -- this form no longer
+        # keeps its own copy of the To Table: "row" call.
         .torId = selected ("TableOfReal")
         contextObjectName$ = selected$ ("TableOfReal")
         contextObjectType$ = "TableOfReal"
-        selectObject: .torId
-        contextObjectId = To Table: "row"
-        @emlCleanConvertedTable: contextObjectId
+        .noNames$# = empty$# (0)
+        @emlToTable: .torId, .noNames$#
+        contextObjectId = emlToTable.tableId
         contextGraphType = 7
         appendInfoLine: "NOTE: TableOfReal """ + contextObjectName$ + """ converted to Table for graphing."
     elsif numberOfSelected ("Matrix") = 1
-        # Convert Matrix → TableOfReal → Table; Table persists as the working object
+        # Convert Matrix → TableOfReal → Table; Table persists as the working
+        # object. Same reasoning as the TableOfReal arm above: @emlToTable
+        # owns the Matrix → TableOfReal → Table pipeline.
         .matId = selected ("Matrix")
         contextObjectName$ = selected$ ("Matrix")
         contextObjectType$ = "Matrix"
-        selectObject: .matId
-        .tempTorId = To TableOfReal
-        contextObjectId = To Table: "row"
-        removeObject: .tempTorId
-        @emlCleanConvertedTable: contextObjectId
+        .noNames$# = empty$# (0)
+        @emlToTable: .matId, .noNames$#
+        contextObjectId = emlToTable.tableId
         contextGraphType = 7
         appendInfoLine: "NOTE: Matrix """ + contextObjectName$ + """ converted to Table for graphing."
     endif

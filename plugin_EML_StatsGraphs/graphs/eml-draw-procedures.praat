@@ -1167,7 +1167,12 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
     if .showPoles
         .colorIdx = .colorIdx + 1
         selectObject: .objectId
-        .nBins = Get number of bins
+        ; @emlReadLtasBins (graphs/eml-graph-procedures.praat) is the one
+        ; place this triple -- Get number of bins / Get frequency from bin
+        ; number / Get value in bin -- is read; @emlToTable's Ltas arm
+        ; shares this exact call.
+        @emlReadLtasBins: .objectId
+        .nBins = emlReadLtasBins.nBins
         Colour: emlSetColorPalette.line$[.colorIdx]
         Line width: emlSetAdaptiveTheme.dataLineWidth
         # Origin at 0, clamped to axis bounds
@@ -1179,9 +1184,8 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
             .poleOrigin = .powerMax
         endif
         for .iBin from 1 to .nBins
-            selectObject: .objectId
-            .binFreq = Get frequency from bin number: .iBin
-            .binVal = Get value in bin: .iBin
+            .binFreq = emlReadLtasBins.frequencies# [.iBin]
+            .binVal = emlReadLtasBins.levels# [.iBin]
             if .binVal <> undefined
                 if .binFreq >= .freqMin and .binFreq <= .freqMax
                     # Clamp value to axis bounds (don't skip — draw visible portion)
@@ -1318,14 +1322,15 @@ procedure emlDrawLTAS: .objectId, .title$, .xLabel$, .yLabel$, .vpW, .vpH, .colo
     if .showSpeckles
         .colorIdx = .colorIdx + 1
         selectObject: .objectId
-        .nBins = Get number of bins
+        ; Same shared read as the Poles layer above -- @emlReadLtasBins.
+        @emlReadLtasBins: .objectId
+        .nBins = emlReadLtasBins.nBins
         Colour: emlSetColorPalette.line$[.colorIdx]
         # Dot radius in world x-coordinates (frequency)
         .dotRadius = (.freqMax - .freqMin) * 0.006
         for .iBin from 1 to .nBins
-            selectObject: .objectId
-            .binFreq = Get frequency from bin number: .iBin
-            .binVal = Get value in bin: .iBin
+            .binFreq = emlReadLtasBins.frequencies# [.iBin]
+            .binVal = emlReadLtasBins.levels# [.iBin]
             if .binVal <> undefined
                 if .binFreq >= .freqMin and .binFreq <= .freqMax
                     if .binVal >= .powerMin and .binVal <= .powerMax

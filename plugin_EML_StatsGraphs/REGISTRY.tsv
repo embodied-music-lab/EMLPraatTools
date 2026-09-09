@@ -15,6 +15,30 @@
 # Table S2 documents as public, independent of which door reaches it first.
 # See validate/probes/vectors_to_table_probe.praat for the mechanism trace
 # and validate/vectors_to_table_oracle.tsv for the graded fixture rows.
+# Correction (wave/emltotable-object-converter): emlToTable's row above is
+# now WRONG about what the procedure is, and this corrects it. emlToTable no
+# longer forwards to emlVectorsToTable -- that description named the
+# follow-up work as undone; it is done, but not the way the follow-up note
+# expected. emlToTable was rebuilt into the object-to-table class
+# dispatcher: `.objectId, .columnNames$#` in, dispatched on the SELECTED
+# OBJECT'S CLASS (Table copies; TableOfReal and Matrix convert the way
+# @emlConvertForGraph's own arms used to inline, and now call here instead;
+# Ltas/Spectrum/Pitch/Intensity/Harmonicity build a table from their own
+# frame or bin data; Formant uses Praat's native Down to Table; Sound and
+# anything else refuse, naming a remedy). The graphs form's own
+# TableOfReal/Matrix dispatch (graphs/eml-graphs-form.praat) and
+# @emlConvertForGraph's TableOfReal/Matrix arms both now call @emlToTable
+# rather than keeping their own `To Table: "row"` copy, so this is their
+# ONE shared implementation. It is wired through @emlRecordConvert exactly
+# as @emlConvertForGraph's own conversions are, because it is reachable
+# from the graphs form and is therefore not recorder-exempt. Source is now
+# 2 (the graphs form's object dispatch presents it) and 3 (the recorder
+# emits a literal @emlToTable call), alongside the original 4. The
+# emlVectorsToTable row is UNCHANGED by this wave -- it is still the
+# named-script-level-vectors kernel, source 4 only, and emlToTable no
+# longer delegates to it at all; the two procedures now solve different
+# problems (a selected OBJECT vs. named script-level VECTORS) and happen to
+# share a registry file, not a call.
 # Correction (2026-09-01, Fable): emlRunReliabilityAnalysis's row removed --
 # "Table S2 documents working public surface; an unconditional-error stub is
 # not surface." It matches the emlRun* name pattern, so removing it moved it
@@ -138,7 +162,7 @@ emlDrawSpaghettiPlot	graphs/eml-draw-procedures.praat	procedure emlDrawSpaghetti
 emlDrawQQPlot	graphs/eml-draw-qq.praat	procedure emlDrawQQPlot: .data#, .colLabel$, .vpW, .vpH, .colorMode$, .gridMode	Normal Q-Q plot for one numeric vector; an adapter computing Blom quantiles onto the shared scatter machinery. Drawn directly from the normality-check door and the wizard, not through the EML Graphs type dispatch — and, unlike the thirteen graph types, never recorded (no recorder hook of any kind wraps its call sites).	2
 emlRunAnnotationComparison	graphs/eml-annotation-procedures.praat	procedure emlRunAnnotationComparison: .tableId, .dataCol$, .factorCol$, .alpha, .style$, .showNS, .showEffect, .testType$, .layoutMode	Runs the group-comparison test (t-test/Mann-Whitney/ANOVA/Kruskal-Wallis, with Tukey/Dunn) behind a figure's statistical-annotation brackets — the second path to the same statistics as the stats menu, reached from a figure's "annotate" toggle instead of a menu command. Found only by tracing the recorder; matches no emlRun* or emlDraw* naming convention.	3
 emlVectorsToTable	graphs/eml-graph-procedures.praat	procedure emlVectorsToTable: .names$#, .labels$#	Materialises named script-level Praat vectors (numeric # or string $#, any count) into one Table, one column per vector, padding any short column with blank cells. Materialise-then-substitute -- Fable's ruling on validate/probes/vectors_to_table_probe.praat.	4
-emlToTable	graphs/eml-graph-procedures.praat	procedure emlToTable: .names$#, .labels$#	The wide-table door: forwards to @emlVectorsToTable whole. Its output is the wide Table @emlRunPairedAnalysis and @emlRunRepeatedMeasuresAnalysis's "wide" .format$ already take directly, and @emlReshapeSeriesLong melts it to long form for the group drawing doors.	4
+emlToTable	graphs/eml-graph-procedures.praat	procedure emlToTable: .objectId, .columnNames$#	The object-to-table door: dispatches on the selected object's class (Table copies untouched; TableOfReal/Matrix convert via To Table: "row", the one home for that conversion; Ltas/Spectrum/Pitch/Intensity/Harmonicity build a table from their own bin/frame data; Formant uses Praat's native Down to Table; Sound and any other class refuse with a named remedy). Called by the graphs form's own object dispatch and by @emlConvertForGraph's TableOfReal/Matrix arms, and records itself through @emlRecordConvert.	2,3,4
 emlReshapeSeriesLong	graphs/eml-graph-procedures.praat	procedure emlReshapeSeriesLong: .objectId, .timeCol$, .cols$#	Reshapes several wide measurement columns into the long (time, series, value) table the time-series drawing layer is drawn from.	3
 emlReshapeSeriesWide	graphs/eml-graph-procedures.praat	procedure emlReshapeSeriesWide: .objectId, .timeCol$, .valueCol$, .nameCol$, .levels$#	The mirror of emlReshapeSeriesLong — pivots a stacked (time, name, value) table into wide series columns for a two-axis time-series figure.	3
 emlCleanConvertedTable	graphs/eml-graph-procedures.praat	procedure emlCleanConvertedTable: .tableId	Replaces the "?" placeholders Praat's `To Table: "row"` writes for empty row/column labels, after a TableOfReal/Matrix -> Table auto-conversion done for drawing.	3
