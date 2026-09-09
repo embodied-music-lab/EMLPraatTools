@@ -1,14 +1,4 @@
-Repeated-measures ANOVA — kit_cleandata_l2_rm_input
-  Subjects (complete cases) n = 5, conditions k = 3
-    soft mean = 72.9600
-    medium mean = 82.9000
-    loud mean = 92.4400
-  F(2, 8) = 377.6105, p < .001  (1.21e-08)
-  Greenhouse-Geisser epsilon = 0.9306, GG-corrected p < .001  (3.71e-08)
-  Partial eta squared = 0.9895  (condition SS / (condition SS + error SS))
-  Note: 1 row(s) excluded for missing data (analyzed n = 5 complete cases).
-  medium: 1 cell(s) are not numeric in any locale (row 3: ??).
-  Unrecognized nonnumeric token; excluded.
 
-
-emlRunRepeatedMeasuresAnalysis.error$ = ""
+emlRunRepeatedMeasuresAnalysis.ok = 0
+emlRunRepeatedMeasuresAnalysis.error$ = "Condition column "medium" has a cell that is not numeric, at row 3: "??"."
+emlRunRepeatedMeasuresAnalysis.remedy$ = ""

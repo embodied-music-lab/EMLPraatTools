@@ -1,6 +1,6 @@
 ══════════════════════════════════════════════
   EML Stats : One-Way ANOVA
-  Tue Sep  8 23:52:56 2026
+  Wed Sep  9 15:23:22 2026
 ══════════════════════════════════════════════
 
   Table               kit cleandata l1 anova input
@@ -61,3 +61,4 @@ High          16.905      8.425       ---
   exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
   exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
 ══════════════════════════════════════════════
+  Note: 1 cell(s) used a comma where a decimal point belongs (row 3: "11,3") and were repaired -- read as the point-separated value (row 3: 11.3).

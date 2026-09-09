@@ -3728,6 +3728,11 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
                 .totalN = .totalN + .groupN[.s]
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         .allData# = zero# (.totalN)
         .groupNVec# = zero# (.nGroups)
@@ -4081,6 +4086,18 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
             endif
         endfor
 
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, called once here after the group
+        ; loop above -- not once per group -- because @eml_getGroupData's
+        ; .warning$ is now COLUMN-WIDE (identical on every group's call for
+        ; the same .dataColumn$), so reading it from any one call (the last
+        ; one made) is correct and reading it after every call would
+        ; duplicate the same clause once per group. This is the kernel
+        ; @emlRunAnovaAnalysis reads through, so the disclosure surfaces in
+        ; the orchestrator's report without that orchestrator re-deriving it.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
+
         if .nSingleton > 0
             if .nGroups = .nRows
                 .error$ = "Group column """ + .factorColumn$ + """ has "
@@ -4419,19 +4436,46 @@ endproc
 #                  "Data column", "X column", "Dependent column". Leads the
 #                  message, so it reads as a sentence.
 #   .columnName$ - name of the column to check
-#   .strict      - 0 = refuse only when the column holds no numbers at all.
-#                      A column with SOME unusable cells is not refused: the
-#                      complete-case convention settled 21 July (C1/C2, and
-#                      ) drops those rows and discloses the
-#                      count, and that convention is not reopened here.
-#                  1 = refuse when ANY cell is unusable. For callers that
-#                      read the column through Praat's whole-column
-#                      numericiser, where a single bad cell replaces EVERY
-#                      value with its alphabetical rank and there is no
-#                      per-row drop to fall back on.
+#   .strict      - WHAT THIS ARGUMENT MEANS AFTER THE 9 SEP 2026 CORRECTION
+#                  (CORRECTION_LEVEL2_IS_A_REFUSAL): a LEVEL 2 cell -- a
+#                  percent, unit text, a fraction, inner space, plain text, a
+#                  non-empty placeholder, or an ambiguous-comma column --
+#                  refuses HERE regardless of .strict, on every door; the
+#                  complete-case convention settled 21 July, and the .strict
+#                  = 0 exemption from it that the data-cleaning wave (8 Sep)
+#                  read into this argument, are both gone. What .strict still
+#                  decides is narrower and genuine: whether the gate ALSO
+#                  refuses a column with NO level-2 cell but SOME LEVEL 1
+#                  repair pending (a decimal comma, digit grouping, or a bare
+#                  leading point).
+#                  0 = do not refuse for that reason. Right for a caller
+#                      whose OWN read goes through @eml_readCell /
+#                      @eml_cleanVerdict (every extraction entry point in
+#                      eml-extract.praat does), because that read repairs
+#                      the cell in memory before using it -- the gate would
+#                      be refusing a column its caller is about to handle
+#                      correctly.
+#                  1 = refuse for that reason too. For callers that instead
+#                      read the column through PRAAT'S OWN whole-column
+#                      numericiser ("Get all numbers in column:", "Report
+#                      two-way anova:", ...), which sees only the literal
+#                      Table cell and gets no benefit from any repair this
+#                      plugin makes in memory: a single unrepaired cell there
+#                      replaces EVERY value in the column with its
+#                      alphabetical rank, and there is no per-row drop to
+#                      fall back on. Tested with @emlAuditColumn.nStrict
+#                      (cells that are ALREADY the number they look like,
+#                      with no repair of any kind -- exactly what that raw
+#                      numericiser can trust).
 #
 # Output:
-#   .error$   - refusal message, or "" if the column may be analysed.
+#   .error$   - refusal message, or "" if the column may be analysed. Names
+#               the column, the first offending row and its literal value
+#               (in one sentence) on a LEVEL 2 refusal; see
+#               @eml_level2Refusal.
+#   .remedy$  - set alongside .error$ on a LEVEL 2 refusal: names
+#               @emlRunCleanData and the menu item that runs it. "" for
+#               every other refusal and on success.
 #   .warning$ - LEVEL 1 disclosure (@emlAuditColumn.warning$): non-fatal,
 #               "" when nothing in the column needed a repair.
 #
@@ -4444,6 +4488,7 @@ endproc
 # ============================================================================
 procedure emlRequireNumericColumn: .tableId, .role$, .columnName$, .strict
     .error$ = ""
+    .remedy$ = ""
     .nRows = 0
     .nValid = 0
     .note$ = ""
@@ -4473,14 +4518,31 @@ procedure emlRequireNumericColumn: .tableId, .role$, .columnName$, .strict
                 if .note$ <> ""
                     .error$ = .error$ + " " + .note$
                 endif
+            elsif emlAuditColumn.nLevel2 > 0
+                # LEVEL 2 REFUSES, ON EVERY DOOR, REGARDLESS OF .strict (9
+                # Sep 2026 correction). This was previously reached only
+                # when .strict = 1; a .strict = 0 caller disclosed and
+                # excluded these cells instead (the "existing per-door
+                # behaviour" the correction reverses). Same wording as the
+                # four extraction entry points, from the same helper, so
+                # the gate and the procedures it guards cannot disagree
+                # about the same cell.
+                @eml_level2Refusal: .role$, .columnName$,
+                    ... emlAuditColumn.firstLevel2Row,
+                    ... emlAuditColumn.firstLevel2Value$
+                .error$ = eml_level2Refusal.error$
+                .remedy$ = eml_level2Refusal.remedy$
             elsif .strict = 1
-                # NOT .nValid here. This branch guards callers that read the
-                # column through Praat's OWN whole-column numericiser (see
-                # the .strict argument doc below), which sees only the
-                # literal Table cell and gets no benefit from any repair
-                # this plugin makes in memory -- so the gate must still ask
-                # whether every cell is ALREADY the number it looks like,
-                # which is exactly @emlAuditColumn.nStrict.
+                # NOT .nValid here. This branch now guards ONLY the
+                # LEVEL-1-but-not-LEVEL-2 case: every cell is clean or
+                # repairable (the .nLevel2 = 0 branch above already fell
+                # through), but not every cell is ALREADY the number it
+                # looks like -- @emlAuditColumn.nStrict is short of .nRows.
+                # A caller reading through Praat's OWN whole-column
+                # numericiser gets no benefit from the repair, so it must
+                # still refuse here even though every extraction entry
+                # point in this plugin would happily repair-and-read the
+                # identical column. See the .strict argument doc above.
                 if emlAuditColumn.nStrict < .nRows
                     .error$ = .role$ + " """ + .columnName$
                     ... + """ is not numeric in every row. This test reads "
@@ -5003,6 +5065,7 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
     .epsilonSq = undefined
     .tieCorrection = undefined
     .error$ = ""
+    .warning$ = ""
 
     # --- The data column must be in the table ---
     #
@@ -5056,6 +5119,11 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
                 .n = .n + .groupN[.g]
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
     endif
 
     if .error$ = ""
@@ -5225,6 +5293,7 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
     .nPairs = 0
     .nSkipped = 0
     .skipReason$ = ""
+    .warning$ = ""
     .error$ = ""
 
     # --- Validate method ---
@@ -5289,6 +5358,11 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
                 .n = .n + .groupN[.g]
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
     endif
 
     if .error$ = ""
@@ -5527,6 +5601,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
     .skipReason$ = ""
     .adjustMethod$ = .method$
     .error$ = ""
+    .warning$ = ""
 
     # --- Validate method ---
 
@@ -5628,6 +5703,11 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                 .groupData'.g'# = eml_getGroupData.data#
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         # --- Determine equalVariances flag ---
         .eqVar = 0
@@ -5814,6 +5894,7 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
     .nSkipped = 0
     .skipReason$ = ""
     .error$ = ""
+    .warning$ = ""
 
     # --- Validate method ---
 
@@ -5891,6 +5972,11 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
                 .groupData'.g'# = eml_getGroupData.data#
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         # --- Pairwise tests ---
 
@@ -6041,6 +6127,7 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
     .mse = undefined
     .dfWithin = undefined
     .error$ = ""
+    .warning$ = ""
 
     # --- The data column must be in the table ---
     #
@@ -6114,6 +6201,11 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
                 endif
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         # MSE
         .dfWithin = .totalN - .nGroups
@@ -6395,6 +6487,11 @@ procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
                 endif
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         if .nSingleton > 0
             if .nGroups = .nRows
@@ -6672,6 +6769,12 @@ procedure emlWelchAnova: .tableId, .dataCol$, .factorCol$
                 endif
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
+
 
         ; Too-small groups first: a group of one has no variance to be
         ; zero, so reporting it as flat would name the wrong defect.
@@ -6951,6 +7054,11 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
                 endif
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         if .nSingleton > 0
             if .nGroups = .nRows

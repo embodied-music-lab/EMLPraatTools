@@ -1,49 +1,5 @@
-══════════════════════════════════════════════
-  EML Stats : Descriptive Statistics
-  Tue Sep  8 23:52:50 2026
-══════════════════════════════════════════════
-
-  Table               r6 three parse conditions
-  Column              SPL soft
-  N (valid)           4
-  N (excluded)        2
-  1 cell(s) are not numeric in any locale (row 3: n/a).
-  Unrecognized nonnumeric token; excluded. 1 cell(s) are empty
-  (row 5 first). Treated as missing data.
 
 
-  ── Central Tendency ────────────────────────
-  Mean                72.5500
-  Median              72.3000
-  SEM                 1.1990
-
-
-  ── Dispersion ──────────────────────────────
-  SD                  2.3979
-  Variance            5.7500
-  Range               5.4000
-  Min                 70.1000
-  Max                 75.5000
-
-
-  ── Quartiles ───────────────────────────────
-  Q1                  70.9250
-  Q2 (Median)         72.3000
-  Q3                  73.9250
-  IQR                 3.0000
-
-
-  ── Distribution Shape ──────────────────────
-  Skewness            0.4410
-  Kurtosis (excess)   -1.8446
-
-
-  ── 95% Confidence Interval ─────────────────
-  Lower               68.7344
-  Upper               76.3656
-
-  Conventions: quartiles R type 7 · SD & variance n-1
-  · rank tests average tied ranks (tie-corrected).
-  exact rank p-values: AS 89 for Spearman; exact enumeration for rank-sum and signed-rank
-  exact limits: n < 50 per sample (rank tests); n <= 1290 (Spearman)
-══════════════════════════════════════════════
+emlRunDescriptiveAnalysis.ok = 0
+emlRunDescriptiveAnalysis.error$ = "Data column "SPL_soft" has a cell that is not numeric, at row 3: "n/a"."
+emlRunDescriptiveAnalysis.remedy$ = ""

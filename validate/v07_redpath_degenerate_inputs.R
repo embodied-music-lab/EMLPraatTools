@@ -367,7 +367,7 @@ attest("R5", "D99 FIXED: the refusal states groups-vs-rows, not one group")
 # The plugin reports the count. It follows the complete-case convention set
 # on 21 July (plugin/FIX_NOTES.md, audit item C1/C2): analyse the rows that
 # parse, state how many were excluded. Nothing is silent.
-attest("R6", "plugin reports N (valid) 4 and N (undefined) 1 (driven)")
+attest("R6", "historical, superseded 9 Sep 2026 by CORRECTION_LEVEL2_IS_A_REFUSAL: the placeholder now refuses the column outright rather than reporting N (valid) 4 / N (undefined) 1 -- see the re-derived checks below")
 
 # What is genuinely missing is narrower, and is the open question the author
 # raised: "undefined" is one bucket holding three different conditions that
@@ -406,17 +406,26 @@ check_true("R6", "the offending value is a string, not an empty cell",
 # it ambiguous or to prove digit grouping instead. Per the ruling that is now
 # LEVEL 1: repaired to 73.4 on the fly and folded into the analysed data,
 # not excluded. The placeholder ("n/a", row 3) and the empty cell (row 5)
-# are untouched by the ruling -- they remain LEVEL 2 refusals under the same
-# complete-case convention as before, which is what keeps this case a
-# refusal case at all: it is what the placeholder row now proves alone.
-# Re-driven with evidence/redrive/rp_r6_parse_conditions.praat (mirroring
-# rp_r6_describe.praat's shape), producing a fresh
-# evidence/info/rp_r6_parse_conditions_info.txt against the UNCHANGED input
-# csv -- the input needed no edit, only the plugin's reading of it changed.
+# are untouched by the ruling -- they remain LEVEL 2 conditions.
+#
+# RE-DERIVED AGAIN, 9 September 2026, under CORRECTION_LEVEL2_IS_A_REFUSAL:
+# LEVEL 2 now refuses the whole door outright, unconditionally, rather than
+# excluding-and-disclosing. The placeholder cell ("n/a", row 3) is LEVEL 2,
+# so @emlRunDescriptiveAnalysis's @emlRequireNumericColumn call refuses the
+# entire column before N (valid)/N (excluded) are ever computed and before
+# the comma repair or the empty cell are ever reached -- this is now THE
+# CASE that keeps R6 a refusal case at all, on its own, with no report
+# printed. Re-driven with evidence/redrive/rp_r6_parse_conditions.praat
+# (mirroring rp_r6_describe.praat's shape, also re-driven), producing a
+# fresh evidence/info/rp_r6_parse_conditions_info.txt against the UNCHANGED
+# input csv -- the input needed no edit, only the plugin's reading of it
+# changed. The driver now appends the door's own .ok/.error$/.remedy$
+# immediately after the (empty) Info-window text, exactly what a live GUI
+# run would hand to @emlErrorDialog. .remedy$ reads "" here (orchestrators
+# do not forward it -- see v08's level-2 comment in
+# validate/v08_twogroup_orchestrator.R; the text itself is proved at its
+# source, see v170's categorical case).
 r6cap <- capture("rp_r6_parse_conditions_info.txt")
-# The parse note is word-wrapped to the report width, so a sentence spans
-# lines and a line-by-line grep would miss it. Collapse to one string first;
-# that is what a reader sees, and it is what should be asserted.
 r6flat <- paste(trimws(r6cap$lines), collapse = " ")
 r6drv <- read.csv(file.path(indir, "rp_r6_parse_conditions_input.csv"),
                   colClasses = "character")
@@ -425,39 +434,18 @@ check_true("R6", "one cell is an unparseable string", r6drv$SPL_soft[3] == "n/a"
 check_true("R6", "one cell is a decimal comma", r6drv$SPL_soft[4] == "73,4")
 check_true("R6", "one cell is empty", r6drv$SPL_soft[5] == "")
 
-check("R6", "D96 RE-DERIVED: N (valid) now counts the repaired comma cell too (4 of 6)",
-      printed(r6cap, "N (valid)"), 4, tol = 0)
-check("R6", "N (excluded) now counts only the placeholder and the empty cell (2 of 6)",
-      printed(r6cap, "N (excluded)"), 2, tol = 0)
-check_true("R6", "the decimal comma is NO LONGER reported as an exclusion",
-           !grepl("comma where a decimal point belongs", r6flat, fixed = TRUE))
-check_true("R6", "row 4's value is not named among the excluded cells",
-           !grepl("row 4: 73,4", r6flat, fixed = TRUE))
-check_true("R6", "the unparseable string is still reported separately",
-           grepl("not numeric in any locale", r6flat, fixed = TRUE))
-check_true("R6", "and still named as an unrecognized token, not missing data",
-           grepl("Unrecognized nonnumeric token; excluded", r6flat, fixed = TRUE))
-check_true("R6", "and its row and value are named",
-           grepl("row 3: n/a", r6flat, fixed = TRUE))
-check_true("R6", "the empty cell is still reported as missing data",
-           grepl("cell(s) are empty (row 5 first)", r6flat, fixed = TRUE))
-check_true("R6", "only the two refusal conditions remain -- one fewer sentence than before the comma repair",
-           length(gregexpr("cell(s)", r6flat, fixed = TRUE)[[1]]) == 2L)
-
-# The mean must now be the mean of the FOUR usable values: the three clean
-# cells plus the repaired comma cell read as 73.4 (not 73, and not excluded).
-repaired <- as.numeric(ifelse(r6drv$SPL_soft == "73,4", "73.4", r6drv$SPL_soft))
-clean4 <- repaired[c(1, 2, 4, 6)]
-check_true("R6", "the repaired value is 73.4, not 73 and not excluded",
-           clean4[3] == 73.4)
-check("R6", "mean is over the four usable values, comma cell repaired",
-      printed(r6cap, "Mean"), mean(clean4), tol = 5e-4)
-clean3 <- as.numeric(r6drv$SPL_soft[c(1, 2, 6)])
-check("R6", "and is NOT the old three-clean-cell mean that excluding the comma cell gave",
-      mean(clean4), mean(clean3), tol = 5e-3, expect = "differ")
-with_coerced <- c(clean3, 73)
-check("R6", "nor the pre-classifier mean that coerced the comma to 73",
-      mean(clean4), mean(with_coerced), tol = 5e-3, expect = "differ")
+check_true("R6", "no report is printed -- the refusal happens before N (valid)/N (excluded) are computed",
+           !any(grepl("N (valid)", r6cap$lines, fixed = TRUE)))
+check_true("R6", "the comma cell and the empty cell are never reached -- the placeholder refuses first",
+           !grepl("row 4: 73,4", r6flat, fixed = TRUE) &&
+           !grepl("row 5", r6flat, fixed = TRUE))
+check_true("R6", "emlRunDescriptiveAnalysis.ok = 0",
+           any(grepl("emlRunDescriptiveAnalysis.ok = 0", r6cap$lines, fixed = TRUE)))
+check_true("R6", "the three-part .error$ names the column, row 3, and the literal \"n/a\"",
+           grepl('emlRunDescriptiveAnalysis.error$ = "Data column "SPL_soft" has a cell that is not numeric, at row 3: "n/a"."',
+                 r6flat, fixed = TRUE))
+check_true("R6", ".remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('emlRunDescriptiveAnalysis.remedy$ = ""', r6cap$lines, fixed = TRUE)))
 
 # --- R7: small-range measure -----------------------------------------------
 # Not driven. This is an axis case, testable only by looking at a figure, and

@@ -124,29 +124,40 @@ check("v11", "SS task, hand-rolled",       ss[["task"]],       ss_b, tol = 1e-8)
 # DATA-CLEANING WAVE — level-2 fixture for this door (no level-1: the repair
 # is proved once, in the extraction layer)
 #
-# Built 8 September 2026 under RULING_DATA_CLEANING_POLICY. Two-way is
-# UNIQUE among these doors: its data column is checked with strict = 1 (see
-# @emlTwoWayAnova in eml-inferential.praat), because the kernel it calls
-# reads the column as a whole with no per-row drop to fall back on. So a
-# single unreadable cell does not shrink one cell's N the way it does for
-# Kruskal-Wallis or ANOVA -- it refuses the ENTIRE analysis, and the refusal
-# text is the literal .error$ string this door hands to @emlErrorDialog.
+# RE-DERIVED 9 September 2026 under CORRECTION_LEVEL2_IS_A_REFUSAL. Two-way
+# was already a refusal on a level-2 cell before this correction (its data
+# column is checked with strict = 1, see @emlTwoWayAnova in
+# eml-inferential.praat, because the kernel it calls reads the column as a
+# whole with no per-row drop to fall back on), so the DOOR'S BEHAVIOUR here
+# does not change. What changed is the WORDING: @emlRequireNumericColumn now
+# tests emlAuditColumn.nLevel2 > 0 BEFORE it ever consults .strict
+# (eml-inferential.praat), so a "??" cell -- LEVEL 2 -- is caught by the new
+# @eml_level2Refusal branch and gets the three-part column/row/value sentence
+# every other door's refusal now uses, not the old whole-column "is not
+# numeric in every row" wording (that wording is still reachable, but only
+# for a LEVEL 1 cell read at strict=1, e.g. an unrepaired decimal comma --
+# not exercised by this fixture).
 #
 # Driven headlessly by evidence/redrive/kit_cleandata_other_doors.praat
 # against validate/redpath/kit_cleandata_l2_twoway.csv (2x2 design, 3 reps
 # per cell, one "??" in the data column). No Info-window report is produced
 # on this path -- refusal happens before @emlReportTwoWayAnova is ever
-# called -- so the capture is the .error$ string itself, written by the
-# driver immediately after the call, which is exactly what a live GUI run
-# would have handed to @emlErrorDialog.
+# called -- so the capture is the door's own .ok/.error$/.remedy$, written by
+# the driver immediately after the call, which is exactly what a live GUI
+# run would have handed to @emlErrorDialog. .remedy$ reads "" here
+# (orchestrators do not forward it -- see v08's level-2 comment; the text
+# itself is proved at its source, see v170's categorical case).
 # ============================================================================
 
 twcap2 <- capture("kit_cleandata_l2_twoway_info.txt")
 tw2flat <- paste(trimws(twcap2$lines), collapse = " ")
 check_true("v11-cleandata", "L2: two-way refuses the whole analysis on one unreadable data cell (strict column read)",
-           grepl("not numeric in every row", tw2flat, fixed = TRUE))
-check_true("v11-cleandata", "and names the offending row and value",
-           grepl("row 3: ??", tw2flat, fixed = TRUE))
+           grepl('emlRunTwoWayAnalysis.error$ = "Data column "value" has a cell that is not numeric, at row 3: "??"."',
+                 tw2flat, fixed = TRUE))
+check_true("v11-cleandata", "L2: emlRunTwoWayAnalysis.ok = 0",
+           any(grepl("emlRunTwoWayAnalysis.ok = 0", twcap2$lines, fixed = TRUE)))
+check_true("v11-cleandata", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('emlRunTwoWayAnalysis.remedy$ = ""', twcap2$lines, fixed = TRUE)))
 check_true("v11-cleandata", "and the refusal is the door's own .error$, not a silent pass",
            grepl("emlRunTwoWayAnalysis.error$ = \"", tw2flat, fixed = TRUE) &&
            !grepl("emlRunTwoWayAnalysis.error$ = \"\"", tw2flat, fixed = TRUE))

@@ -235,11 +235,14 @@ check("v09", "SS within, hand-rolled",  ss_w, ss_w2, tol = 1e-9)
 #
 # LEVEL 1: Low's data column carries "11,3", the ONLY comma in that column
 # (mode 1, decimal) -- repaired to 11.3, Low's analysed N is 3.
-# LEVEL 2: the same cell is "??" -- refused, Low's analysed N drops to 2. As
-# with two-group, @emlRunAnovaAnalysis's own "row(s) excluded" sentence is
-# reserved for a blank GROUP cell; the per-group N column in the Group
-# Descriptives block is the refusal text this door relays for a bad DATA
-# cell, and it feeds directly into a smaller df within-group and a shifted F.
+#
+# LEVEL 2 -- RE-DERIVED 9 September 2026 under CORRECTION_LEVEL2_IS_A_REFUSAL:
+# the same cell is "??", which now REFUSES the whole door (like every other
+# door on the shared gate) instead of dropping Low to N=2. See v08's level-2
+# comment for the mechanics (@emlRequireNumericColumn's strict=0 no longer
+# matters -- a level-2 cell refuses before it is consulted) and for why
+# .remedy$ reads "" here (orchestrators do not forward it; the text itself is
+# proved at its source, see v170's categorical case).
 # ============================================================================
 
 # --- LEVEL 1: the decimal comma is repaired, not excluded -------------------
@@ -260,25 +263,17 @@ f1 <- summary(aov(value ~ group, data = data.frame(
 check("v09-cleandata", "L1: omnibus F over the repaired data",
       printed(acap1, "F", 1, 1), f1[["F value"]][1], tol = 5e-3)
 
-# --- LEVEL 2: the unreadable cell is refused, exactly as before ------------
-a2  <- read_input("kit_cleandata_l2_anova_input.csv")
+# --- LEVEL 2: the unreadable cell now refuses the whole door ---------------
 acap2 <- capture("kit_cleandata_l2_anova_info.txt")
-low2 <- suppressWarnings(as.numeric(a2$value[a2$group == "Low"]))
-low2 <- low2[!is.na(low2)]
-mid2 <- a2$value[a2$group == "Mid"]
-hi2  <- a2$value[a2$group == "High"]
-check_true("v09-cleandata", "the fixture's one unreadable cell (\"??\") leaves Low with 2 clean values",
-           length(low2) == 2L)
-check("v09-cleandata", "L2: Low N is 2 -- the unreadable cell is refused",
-      printed(acap2, "Low", 1), length(low2), tol = 0)
-check("v09-cleandata", "L2: Low mean is over the 2 refused-clean values only",
-      printed(acap2, "Low", 2), mean(low2), tol = 5e-3)
-f2 <- summary(aov(value ~ group, data = data.frame(
-    value = c(low2, as.numeric(mid2), as.numeric(hi2)),
-    group = c(rep("Low", length(low2)), a2$group[a2$group != "Low"]))))[[1]]
-check("v09-cleandata", "L2: omnibus F over the reduced sample",
-      printed(acap2, "F", 1, 1), f2[["F value"]][1], tol = 5e-3)
-check("v09-cleandata", "L1 and L2 give different Low N -- the repair, not a coincidence, moved the count",
-      printed(acap1, "Low", 1), printed(acap2, "Low", 1), tol = 0, expect = "differ")
+acap2flat <- paste(trimws(acap2$lines), collapse = " ")
+check_true("v09-cleandata", "L2: no report is printed -- the refusal happens before any group is analysed",
+           !any(grepl("Low", acap2$lines, fixed = TRUE)))
+check_true("v09-cleandata", "L2: anova.ok = 0",
+           any(grepl("anova.ok = 0", acap2$lines, fixed = TRUE)))
+check_true("v09-cleandata", "L2: the three-part .error$ names the column, row 3, and the literal \"??\"",
+           grepl('anova.error$ = "Data column "value" has a cell that is not numeric, at row 3: "??"."',
+                 acap2flat, fixed = TRUE))
+check_true("v09-cleandata", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('anova.remedy$ = ""', acap2$lines, fixed = TRUE)))
 
 if (!exists("EML_SUITE")) { eml_report("v09 ANOVA + Tukey orchestrator"); eml_exit() }

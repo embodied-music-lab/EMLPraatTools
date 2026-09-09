@@ -45,4 +45,17 @@ text$ = info$ ()
 if left$ (text$, 1) = newline$
     text$ = right$ (text$, length (text$) - 1)
 endif
+; LEVEL 2 REFUSES (9 Sep 2026 ruling, CORRECTION_LEVEL2_IS_A_REFUSAL): the
+; placeholder ("n/a", row 3) is a LEVEL 2 cell, so @emlRunDescriptiveAnalysis
+; now refuses the whole column via @emlRequireNumericColumn before N
+; (valid)/N (excluded) are ever computed -- no report is printed at all. The
+; .ok/.error$/.remedy$ triple is appended, exactly what a live GUI run would
+; have handed to @emlErrorDialog. Harmless (both "") were this ever to run
+; on a column that computes.
+if emlRunDescriptiveAnalysis.error$ <> ""
+    text$ = text$ + newline$ + newline$
+    ... + "emlRunDescriptiveAnalysis.ok = " + string$ (emlRunDescriptiveAnalysis.ok) + newline$
+    ... + "emlRunDescriptiveAnalysis.error$ = """ + emlRunDescriptiveAnalysis.error$ + """" + newline$
+    ... + "emlRunDescriptiveAnalysis.remedy$ = """ + emlRunDescriptiveAnalysis.remedy$ + """"
+endif
 writeFile: "../info/rp_r6_parse_conditions_info.txt", text$

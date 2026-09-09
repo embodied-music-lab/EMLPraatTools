@@ -139,14 +139,25 @@ check("v08", "printed rank-biserial is NOT the printed Cohen's d",
 # column, so @emlCommaColumnMode reads it unambiguously as mode 1 (decimal)
 # and it is repaired to 90.2 on the fly -- Control's analysed N is 5, not 4.
 #
-# LEVEL 2: the identical table with that cell replaced by "??", which is not
-# a number in any locale. It stays refused under the existing complete-case
-# convention -- Control's analysed N drops to 4, and every downstream
-# statistic (Welch t, Mann-Whitney U, both effect sizes) is over the 4
-# remaining values. The reduced Group N line IS the refusal text this door
-# relays -- @emlRunTwoGroupAnalysis has no separate "N excluded" sentence for
-# a bad DATA cell (that wording is reserved for a blank GROUP cell), so the
-# per-group N column is what a reader sees change.
+# LEVEL 2 -- RE-DERIVED 9 September 2026 under
+# CORRECTION_LEVEL2_IS_A_REFUSAL: the identical table with that cell replaced
+# by "??", which is not a number in any locale, now REFUSES the whole door
+# instead of dropping one row under complete-case. @emlRunTwoGroupAnalysis
+# calls @emlRequireNumericColumn on the data column with strict = 0
+# (eml-analysis.praat:180), but level-2 refuses unconditionally regardless of
+# strict (eml-inferential.praat), so the refusal fires before any group
+# vector is built and no report is printed at all -- Control's N never
+# reaches a "reduced" value because no analysis runs. The evidence driver
+# (evidence/redrive/kit_cleandata_named_doors.praat) now appends the door's
+# own .ok/.error$/.remedy$ immediately after the (empty) Info-window text,
+# which is exactly what a live GUI run would hand to @emlErrorDialog.
+#
+# .remedy$ is asserted empty, not the cleaning-door wording: orchestrators do
+# not forward @emlRequireNumericColumn's .remedy$ up their own .remedy$ field
+# (a pre-existing gap, confirmed by grep, out of scope for this wave -- see
+# CORRECTION_LEVEL2_IS_A_REFUSAL's departure note). The .remedy$ TEXT itself
+# is proved once, at its source, by @eml_level2Refusal's own wording -- see
+# v170's categorical case and eml-extract.praat:1498.
 # ============================================================================
 
 # --- LEVEL 1: the decimal comma is repaired, not excluded -------------------
@@ -164,22 +175,17 @@ tt1 <- t.test(ctl1, pat1, var.equal = FALSE)
 check("v08-cleandata", "L1: Welch t over the repaired data",
       printed(cap1, "t"), unname(tt1$statistic), tol = 5e-4)
 
-# --- LEVEL 2: the unreadable cell is refused, exactly as before ------------
-d2   <- read_input("kit_cleandata_l2_twogroup_input.csv")
+# --- LEVEL 2: the unreadable cell now refuses the whole door ---------------
 cap2 <- capture("kit_cleandata_l2_twogroup_info.txt")
-ctl2 <- suppressWarnings(as.numeric(d2$value[d2$group == "Control"]))
-ctl2 <- ctl2[!is.na(ctl2)]
-pat2 <- as.numeric(d2$value[d2$group == "Patient"])
-check_true("v08-cleandata", "the fixture's one unreadable cell (\"??\") is dropped by R's own coercion too",
-           length(ctl2) == 4L)
-check("v08-cleandata", "L2: Control N is 4 -- the unreadable cell is refused",
-      printed(cap2, "Control", 1), length(ctl2), tol = 0)
-check("v08-cleandata", "L2: Control mean is over the 4 refused-clean values only",
-      printed(cap2, "Control", 2), mean(ctl2), tol = 5e-3)
-tt2 <- t.test(ctl2, pat2, var.equal = FALSE)
-check("v08-cleandata", "L2: Welch t over the reduced sample",
-      printed(cap2, "t"), unname(tt2$statistic), tol = 5e-4)
-check("v08-cleandata", "L1 and L2 give different Control N -- the repair, not a coincidence, moved the count",
-      printed(cap1, "Control", 1), printed(cap2, "Control", 1), tol = 0, expect = "differ")
+cap2flat <- paste(trimws(cap2$lines), collapse = " ")
+check_true("v08-cleandata", "L2: no report is printed -- the refusal happens before any group vector is built",
+           !any(grepl("Control", cap2$lines, fixed = TRUE)))
+check_true("v08-cleandata", "L2: twogroup.ok = 0",
+           any(grepl("twogroup.ok = 0", cap2$lines, fixed = TRUE)))
+check_true("v08-cleandata", "L2: the three-part .error$ names the column, row 3, and the literal \"??\"",
+           grepl('twogroup.error$ = "Data column "value" has a cell that is not numeric, at row 3: "??"."',
+                 cap2flat, fixed = TRUE))
+check_true("v08-cleandata", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('twogroup.remedy$ = ""', cap2$lines, fixed = TRUE)))
 
 if (!exists("EML_SUITE")) { eml_report("v08 two-group orchestrator"); eml_exit() }

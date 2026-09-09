@@ -154,9 +154,15 @@ check("v13", "but leaves the printed R-squared unchanged, which is why direction
 # LEVEL 1: row 3's pred-cell carries "3,4", the ONLY comma in column pred --
 # read unambiguously as mode 1 (decimal) and repaired to 3.4. N is 8, and the
 # door prints no "Excluded" line.
-# LEVEL 2: the same cell is "??" -- refused. The door prints
-# "Excluded (missing)  1" directly under N, which is the refusal text this
-# fixture asserts on, alongside the recomputed fit over the 7 remaining rows.
+#
+# LEVEL 2 -- RE-DERIVED 9 September 2026 under CORRECTION_LEVEL2_IS_A_REFUSAL:
+# the same cell is "??", which now REFUSES the whole door instead of the old
+# "Excluded (missing)  1" complete-case line. @emlRunRegressionAnalysis
+# checks the predictor column through @emlRequireNumericColumn with role
+# "Predictor column" before the response column or any fit is touched, so no
+# report is printed. .remedy$ reads "" here (orchestrators do not forward
+# it -- see v08's level-2 comment; the text itself is proved at its source,
+# see v170's categorical case).
 # ============================================================================
 
 # --- LEVEL 1: the decimal comma is repaired, not excluded -------------------
@@ -174,22 +180,17 @@ check("v13-cleandata", "L1: slope over the repaired data",
 check_true("v13-cleandata", "L1: no \"Excluded\" line is printed",
            !any(grepl("^  Excluded", rcap1$lines)))
 
-# --- LEVEL 2: the unreadable cell is refused, exactly as before ------------
-rd2  <- read_input("kit_cleandata_l2_regression_input.csv")
+# --- LEVEL 2: the unreadable cell now refuses the whole door ---------------
 rcap2 <- capture("kit_cleandata_l2_regression_info.txt")
-keep2 <- !is.na(suppressWarnings(as.numeric(rd2$pred)))
-rx2 <- as.numeric(rd2$pred[keep2])
-ry2 <- rd2$dep[keep2]
-check_true("v13-cleandata", "the fixture's one unreadable cell (\"??\") leaves 7 usable rows",
-           length(rx2) == 7L)
-check("v13-cleandata", "L2: N is 7 -- the unreadable cell is refused",
-      printed(rcap2, "N"), length(rx2), tol = 0)
-check("v13-cleandata", "L2: Excluded (missing) names exactly 1 row",
-      printed(rcap2, "Excluded (missing)"), 1, tol = 0)
-fit2 <- lm(ry2 ~ rx2)
-check("v13-cleandata", "L2: slope over the reduced sample",
-      printed(rcap2, "pred", 1), unname(coef(fit2)[2]), tol = 5e-4)
-check("v13-cleandata", "L1 and L2 give different N -- the repair, not a coincidence, moved the count",
-      printed(rcap1, "N"), printed(rcap2, "N"), tol = 0, expect = "differ")
+rcap2flat <- paste(trimws(rcap2$lines), collapse = " ")
+check_true("v13-cleandata", "L2: no report is printed -- the refusal happens before any fit is attempted",
+           !any(grepl("^N", trimws(rcap2$lines))))
+check_true("v13-cleandata", "L2: regression.ok = 0",
+           any(grepl("regression.ok = 0", rcap2$lines, fixed = TRUE)))
+check_true("v13-cleandata", "L2: the three-part .error$ names the predictor column, row 3, and the literal \"??\"",
+           grepl('regression.error$ = "Predictor column "pred" has a cell that is not numeric, at row 3: "??"."',
+                 rcap2flat, fixed = TRUE))
+check_true("v13-cleandata", "L2: .remedy$ is empty -- orchestrators do not forward the gate's .remedy$ (documented gap, out of scope)",
+           any(grepl('regression.remedy$ = ""', rcap2$lines, fixed = TRUE)))
 
 if (!exists("EML_SUITE")) { eml_report("v13 regression orchestrator"); eml_exit() }
