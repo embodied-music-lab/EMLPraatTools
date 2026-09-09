@@ -439,27 +439,67 @@ removeObject: to09_snd, to09_src, to09_chkFormant, to09_chkTable,
 ... emlToTable.tableId
 
 # ============================================================================
-# to10_refuse_sound -- a Sound refuses, naming a remedy
+# to10_sound -- Sound arm: one row per sample, time_s + one column per
+# channel, EVERY cell equal to the source sample bit for bit
 # ============================================================================
-appendInfoLine: newline$, "-- to10_refuse_sound --"
-to10_src = Create Sound from formula: "to10_src", "Mono", 0, 0.1, 8000, "0"
+appendInfoLine: newline$, "-- to10_sound --"
+to10_fs = 100
+to10_nSampNominal = 5
+to10_src = Create Sound from formula: "to10_src", 2, 0,
+... to10_nSampNominal / to10_fs, to10_fs,
+... "if row = 1 then sin(2*pi*137*x) else cos(2*pi*211*x) + 0.5 fi"
+selectObject: to10_src
+to10_nCh = Get number of channels
+to10_nSamp = Get number of samples
+to10_fsLive = Get sampling frequency
 @emlToTable: to10_src, emptyNames$#
 
-to10_expectError$ = "emlToTable: a Sound is audio, not tabular data -- it " +
-... "has no rows or columns to hand back."
-to10_expectRemedy$ = "Convert first -- To Pitch, To Intensity, To " +
-... "Harmonicity, To Spectrum or To Ltas -- then call emlToTable on the " +
-... "result."
+to10_expectWarning$ = string$ (to10_nSamp) + " rows, " + string$ (to10_nCh) +
+... " channels, " + string$ (to10_fsLive) + " Hz"
 
-@ttp_check: "to10_refuse_sound", "ok", "0", string$ (emlToTable.ok)
-@ttp_check: "to10_refuse_sound", "sourceType", "Sound", emlToTable.sourceType$
-@ttp_check: "to10_refuse_sound", "tableId_gt0", "0",
-... string$ (emlToTable.tableId > 0)
-@ttp_check: "to10_refuse_sound", "nRows", "0", string$ (emlToTable.nRows)
-@ttp_check: "to10_refuse_sound", "nCols", "0", string$ (emlToTable.nCols)
-@ttp_check: "to10_refuse_sound", "error", to10_expectError$, emlToTable.error$
-@ttp_check: "to10_refuse_sound", "remedy", to10_expectRemedy$, emlToTable.remedy$
-removeObject: to10_src
+@ttp_check: "to10_sound", "ok", "1", string$ (emlToTable.ok)
+@ttp_check: "to10_sound", "sourceType", "Sound", emlToTable.sourceType$
+@ttp_check: "to10_sound", "nRows", string$ (to10_nSamp), string$ (emlToTable.nRows)
+@ttp_check: "to10_sound", "nCols", string$ (to10_nCh + 1), string$ (emlToTable.nCols)
+@ttp_check: "to10_sound", "warning", to10_expectWarning$, emlToTable.warning$
+@ttp_check: "to10_sound", "error", "", emlToTable.error$
+
+selectObject: emlToTable.tableId
+to10_col1$ = Get column label: 1
+@ttp_check: "to10_sound", "col1_label", "time_s", to10_col1$
+for to10_c to to10_nCh
+    selectObject: emlToTable.tableId
+    to10_colLabel$ = Get column label: to10_c + 1
+    @ttp_check: "to10_sound", "col_label_" + string$ (to10_c),
+    ... "channel_" + string$ (to10_c), to10_colLabel$
+endfor
+
+# Bit-for-bit check: every time_s and channel cell must match a fresh read
+# straight off the source Sound, exactly (number() equality, no tolerance) --
+# the same style as to04_ltas's frequency-from-bin assertion.
+to10_timeOk = 1
+to10_valuesOk = 1
+for to10_r to to10_nSamp
+    selectObject: to10_src
+    to10_tLive = Get time from sample number: to10_r
+    @ttp_getCell: emlToTable.tableId, to10_r, "time_s"
+    if number (ttp_getCell.result$) <> to10_tLive
+        to10_timeOk = 0
+    endif
+    for to10_c to to10_nCh
+        selectObject: to10_src
+        to10_vLive = Get value at sample number: to10_c, to10_r
+        @ttp_getCell: emlToTable.tableId, to10_r, "channel_" + string$ (to10_c)
+        if number (ttp_getCell.result$) <> to10_vLive
+            to10_valuesOk = 0
+        endif
+    endfor
+endfor
+@ttp_check: "to10_sound", "time_matches_get_time_from_sample_number_every_row",
+... "1", string$ (to10_timeOk)
+@ttp_check: "to10_sound", "cells_match_source_sample_every_row_bit_for_bit",
+... "1", string$ (to10_valuesOk)
+removeObject: to10_src, emlToTable.tableId
 
 # ============================================================================
 # to11_refuse_colcount -- .columnNames$# count mismatch, naming the count
@@ -485,6 +525,33 @@ to11_expectRemedy$ = "Pass exactly 2 name(s) in .columnNames$#, in column " +
 @ttp_check: "to11_refuse_colcount", "remedy", to11_expectRemedy$,
 ... emlToTable.remedy$
 removeObject: to11_src
+
+# ============================================================================
+# to12_refuse_unknown -- an object class emlToTable does not handle refuses,
+# naming a remedy (the Sound refusal fixture this replaces is retired -- a
+# Sound now converts, see to10_sound above -- but a refusal path must still
+# be graded)
+# ============================================================================
+appendInfoLine: newline$, "-- to12_refuse_unknown --"
+to12_src = Create Strings as file list: "to12_src", "*.eml_nonexistent_glob"
+@emlToTable: to12_src, emptyNames$#
+
+to12_expectError$ = "emlToTable: does not know how to make a Table from a " +
+... "Strings."
+to12_expectRemedy$ = "Select a Table, TableOfReal, Matrix, Ltas, Spectrum, " +
+... "Pitch, Intensity, Harmonicity or Formant object and call emlToTable " +
+... "again."
+
+@ttp_check: "to12_refuse_unknown", "ok", "0", string$ (emlToTable.ok)
+@ttp_check: "to12_refuse_unknown", "sourceType", "Strings", emlToTable.sourceType$
+@ttp_check: "to12_refuse_unknown", "tableId_gt0", "0",
+... string$ (emlToTable.tableId > 0)
+@ttp_check: "to12_refuse_unknown", "nRows", "0", string$ (emlToTable.nRows)
+@ttp_check: "to12_refuse_unknown", "nCols", "0", string$ (emlToTable.nCols)
+@ttp_check: "to12_refuse_unknown", "error", to12_expectError$, emlToTable.error$
+@ttp_check: "to12_refuse_unknown", "remedy", to12_expectRemedy$,
+... emlToTable.remedy$
+removeObject: to12_src
 
 # ---- tally -------------------------------------------------------------
 appendInfoLine: newline$, "=== to_table_probe: ", string$ (ttp_pass), "/",

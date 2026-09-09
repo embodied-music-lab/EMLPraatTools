@@ -85,13 +85,17 @@ to09_formant	nRows_equals_native_down_to_table	1
 to09_formant	nCols_equals_native_down_to_table	1
 to09_formant	column_labels_match_native_call	1
 to09_formant	cell_values_match_native_call	1
-to10_refuse_sound	ok	0
-to10_refuse_sound	sourceType	Sound
-to10_refuse_sound	tableId_gt0	0
-to10_refuse_sound	nRows	0
-to10_refuse_sound	nCols	0
-to10_refuse_sound	error	emlToTable: a Sound is audio, not tabular data -- it has no rows or columns to hand back.
-to10_refuse_sound	remedy	Convert first -- To Pitch, To Intensity, To Harmonicity, To Spectrum or To Ltas -- then call emlToTable on the result.
+to10_sound	ok	1
+to10_sound	sourceType	Sound
+to10_sound	nRows	5
+to10_sound	nCols	3
+to10_sound	warning	5 rows, 2 channels, 100 Hz
+to10_sound	error	
+to10_sound	col1_label	time_s
+to10_sound	col_label_1	channel_1
+to10_sound	col_label_2	channel_2
+to10_sound	time_matches_get_time_from_sample_number_every_row	1
+to10_sound	cells_match_source_sample_every_row_bit_for_bit	1
 to11_refuse_colcount	ok	0
 to11_refuse_colcount	sourceType	Table
 to11_refuse_colcount	tableId_gt0	0
@@ -99,3 +103,10 @@ to11_refuse_colcount	nRows	0
 to11_refuse_colcount	nCols	0
 to11_refuse_colcount	error	emlToTable: .columnNames$# has 1 name(s) but the table built from this Table has 2 column(s) -- pass one name per column, in order, or an empty vector to keep the default names.
 to11_refuse_colcount	remedy	Pass exactly 2 name(s) in .columnNames$#, in column order, or an empty vector.
+to12_refuse_unknown	ok	0
+to12_refuse_unknown	sourceType	Strings
+to12_refuse_unknown	tableId_gt0	0
+to12_refuse_unknown	nRows	0
+to12_refuse_unknown	nCols	0
+to12_refuse_unknown	error	emlToTable: does not know how to make a Table from a Strings.
+to12_refuse_unknown	remedy	Select a Table, TableOfReal, Matrix, Ltas, Spectrum, Pitch, Intensity, Harmonicity or Formant object and call emlToTable again.

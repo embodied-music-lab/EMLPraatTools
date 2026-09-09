@@ -8263,10 +8263,20 @@ endproc
 #                  @emlExtractFormantValues is per-single-formant and is
 #                  not this arm's tool: the point of this arm is the WHOLE
 #                  table, every formant and bandwidth column at once.
-#   Sound        - refused. A Sound is audio, not a table; .error$ names
-#                  what to convert to first (Pitch/Intensity/Harmonicity/
-#                  Spectrum/Ltas) and .remedy$ says so again as an
-#                  instruction.
+#   Sound        - a channels-by-samples matrix and a common container for
+#                  EGG, respiration and microphone signals together, so it
+#                  converts: one row per sample. `Down to Matrix` ->
+#                  `Transpose` -> `To TableOfReal` -> `To Table: "row"`
+#                  (measured live against /usr/local/bin/praat6630 to
+#                  preserve every sample bit for bit; the intermediates are
+#                  removed once the Table is built), column 1 renamed
+#                  time_s and set from `Get time from sample number` per
+#                  row, channel columns renamed channel_1, channel_2, ...
+#                  .warning$ states the row count, channel count and
+#                  sampling rate, because a sample table is large. For an
+#                  analysis table (pitch, intensity, formants, harmonicity,
+#                  spectrum), run the Praat analysis and convert that
+#                  object instead.
 #   anything else - refused, naming the class; .remedy$ set.
 #
 # .columnNames$# ("applied in column order when given"): size 0 keeps every
@@ -8452,11 +8462,65 @@ procedure emlToTable: .objectId, .columnNames$#
         ... + "this door's)."
 
     elsif .sourceType$ = "Sound"
-        .error$ = "emlToTable: a Sound is audio, not tabular data -- it "
-        ... + "has no rows or columns to hand back."
-        .remedy$ = "Convert first -- To Pitch, To Intensity, To "
-        ... + "Harmonicity, To Spectrum or To Ltas -- then call emlToTable "
-        ... + "on the result."
+        .nCh = Get number of channels
+        .nSamp = Get number of samples
+        .fs = Get sampling frequency
+        .soundId = .objectId
+        .tmpMat = Down to Matrix
+        .tmpMatT = Transpose
+        .tmpTor = To TableOfReal
+        .tableId = To Table: "row"
+        removeObject: .tmpMat, .tmpMatT, .tmpTor
+        selectObject: .tableId
+        Set column label (index): 1, "time_s"
+        for .r to .nSamp
+            selectObject: .soundId
+            .t = Get time from sample number: .r
+            selectObject: .tableId
+            Set numeric value: .r, "time_s", .t
+        endfor
+        for .c to .nCh
+            selectObject: .tableId
+            Rename column (by number): .c + 1, "channel_" + string$ (.c)
+        endfor
+        .warning$ = string$ (.nSamp) + " rows, " + string$ (.nCh)
+        ... + " channels, " + string$ (.fs) + " Hz"
+        .code$ = "soundId = data" + newline$
+        ... + "nCh = Get number of channels" + newline$
+        ... + "nSamp = Get number of samples" + newline$
+        ... + "tmpMat = Down to Matrix" + newline$
+        ... + "tmpMatT = Transpose" + newline$
+        ... + "tmpTor = To TableOfReal" + newline$
+        ... + "data = To Table: ""row""" + newline$
+        ... + "removeObject: tmpMat, tmpMatT, tmpTor" + newline$
+        ... + "selectObject: data" + newline$
+        ... + "Set column label (index): 1, ""time_s""" + newline$
+        ... + "for r to nSamp" + newline$
+        ... + "    selectObject: soundId" + newline$
+        ... + "    t = Get time from sample number: r" + newline$
+        ... + "    selectObject: data" + newline$
+        ... + "    Set numeric value: r, ""time_s"", t" + newline$
+        ... + "endfor" + newline$
+        ... + "for c to nCh" + newline$
+        ... + "    selectObject: data" + newline$
+        ... + "    Rename column (by number): c + 1, ""channel_"" + "
+        ... + "string$ (c)" + newline$
+        ... + "endfor"
+        .why$ = "One row per sample; time_s is ""Get time from sample "
+        ... + "number"" for each row, channel_1.. hold the raw samples at "
+        ... + "full double precision. Measured live against "
+        ... + "/usr/local/bin/praat6630 6.6.30: ""Down to Matrix"" -> "
+        ... + """Transpose"" -> ""To TableOfReal"" -> ""To Table: row"" "
+        ... + "preserves every sample bit for bit -- verified by "
+        ... + "saving the built table to file (Praat's own full-precision "
+        ... + "serialisation) and comparing every cell to ""Get value at "
+        ... + "sample number"" on the source Sound, with no discrepancy at "
+        ... + "any of the double's ~17 significant digits; a direct ""Get "
+        ... + "value at sample number"" loop was not needed. The "
+        ... + "intermediate Matrix, transposed Matrix and TableOfReal are "
+        ... + "removed once the Table is built. For an analysis table "
+        ... + "(pitch, intensity, formants, harmonicity, spectrum), run the "
+        ... + "Praat analysis and convert that object instead."
 
     else
         .error$ = "emlToTable: does not know how to make a Table from a "
