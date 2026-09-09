@@ -1,8 +1,4 @@
 file	procedure	arm	note
-graphs/eml-graph-procedures.praat	emlToTable	TableOfReal	row labels become column 1; TableOfReal's own column labels kept
-graphs/eml-graph-procedures.praat	emlToTable	Matrix	routed through an intermediate TableOfReal (To TableOfReal) before To Table: "row"
-graphs/eml-graph-procedures.praat	emlToTable	Sound	routed through Down to Matrix -> Transpose -> To TableOfReal before To Table: "row"; the manufactured "row" column is immediately renamed time_s and filled from Get time from sample number, so no bare-integer row label survives
-stats/eml-output.praat	emlWrapperInit	TableOfReal	the nine stats wrappers' coercion of a selected TableOfReal
-stats/eml-output.praat	emlWrapperInit	Matrix	the nine stats wrappers' coercion of a selected Matrix
-scripts/eml-describe-table.praat	emlDescribeCoerceSelection	TableOfReal	describe tool's coercion of a selected TableOfReal
-scripts/eml-describe-table.praat	emlDescribeCoerceSelection	Matrix	describe tool's coercion of a selected Matrix, via an intermediate TableOfReal
+stats/eml-extract.praat	emlToTable	TableOfReal	row labels become column 1; TableOfReal's own column labels kept
+stats/eml-extract.praat	emlToTable	Matrix	routed through an intermediate TableOfReal (To TableOfReal) before To Table: "row"
+stats/eml-extract.praat	emlToTable	Sound	routed through Down to Matrix -> Transpose -> To TableOfReal before To Table: "row"; the manufactured "row" column is immediately renamed time_s and filled from Get time from sample number, so no bare-integer row label survives

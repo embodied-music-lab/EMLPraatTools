@@ -1029,12 +1029,26 @@ check_true(ID, "and the loop starts after the inserted block, so Column_0 cannot
 # it calls the shared procedure. If that ever stops being true this file's
 # live evidence covers one door and silently stops covering the other, which
 # is the failure mode of every check that tests a shared thing at one caller.
+#
+# INDIRECTED SINCE THE emlToTable-home-move WAVE (9 Sep 2026). The describe
+# wrapper used to call @emlCleanConvertedTable directly, itself, after its own
+# native `To Table: "row"` conversion. It now calls @emlToTable
+# (stats/eml-extract.praat) to do the whole TableOfReal/Matrix -> Table
+# conversion, and @emlToTable's own TableOfReal/Matrix arms call
+# @emlCleanConvertedTable internally before returning -- so the header repair
+# still runs through the one shared procedure, one hop further along the same
+# call chain rather than called a second time here. "One repair" is still
+# true: grep the tree and @emlCleanConvertedTable's own body is still the only
+# place that pattern lives (validate/v169_canonical_home.R covers that).
+# "Two doors" is still true and, since the fold, three: the graphs door, this
+# wrapper, and @emlWrapperInit's own two arms (stats/eml-output.praat) all
+# reach it exclusively through @emlToTable now.
 check_true(ID, "the describe wrapper is present to be checked",
            file.exists(f_desc))
 code_desc <- read_code(f_desc)
 check_true(ID,
     "and it routes its header repair through the same procedure (one repair, two doors)",
-    has(code_desc, "@emlCleanConvertedTable:"))
+    has(code_desc, "@emlToTable:"))
 check_true(ID,
     "and invents no Column_ name of its own",
     !has(code_desc, "\"Column_\""))

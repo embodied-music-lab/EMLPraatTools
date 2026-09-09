@@ -238,13 +238,16 @@ until allDone
 # and leave the Table selected so @emlWrapperInit sees exactly what it sees
 # when the user selected a Table in the first place.
 #
-# WHY IT IS HERE AND NOT IN @emlWrapperInit. It should be in @emlWrapperInit,
-# and the three lines that matter — the r1..rn default — belong there for the
-# other six TableOfReal/Matrix registrations too. This file cannot reach into
-# stats/eml-output.praat, so it does the conversion itself and then hands a
-# Table to the shared init, which is the nearest thing to routing through it.
-# When the default lands in @emlWrapperInit this procedure collapses to
-# nothing and should be deleted rather than left as a second copy.
+# WHY IT IS HERE AND NOT IN @emlWrapperInit. This wrapper enters through
+# @emlWrapperInit like the other eight, but a Describe call needs to know
+# which source object was converted (.sourceType$, .sourceName$) for its
+# own message, which @emlWrapperInit does not hand back — so this stays a
+# thin front door of its own rather than folding away. Both this procedure
+# and @emlWrapperInit's own TableOfReal/Matrix arms (stats/eml-output.praat)
+# now convert the same way, through @emlToTable (stats/eml-extract.praat) —
+# there is exactly one place that does the actual TableOfReal/Matrix -> Table
+# work, this is no longer a second copy of it, and this procedure's own job
+# is narrowed to the audit-before-convert count and the door's own wording.
 #
 # ANYTHING ELSE IS LEFT ALONE ON PURPOSE. A selection that is not exactly one
 # Table, one TableOfReal or one Matrix is not refused here — it is passed
@@ -271,22 +274,48 @@ procedure emlDescribeCoerceSelection
         .sourceType$ = "TableOfReal"
         .sourceName$ = selected$ ("TableOfReal")
         .sourceId = selected ("TableOfReal")
+        # COUNTED FROM THE SOURCE, BEFORE @emlToTable RUNS.
+        # @emlToTable's TableOfReal arm (stats/eml-extract.praat) calls
+        # @emlCleanConvertedTable internally, which fills every "?"/blank
+        # row label with r1..rn before it ever returns — so by the time
+        # .tableId exists below there is nothing left ungapped to count.
+        # Reading the source TableOfReal's own row labels here, before the
+        # call, is what lets the message below still say how many were
+        # actually defaulted. Measured live against /usr/local/bin/praat6630
+        # 6.6.30: an unset row label reads back as "" via `Get row label:`,
+        # the same cell `To Table: "row"` (still run internally by
+        # @emlToTable) turns into "?" — so this asks the same question of
+        # the source that the old cell-by-cell pass asked of the converted
+        # Table.
         selectObject: .sourceId
-        .tableId = To Table: "row"
+        .nRows = Get number of rows
+        .nDefaulted = 0
+        for .iRow to .nRows
+            selectObject: .sourceId
+            .lab$ = Get row label: .iRow
+            if .lab$ = "?" or .lab$ = ""
+                .nDefaulted = .nDefaulted + 1
+            endif
+        endfor
+        @emlToTable: .sourceId, empty$# (0)
+        .tableId = emlToTable.tableId
         .converted = 1
 
     elsif .nTables = 0 and .nToR = 0 and .nMatrix = 1
         # A Matrix has no row labels at all, so its route to a Table runs
-        # through a TableOfReal that has none either. The intermediate is
-        # removed on this side of the conversion; the Table persists, because
-        # the user's session goes on using it.
+        # through a TableOfReal that has none either. @emlToTable's own
+        # Matrix arm carries out that same route (and the cleanup that
+        # follows it) internally now; nothing here duplicates it any more.
         .sourceType$ = "Matrix"
         .sourceName$ = selected$ ("Matrix")
         .sourceId = selected ("Matrix")
+        # A Matrix carries no row labels of any kind, so every row is
+        # always defaulted — always exactly the source's own row count.
         selectObject: .sourceId
-        .tempTorId = To TableOfReal
-        .tableId = To Table: "row"
-        removeObject: .tempTorId
+        .nRows = Get number of rows
+        .nDefaulted = .nRows
+        @emlToTable: .sourceId, empty$# (0)
+        .tableId = emlToTable.tableId
         .converted = 1
     endif
 
@@ -300,33 +329,6 @@ procedure emlDescribeCoerceSelection
         # any source name.
         selectObject: .tableId
         Rename: "eml_converted_" + .sourceName$
-
-        # THE AUTHOR'S DEFAULT ROW LABELS. Written BEFORE
-        # @emlCleanConvertedTable, which would otherwise fill the same cells
-        # with bare row numbers — numeric strings, which would put a
-        # meaningless 1..n column into every column menu in the plugin as
-        # though it were a measurement. r1..rn reads as a label everywhere.
-        # Only "?" cells are touched: a TableOfReal the user did label keeps
-        # every label it has, including a partially labelled one.
-        selectObject: .tableId
-        .nRows = Get number of rows
-        .nDefaulted = 0
-        for .iRow from 1 to .nRows
-            selectObject: .tableId
-            .cell$ = Get value: .iRow, "row"
-            if .cell$ = "?" or .cell$ = ""
-                Set string value: .iRow, "row", "r" + string$ (.iRow)
-                .nDefaulted = .nDefaulted + 1
-            endif
-        endfor
-
-        # The rest of the repair is the shared one. It renames the row-label
-        # column when a data column is also called "row", and it renames "?"
-        # column headers to Column_N — which a Matrix always needs, because
-        # every one of its columns arrives called "?" and a table with three
-        # identically named columns is the duplicate-label hazard of S1 by
-        # another route. Its own "?"-cell pass finds nothing left to do.
-        @emlCleanConvertedTable: .tableId
 
         selectObject: .tableId
         appendInfoLine: "Converted ", .sourceType$, " """, .sourceName$,

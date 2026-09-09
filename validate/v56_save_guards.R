@@ -345,22 +345,32 @@ check_true("v56", "the classifier returns a verdict rather than a bare flag",
            all(sapply(c('"empty"', '"partial"', '"labelled"'),
                       function(v) any(grepl(v, aud, fixed = TRUE)))))
 
-# BOTH ARMS CALL IT, and the Matrix arm calls it on the RENAMED column. The
-# Matrix arm renames column 1 to "OriginalRowLabel" when a data column is
-# already called "row"; auditing the literal "row" after that rename would
-# audit the user's own data.
+# BOTH ARMS CLASSIFY THEIR LABEL COLUMN BEFORE @emlToTable RUNS. Since the
+# emlToTable-home-move wave (9 Sep 2026), @emlToTable (stats/eml-extract.praat)
+# does the actual TableOfReal/Matrix -> Table conversion for both arms below,
+# and its own TableOfReal/Matrix arms call @emlCleanConvertedTable internally
+# -- filling every "?"/blank row label with r1..rn and every "?"/blank column
+# header with Column_N BEFORE @emlToTable ever returns. A classifier run on
+# .tableId AFTER that call would find nothing left to classify, so both arms
+# now classify the SOURCE object's own labels first, before the @emlToTable
+# call -- @eml_auditTorRowLabels / @eml_auditTorColumnLabels on the
+# TableOfReal arm. The Matrix arm needs no classifier call at all: a Matrix
+# carries no row or column labels of any kind (structurally, not as a matter
+# of what a given Matrix holds), so its counts are always just the source's
+# own row/column counts -- see that arm's own comment for the measurement.
 init <- .body(code, "emlWrapperInit")
-check_true("v56", "both coercion arms classify the label column they create",
-           sum(grepl("@eml_auditLabelColumn:", init)) == 2)
+check_true("v56", "the TableOfReal arm classifies its label column before @emlToTable converts it",
+           sum(grepl("@eml_auditTorRowLabels:", init)) == 1 &&
+           sum(grepl("@eml_auditTorColumnLabels:", init)) == 1)
 check_true("v56",
-           "the Matrix arm audits the column by its real name, after the collision rename",
-           any(grepl("@eml_auditLabelColumn: \\.tableId, \\.labelCol\\$", init)))
+           "the Matrix arm reads its label column's real name back from the converted table, after @emlToTable's own collision rename",
+           any(grepl("\\.labelCol\\$ = Get column label: 1", init)))
 # AND THE CLAIM IS CONDITIONAL NOW. The TableOfReal arm used to announce
 # "Row labels are in column ""row""" whatever it had just converted -- a false
 # sentence on an unlabelled object, and the crash that followed was the user's
 # first hint that it was false. The sentence must sit under the verdict.
-iAudit <- grep("@eml_auditLabelColumn:", init)
-iVerdict <- grep('eml_auditLabelColumn\\.verdict\\$ = "labelled"', init)
+iAudit <- grep("@eml_auditTorRowLabels:", init)
+iVerdict <- grep('\\.preVerdict\\$ = "labelled"', init)
 # SEAMS CLOSED BEFORE SEARCHING FOR PROSE. This check went red on 15 Aug
 # against a tree where the ordering was entirely correct. The loader already
 # joins `...` continuations and drops comments, but Praat prose is also broken
@@ -380,7 +390,7 @@ iClaim <- grep("Row labels are in column", .seamless(init))
 check_true("v56",
            "the TableOfReal arm claims row labels only when the classifier found some",
            length(iVerdict) == 1 && length(iClaim) >= 1 &&
-           length(iAudit) == 2 && min(iAudit) < iVerdict[1] &&
+           length(iAudit) == 1 && iAudit[1] < iVerdict[1] &&
            iVerdict[1] < min(iClaim))
 
 # ===========================================================================

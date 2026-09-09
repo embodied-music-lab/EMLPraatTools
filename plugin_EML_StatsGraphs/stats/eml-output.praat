@@ -2815,6 +2815,93 @@ endproc
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# @eml_auditTorRowLabels: .torId        (private)
+# @eml_auditTorColumnLabels: .torId     (private)
+# ────────────────────────────────────────────────────────────────────────────
+# THE SAME CLASSIFICATION AS @eml_auditLabelColumn / @eml_nameUnlabelledColumns,
+# READ FROM THE SOURCE OBJECT INSTEAD OF THE CONVERTED ONE.
+#
+# @emlWrapperInit's TableOfReal and Matrix arms now build their Table by
+# calling @emlToTable (stats/eml-extract.praat), and @emlToTable's own
+# TableOfReal/Matrix arms call @emlCleanConvertedTable internally -- filling
+# every "?"/blank row label with r1..rn and every "?"/blank column header
+# with Column_N BEFORE @emlToTable ever returns. By the time .tableId exists
+# there is nothing left ungapped for @eml_auditLabelColumn /
+# @eml_nameUnlabelledColumns to find, and every one of this procedure's
+# user-facing messages would collapse to the "fully labelled" case -- a
+# narration regression, even though the numeric table itself is unchanged.
+#
+# These two read the TableOfReal's OWN row and column labels, before any
+# conversion runs, so the counts they return are exactly what
+# @eml_auditLabelColumn / @eml_nameUnlabelledColumns would have found on
+# the FRESH, not-yet-cleaned Table @emlWrapperInit used to build by hand.
+# Measured live against /usr/local/bin/praat6630 6.6.30: an unset
+# TableOfReal row or column label reads back as "" via `Get row label:` /
+# `Get column label:`, and `To Table: "row"` (the conversion @emlToTable
+# still performs internally) turns that same unset label into the literal
+# "?" in the Table -- so testing a TableOfReal's own "" here is the same
+# question @eml_auditLabelColumn's "" or "?" test asked of the Table it
+# used to run on, cell for cell. A row or column a caller had already
+# labelled literally "?" is counted unlabelled on both sides alike, for
+# the same reason: the classification cannot tell that apart from Praat's
+# own placeholder, before or after conversion.
+#
+# A Matrix carries no row or column labels of any kind -- structurally, not
+# as a matter of what this particular Matrix happens to hold -- so its own
+# arm in @emlWrapperInit does not call either of these: the numbers are
+# simply the Matrix's own row and column counts (see that arm).
+#
+# Arguments: .torId - the TableOfReal about to be converted
+# Outputs (row labels):    .nRows, .nLabelled, .nUnlabelled, .verdict$
+#   ("empty" | "partial" | "labelled"), same rule as @eml_auditLabelColumn.
+# Outputs (column labels): .nUnlabelled - how many column headers are gaps,
+#   same rule as @eml_nameUnlabelledColumns with .insertedCols = 0 (a
+#   TableOfReal's own columns carry no inserted "row" column to skip).
+# ────────────────────────────────────────────────────────────────────────────
+procedure eml_auditTorRowLabels: .torId
+    .nRows = 0
+    .nLabelled = 0
+    .nUnlabelled = 0
+    .verdict$ = "empty"
+
+    selectObject: .torId
+    .nRows = Get number of rows
+
+    for .r from 1 to .nRows
+        selectObject: .torId
+        .lab$ = Get row label: .r
+        if .lab$ = "" or .lab$ = "?" or .lab$ = "--undefined--"
+            .nUnlabelled = .nUnlabelled + 1
+        else
+            .nLabelled = .nLabelled + 1
+        endif
+    endfor
+
+    if .nLabelled = 0
+        .verdict$ = "empty"
+    elsif .nUnlabelled > 0
+        .verdict$ = "partial"
+    else
+        .verdict$ = "labelled"
+    endif
+endproc
+
+
+procedure eml_auditTorColumnLabels: .torId
+    .nUnlabelled = 0
+    selectObject: .torId
+    .nCols = Get number of columns
+    for .c from 1 to .nCols
+        selectObject: .torId
+        .lab$ = Get column label: .c
+        if .lab$ = "" or .lab$ = "?" or .lab$ = "--undefined--"
+            .nUnlabelled = .nUnlabelled + 1
+        endif
+    endfor
+endproc
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # @eml_dropStaleConverted: .name$        (private)
 # ────────────────────────────────────────────────────────────────────────────
 # ONE SOURCE OBJECT, ONE CONVERTED TABLE, however many times a door is pressed.
@@ -2897,66 +2984,69 @@ procedure emlWrapperInit: .minCols
         # Read the id first: @eml_dropStaleConverted clears the selection.
         @eml_dropStaleConverted: "eml_converted_" + .torName$
         .nStale = eml_dropStaleConverted.nDropped
-        selectObject: .torId
-        .tableId = To Table: "row"
+        # CLASSIFY THE LABEL COLUMN BEFORE THE CONVERSION, NOT AFTER.
+        # @emlToTable's TableOfReal arm (stats/eml-extract.praat) calls
+        # @emlCleanConvertedTable internally, which fills every row-label
+        # gap with r1..rn and every "?"/empty header with Column_N before
+        # it ever returns -- so a probe run on the Table it hands back
+        # would find nothing left to classify and every message below
+        # would collapse to the "fully labelled" case. Reading the SOURCE
+        # TableOfReal's own row and column labels here, before the call,
+        # is what lets the messages still say what the source object
+        # actually carried. See @eml_auditTorRowLabels's header.
+        @eml_auditTorRowLabels: .torId
+        @eml_auditTorColumnLabels: .torId
+        .preVerdict$ = eml_auditTorRowLabels.verdict$
+        .preNUnlabelled = eml_auditTorRowLabels.nUnlabelled
+        .preNRows = eml_auditTorRowLabels.nRows
+        .preNNamed = eml_auditTorColumnLabels.nUnlabelled
+        @emlToTable: .torId, empty$# (0)
+        .tableId = emlToTable.tableId
         # NAME IT ON THE LINE AFTER THE CONVERSION, NOT IN A CLEANUP
-        # HANDLER. `To Table:` gives the new Table the source object's
-        # name, so until this line runs the object list holds "Table srcobj"
-        # beside "TableOfReal srcobj" and a native error anywhere below --
-        # and the whole reason this procedure has guards is that there are
-        # errors below -- strands the pair with no cleanup ever running. The
-        # user's next selection is then a coin flip between their data and a
-        # temporary. At creation is the only placement that survives the
-        # crash it exists for; a handler at the bottom is the placement that
-        # is skipped by exactly the event it is written for.
+        # HANDLER. @emlToTable's TableOfReal arm gives the new Table the
+        # source object's name, so until this line runs the object list
+        # holds "Table srcobj" beside "TableOfReal srcobj" and a native
+        # error anywhere below -- and the whole reason this procedure has
+        # guards is that there are errors below -- strands the pair with
+        # no cleanup ever running. The user's next selection is then a
+        # coin flip between their data and a temporary. At creation is the
+        # only placement that survives the crash it exists for; a handler
+        # at the bottom is the placement that is skipped by exactly the
+        # event it is written for.
         selectObject: .tableId
         Rename: "eml_converted_" + .torName$
         .tableName$ = selected$ ("Table")
         .converted = 1
-        # CLASSIFY THE LABEL COLUMN BEFORE ANY PROBE READS IT, and say what
-        # was found rather than claiming labels are there. The old line said
-        # "Row labels are in column ""row""" unconditionally, which was a
-        # false statement on an unlabelled TableOfReal and the crash that
-        # followed was the user's first hint.
-        @eml_auditLabelColumn: .tableId, "row"
-        # THEN GIVE THE GAPS A DEFAULT, r1..rn -- the one convention, shared
-        # with scripts/eml-describe-table.praat. The classifier's verdict is
-        # taken FIRST so it still reports what the source object carried.
-        @eml_defaultRowLabels: .tableId, "row"
-        # AND THE HEADERS, ON THIS ARM TOO. Measured on 6.6.30: a
-        # TableOfReal carries column labels only if something set them, and
-        # `To TableOfReal` from a Matrix sets none -- so an unlabelled
-        # TableOfReal converts to `row, ?, ?, ?` exactly as a Matrix does,
-        # and the duplicate-name hazard is not Matrix-only.
-        # ONE inserted column -- the "row" that `To Table: "row"` manufactured
-        # on the line above -- so Column_k names source column k.
-        @eml_nameUnlabelledColumns: .tableId, 1
-        if eml_auditLabelColumn.verdict$ = "labelled"
+        # SAY WHAT WAS FOUND, from the PRE-conversion audit above -- the
+        # old line said "Row labels are in column ""row""" unconditionally,
+        # which was a false statement on an unlabelled TableOfReal and the
+        # crash that followed was the user's first hint.
+        if .preVerdict$ = "labelled"
             appendInfoLine: "Converted TableOfReal """, .torName$,
             ... """ to Table """, .tableName$, """. Row labels are in "
             ... + "column ""row""."
-        elsif eml_auditLabelColumn.verdict$ = "partial"
+        elsif .preVerdict$ = "partial"
             appendInfoLine: "Converted TableOfReal """, .torName$,
             ... """ to Table """, .tableName$, """. Row labels are in "
             ... + "column ""row""; ",
-            ... eml_auditLabelColumn.nUnlabelled, " of ",
-            ... eml_auditLabelColumn.nRows, " row(s) had none and were "
-            ... + "given default labels r1..r", eml_auditLabelColumn.nRows,
+            ... .preNUnlabelled, " of ",
+            ... .preNRows, " row(s) had none and were "
+            ... + "given default labels r1..r", .preNRows,
             ... "."
         else
             appendInfoLine: "Converted TableOfReal """, .torName$,
             ... """ to Table """, .tableName$, """. It had no row labels, "
             ... + "so column ""row"" holds default labels r1..r",
-            ... eml_auditLabelColumn.nRows, "."
+            ... .preNRows, "."
         endif
-        if eml_nameUnlabelledColumns.nNamed > 0
+        if .preNNamed > 0
             # SAYS WHAT THE NUMBER MEANS. "by position" was true of the table
             # and false of the source object, and the user is looking at the
             # source object -- it is the one they selected and the one they
             # count columns in. The sentence now names the only mapping that
             # is any use from where they are standing.
             appendInfoLine: "It carried no column labels either, so ",
-            ... eml_nameUnlabelledColumns.nNamed, " column(s) were named "
+            ... .preNNamed, " column(s) were named "
             ... + "Column_<n>, where <n> is the column's number in the "
             ... + "TableOfReal."
         endif
@@ -2977,53 +3067,43 @@ procedure emlWrapperInit: .minCols
         # As on the TableOfReal arm above.
         @eml_dropStaleConverted: "eml_converted_" + .matName$
         .nStale = eml_dropStaleConverted.nDropped
+        # A MATRIX HAS NO ROW OR COLUMN LABELS AT ALL -- a Matrix carries no
+        # label storage of any kind, measured live against
+        # /usr/local/bin/praat6630 6.6.30 -- so every row will get a
+        # default label and every column a default name, always. Captured
+        # here, from the Matrix's own row/column counts, before
+        # @emlToTable's Matrix arm (stats/eml-extract.praat) runs its own
+        # internal @emlCleanConvertedTable fill; see the TableOfReal arm's
+        # note above for why this can't be read back off the result.
         selectObject: .matId
-        .tempTorId = To TableOfReal
-        .tableId = To Table: "row"
-        removeObject: .tempTorId
+        .preNRows = Get number of rows
+        .preNNamed = Get number of columns
+        @emlToTable: .matId, empty$# (0)
+        .tableId = emlToTable.tableId
         # NAMED AT CREATION, for the reason given in the TableOfReal arm
         # above. A Matrix reaches here through a TableOfReal that
-        # is removed on this side of the conversion, so between these two
-        # lines the object list holds "Table srcobj" beside "Matrix srcobj".
+        # @emlToTable creates and removes internally, so between the call
+        # above and this line the object list holds "Table srcobj" beside
+        # "Matrix srcobj".
         selectObject: .tableId
         Rename: "eml_converted_" + .matName$
         .tableName$ = selected$ ("Table")
         .converted = 1
-        # Check for column name collision with "row"
-        .labelCol$ = "row"
+        # THE LABEL COLUMN'S NAME, READ BACK RATHER THAN ASSUMED. A Matrix
+        # never carries a column already named "row" (it carries no column
+        # names of its own at all), so @emlToTable's internal
+        # @emlCleanConvertedTable collision guard never actually fires
+        # here -- but the message names whichever column that guard left
+        # in place, exactly as the collision check this arm used to run
+        # itself would have, rather than asserting the value that has
+        # always resulted in practice.
         selectObject: .tableId
-        .checkNCols = Get number of columns
-        for .iCheck from 2 to .checkNCols
-            .checkLabel$ = Get column label: .iCheck
-            if .checkLabel$ = "row"
-                Rename column (by number): 1, "OriginalRowLabel"
-                .labelCol$ = "OriginalRowLabel"
-                .iCheck = .checkNCols
-            endif
-        endfor
-        # A MATRIX HAS NO ROW LABELS AT ALL, so this column is always empty
-        # and always undefined -- which is the shape that aborted every
-        # Matrix-selected wrapper before its dialog opened. Classified, and
-        # made readable, by the column's REAL name: the collision rename above
-        # can have moved it, and auditing "row" after that rename would audit
-        # the user's own data column instead.
-        @eml_auditLabelColumn: .tableId, .labelCol$
-        # THEN THE DEFAULTS, r1..rn, on the type that never has any.
-        @eml_defaultRowLabels: .tableId, .labelCol$
-        # AND THE COLUMN HEADERS, which a Matrix has none of either: without
-        # this the dialog's column menu reads "row, ?, ?, ?" and the second
-        # and third "?" address the first one's data. See
-        # @eml_nameUnlabelledColumns.
-        #
-        # ONE inserted column, on this arm too, and the collision guard above
-        # does not change that: it renames position 1, it does not move it. So
-        # Column_k is Matrix column k, which is the number the user counted.
-        @eml_nameUnlabelledColumns: .tableId, 1
+        .labelCol$ = Get column label: 1
         appendInfoLine: "Converted Matrix """, .matName$,
         ... """ to Table """, .tableName$, """. A Matrix carries no row or "
         ... + "column labels, so column """, .labelCol$,
-        ... """ holds default labels r1..r", eml_auditLabelColumn.nRows,
-        ... ", and ", eml_nameUnlabelledColumns.nNamed,
+        ... """ holds default labels r1..r", .preNRows,
+        ... ", and ", .preNNamed,
         ... " unnamed column(s) were named Column_<n>, where <n> is the "
         ... + "column's number in the Matrix."
         # As on the TableOfReal arm.
