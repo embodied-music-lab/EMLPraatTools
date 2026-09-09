@@ -3728,6 +3728,11 @@ procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
                 .totalN = .totalN + .groupN[.s]
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         .allData# = zero# (.totalN)
         .groupNVec# = zero# (.nGroups)
@@ -4080,6 +4085,18 @@ procedure emlOneWayAnova: .tableId, .dataColumn$, .factorColumn$, .tukey
                 endif
             endif
         endfor
+
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, called once here after the group
+        ; loop above -- not once per group -- because @eml_getGroupData's
+        ; .warning$ is now COLUMN-WIDE (identical on every group's call for
+        ; the same .dataColumn$), so reading it from any one call (the last
+        ; one made) is correct and reading it after every call would
+        ; duplicate the same clause once per group. This is the kernel
+        ; @emlRunAnovaAnalysis reads through, so the disclosure surfaces in
+        ; the orchestrator's report without that orchestrator re-deriving it.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         if .nSingleton > 0
             if .nGroups = .nRows
@@ -5048,6 +5065,7 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
     .epsilonSq = undefined
     .tieCorrection = undefined
     .error$ = ""
+    .warning$ = ""
 
     # --- The data column must be in the table ---
     #
@@ -5101,6 +5119,11 @@ procedure emlKruskalWallis: .tableId, .dataCol$, .factorCol$
                 .n = .n + .groupN[.g]
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
     endif
 
     if .error$ = ""
@@ -5270,6 +5293,7 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
     .nPairs = 0
     .nSkipped = 0
     .skipReason$ = ""
+    .warning$ = ""
     .error$ = ""
 
     # --- Validate method ---
@@ -5334,6 +5358,11 @@ procedure emlDunnTest: .tableId, .dataCol$, .factorCol$, .method$
                 .n = .n + .groupN[.g]
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
     endif
 
     if .error$ = ""
@@ -5572,6 +5601,7 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
     .skipReason$ = ""
     .adjustMethod$ = .method$
     .error$ = ""
+    .warning$ = ""
 
     # --- Validate method ---
 
@@ -5673,6 +5703,11 @@ procedure emlPairwiseT: .tableId, .dataCol$, .factorCol$, .method$, .type$
                 .groupData'.g'# = eml_getGroupData.data#
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         # --- Determine equalVariances flag ---
         .eqVar = 0
@@ -5859,6 +5894,7 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
     .nSkipped = 0
     .skipReason$ = ""
     .error$ = ""
+    .warning$ = ""
 
     # --- Validate method ---
 
@@ -5936,6 +5972,11 @@ procedure emlPairwiseWilcoxon: .tableId, .dataCol$, .factorCol$, .method$
                 .groupData'.g'# = eml_getGroupData.data#
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         # --- Pairwise tests ---
 
@@ -6086,6 +6127,7 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
     .mse = undefined
     .dfWithin = undefined
     .error$ = ""
+    .warning$ = ""
 
     # --- The data column must be in the table ---
     #
@@ -6159,6 +6201,11 @@ procedure emlScheffe: .tableId, .dataCol$, .factorCol$
                 endif
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         # MSE
         .dfWithin = .totalN - .nGroups
@@ -6440,6 +6487,11 @@ procedure emlBrownForsythe: .tableId, .dataCol$, .factorCol$
                 endif
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         if .nSingleton > 0
             if .nGroups = .nRows
@@ -6717,6 +6769,12 @@ procedure emlWelchAnova: .tableId, .dataCol$, .factorCol$
                 endif
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
+
 
         ; Too-small groups first: a group of one has no variance to be
         ; zero, so reporting it as flat would name the wrong defect.
@@ -6996,6 +7054,11 @@ procedure emlGamesHowell: .tableId, .dataCol$, .factorCol$, .alpha
                 endif
             endif
         endfor
+        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
+        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
+        ; see the identical comment in @emlOneWayAnova.
+        @eml_appendWarning: .warning$, eml_getGroupData.warning$
+        .warning$ = eml_appendWarning.result$
 
         if .nSingleton > 0
             if .nGroups = .nRows

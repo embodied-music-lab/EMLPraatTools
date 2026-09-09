@@ -211,20 +211,18 @@ procedure emlExtractColumn: .tableId, .columnName$
                     endif
                 endfor
 
-                # EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
-                # ANSWER_LEVEL2_EMPTY_CELL_NOTE): appended to the LEVEL 1
-                # warning already captured above, through the one shared
-                # builder every extraction entry point and @eml_getGroupData
-                # use, so the wording cannot drift between them.
-                @eml_emptyCellDisclosure: .nEmpty, .columnName$,
-                    ... emlAuditColumn.firstEmptyRow
-                if eml_emptyCellDisclosure.note$ <> ""
-                    if .warning$ <> ""
-                        .warning$ = .warning$ + " " + eml_emptyCellDisclosure.note$
-                    else
-                        .warning$ = eml_emptyCellDisclosure.note$
-                    endif
-                endif
+                # EMPTY-CELL DISCLOSURE (9 Sep 2026,
+                # RULING_LEVEL2_DISCLOSURE_REACH /
+                # AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST): the complete
+                # ascending row list, appended to the LEVEL 1 warning already
+                # captured above, through the one shared builder every
+                # extraction entry point and @eml_getGroupData use, so the
+                # wording cannot drift between them. One column read here, so
+                # one clause -- no join needed against another column.
+                @eml_emptyCellDisclosure: 0, .columnName$, "",
+                    ... .nEmpty, emlAuditColumn.emptyRows#
+                @eml_appendWarning: .warning$, eml_emptyCellDisclosure.clause$
+                .warning$ = eml_appendWarning.result$
             endif
         endif
 
@@ -370,18 +368,15 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
                 .error$ = eml_level2Refusal.error$
                 .remedy$ = eml_level2Refusal.remedy$
             else
-                # EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
-                # ANSWER_LEVEL2_EMPTY_CELL_NOTE): through the same shared
-                # builder @emlExtractColumn and @eml_getGroupData use.
-                @eml_emptyCellDisclosure: emlAuditColumn.nEmpty, .measureCol$,
-                    ... emlAuditColumn.firstEmptyRow
-                if eml_emptyCellDisclosure.note$ <> ""
-                    if .warning$ <> ""
-                        .warning$ = .warning$ + " " + eml_emptyCellDisclosure.note$
-                    else
-                        .warning$ = eml_emptyCellDisclosure.note$
-                    endif
-                endif
+                # EMPTY-CELL DISCLOSURE (9 Sep 2026,
+                # RULING_LEVEL2_DISCLOSURE_REACH /
+                # AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST): the complete
+                # ascending row list, through the same shared builder
+                # @emlExtractColumn and @eml_getGroupData use.
+                @eml_emptyCellDisclosure: 0, .measureCol$, "",
+                    ... emlAuditColumn.nEmpty, emlAuditColumn.emptyRows#
+                @eml_appendWarning: .warning$, eml_emptyCellDisclosure.clause$
+                .warning$ = eml_appendWarning.result$
             endif
         endif
     endif
@@ -472,11 +467,29 @@ endproc
 #   .note$        - "" always now: a LEVEL 2 cell refuses (.error$/.ok)
 #                   rather than being disclosed and excluded. Kept for
 #                   interface stability.
-#   .warning$     - LEVEL 1 disclosure across both columns, plus (9 Sep 2026
-#                   ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE)
-#                   @eml_emptyCellDisclosure's sentence for each column that
-#                   held a genuinely empty cell (both can appear); "" if
-#                   none of that happened
+#   .warning$     - LEVEL 1 disclosure across both columns, plus (9 Sep 2026,
+#                   RULING_LEVEL2_DISCLOSURE_REACH /
+#                   AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST) the assembled
+#                   empty-cell disclosure (one clause per column, "; "-joined
+#                   -- see @eml_joinDisclosureClauses); "" if none of that
+#                   happened. Row numbers in it are THIS PROCEDURE'S
+#                   .tableId's rows -- a caller that ran this on a subset
+#                   table (e.g. @eml_getGroupPairedData) must not surface
+#                   this text as-is; see .col1EmptyRows#/.col2EmptyRows#.
+#   .col1Empty, .col1EmptyRows# - count and COMPLETE ascending row list of
+#                   genuinely empty .col1$ cells, in THIS .tableId's row
+#                   numbers, zero#(0) when .col1Empty = 0. Exposed (not just
+#                   folded into .warning$'s text) so a caller reading a
+#                   TEMPORARY subset table can translate the row numbers back
+#                   to its own source table before rendering its own clause
+#                   through @eml_emptyCellDisclosure -- see
+#                   @eml_getGroupPairedData.
+#   .col2Empty, .col2EmptyRows# - same, for .col2$.
+#   .level1Warning$ - JUST the LEVEL 1 repair half of .warning$, before the
+#                   empty-cell disclosure is folded in -- what a caller
+#                   rebuilding its own empty-cell clause (from translated row
+#                   numbers) should start its own .warning$ from instead of
+#                   .warning$ itself. See @eml_getGroupPairedData.
 #   .ok           - (.error$ = ""), Praat's single-exit success flag
 #   .error$       - "" on success; else a column doesn't exist, OR (9 Sep
 #                   2026 ruling) a LEVEL 2 cell in .col1$ or .col2$ refused
@@ -493,6 +506,11 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
     .warning$ = ""
     .error$ = ""
     .remedy$ = ""
+    .col1Empty = 0
+    .col1EmptyRows# = zero# (0)
+    .col2Empty = 0
+    .col2EmptyRows# = zero# (0)
+    .level1Warning$ = ""
     .data1# = zero#(0)
     .data2# = zero#(0)
     
@@ -554,9 +572,9 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
             .clean2 = eml_openColumn.clean
 
             .col1Empty = 0
-            .col1EmptyRow = 0
+            .col1EmptyRows# = zero# (0)
             .col2Empty = 0
-            .col2EmptyRow = 0
+            .col2EmptyRows# = zero# (0)
 
             if .clean1 = 0
                 @emlAuditColumn: .tableId, .col1$
@@ -575,7 +593,7 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
                     .remedy$ = eml_level2Refusal.remedy$
                 else
                     .col1Empty = emlAuditColumn.nEmpty
-                    .col1EmptyRow = emlAuditColumn.firstEmptyRow
+                    .col1EmptyRows# = emlAuditColumn.emptyRows#
                 endif
             endif
             if .error$ = "" and .clean2 = 0
@@ -595,32 +613,39 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
                     .remedy$ = eml_level2Refusal.remedy$
                 else
                     .col2Empty = emlAuditColumn.nEmpty
-                    .col2EmptyRow = emlAuditColumn.firstEmptyRow
+                    .col2EmptyRows# = emlAuditColumn.emptyRows#
                 endif
             endif
 
-            # EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
-            # ANSWER_LEVEL2_EMPTY_CELL_NOTE), one call per column through
-            # the same shared builder every extraction entry point uses --
+            ; THE LEVEL 1 HALF, EXPOSED SEPARATELY, before the empty-cell
+            ; clause below is folded into .warning$ -- a caller that read
+            ; this .tableId through a temporary subset (@eml_getGroupPairedData)
+            ; can reuse this half as-is (its row numbers, embedded in
+            ; @eml_repairNote's wording, are a separate, pre-existing
+            ; concern the empty-cell amendment does not reach) while
+            ; rebuilding the empty-cell half itself from .col1EmptyRows#/
+            ; .col2EmptyRows# translated to its own source-table rows.
+            .level1Warning$ = .warning$
+
+            # EMPTY-CELL DISCLOSURE (9 Sep 2026,
+            # RULING_LEVEL2_DISCLOSURE_REACH /
+            # AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST), one clause per
+            # column, in the order the columns are read (.col1$ then
+            # .col2$), through the same shared builder every extraction
+            # entry point uses, joined with @eml_joinDisclosureClauses --
             # both can fire, since the pairing does not stop a genuinely
             # empty cell from sitting in each column independently.
             if .error$ = ""
-                @eml_emptyCellDisclosure: .col1Empty, .col1$, .col1EmptyRow
-                if eml_emptyCellDisclosure.note$ <> ""
-                    if .warning$ <> ""
-                        .warning$ = .warning$ + " " + eml_emptyCellDisclosure.note$
-                    else
-                        .warning$ = eml_emptyCellDisclosure.note$
-                    endif
-                endif
-                @eml_emptyCellDisclosure: .col2Empty, .col2$, .col2EmptyRow
-                if eml_emptyCellDisclosure.note$ <> ""
-                    if .warning$ <> ""
-                        .warning$ = .warning$ + " " + eml_emptyCellDisclosure.note$
-                    else
-                        .warning$ = eml_emptyCellDisclosure.note$
-                    endif
-                endif
+                @eml_emptyCellDisclosure: 0, .col1$, "",
+                    ... .col1Empty, .col1EmptyRows#
+                .emptyDisclosure$ = eml_emptyCellDisclosure.clause$
+                @eml_emptyCellDisclosure: 0, .col2$, "",
+                    ... .col2Empty, .col2EmptyRows#
+                @eml_joinDisclosureClauses: .emptyDisclosure$,
+                    ... eml_emptyCellDisclosure.clause$
+                .emptyDisclosure$ = eml_joinDisclosureClauses.result$
+                @eml_appendWarning: .warning$, .emptyDisclosure$
+                .warning$ = eml_appendWarning.result$
             endif
 
             if .error$ = ""
@@ -1578,40 +1603,165 @@ endproc
 # ============================================================================
 # @eml_emptyCellDisclosure (internal helper)
 # ============================================================================
-# THE empty-cell disclosure wording, ONE HOME so every extraction entry
-# point says it identically (9 Sep 2026, ANSWER_LEVEL2_EMPTY_CELL_NOTE
-# ruling). A genuinely empty cell is not a refusal -- it stays excluded and
-# counted exactly as it did before CORRECTION_LEVEL2_IS_A_REFUSAL -- but
-# @emlExtractColumn/@emlExtractGroupVectors/@emlExtractPairedColumns/
-# @eml_getGroupData used to fold that count into the same @eml_auditNote
-# sentence a LEVEL 2 cell got, and now that LEVEL 2 refuses instead of
-# being disclosed, an empty cell's own count was left with nowhere to go:
-# .note$ is "" by design (see those procedures' own headers). The ruling
-# is that "as today" governs what the user is TOLD, not that raw field, so
-# the count is restored here -- with the column and the first row, not the
-# count alone -- into .warning$, which every one of those procedures now
-# appends this to.
+# THE empty-cell disclosure wording, ONE HOME so every door that drops rows
+# or subjects for empty numeric cells says it identically. Rewritten 9 Sep
+# 2026 for RULING_LEVEL2_DISCLOSURE_REACH / AMENDMENT_EMPTY_CELL_DISCLOSURE
+# _FULL_LIST, which supersedes the count-plus-first-row form this used to
+# render: the disclosure now lists EVERY excluded cell, not just the count
+# and the first one.
 #
-# Called ONLY where a caller has already found .nEmpty > 0 (or trivially
-# handles .nEmpty = 0 by getting "" back); it does not itself decide
-# whether a cell is empty, the same division of labour @eml_level2Refusal
-# has with @emlAuditColumn above.
+# A genuinely empty cell is not a refusal -- it stays excluded and counted,
+# same as always -- but the READER is told exactly which source rows were
+# dropped, not merely how many and where the first one was.
+#
+# ONE CLAUSE PER CALL. This builds the sentence for ONE column (ROW mode) or
+# ONE excluded subject (SUBJECT mode). A door with more than one column read,
+# or more than one excluded subject, calls this once per column/subject (in
+# column-read order, or ascending causing-row order) and threads the results
+# through @eml_joinDisclosureClauses ("; "-joined) -- see that procedure's
+# header for why the joining is a second, separate helper: a Praat procedure
+# cannot take a caller-sized list of (column, row-vector) pairs in one call,
+# so looping-and-joining is the caller's job, not this one's. The wording
+# itself is still stated in exactly ONE place, here; only the loop is left
+# to the caller, same as @eml_level2Refusal leaves "which column, first" to
+# its callers while owning the sentence.
+#
+# Called ONLY where a caller has already found .nRows > 0 (or trivially
+# handles .nRows = 0 by getting "" back); it does not itself decide whether
+# a cell is empty or which subject a row belongs to, the same division of
+# labour @eml_level2Refusal has with @emlAuditColumn above.
 #
 # Arguments:
-#   .nEmpty      - count of genuinely empty cells (0 renders "")
-#   .columnName$ - the column they were found in
-#   .firstRow    - the first empty cell's row, in the table this count was
-#                  gathered over
+#   .unitMode    - 0 = ROW mode: a numeric-cell-reading door (two-group,
+#                  paired, correlation, descriptive, regression, normality,
+#                  and every kernel-routed group-comparison door) that drops
+#                  ROWS for an empty cell in .columnName$.
+#                  1 = SUBJECT mode: repeated-measures, Friedman, reliability
+#                  -- doors that drop a whole SUBJECT (the row-equivalent
+#                  unit for these designs) because ONE of its cells was
+#                  empty. Same builder, this one extra argument, per
+#                  RULING_LEVEL2_DISCLOSURE_REACH point 2.
+#   .columnName$ - ROW mode: the column this clause is about, exactly as the
+#                  door reads it.
+#                  SUBJECT mode: the column of the FIRST empty cell that
+#                  caused this subject to be dropped (column-read order).
+#   .subjectId$  - SUBJECT mode only, otherwise ignored: identifies the
+#                  excluded subject -- a subject-label column's value when
+#                  the door has one (repeated-measures/Friedman LONG format),
+#                  else "row <N>" naming the source-table row that subject
+#                  occupies (WIDE format and reliability, which read the
+#                  table one row per subject with no separate subject-label
+#                  column). Documented at each caller.
+#   .nRows       - ROW mode: count of empty source-rows for .columnName$ (0
+#                  renders "").
+#                  SUBJECT mode: 1 to render the clause (a subject is either
+#                  excluded or not), 0 for "".
+#   .rows#       - ROW mode: the COMPLETE, ascending, SOURCE-TABLE row
+#                  numbers of every empty cell in .columnName$ -- no cap, no
+#                  truncation.
+#                  SUBJECT mode: exactly one element, .rows#[1], the
+#                  SOURCE-TABLE row of the causing cell.
 #
 # Output:
-#   .note$ - "N cell(s) empty in '<column>' (row R first); treated as
-#            missing", or "" when .nEmpty = 0
+#   .clause$ - "" when .nRows = 0. Otherwise:
+#     ROW mode:     "<col>: <n> empty cell(s) excluded (row(s) <r1>, <r2>, ...)"
+#                    singular wording when n = 1, e.g.
+#                    "jitter_pct: 1 empty cell excluded (row 88)"
+#     SUBJECT mode: "subject <id> excluded: empty cell in <col> (row <r>)"
 # ============================================================================
-procedure eml_emptyCellDisclosure: .nEmpty, .columnName$, .firstRow
-    .note$ = ""
-    if .nEmpty > 0
-        .note$ = string$ (.nEmpty) + " cell(s) empty in '" + .columnName$
-        ... + "' (row " + string$ (.firstRow) + " first); treated as missing"
+procedure eml_emptyCellDisclosure: .unitMode, .columnName$, .subjectId$, .nRows, .rows#
+    .clause$ = ""
+    if .nRows > 0
+        if .unitMode = 1
+            .clause$ = "subject " + .subjectId$ + " excluded: empty cell in "
+            ... + .columnName$ + " (row " + string$ (round (.rows# [1])) + ")"
+        else
+            if .nRows = 1
+                .clause$ = .columnName$ + ": 1 empty cell excluded (row "
+                ... + string$ (round (.rows# [1])) + ")"
+            else
+                .clause$ = .columnName$ + ": " + string$ (.nRows)
+                ... + " empty cells excluded (rows "
+                for .i from 1 to .nRows
+                    if .i > 1
+                        .clause$ = .clause$ + ", "
+                    endif
+                    .clause$ = .clause$ + string$ (round (.rows# [.i]))
+                endfor
+                .clause$ = .clause$ + ")"
+            endif
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @eml_joinDisclosureClauses (internal helper)
+# ============================================================================
+# Joins @eml_emptyCellDisclosure clauses with "; ", skipping any "" clause --
+# so a caller can call this once per column (ROW mode, in column-read order)
+# or once per excluded subject (SUBJECT mode, in ascending causing-row order)
+# unconditionally, without testing emptiness itself first. This is the exact
+# joining rule AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST settles on for both
+# the multi-column and the multi-subject case: "; " between clauses, column/
+# subject order preserved, nothing reordered or deduplicated beyond that.
+#
+# A caller with only one column (or subject) can call this too -- with the
+# accumulator starting at "" it just returns the one clause unchanged -- so
+# there is one calling pattern whether a door reads one column or several.
+#
+# Arguments:
+#   .acc$    - clauses joined so far ("" to start)
+#   .clause$ - the next clause to fold in (possibly "")
+#
+# Output:
+#   .result$ - .acc$ with .clause$ appended, "; "-separated when both sides
+#              are non-empty
+# ============================================================================
+procedure eml_joinDisclosureClauses: .acc$, .clause$
+    .result$ = .acc$
+    if .clause$ <> ""
+        if .result$ <> ""
+            .result$ = .result$ + "; " + .clause$
+        else
+            .result$ = .clause$
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# @eml_appendWarning (internal helper)
+# ============================================================================
+# General-purpose warning/note accumulator: appends .part$ to .acc$ with a
+# single space, skipping whichever side is empty. This is the "if .acc$ <> ''
+# append with a space else replace" pattern every extraction entry point
+# already used, by hand, to fold a LEVEL 1 repair sentence and the assembled
+# empty-cell disclosure (@eml_joinDisclosureClauses) into one .warning$ --
+# named and shared here so it is written once.
+#
+# It is also (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH point 1) THE ONE
+# SHARED CAPTURE the kernel-routed doors (one-way ANOVA, Kruskal-Wallis,
+# two-way, the pairwise post-hoc comparisons, grouped regression) use to fold
+# @eml_getGroupData's / @eml_getGroupPairedData's .warning$ into their own
+# orchestrator .warning$ -- called once per door, not hand-rolled per door.
+#
+# Arguments:
+#   .acc$  - the accumulated warning so far ("" to start)
+#   .part$ - the next piece to fold in (possibly "")
+#
+# Output:
+#   .result$ - .acc$ with .part$ appended, space-separated when both sides
+#              are non-empty
+# ============================================================================
+procedure eml_appendWarning: .acc$, .part$
+    .result$ = .acc$
+    if .part$ <> ""
+        if .result$ <> ""
+            .result$ = .result$ + " " + .part$
+        else
+            .result$ = .part$
+        endif
     endif
 endproc
 
@@ -1666,6 +1816,13 @@ endproc
 #               LEVEL 2 kind.
 #   .firstEmptyRow / .firstLocaleRow / .firstUnreadableRow / .firstCoercedRow
 #   .firstLocaleValue$ / .firstUnreadableValue$ / .firstCoercedValue$
+#   .emptyRows# - (9 Sep 2026, AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST) the
+#               COMPLETE, ascending, SOURCE-TABLE row numbers of every
+#               genuinely empty cell -- length .nEmpty, zero#(0) when
+#               .nEmpty = 0 (including the fast path, which cannot see an
+#               empty cell by construction). .firstEmptyRow is kept too
+#               (= .emptyRows#[1] when .nEmpty > 0) for interface stability
+#               and for callers that only ever wanted the first row.
 #   .commaMode - the column's @emlCommaColumnMode.mode (0 on the fast path)
 #   .note$    - user-facing LEVEL 2 sentences (@eml_auditNote), one per
 #               refusal condition present, "" if nothing was refused. Kept
@@ -1689,6 +1846,7 @@ procedure emlAuditColumn: .tableId, .columnName$
     .nLeadingDot = 0
     .nLevel2 = 0
     .firstEmptyRow = 0
+    .emptyRows# = zero# (0)
     .firstLocaleRow = 0
     .firstUnreadableRow = 0
     .firstCoercedRow = 0
@@ -1770,6 +1928,13 @@ procedure emlAuditColumn: .tableId, .columnName$
             if .firstEmptyRow = 0
                 .firstEmptyRow = .row
             endif
+            ; COMPLETE LIST, not just the first row (9 Sep 2026,
+            ; AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST). Indexed scalar
+            ; during the pass -- same convention as .gS[]/.dS[] elsewhere in
+            ; this file -- copied into the sized vector .emptyRows# below
+            ; once .nEmpty is final; ascending by construction, since .row
+            ; only increases.
+            .emptyRowAt[.nEmpty] = .row
         elsif eml_cleanVerdict.kind = 2
             .nValid = .nValid + 1
             .nDecimalRepaired = .nDecimalRepaired + 1
@@ -1831,6 +1996,13 @@ procedure emlAuditColumn: .tableId, .columnName$
     endfor
 
     .nRepaired = .nDecimalRepaired + .nGroupedRepaired + .nDotRepaired
+
+    if .nEmpty > 0
+        .emptyRows# = zero# (.nEmpty)
+        for .ei from 1 to .nEmpty
+            .emptyRows# [.ei] = .emptyRowAt[.ei]
+        endfor
+    endif
 
     # The note is rendered by @eml_auditNote from the REFUSAL tallies -- see
     # that procedure for the wording and the ordering rule. @eml_getGroupData
@@ -2350,6 +2522,20 @@ endproc
 #                  owns it and must remove it. NOTE: on the normalising
 #                  path the group column of the subset holds the
 #                  normalised label, not the original spelling.
+#   .origRow#    - (9 Sep 2026, AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST)
+#                  ascending vector, length = the subset's row count, mapping
+#                  subset row k to its SOURCE .tableId row number.
+#                  ".subsetId" is built by "Extract rows where column..."
+#                  (or, on the normalising path, that same command run on a
+#                  normalised copy), which Praat documents as preserving the
+#                  matched rows' relative order -- so a second pass here,
+#                  walking .tableId with the identical match test in the
+#                  identical order, lines up with the subset row for row.
+#                  Needed because a disclosure built FROM the subset table
+#                  (@emlExtractPairedColumns run on .subsetId, as
+#                  @eml_getGroupPairedData does) names subset-relative rows,
+#                  and AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST requires
+#                  SOURCE-TABLE row numbers.
 # ============================================================================
 procedure eml_groupSubset: .tableId, .groupCol$, .groupLabel$
     @eml_normalizeLabel: .groupLabel$
@@ -2393,6 +2579,26 @@ procedure eml_groupSubset: .tableId, .groupCol$, .groupLabel$
             ... "is equal to", .wantNorm$
         removeObject: .workId
     endif
+
+    ; THE ROW MAP, one more O(.nRows) pass with the identical normalised
+    ; match test used above, in table order -- so the k-th match here IS the
+    ; k-th row of .subsetId. Indexed scalar during the walk, copied into the
+    ; sized vector after, same convention as @emlAuditColumn.emptyRows#.
+    .nOrig = 0
+    selectObject: .tableId
+    for .r from 1 to .nRows
+        .cell$ = Get value: .r, .groupCol$
+        @eml_normalizeLabel: .cell$
+        if eml_normalizeLabel.result$ = .wantNorm$
+            .nOrig = .nOrig + 1
+            .origRowAt[.nOrig] = .r
+        endif
+        selectObject: .tableId
+    endfor
+    .origRow# = zero# (.nOrig)
+    for .oi from 1 to .nOrig
+        .origRow# [.oi] = .origRowAt[.oi]
+    endfor
 endproc
 
 
@@ -2421,23 +2627,23 @@ endproc
 #                than being disclosed and excluded. Kept for interface
 #                stability.
 #   .warning$  - LEVEL 1 disclosure, "" if nothing in the column was
-#                repaired. Column-wide (@emlAuditColumn), not scoped to this
-#                group the way .note$ is: a repair anywhere in .dataCol$ is
-#                worth knowing about even from a group it did not touch.
-#                Plus (9 Sep 2026 ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE)
-#                @eml_emptyCellDisclosure's sentence when THIS group had a
-#                genuinely empty .dataCol$ cell of its own -- that part IS
-#                scoped to this group, unlike the repair sentence above,
-#                because a group with no empty cell of its own should not
-#                be told about one that belongs to a different group.
-#   .emptyNote$ - JUST the group-scoped empty-cell sentence above, without
-#                the column-wide LEVEL 1 repair sentence -- "" when this
-#                group had no empty cell of its own. A caller comparing
-#                several groups on the SAME column (the two-group door calls
-#                this procedure once per group) needs this, not .warning$:
-#                the LEVEL 1 half of .warning$ is column-wide and would
-#                repeat itself once per group if every call's .warning$ were
-#                concatenated, where .emptyNote$ has nothing to repeat.
+#                repaired, PLUS (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH /
+#                AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST) the empty-cell
+#                disclosure clause for .dataCol$. BOTH HALVES ARE NOW
+#                COLUMN-WIDE (@emlAuditColumn), not scoped to this group:
+#                the amendment's full-list form names every empty row in the
+#                column, so it is IDENTICAL on every group's call for the
+#                same .dataCol$ -- a caller comparing several groups on one
+#                column (one-way ANOVA, Kruskal-Wallis, two-way, the
+#                pairwise post-hocs) must capture this ONCE, not once per
+#                group, or the disclosure repeats itself; see
+#                @eml_appendWarning, which every one of those doors uses as
+#                its single shared capture point.
+#   .emptyNote$ - JUST the empty-cell clause above, without the LEVEL 1
+#                repair sentence -- "" when the column has no empty cell.
+#                Same column-wide value as the empty-cell half of .warning$;
+#                kept as a separate output for a caller that wants the
+#                empty-cell disclosure without the repair sentence.
 #   .ok        - (.error$ = ""), Praat's single-exit success flag
 #   .error$    - "" on success; else the column doesn't exist, OR (9 Sep
 #                2026 ruling) a LEVEL 2 cell ANYWHERE in .dataCol$ refused it
@@ -2576,8 +2782,6 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
         .data# = zero# (.nRows)
         .n = 0
         .nGroupRows = 0
-        .nEmpty = 0
-        .firstEmptyRow = 0
         # emlAuditColumn.warning$ from the column-wide refusal check above
         # is already exactly this column's LEVEL 1 disclosure -- it does not
         # need a second @emlAuditColumn call to re-derive.
@@ -2606,17 +2810,12 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
                 ... or eml_cleanVerdict.kind = 3 or eml_cleanVerdict.kind = 4
                     .n = .n + 1
                     .data#[.n] = eml_cleanVerdict.value
-                else
-                    .nEmpty = .nEmpty + 1
-                    if .firstEmptyRow = 0
-                        # THE TABLE ROW, not the group-relative count: the
-                        # same row-numbering convention every other
-                        # disclosure in this file uses (@emlAuditColumn,
-                        # @eml_level2Refusal), so a reader who goes to look
-                        # finds the row this names.
-                        .firstEmptyRow = .row
-                    endif
                 endif
+                ; A row this group owns whose cell is not kind 0/2/3/4 is
+                ; genuinely empty (kind 1) -- no separate counter is kept
+                ; here any more: .nGroupRows - .n below is that count, and
+                ; the DISCLOSURE text (just below) is column-wide now, not
+                ; group-scoped, so it does not need this loop's own tally.
             endif
         endfor
 
@@ -2628,21 +2827,22 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
 
         .nExcluded = .nGroupRows - .n
 
-        # EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling,
-        # ANSWER_LEVEL2_EMPTY_CELL_NOTE), through the same shared builder
-        # every extraction entry point uses -- scoped to THIS group's own
-        # empty cells (.nEmpty above), not the whole column, since a group
-        # that has none of its own empty cells should not be told about
-        # another group's.
-        @eml_emptyCellDisclosure: .nEmpty, .dataCol$, .firstEmptyRow
-        .emptyNote$ = eml_emptyCellDisclosure.note$
-        if eml_emptyCellDisclosure.note$ <> ""
-            if .warning$ <> ""
-                .warning$ = .warning$ + " " + eml_emptyCellDisclosure.note$
-            else
-                .warning$ = eml_emptyCellDisclosure.note$
-            endif
-        endif
+        # EMPTY-CELL DISCLOSURE (9 Sep 2026,
+        # RULING_LEVEL2_DISCLOSURE_REACH /
+        # AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST): COLUMN-WIDE now, not
+        # scoped to this group -- the amendment's full-list form names every
+        # empty row in .dataCol$, and a group-scoped subset of that list
+        # would just be a partial, harder-to-reconcile copy of the same
+        # information. Built from the SAME @emlAuditColumn call already made
+        # above for the LEVEL 2 refusal test, so this costs nothing extra,
+        # and it is IDENTICAL on every group's call for this column -- see
+        # @eml_appendWarning's header (kernel-routed doors capture it once,
+        # not once per group, for exactly that reason).
+        @eml_emptyCellDisclosure: 0, .dataCol$, "",
+            ... emlAuditColumn.nEmpty, emlAuditColumn.emptyRows#
+        .emptyNote$ = eml_emptyCellDisclosure.clause$
+        @eml_appendWarning: .warning$, .emptyNote$
+        .warning$ = eml_appendWarning.result$
     endif
 
     label GETGROUPDATA_DONE
@@ -2671,13 +2871,17 @@ endproc
 #   .nExcluded - group rows dropped for a missing X or Y
 #   .dataX#    - aligned X values
 #   .dataY#    - aligned Y values
-#   .warning$  - @emlExtractPairedColumns.warning$ from the group's subset
-#                table, forwarded as-is (9 Sep 2026 ruling,
-#                ANSWER_LEVEL2_EMPTY_CELL_NOTE): "" on error. Any row it
-#                names is relative to the GROUP'S subset, not .tableId --
-#                @emlExtractPairedColumns ran on the temporary copy
-#                @eml_groupSubset built, which has no record of which
-#                original row each of its own rows came from.
+#   .warning$  - @emlExtractPairedColumns.level1Warning$ (the LEVEL 1 half;
+#                its own row numbers are a separate, pre-existing concern --
+#                see that field's header), plus (9 Sep 2026,
+#                RULING_LEVEL2_DISCLOSURE_REACH /
+#                AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST) an empty-cell
+#                disclosure REBUILT here, not forwarded, so that its row
+#                numbers are .tableId's (SOURCE-TABLE), not the temporary
+#                group subset's -- @emlExtractPairedColumns ran on
+#                @eml_groupSubset's copy, which numbers its own rows 1..n
+#                independently of where they came from in .tableId; the
+#                translation back is @eml_groupSubset.origRow#. "" on error.
 #   .error$    - "" on success
 #
 # Group rows are selected on the normalised label (see @eml_groupSubset).
@@ -2693,6 +2897,7 @@ procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLa
     .warning$ = ""
     @eml_groupSubset: .tableId, .groupCol$, .groupLabel$
     .tempGroup = eml_groupSubset.subsetId
+    .origRow# = eml_groupSubset.origRow#
     @emlExtractPairedColumns: .tempGroup, .colX$, .colY$
     if emlExtractPairedColumns.error$ <> ""
         .error$ = emlExtractPairedColumns.error$
@@ -2705,13 +2910,37 @@ procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLa
         .dataX# = emlExtractPairedColumns.data1#
         .dataY# = emlExtractPairedColumns.data2#
         .nExcluded = emlExtractPairedColumns.nExcludedRows
-        # ROW NUMBERS HERE ARE RELATIVE TO THE GROUP SUBSET, not the
-        # original table: @emlExtractPairedColumns ran on .tempGroup, a
-        # copy holding only this group's rows in their original relative
-        # order, and it has no way to know the row each one came from in
-        # .tableId. Good enough to locate the cell within the group; a
-        # caller needing the table-wide row would have to re-derive it.
-        .warning$ = emlExtractPairedColumns.warning$
+
+        ; EMPTY-CELL DISCLOSURE, REBUILT WITH SOURCE-TABLE ROWS (9 Sep 2026,
+        ; RULING_LEVEL2_DISCLOSURE_REACH /
+        ; AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST): translate each column's
+        ; subset-relative empty rows through .origRow# before handing them to
+        ; @eml_emptyCellDisclosure, so the clause names the row a reader
+        ; would actually find in .tableId, not a row that only means
+        ; something inside the temporary subset. The LEVEL 1 half is taken
+        ; from .level1Warning$ as-is (its own row numbers are a separate,
+        ; documented, pre-existing concern -- see that field's header).
+        .colXEmpty = emlExtractPairedColumns.col1Empty
+        .colXEmptyRows# = zero# (.colXEmpty)
+        for .i from 1 to .colXEmpty
+            .colXEmptyRows# [.i] =
+                ... .origRow# [round (emlExtractPairedColumns.col1EmptyRows# [.i])]
+        endfor
+        .colYEmpty = emlExtractPairedColumns.col2Empty
+        .colYEmptyRows# = zero# (.colYEmpty)
+        for .i from 1 to .colYEmpty
+            .colYEmptyRows# [.i] =
+                ... .origRow# [round (emlExtractPairedColumns.col2EmptyRows# [.i])]
+        endfor
+
+        @eml_emptyCellDisclosure: 0, .colX$, "", .colXEmpty, .colXEmptyRows#
+        .emptyDisclosure$ = eml_emptyCellDisclosure.clause$
+        @eml_emptyCellDisclosure: 0, .colY$, "", .colYEmpty, .colYEmptyRows#
+        @eml_joinDisclosureClauses: .emptyDisclosure$, eml_emptyCellDisclosure.clause$
+        .emptyDisclosure$ = eml_joinDisclosureClauses.result$
+
+        @eml_appendWarning: emlExtractPairedColumns.level1Warning$, .emptyDisclosure$
+        .warning$ = eml_appendWarning.result$
     endif
     removeObject: .tempGroup
 endproc

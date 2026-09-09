@@ -219,8 +219,9 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     .n1 = eml_getGroupData.n
     ; EMPTY-CELL DISCLOSURE (9 Sep 2026 ruling, ANSWER_LEVEL2_EMPTY_CELL_NOTE):
     ; @eml_getGroupData already built the sentence, through the one shared
-    ; builder every extraction entry point uses -- this door only has to
-    ; carry it, once per group, into its own .warning$ and the report below.
+    ; builder every extraction entry point uses -- and it is COLUMN-WIDE
+    ; (identical on every group's call for the same .dataCol$), so this door
+    ; only has to carry it ONCE, into its own .warning$ and the report below.
     .warning$ = eml_getGroupData.warning$
     @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .group2$
     if eml_getGroupData.error$ <> ""
@@ -229,17 +230,9 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     endif
     .g2# = eml_getGroupData.data#
     .n2 = eml_getGroupData.n
-    ; group2's .warning$ would repeat the SAME column-wide LEVEL 1 sentence
-    ; group1's already carried into .warning$ above -- @eml_getGroupData's
-    ; .emptyNote$ is the group-scoped remainder only, so appending it here
-    ; cannot duplicate what group1 already contributed.
-    if eml_getGroupData.emptyNote$ <> ""
-        if .warning$ <> ""
-            .warning$ = .warning$ + " " + eml_getGroupData.emptyNote$
-        else
-            .warning$ = eml_getGroupData.emptyNote$
-        endif
-    endif
+    ; group2's .warning$/.emptyNote$ would repeat the SAME column-wide
+    ; disclosure group1's call already carried into .warning$ above -- it is
+    ; not folded in a second time here.
 
     if .n1 < 2 or .n2 < 2
         .error$ = "Each group needs at least 2 observations. Group """ + .group1$ + """: n=" + string$ (.n1) + ", group """ + .group2$ + """: n=" + string$ (.n2)
@@ -336,8 +329,17 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     @emlCSVInit
     @emlReportTwoGroupComparison: .tableName$, .dataCol$, .groupCol$, .group1$, .group2$, .n1, .mean1, .sd1, .median1, .n2, .mean2, .sd2, .median2, .effType$
 
+    ; EMPTY-CELL DISCLOSURE, PRINTED THROUGH @emlEmit (9 Sep 2026,
+    ; RULING_LEVEL2_DISCLOSURE_REACH / AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL
+    ; _LIST): a plain appendInfoLine here printed live but never reached
+    ; emlStoreReport$ (this door is one of the four the result store is
+    ; wired for) or the recorder's .recResult$ -- a saved report and a
+    ; recorded step could both be silently short of the same disclosure the
+    ; live Info window showed. @emlEmit fixes the store side; the
+    ; .recResult$ append below (before @emlRecordAnalysisStep reads it)
+    ; fixes the recorder side.
     if .warning$ <> ""
-        appendInfoLine: "  Note: " + .warning$
+        @emlEmit: "  Note: " + .warning$, ""
     endif
 
     if .ttErr$ <> ""
@@ -423,6 +425,9 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         if .doNon = 1 and .mwP <> undefined
             .recResult$ = .recResult$ + newline$ + "  Mann-Whitney p = "
             ... + fixed$ (.mwP, 4)
+        endif
+        if .warning$ <> ""
+            .recResult$ = .recResult$ + newline$ + "  Note: " + .warning$
         endif
     endif
     label END_TWO_GROUP
@@ -619,6 +624,15 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
         .error$ = emlOneWayAnova.error$
         goto END_ANOVA
     endif
+    ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH point
+    ; 1): THE ONE SHARED CAPTURE, folding the kernel's column-wide disclosure
+    ; into this orchestrator's own .warning$ -- printed below, after the
+    ; reporter, through @emlEmit so it also reaches emlStoreReport$ (this
+    ; door is one of the four the result store is wired for). The recorder
+    ; already carries it: @emlRecordAnova reads emlOneWayAnova.warning$
+    ; itself, into .caveat$.
+    @eml_appendWarning: .warning$, emlOneWayAnova.warning$
+    .warning$ = eml_appendWarning.result$
 
     # Ensure pairwise Cohen's d matrix always exists.
     #
@@ -653,6 +667,17 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
 
     @emlCSVInit
     @emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .nGroups, .doTukey
+
+    ; EMPTY-CELL DISCLOSURE, PRINTED THROUGH @emlEmit (9 Sep 2026,
+    ; RULING_LEVEL2_DISCLOSURE_REACH / AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL
+    ; _LIST): not a plain appendInfoLine, so this line is captured into
+    ; emlEmitText$ -- and so into emlStoreReport$ below -- exactly like the
+    ; ANOVA table above it. A plain appendInfoLine here would print live but
+    ; leave the saved report silently short of it, same defect the amendment's
+    ; "a saved figure's report matches its live report" closes.
+    if .warning$ <> ""
+        @emlEmit: "  Note: " + .warning$, ""
+    endif
 
     ; Declare the same result in broom's three-file shape. Placed AFTER the
     ; reporter, not inside it, for two reasons: the reporter is what prints
@@ -1060,6 +1085,14 @@ procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn,
         .error$ = emlKruskalWallis.error$
         goto END_KW
     endif
+    ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH point
+    ; 1): THE ONE SHARED CAPTURE, from the kernel's column-wide disclosure.
+    ; @emlDunnTest below (when .doDunn) reads the SAME .dataCol$/.groupCol$,
+    ; so its own .warning$ would be byte-identical to this one -- captured
+    ; once here, not captured again after Dunn's, or the same clause would
+    ; be folded in twice.
+    @eml_appendWarning: .warning$, emlKruskalWallis.warning$
+    .warning$ = eml_appendWarning.result$
 
     if .doDunn
         @emlDunnTest: .tableId, .dataCol$, .groupCol$, .adjMethod$
@@ -1100,6 +1133,21 @@ procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn,
 
     @emlCSVInit
     @emlReportKWComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .nGroups, .doDunn
+
+    ; EMPTY-CELL DISCLOSURE, PRINTED THROUGH @emlEmit (9 Sep 2026,
+    ; RULING_LEVEL2_DISCLOSURE_REACH / AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL
+    ; _LIST) -- see the identical comment in @emlRunAnovaAnalysis. Also
+    ; folded into .recResult$ below: this door's recorder is
+    ; @emlRecordAnalysisStep (.recResult$/.error$ only), unlike ANOVA's
+    ; richer @emlRecordAnova, so there is no separate caveat channel to
+    ; carry it -- .recResult$ is the one place left to put it so the
+    ; recorded step and the live report state the same text.
+    if .warning$ <> ""
+        @emlEmit: "  Note: " + .warning$, ""
+        if .recResult$ <> ""
+            .recResult$ = .recResult$ + newline$ + "  Note: " + .warning$
+        endif
+    endif
 
     if .error$ = ""
         @emlResultClearExtras
@@ -1409,11 +1457,32 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         goto END_PAIRWISE
     endif
 
+    ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH point
+    ; 1): THE ONE SHARED CAPTURE, from whichever kernel ran above -- exactly
+    ; one of the three branches reaches here, so exactly one kernel's
+    ; .warning$ exists to read. Printed below and folded into .recResult$;
+    ; NOT through @emlEmit and NOT into emlStoreReport$, because this door's
+    ; canonical report text is deliberately always "" (see THIS DOOR
+    ; PUBLISHES NO CANONICAL REPORT TEXT below) -- there is no store-side
+    ; text for the disclosure to join.
+    if .test$ = "welch" or .test$ = "student"
+        @eml_appendWarning: .warning$, emlPairwiseT.warning$
+    elsif .test$ = "wilcoxon"
+        @eml_appendWarning: .warning$, emlPairwiseWilcoxon.warning$
+    elsif .test$ = "scheffe"
+        @eml_appendWarning: .warning$, emlScheffe.warning$
+    endif
+    .warning$ = eml_appendWarning.result$
+
     @emlCSVInit
     ; .tableId leads the argument list because the reporter now prints the
     ; per-group n / mean / SD and has to re-read the column to do it.
     @emlReportPairwiseComparison: .tableId, .tableName$, .dataCol$, .groupCol$,
     ... .test$, .adjMethod$
+
+    if .warning$ <> ""
+        appendInfoLine: "  Note: " + .warning$
+    endif
 
     ; BUILD, not a conversion: an orchestrator that calls @emlCSVInit and
     ; adds no row cannot export at all.
@@ -1536,6 +1605,9 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
         .recResult$ = .test$ + " with " + .adjMethod$ + " correction over "
         ... + string$ (.recGroups * (.recGroups - 1) / 2) + " pairwise "
         ... + "comparison(s), " + string$ (.recGroups) + " groups"
+        if .warning$ <> ""
+            .recResult$ = .recResult$ + newline$ + "  Note: " + .warning$
+        endif
     endif
 
     label END_PAIRWISE
@@ -3731,11 +3803,23 @@ procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .grou
                 .pgY# = zero# (0)
                 .pgThisN = 0
                 .pgExcluded = 0
+                .pgWarning$ = ""
             else
                 .pgX# = eml_getGroupPairedData.dataX#
                 .pgY# = eml_getGroupPairedData.dataY#
                 .pgThisN = eml_getGroupPairedData.n
                 .pgExcluded = eml_getGroupPairedData.nExcluded
+                ; EMPTY-CELL DISCLOSURE (9 Sep 2026,
+                ; RULING_LEVEL2_DISCLOSURE_REACH point 1): THE ONE SHARED
+                ; CAPTURE every kernel-routed door uses to fold the
+                ; extraction layer's .warning$ into its own -- here, once per
+                ; group, because grouped regression fits a SEPARATE
+                ; regression per group (unlike one-way ANOVA/Kruskal-Wallis/
+                ; two-way/pairwise, which compare every group in ONE test and
+                ; so capture once for the whole door, not once per group;
+                ; see those orchestrators).
+                @eml_appendWarning: "", eml_getGroupPairedData.warning$
+                .pgWarning$ = eml_appendWarning.result$
             endif
             .pgTerm$ = .groupCol$ + " = " + .pgLabel$ [.pgI]
 
@@ -3750,6 +3834,9 @@ procedure emlRunGroupedRegressionAnalysis: .tableId, .predCol$, .respCol$, .grou
                     ... + " (analyzed n = " + string$ (.pgThisN)
                     ... + " complete pairs)."
                     appendInfoLine: .pgExclNote$
+                endif
+                if .pgWarning$ <> ""
+                    appendInfoLine: "  Note: " + .pgWarning$
                 endif
                 @emlTidyRow: .pgTerm$ + " (Intercept)"
                 @emlTidyNum: "estimate", emlLinearRegression.intercept
@@ -4332,11 +4419,42 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
         .clean [.j] = eml_openColumn.clean
     endfor
     .data## = zero## (.nRows, .k)
+    ; EMPTY-CELL DISCLOSURE, SUBJECT MODE (9 Sep 2026,
+    ; RULING_LEVEL2_DISCLOSURE_REACH point 2 /
+    ; AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST): a row here is a
+    ; respondent -- @emlCronbachAlpha's own listwise deletion (below) drops
+    ; it exactly when one of its item cells is undefined, same completeness
+    ; rule @emlExtractConditionMatrix uses for RM/Friedman -- so this is
+    ; built the same way, here rather than inside the kernel, because the
+    ; kernel takes the matrix already built and has no column names left to
+    ; name in a clause. The causing cell is the first item column (in
+    ; .itemCols$# order) whose cell is undefined for that row; the subject
+    ; id is "row <N>" in .tableId's own numbering, same convention as
+    ; @emlExtractConditionMatrix's WIDE case (no separate respondent-label
+    ; column reaches this orchestrator either).
+    .emptyDisclosure$ = ""
     for .row from 1 to .nRows
+        .rowComplete = 1
+        .causingCol$ = ""
         for .j from 1 to .k
             @eml_readCell: .tableId, .row, .itemCols$# [.j], .clean [.j]
             .data## [.row, .j] = eml_readCell.value
+            if eml_readCell.value = undefined
+                .rowComplete = 0
+                if .causingCol$ = ""
+                    .causingCol$ = .itemCols$# [.j]
+                endif
+            endif
         endfor
+        if .rowComplete = 0
+            .subjectId$ = "row " + string$ (.row)
+            .causingRow# = zero# (1)
+            .causingRow# [1] = .row
+            @eml_emptyCellDisclosure: 1, .causingCol$, .subjectId$, 1, .causingRow#
+            @eml_joinDisclosureClauses: .emptyDisclosure$,
+                ... eml_emptyCellDisclosure.clause$
+            .emptyDisclosure$ = eml_joinDisclosureClauses.result$
+        endif
     endfor
 
     @emlCronbachAlpha: .data##, .confidence
@@ -4353,11 +4471,15 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
     ; EXCLUDED ROWS ARE A WARNING, NOT AN ERROR. The analysis succeeded on
     ; the complete cases; the reader is told how many were set aside, the
     ; same disclosure the paired-comparison success path prints for its own
-    ; listwise deletion.
+    ; listwise deletion, now with the per-subject detail above appended
+    ; through the same builder every row/subject-dropping door uses.
     if .nExcluded > 0
         .warning$ = string$ (.nExcluded) + " row(s) excluded for missing "
         ... + "data (assessed n = " + string$ (.n) + " of " + string$ (.nRows)
         ... + " respondents)."
+        if .emptyDisclosure$ <> ""
+            .warning$ = .warning$ + " " + .emptyDisclosure$
+        endif
     endif
 
     if .doInfluence = 1
@@ -4814,7 +4936,11 @@ procedure emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$,
         @emlRecordAnalysisStep: .tableId, "Chi-square test of independence",
         ... .detail$,
         ... "Association is not causation, and a significant chi-square "
-        ... + "with a small Cramer's V may not be practically meaningful.",
+        ... + "with a small Cramer's V may not be practically meaningful. "
+        ... + "A blank cell in a category column is a missing category "
+        ... + "label, not an empty numeric measurement, so it is dropped "
+        ... + "from the count silently, without the row-by-row empty-cell "
+        ... + "disclosure the numeric doors give.",
         ... .recCode$,
         ... "Not in the GUI: there is no menu entry for this yet.",
         ... .recResult$, .error$
@@ -5139,7 +5265,11 @@ procedure emlRunProportionAnalysis: .tableId, .col$, .successValue$,
         @emlRecordAnalysisStep: .tableId, "Proportion", .detail$,
         ... "A confidence interval describes sampling uncertainty in THIS "
         ... + "sample; it is not evidence the true proportion differs from "
-        ... + "any particular value someone had in mind before looking.",
+        ... + "any particular value someone had in mind before looking. "
+        ... + "A blank cell in the category column is a missing category "
+        ... + "label, not an empty numeric measurement, so it is dropped "
+        ... + "from the count silently, without the row-by-row empty-cell "
+        ... + "disclosure the numeric doors give.",
         ... .recCode$,
         ... "Not in the GUI: there is no menu entry for this yet.",
         ... .recResult$, .error$
@@ -5279,6 +5409,7 @@ endproc
 procedure eml_rmResolveMatrix: .tableId, .format$, .subjectCol$, .conditionCols$#, .conditionCol$, .valueCol$
     .error$ = ""
     .parseNote$ = ""
+    .emptyDisclosure$ = ""
     .transient = 0
     .n = 0
     .k = 0
@@ -5437,6 +5568,7 @@ procedure eml_rmResolveMatrix: .tableId, .format$, .subjectCol$, .conditionCols$
     .data## = emlExtractConditionMatrix.data##
     .nExcluded = emlExtractConditionMatrix.nExcluded
     .parseNote$ = emlExtractConditionMatrix.parseNote$
+    .emptyDisclosure$ = emlExtractConditionMatrix.emptyDisclosure$
     for .j from 1 to .k
         .colLabel$ [.j] = emlExtractConditionMatrix.colLabel$ [.j]
     endfor
@@ -5539,17 +5671,47 @@ procedure emlExtractConditionMatrix: .tableId, .conditionCols$#
     endfor
 
     # First pass: count complete rows
+    #
+    # EMPTY-CELL DISCLOSURE, SUBJECT MODE (9 Sep 2026,
+    # RULING_LEVEL2_DISCLOSURE_REACH point 2 /
+    # AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST): a row here IS a subject --
+    # one row per subject is what this matrix's completeness is defined
+    # over -- so a dropped row is a dropped SUBJECT, through the SAME
+    # builder every numeric door uses, with .unitMode = 1. The "subject id"
+    # is "row <N>" in .tableId's OWN numbering (.tableId is .srcId from
+    # @eml_rmResolveMatrix -- the WIDE table as given, or the LONG path's
+    # reshaped transient copy): no subject-label column reaches this
+    # procedure at all in the WIDE case, and @eml_completeCaseDisclosure's
+    # pre-existing .parseNote$ already names row numbers in this same
+    # table's numbering for the LONG case (@emlAuditColumn: .tableId, ...
+    # above), so this keeps the SAME convention rather than inventing a
+    # second one. The causing cell is the FIRST condition column (in
+    # .colLabel$ read order) whose cell was undefined for that row --
+    # ascending row order is free, since rows are scanned 1..nRows in order.
     .nComplete = 0
+    .emptyDisclosure$ = ""
     for .row from 1 to .nRows
         .complete = 1
+        .causingCol$ = ""
         for .j from 1 to .k
             @eml_readCell: .tableId, .row, .colLabel$ [.j], .clean [.j]
             if eml_readCell.value = undefined
                 .complete = 0
+                if .causingCol$ = ""
+                    .causingCol$ = .colLabel$ [.j]
+                endif
             endif
         endfor
         if .complete = 1
             .nComplete = .nComplete + 1
+        else
+            .subjectId$ = "row " + string$ (.row)
+            .causingRow# = zero# (1)
+            .causingRow# [1] = .row
+            @eml_emptyCellDisclosure: 1, .causingCol$, .subjectId$, 1, .causingRow#
+            @eml_joinDisclosureClauses: .emptyDisclosure$,
+                ... eml_emptyCellDisclosure.clause$
+            .emptyDisclosure$ = eml_joinDisclosureClauses.result$
         endif
     endfor
     .n = .nComplete
@@ -5558,8 +5720,13 @@ procedure emlExtractConditionMatrix: .tableId, .conditionCols$#
         .error$ = "Need at least 2 complete-case subjects (rows with all conditions present)."
         ; "Need at least 2" over a table of eight reads as a data
         ; shortage the user does not have. What they have is an exclusion,
-        ; and the note names which column emptied which row.
-        @eml_completeCaseDisclosure: .nRows, .n, .nExcluded, .parseNote$
+        ; and the note names which column emptied which row -- now through
+        ; the SAME builder every subject/row-dropping door uses (9 Sep 2026,
+        ; RULING_LEVEL2_DISCLOSURE_REACH point 4), folded in beside the
+        ; pre-existing per-column .parseNote$.
+        @eml_appendWarning: .parseNote$, .emptyDisclosure$
+        @eml_completeCaseDisclosure: .nRows, .n, .nExcluded,
+            ... eml_appendWarning.result$
         if eml_completeCaseDisclosure.note$ <> ""
             .error$ = .error$ + " " + eml_completeCaseDisclosure.note$
         endif
@@ -5947,6 +6114,20 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .format$,
         .colLabel$ [.j] = eml_rmResolveMatrix.colLabel$ [.j]
     endfor
 
+    ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH --
+    ; matches the reliability door's approach): ONE summary + subject-form
+    ; clause, built ONCE here into this orchestrator's own .warning$, so the
+    ; live report below, .recResult$ and .warning$ all carry the identical
+    ; text -- not the old per-column count+first-row lines alongside it.
+    if .nExcluded > 0
+        .warning$ = string$ (.nExcluded) + " row(s) excluded for missing "
+        ... + "data (assessed n = " + string$ (.n) + " of "
+        ... + string$ (.n + .nExcluded) + " subjects)."
+        if eml_rmResolveMatrix.emptyDisclosure$ <> ""
+            .warning$ = .warning$ + " " + eml_rmResolveMatrix.emptyDisclosure$
+        endif
+    endif
+
     ; ERROR-READ EXEMPT -- .degenerate is set in lockstep with .error$ in every branch of
     ; emlRMAnovaTest; gating on .degenerate = 0 below is equivalent to checking .error$ = "".
     @emlRMAnovaTest: .data##, .n, .k
@@ -5964,6 +6145,9 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .format$,
         ... + fixed$ (emlRMAnovaTest.pGG, 4) + newline$
         ... + "  n = " + string$ (.n) + " subjects, k = " + string$ (.k)
         ... + " conditions"
+        if .warning$ <> ""
+            .recResult$ = .recResult$ + newline$ + "  " + .warning$
+        endif
     endif
 
     # A zero error term is a property of the data, not a bad form setting,
@@ -5977,8 +6161,16 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .format$,
     # skips -- so the disclosure is attached here.
     if emlRMAnovaTest.error$ <> ""
         .error$ = emlRMAnovaTest.error$
+        ; EMPTY-CELL DISCLOSURE, SUBJECT MODE (9 Sep 2026,
+        ; RULING_LEVEL2_DISCLOSURE_REACH point 4): folded in beside the
+        ; existing .parseNote$ (the per-column LEVEL 1/refusal-style note,
+        ; a separate concern this ruling leaves alone) so the wording for
+        ; WHICH SUBJECTS were dropped is the same builder's text whether the
+        ; run refuses here or succeeds below.
+        @eml_appendWarning: eml_rmResolveMatrix.parseNote$,
+            ... eml_rmResolveMatrix.emptyDisclosure$
         @eml_completeCaseDisclosure: .n + .nExcluded, .n, .nExcluded,
-        ... eml_rmResolveMatrix.parseNote$
+        ... eml_appendWarning.result$
         if eml_completeCaseDisclosure.note$ <> ""
             .error$ = .error$ + " " + eml_completeCaseDisclosure.note$
         endif
@@ -6086,18 +6278,17 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .format$,
         ; door explaining an ungated post-hoc and three not.
         @emlPostHocCaution: emlRMAnovaTest.p
     endif
-    if .nExcluded > 0
-        .exclNote$ = "  Note: " + string$ (.nExcluded)
-            ... + " row(s) excluded for missing data (analyzed n = "
-            ... + string$ (.n) + " complete cases)."
-        appendInfoLine: .exclNote$
-        # Say WHICH condition dropped the row and why.
-        if eml_rmResolveMatrix.parseNote$ <> ""
-            @emlWrapText: eml_rmResolveMatrix.parseNote$, 66
-            for .pl from 1 to emlWrapText.nLines
-                appendInfoLine: "  ", emlWrapText.line$ [.pl]
-            endfor
-        endif
+    ; EMPTY-CELL DISCLOSURE, SUBJECT MODE (9 Sep 2026,
+    ; RULING_LEVEL2_DISCLOSURE_REACH point 2 -- D3 fix): ONLY the single
+    ; subject-form complete-list disclosure built into .warning$ above,
+    ; matching the reliability door's approach -- not the old per-column
+    ; count+first-row lines (eml_rmResolveMatrix.parseNote$) alongside it,
+    ; which made the live report disagree with .recResult$.
+    if .warning$ <> ""
+        @emlWrapText: "Note: " + .warning$, 68
+        for .wl from 1 to emlWrapText.nLines
+            appendInfoLine: "  ", emlWrapText.line$ [.wl]
+        endfor
     endif
 
     ; BUILD: no reporter and no CSV emission ever existed for this path.
@@ -6206,6 +6397,20 @@ procedure emlRunFriedmanAnalysis: .tableId, .format$,
         .colLabel$ [.j] = eml_rmResolveMatrix.colLabel$ [.j]
     endfor
 
+    ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH --
+    ; matches the reliability door's approach, and the identical fix in
+    ; @emlRunRepeatedMeasuresAnalysis): ONE summary + subject-form clause,
+    ; built ONCE here into this orchestrator's own .warning$, so the live
+    ; report below, .recResult$ and .warning$ all carry the identical text.
+    if .nExcluded > 0
+        .warning$ = string$ (.nExcluded) + " row(s) excluded for missing "
+        ... + "data (assessed n = " + string$ (.n) + " of "
+        ... + string$ (.n + .nExcluded) + " subjects)."
+        if eml_rmResolveMatrix.emptyDisclosure$ <> ""
+            .warning$ = .warning$ + " " + eml_rmResolveMatrix.emptyDisclosure$
+        endif
+    endif
+
     @emlFriedmanTest: .data##, .n, .k
     ; Same rule as the repeated-measures path: captured where it is fresh.
     .recResult$ = "chi-square(" + string$ (emlFriedmanTest.df) + ") = "
@@ -6213,6 +6418,9 @@ procedure emlRunFriedmanAnalysis: .tableId, .format$,
     ... + fixed$ (emlFriedmanTest.p, 4) + newline$
     ... + "  n = " + string$ (.n) + " subjects, k = " + string$ (.k)
     ... + " conditions"
+    if .warning$ <> ""
+        .recResult$ = .recResult$ + newline$ + "  " + .warning$
+    endif
 
     @emlCSVInit
     .h$ = "Friedman test — " + .tableName$
@@ -6273,18 +6481,16 @@ procedure emlRunFriedmanAnalysis: .tableId, .format$,
         ; for its reason.
         @emlPostHocCaution: emlFriedmanTest.p
     endif
-    if .nExcluded > 0
-        .exclNote$ = "  Note: " + string$ (.nExcluded)
-            ... + " row(s) excluded for missing data (analyzed n = "
-            ... + string$ (.n) + " complete cases)."
-        appendInfoLine: .exclNote$
-        # Say WHICH condition dropped the row and why.
-        if eml_rmResolveMatrix.parseNote$ <> ""
-            @emlWrapText: eml_rmResolveMatrix.parseNote$, 66
-            for .pl from 1 to emlWrapText.nLines
-                appendInfoLine: "  ", emlWrapText.line$ [.pl]
-            endfor
-        endif
+    ; EMPTY-CELL DISCLOSURE, SUBJECT MODE (9 Sep 2026,
+    ; RULING_LEVEL2_DISCLOSURE_REACH point 2 -- D3 fix): ONLY the single
+    ; subject-form complete-list disclosure built into .warning$ above,
+    ; matching the reliability door's approach -- see the identical fix in
+    ; @emlRunRepeatedMeasuresAnalysis.
+    if .warning$ <> ""
+        @emlWrapText: "Note: " + .warning$, 68
+        for .wl from 1 to emlWrapText.nLines
+            appendInfoLine: "  ", emlWrapText.line$ [.wl]
+        endfor
     endif
 
     ; BUILD. @emlFriedmanTest exposes NO .error$ field -- referencing one is a
