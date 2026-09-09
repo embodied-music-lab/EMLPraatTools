@@ -254,12 +254,12 @@ stats/eml-analysis.praat	5905	post-freeze ledger, recorder-text fixed$ bypass in
 stats/eml-analysis.praat	5906	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
 stats/eml-analysis.praat	6154	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
 stats/eml-analysis.praat	6155	post-freeze ledger, recorder-text fixed$ bypass in eml-analysis (order 2026-09-08 Not-in-this-order)
-stats/eml-anova-kernel.praat	1016	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-categorical.praat	118	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-categorical.praat	183	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-categorical.praat	196	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-core-utilities.praat	662	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-core-utilities.praat	663	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-anova-kernel.praat	1016	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-categorical.praat	118	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-categorical.praat	183	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-categorical.praat	196	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-core-utilities.praat	662	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-core-utilities.praat	663	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
 stats/eml-extract.praat	114	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
 stats/eml-extract.praat	233	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
 stats/eml-extract.praat	408	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
@@ -267,51 +267,51 @@ stats/eml-extract.praat	1440	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 sec
 stats/eml-extract.praat	1626	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
 stats/eml-extract.praat	1945	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
 stats/eml-extract.praat	2178	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 1 column-exists loop consolidation
-stats/eml-inferential.praat	204	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	205	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	206	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	207	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	416	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	417	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	560	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	561	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	562	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	563	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	729	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	730	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	737	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	738	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	739	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	2460	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	2465	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	3813	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	3819	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	4127	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	4132	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	4171	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	4180	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	4181	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6102	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6109	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6110	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6443	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6449	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6450	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6454	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6647	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6651	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6652	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6941	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6943	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	6944	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	7124	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	7125	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	7129	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	7130	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	7131	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-inferential.praat	7132	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-lmm.praat	1999	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-lmm.praat	2469	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-inferential.praat	204	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	205	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	206	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	207	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	416	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	417	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	560	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	561	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	562	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	563	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	729	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	730	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	737	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	738	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	739	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	2460	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	2465	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	3813	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	3819	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	4127	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	4132	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	4171	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	4180	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	4181	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6102	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6109	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6110	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6443	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6449	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6450	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6454	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6647	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6651	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6652	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6941	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6943	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	6944	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	7124	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	7125	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	7129	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	7130	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	7131	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-inferential.praat	7132	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-lmm.praat	1999	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-lmm.praat	2469	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
 stats/eml-output.praat	4211	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
 stats/eml-output.praat	4214	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
 stats/eml-output.praat	4222	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
@@ -322,13 +322,13 @@ stats/eml-output.praat	4234	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 sect
 stats/eml-output.praat	4237	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
 stats/eml-output.praat	4240	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
 stats/eml-output.praat	4243	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop
-stats/eml-psychometrics.praat	182	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-psychometrics.praat	190	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-psychometrics.praat	215	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-psychometrics.praat	344	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-psychometrics.praat	345	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-psychometrics.praat	357	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
-stats/eml-psychometrics.praat	372	pending summation-canon ruling, AUDIT_PROCEDURES_2026-09-08 section 2 row 5 (no code change until Opus's evidence memo lands)
+stats/eml-psychometrics.praat	182	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-psychometrics.praat	190	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-psychometrics.praat	215	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-psychometrics.praat	344	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-psychometrics.praat	345	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-psychometrics.praat	357	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
+stats/eml-psychometrics.praat	372	canon: built-in summation accepted for this statistic, decided 8 Sep 2026
 stats/eml-record.praat	2358	replay literal must round-trip the stored value
 stats/eml-record.praat	3077	load-order-forced local copy of eml_fixed; consolidation is the module-list post-freeze ledger item
 stats/eml-record.praat	5932	post-freeze ledger, AUDIT_PROCEDURES_2026-09-08 section 3 free-stem collision loop

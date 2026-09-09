@@ -294,6 +294,11 @@ endproc
 # rides to the next round unchanged. The standardised third and fourth moments
 # carry heavy cancellation, which is where the order reaches the reported
 # digits. The work is log2(n) whole-vector adds.
+# By decision (8 September 2026): skewness and kurtosis sum their centred
+# moments (the cubed and fourth-power standardised deviations) with this
+# fold, and this is the settled canon for those two statistics. No other
+# statistic in this file uses this fold — everything else keeps its
+# existing summation (built-in sum/mean/stdev).
 # Input:  .v# — numeric vector
 # Output: .result — the sum
 # ----------------------------------------------------------------------------
