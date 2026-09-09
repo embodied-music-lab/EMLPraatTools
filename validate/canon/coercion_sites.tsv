@@ -1,0 +1,7 @@
+file	procedure	arm	note
+graphs/eml-graph-procedures.praat	emlToTable	TableOfReal	row labels become column 1; TableOfReal's own column labels kept
+graphs/eml-graph-procedures.praat	emlToTable	Matrix	routed through an intermediate TableOfReal (To TableOfReal) before To Table: "row"
+stats/eml-output.praat	emlWrapperInit	TableOfReal	the nine stats wrappers' coercion of a selected TableOfReal
+stats/eml-output.praat	emlWrapperInit	Matrix	the nine stats wrappers' coercion of a selected Matrix
+scripts/eml-describe-table.praat	emlDescribeCoerceSelection	TableOfReal	describe tool's coercion of a selected TableOfReal
+scripts/eml-describe-table.praat	emlDescribeCoerceSelection	Matrix	describe tool's coercion of a selected Matrix, via an intermediate TableOfReal

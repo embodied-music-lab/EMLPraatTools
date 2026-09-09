@@ -1,0 +1,101 @@
+fixture	field	value
+to01_table	ok	1
+to01_table	sourceType	Table
+to01_table	nRows	3
+to01_table	nCols	2
+to01_table	warning	
+to01_table	error	
+to01_table	tableId_gt0	1
+to01_table	tableId_differs_from_source	1
+to01_table	source_untouched_col1	id
+to01_table	cell_ID_1	1
+to01_table	cell_Score_1	10
+to01_table	cell_ID_2	2
+to01_table	cell_Score_2	20
+to01_table	cell_ID_3	3
+to01_table	cell_Score_3	30
+to02_tableofreal	ok	1
+to02_tableofreal	sourceType	TableOfReal
+to02_tableofreal	nRows	2
+to02_tableofreal	nCols	3
+to02_tableofreal	warning	
+to02_tableofreal	error	
+to02_tableofreal	col1_label	row
+to02_tableofreal	col2_label	colA
+to02_tableofreal	col3_label	colB
+to02_tableofreal	rowlabel_row1	alpha
+to02_tableofreal	rowlabel_row2_repaired	r2
+to02_tableofreal	cell_colA_row1	11
+to02_tableofreal	cell_colA_row2	21
+to02_tableofreal	cell_colB_row1	12
+to02_tableofreal	cell_colB_row2	22
+to03_matrix	ok	1
+to03_matrix	sourceType	Matrix
+to03_matrix	nRows	2
+to03_matrix	nCols	3
+to03_matrix	warning	A Matrix reaches a Table through a TableOfReal; the x/y sampling (domain, dx, dy) is not carried into the Table, only the cell values and default row/column numbering.
+to03_matrix	error	
+to03_matrix	col1_label	row
+to03_matrix	col2_label	Column_1
+to03_matrix	col3_label	Column_2
+to03_matrix	rowlabel_row1_repaired	r1
+to03_matrix	rowlabel_row2_repaired	r2
+to03_matrix	cell_Column_1_row1	1
+to03_matrix	cell_Column_1_row2	3
+to03_matrix	cell_Column_2_row1	2
+to03_matrix	cell_Column_2_row2	4
+to04_ltas	ok	1
+to04_ltas	sourceType	Ltas
+to04_ltas	nCols	2
+to04_ltas	warning	
+to04_ltas	error	
+to04_ltas	nRows_equals_nBins	1
+to04_ltas	frequency_matches_bin_number_every_row	1
+to04_ltas	level_matches_get_value_in_bin_every_row	1
+to05_spectrum	ok	1
+to05_spectrum	sourceType	Spectrum
+to05_spectrum	nCols	2
+to05_spectrum	warning	Converted via To Ltas (1-to-1) before reading bins, so the table reflects the LTAS's own bin resolution, not a raw real/imaginary readout of the Spectrum.
+to05_spectrum	error	
+to05_spectrum	source_not_consumed	1
+to05_spectrum	nRows_equals_independent_to_ltas_1to1	1
+to06_pitch	ok	1
+to06_pitch	sourceType	Pitch
+to06_pitch	nCols	2
+to06_pitch	error	
+to06_pitch	nRows_equals_extractor_voiced_count	1
+to06_pitch	warning	
+to07_intensity	ok	1
+to07_intensity	sourceType	Intensity
+to07_intensity	nCols	2
+to07_intensity	warning	
+to07_intensity	error	
+to07_intensity	nRows_equals_extractor_frame_count	1
+to08_harmonicity	ok	1
+to08_harmonicity	sourceType	Harmonicity
+to08_harmonicity	nCols	2
+to08_harmonicity	error	
+to08_harmonicity	nRows_equals_extractor_defined_count	1
+to08_harmonicity	warning	
+to09_formant	ok	1
+to09_formant	sourceType	Formant
+to09_formant	warning	Frame number omitted; time, formant count, every F1..Fn frequency and B1..Bn bandwidth included, all at 20 decimal places.
+to09_formant	error	
+to09_formant	nRows_equals_native_down_to_table	1
+to09_formant	nCols_equals_native_down_to_table	1
+to09_formant	column_labels_match_native_call	1
+to09_formant	cell_values_match_native_call	1
+to10_refuse_sound	ok	0
+to10_refuse_sound	sourceType	Sound
+to10_refuse_sound	tableId_gt0	0
+to10_refuse_sound	nRows	0
+to10_refuse_sound	nCols	0
+to10_refuse_sound	error	emlToTable: a Sound is audio, not tabular data -- it has no rows or columns to hand back.
+to10_refuse_sound	remedy	Convert first -- To Pitch, To Intensity, To Harmonicity, To Spectrum or To Ltas -- then call emlToTable on the result.
+to11_refuse_colcount	ok	0
+to11_refuse_colcount	sourceType	Table
+to11_refuse_colcount	tableId_gt0	0
+to11_refuse_colcount	nRows	0
+to11_refuse_colcount	nCols	0
+to11_refuse_colcount	error	emlToTable: .columnNames$# has 1 name(s) but the table built from this Table has 2 column(s) -- pass one name per column, in order, or an empty vector to keep the default names.
+to11_refuse_colcount	remedy	Pass exactly 2 name(s) in .columnNames$#, in column order, or an empty vector.

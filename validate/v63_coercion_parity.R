@@ -126,6 +126,8 @@ srcClean <- file.path(plug, "graphs", "eml-graph-procedures.praat")
 have <- file.exists(c(srcInit, srcDesc, srcClean))
 check_true("v63", "all three coercion sources are present", all(have))
 
+.code <- function(x) x[!grepl("^\\s*[#;]", x)]
+
 if (all(have)) {
     ini <- readLines(srcInit, warn = FALSE)
     des <- readLines(srcDesc, warn = FALSE)
@@ -136,21 +138,96 @@ if (all(have)) {
                any(grepl("^procedure emlDescribeCoerceSelection\\s*$", des)))
     check_true("v63", "@emlCleanConvertedTable is where the graphs coercion lives",
                any(grepl("^procedure emlCleanConvertedTable: ", cln)))
-    # THE CENSUS. `To Table: "row"` is the line that manufactures the column
-    # this file is about, so counting it counts the doors: two arms in
-    # @emlWrapperInit, two in @emlDescribeCoerceSelection, two in
-    # @emlConvertForGraph. Comment lines are excluded -- every one of these
-    # three files also DESCRIBES the command, and a census that counts prose
-    # is a census that changes when somebody edits a comment. A seventh site
-    # is a deliberate change to this number, not a silent addition, which is
-    # the only way a fourth convention gets caught before it ships.
-    .code <- function(x) x[!grepl("^\\s*[#;]", x)]
-    nDoors <- sum(grepl('To Table: "row"',
-                        c(.code(ini), .code(des), .code(cln)), fixed = TRUE))
+}
+
+# ---------------------------------------------------------------------------
+# 2b. THE CENSUS, AGAINST A COMMITTED CANON -- NOT A LITERAL
+# ---------------------------------------------------------------------------
+# `To Table: "row"` is the line that manufactures the column this file is
+# about, so counting it counts the doors. AUTHOR RULING (ANSWER_EMLTOTABLE_
+# ESTIMATE, ruling A): the count is not a literal to bump when a site is
+# added -- it is read off validate/canon/coercion_sites.tsv, a one-row-per-
+# site table naming the file, procedure, arm and reason for each committed
+# conversion. A change here is a diff to a data file, not to a number this
+# script embeds, so the next site added shows up as a row for someone to
+# commit, not as a check someone edits open.
+#
+# THE COMPARISON IS PER FILE, BOTH DIRECTIONS. A new, unlisted `To Table:
+# "row"` anywhere under the plugin tree raises that file's actual count
+# above what the canon lists for it -- a red row, not a silent seventh
+# door. A listed site that vanished (refactored away, or renamed to a
+# different command) drops that file's actual count below the canon's --
+# also red, because a canon that outlives the code it describes is exactly
+# the kind of stale claim this file's own header warns about. Comment lines
+# are excluded from the actual count -- every one of these files also
+# DESCRIBES the command in prose, and a census that counts prose is a
+# census that changes when somebody edits a comment.
+canonPath <- repo_path("validate", "canon", "coercion_sites.tsv")
+canon <- NULL
+okCanon <- file.exists(canonPath)
+check_true("v63", sprintf("the conversion-site canon exists (%s)", canonPath), okCanon)
+if (okCanon) {
+    canon <- read.delim(canonPath, sep = "\t", quote = "", stringsAsFactors = FALSE,
+                        colClasses = "character", encoding = "UTF-8")
     check_true("v63",
-               sprintf("the coercion is performed at six sites across three procedures (%d)",
-                       nDoors),
-               nDoors == 6)
+               "the canon has the four required columns (file, procedure, arm, note)",
+               all(c("file", "procedure", "arm", "note") %in% names(canon)))
+    check_true("v63", sprintf("the canon lists at least one site (found %d)", nrow(canon)),
+               nrow(canon) >= 1)
+}
+
+if (all(have) && okCanon) {
+    treeFiles <- list.files(plug, pattern = "\\.praat$", recursive = TRUE, full.names = TRUE)
+    actual <- vapply(treeFiles, function(f) {
+        sum(grepl('To Table: "row"', .code(readLines(f, warn = FALSE)), fixed = TRUE))
+    }, integer(1))
+    plugPrefix <- paste0(sub("/$", "", plug), "/")
+    names(actual) <- substring(treeFiles, nchar(plugPrefix) + 1)
+    actual <- actual[actual > 0]
+
+    expected <- table(canon$file)
+
+    allFiles <- union(names(actual), names(expected))
+    got_n  <- setNames(rep(0L, length(allFiles)), allFiles)
+    got_n[names(actual)] <- actual
+    want_n <- setNames(rep(0L, length(allFiles)), allFiles)
+    want_n[names(expected)] <- as.integer(expected)
+
+    mismatched <- allFiles[got_n != want_n]
+    for (f in sort(mismatched)) {
+        if (want_n[f] == 0L) {
+            cat(sprintf(paste0(
+                "      NOTE v63: UNLISTED CONVERSION SITE.\n",
+                "            %s has %d `To Table: \"row\"` site(s) not in\n",
+                "            validate/canon/coercion_sites.tsv. Add a row per\n",
+                "            arm, or this is a seventh door growing unseen.\n"),
+                f, got_n[f]))
+        } else if (got_n[f] == 0L) {
+            cat(sprintf(paste0(
+                "      NOTE v63: CANON SITE VANISHED.\n",
+                "            %s is listed in validate/canon/coercion_sites.tsv\n",
+                "            (%d site(s)) but has none in the tree. Remove its\n",
+                "            row(s), or the conversion moved somewhere the canon\n",
+                "            has not followed.\n"),
+                f, want_n[f]))
+        } else {
+            cat(sprintf(paste0(
+                "      NOTE v63: SITE COUNT DRIFTED.\n",
+                "            %s: canon lists %d, tree has %d.\n"),
+                f, want_n[f], got_n[f]))
+        }
+    }
+    check_true("v63",
+               sprintf("every committed conversion site is present exactly once, and no other exists (%s)",
+                       if (length(mismatched)) paste(mismatched, collapse = "; ")
+                       else paste(sprintf("%s:%d", allFiles, got_n[allFiles]), collapse = ", ")),
+               length(mismatched) == 0)
+
+    nDoors <- sum(got_n)
+    check_true("v63",
+               sprintf("the coercion is performed at the canon's %d committed sites (tree has %d)",
+                       nrow(canon), nDoors),
+               nDoors == nrow(canon))
 }
 
 # ---------------------------------------------------------------------------
@@ -331,7 +408,28 @@ if (!canDrive) {
         'cleanId = To Table: "row"',
         'removeObject: tmpTor',
         '@emlCleanConvertedTable: cleanId',
-        '@shape: "clean_matrix", cleanId'), probe)
+        '@shape: "clean_matrix", cleanId',
+        '',
+        '# --- door 4: @emlToTable itself, both its arms -----------------------',
+        '# graphs/eml-graph-procedures.praat is the one home for the',
+        '# TableOfReal->Table and Matrix->Table conversion (eml-graphs-form.praat',
+        '# and the graphs dispatch door both call through it), so driving it',
+        '# directly -- not by replaying its body -- is what puts the shipped',
+        '# procedure itself, both arms, inside the same parity guarantee as the',
+        '# stats and describe doors.',
+        '@mkToR: "v63h", 0',
+        'noNames$# = empty$# (0)',
+        '@emlToTable: selected ("TableOfReal"), noNames$#',
+        '@shape: "totable_tor", emlToTable.tableId',
+        'removeObject: emlToTable.tableId',
+        'removeObject: "TableOfReal v63h"',
+        '',
+        '@mkMatrix: "v63i"',
+        'noNames$# = empty$# (0)',
+        '@emlToTable: selected ("Matrix"), noNames$#',
+        '@shape: "totable_matrix", emlToTable.tableId',
+        'removeObject: emlToTable.tableId',
+        'removeObject: "Matrix v63i"'), probe)
 
     out <- suppressWarnings(system2("env",
         c("-u", "DISPLAY", shQuote(praat),
@@ -342,10 +440,11 @@ if (!canDrive) {
         p <- sprintf("^%s\\|%s\\|", tag, field)
         sub(p, "", grep(p, out, value = TRUE))
     }
-    ran <- !any(grepl("^Error", out)) && length(got("clean_matrix", "NAME")) == 1
+    ran <- !any(grepl("^Error", out)) && length(got("clean_matrix", "NAME")) == 1 &&
+        length(got("totable_tor", "NAME")) == 1 && length(got("totable_matrix", "NAME")) == 1
     if (!ran) cat(sprintf("      v63 probe output: %s\n",
                           paste(utils::tail(out, 6), collapse = " / ")))
-    check_true("v63", "the coercion probe ran through all three doors", ran)
+    check_true("v63", "the coercion probe ran through all three doors, plus @emlToTable's own two arms driven directly", ran)
 
     if (ran) {
         # -- 3a. THE ROW-LABEL COLUMN, ONE CONVENTION -----------------------
@@ -353,7 +452,8 @@ if (!canDrive) {
         # three doors that agree on 1..n would satisfy a parity check and be
         # wrong together, which is how the regression arm and the ANOVA arm
         # of .std.resid came to disagree for a month (v20).
-        for (tag in c("init_matrix", "init_tor", "desc_matrix")) {
+        for (tag in c("init_matrix", "init_tor", "desc_matrix",
+                      "totable_tor", "totable_matrix")) {
             lab <- got(tag, "LABEL")
             check_true("v63",
                        sprintf("%s: the manufactured row labels are r1..rn (%s)",
@@ -377,7 +477,8 @@ if (!canDrive) {
         # first column of that name, so a duplicate is not a cosmetic defect,
         # it is a silent wrong-column read with no symptom.
         for (tag in c("init_matrix", "init_tor", "init_labelled",
-                      "init_partialcols", "desc_matrix", "clean_matrix")) {
+                      "init_partialcols", "desc_matrix", "clean_matrix",
+                      "totable_tor", "totable_matrix")) {
             cols <- got(tag, "COL")
             check_true("v63",
                        sprintf("%s: no duplicate or unnamed column (%s)",
@@ -440,7 +541,8 @@ if (!canDrive) {
             data.frame(k = as.integer(sub("^Column_", "", nm[keep])),
                        src = vl[keep] %/% 100)
         }
-        for (tag in c("init_matrix", "init_tor", "init_partialcols")) {
+        for (tag in c("init_matrix", "init_tor", "init_partialcols",
+                      "totable_tor", "totable_matrix")) {
             m <- srcIdx(tag)
             check_true("v63",
                        sprintf("%s: every manufactured header was found and read (%d)",

@@ -200,11 +200,13 @@ if (nrow(dispatch_rows)) cat(paste0("v165:   - ", dispatch_rows$name, "\n"), sep
 cat(sprintf("v165: NON-DRAW PUBLIC POPULATION: %d rows\n", nrow(nondraw_rows)))
 
 # 31 as of the ruling this file's header describes, +2 (B11 wave,
-# 2026-09-08): emlVectorsToTable and emlToTable, source {4} -- not {2,3},
-# so neither is a type-dispatch draw row and both land here. Both were
-# built to this exact contract from the start (REGISTRY.tsv's own
-# correction note for the ruling); this file still computes the population
-# fresh and audits it below rather than trusting that claim.
+# 2026-09-08): emlVectorsToTable (source {4}) and emlToTable (source
+# {2,3,4} as of the emltotable-object-converter wave's graphs-form wiring)
+# -- neither is exactly {2,3}, so neither is a type-dispatch draw row and
+# both land here. Both were built to this exact contract from the start
+# (REGISTRY.tsv's own correction note for the ruling); this file still
+# computes the population fresh and audits it below rather than trusting
+# that claim.
 check_true(V,
            sprintf("the non-draw public population is exactly the ruling's 33 rows (found %d)",
                    nrow(nondraw_rows)),
