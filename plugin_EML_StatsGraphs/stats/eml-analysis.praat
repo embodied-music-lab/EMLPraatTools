@@ -3162,7 +3162,22 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
         .emmHighA# = emlAnovaKernelTwoWayEMM.highA#
         .emmLowB# = emlAnovaKernelTwoWayEMM.lowB#
         .emmHighB# = emlAnovaKernelTwoWayEMM.highB#
-        .emmDfError = emlAnovaKernelTwoWayEMM.dfError
+        ; THE RESIDUAL df, NOT emlAnovaKernelTwoWayEMM.dfError. That field
+        ; is @eml_ak2_gather's .n - .rs computed on whatever table THIS
+        ; call was given -- .tableId above, the door's RAW input table,
+        ; never listwise-excluded for this kernel the way @emlTwoWayAnova
+        ; already excluded it (via @eml_twoWayCompleteCase) before the
+        ; omnibus ran. On a table with no missing-token rows the two
+        ; coincide; on one that does (the missing-tokens fixture), .n there
+        ; is the UNEXCLUDED row count, so emlAnovaKernelTwoWayEMM.dfError is
+        ; the observation count net of cells, not the residual df of the
+        ; design the door actually reported everywhere else. .dfError sits
+        ; on the omnibus's own namespace correctly ALREADY -- emlTwoWayAnova
+        ; forwards @emlAnovaKernelTwoWay's dfError, which ran on the
+        ; complete-case .workTableId -- so this is the SAME pooled-error df
+        ; the reported omnibus F-tests and .msError above already use; the
+        ; EMM point estimates/SE/CI themselves are untouched by this line.
+        .emmDfError = emlTwoWayAnova.dfError
         for .emmI to emlAnovaKernelTwoWayEMM.r
             .levelsA$[.emmI] = emlAnovaKernelTwoWayEMM.lev1$[.emmI]
         endfor
