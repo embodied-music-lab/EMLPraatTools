@@ -7989,5 +7989,108 @@ endproc
 
 
 # ============================================================================
+# @emlReportAnovaHeteroscedastic
+# ============================================================================
+# The DOOR's own Brown-Forsythe / Welch / Games-Howell block (API completion
+# wave, order section 4.2) -- reads emlRunAnovaAnalysis.bf*/.welch*/.gh*,
+# computed at emlReportAlpha.value, NOT the existing figure-annotation
+# bridge's hardcoded 0.05 (@emlReportAnovaComparison, above, whose own
+# equal-spread block keeps its current behaviour until the graphs round).
+#
+# Brown-Forsythe is always printed. Welch's F and Games-Howell print beside
+# the standard result only when Brown-Forsythe rejects at the alpha in
+# force (emlRunAnovaAnalysis.bfRejects) -- never auto-switch. An omitted
+# block (the kernel refused) prints "not available", naming the kernel's
+# own error text, matching the disclosure already folded into
+# emlRunAnovaAnalysis.warning$.
+#
+# Group labels/count come from emlOneWayAnova.groupLabel$[]/.nGroups --
+# @emlReportAnovaComparison (called immediately before this, by the door)
+# re-runs @emlOneWayAnova internally, so those globals are fresh and in the
+# same group order the door's own .gh* matrices were built in.
+# ============================================================================
+procedure emlReportAnovaHeteroscedastic: .groupCol$
+    @emlReportBlank
+    @emlReportSection: "Equal-Spread Check (Brown-Forsythe)"
+    if emlRunAnovaAnalysis.bfF = undefined
+        @emlReportNote: "Not available."
+    else
+        @eml_fixed: emlRunAnovaAnalysis.bfF, 4
+        @emlReportLineString: "Brown-Forsythe F",
+        ... "F(" + string$ (emlRunAnovaAnalysis.bfDf1) + ", "
+        ... + string$ (emlRunAnovaAnalysis.bfDf2) + ") = " + eml_fixed.result$
+        @emlReportPWithExact: "Equal-spread p", emlRunAnovaAnalysis.bfP
+        if emlRunAnovaAnalysis.bfRejects = 1
+            appendInfoLine: "  → Equal spread rejected; Welch's F and "
+            ... + "Games-Howell follow, beside the standard result above."
+        else
+            appendInfoLine: "  → Equal spread not rejected; the standard "
+            ... + "result above stands."
+        endif
+    endif
+
+    if emlRunAnovaAnalysis.bfRejects = 1
+        @emlReportBlank
+        @emlReportSection: "Welch's ANOVA"
+        if emlRunAnovaAnalysis.welchF = undefined
+            @emlReportNote: "Not available."
+        else
+            @eml_fixed: emlRunAnovaAnalysis.welchF, 4
+            @eml_fixed: emlRunAnovaAnalysis.welchDf2, 2
+            @emlReportLineString: "Welch's F",
+            ... "F(" + string$ (emlRunAnovaAnalysis.welchDf1) + ", "
+            ... + eml_fixed.result$ + ") = "
+            ... + fixed$ (emlRunAnovaAnalysis.welchF, 4)
+            @emlReportPWithExact: "Welch p", emlRunAnovaAnalysis.welchP
+        endif
+
+        @emlReportBlank
+        @emlReportSection: "Games-Howell Pairwise Comparisons"
+        if numberOfRows (emlRunAnovaAnalysis.ghDiffMat##) <= 1
+            @emlReportNote: "Not available."
+        else
+            @emlReportLineString: "Confidence level",
+            ... fixed$ (100 * (1 - emlRunAnovaAnalysis.anovaAlpha), 1) + "%"
+            appendInfoLine: ""
+            appendInfoLine: left$ ("Pair" + "                         ", 26),
+            ... left$ ("Diff" + "            ", 12),
+            ... left$ ("SE" + "            ", 12),
+            ... left$ ("p (adj)" + "                ", 14),
+            ... "CI"
+            for .i from 1 to emlOneWayAnova.nGroups - 1
+                for .j from .i + 1 to emlOneWayAnova.nGroups
+                    .pairLabel$ = replace$ (emlOneWayAnova.groupLabel$[.i],
+                    ... "_", " ", 0) + " - "
+                    ... + replace$ (emlOneWayAnova.groupLabel$[.j], "_", " ", 0)
+                    @eml_fixed: emlRunAnovaAnalysis.ghDiffMat## [.i, .j], 4
+                    .diffText$ = eml_fixed.result$
+                    @eml_fixed: emlRunAnovaAnalysis.ghSeMat## [.i, .j], 4
+                    .seText$ = eml_fixed.result$
+                    @emlFormatP: emlRunAnovaAnalysis.ghPMat## [.i, .j]
+                    .pText$ = emlFormatP.bare$
+                    if emlRunAnovaAnalysis.ghLowMat## [.i, .j] = undefined
+                        .ciText$ = "n/a"
+                    else
+                        @eml_fixed: emlRunAnovaAnalysis.ghLowMat## [.i, .j], 4
+                        .lo$ = eml_fixed.result$
+                        @eml_fixed: emlRunAnovaAnalysis.ghHighMat## [.i, .j], 4
+                        .hi$ = eml_fixed.result$
+                        .ciText$ = "[" + .lo$ + ", " + .hi$ + "]"
+                    endif
+                    appendInfoLine: left$ (.pairLabel$
+                    ... + "                         ", 26),
+                    ... left$ (.diffText$ + "            ", 12),
+                    ... left$ (.seText$ + "            ", 12),
+                    ... left$ (.pText$ + "                ", 14),
+                    ... .ciText$
+                endfor
+            endfor
+        endif
+    endif
+endproc
+
+
+# ============================================================================
+# ============================================================================
 # END OF EML ANNOTATION PROCEDURES
 # ============================================================================

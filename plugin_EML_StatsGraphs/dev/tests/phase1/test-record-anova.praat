@@ -28,6 +28,12 @@ include ../../../stats/eml-core-utilities.praat
 include ../../../stats/eml-core-descriptive.praat
 include ../../../stats/eml-extract.praat
 include ../../../stats/eml-output.praat
+; eml-studentized-range.praat defines @emlStudentizedRangeQ /
+; @emlInvStudentizedRangeQ, which @emlGamesHowell (below) needs --
+; @emlRunAnovaAnalysis calls it on every run as of the API completion wave.
+; Praat resolves procedure names at CALL time, so leaving this out parsed
+; fine and died only once a report reached the call.
+include ../../../stats/eml-studentized-range.praat
 include ../../../stats/eml-inferential.praat
 include ../../../stats/eml-result-writer.praat
 include ../../../stats/eml-record.praat

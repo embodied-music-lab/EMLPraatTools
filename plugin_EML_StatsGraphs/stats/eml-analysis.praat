@@ -552,6 +552,27 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     .stDiffMat## = zero## (1, 1)
     .stStatMat## = zero## (1, 1)
     .stEffMat## = zero## (1, 1)
+    ; BROWN-FORSYTHE / WELCH / GAMES-HOWELL, NAMED NEW ON THE DOOR (9 Sep
+    ; 2026 API completion wave, section 4.2). Computed every run, beside the
+    ; standard omnibus -- .stSec* above stays exactly what it always was and
+    ; is not overloaded with these. Initialised undefined at entry for the
+    ; same reason every other field above is: a caller must never read a
+    ; previous table's numbers.
+    .bfF = undefined
+    .bfDf1 = undefined
+    .bfDf2 = undefined
+    .bfP = undefined
+    .bfRejects = 0
+    .welchF = undefined
+    .welchDf1 = undefined
+    .welchDf2 = undefined
+    .welchP = undefined
+    .ghDiffMat## = zero## (1, 1)
+    .ghSeMat## = zero## (1, 1)
+    .ghDfMat## = zero## (1, 1)
+    .ghPMat## = zero## (1, 1)
+    .ghLowMat## = zero## (1, 1)
+    .ghHighMat## = zero## (1, 1)
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -665,8 +686,91 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
         endfor
     endif
 
+    ; ── BROWN-FORSYTHE / WELCH / GAMES-HOWELL, NAMED NEW ON THE DOOR (order
+    ; section 4.2) ──────────────────────────────────────────────────────
+    ; Computed every run, at the ALPHA IN FORCE -- not the 0.05 the existing
+    ; figure-annotation bridge (@emlReportAnovaComparison, below) hardcodes
+    ; for its own equal-spread check and its own Games-Howell call. That
+    ; bridge keeps its current behaviour until the graphs round (order:
+    ; "the figure's annotation path keeps its current behaviour until the
+    ; graphs round; the census leg proves equality"); this door computes its
+    ; own, separately, and is not read by that bridge.
+    @emlReportAlpha
+    .anovaAlpha = emlReportAlpha.value
+
+    @emlBrownForsythe: .tableId, .dataCol$, .groupCol$
+    if emlBrownForsythe.error$ = ""
+        .bfF = emlBrownForsythe.f
+        .bfDf1 = emlBrownForsythe.df1
+        .bfDf2 = emlBrownForsythe.df2
+        .bfP = emlBrownForsythe.p
+        if .bfP <> undefined and .bfP < .anovaAlpha
+            .bfRejects = 1
+        endif
+    else
+        @eml_appendWarning: .warning$, "Brown-Forsythe omitted -- "
+            ... + emlBrownForsythe.error$
+        .warning$ = eml_appendWarning.result$
+    endif
+
+    @emlWelchAnova: .tableId, .dataCol$, .groupCol$
+    if emlWelchAnova.error$ = ""
+        .welchF = emlWelchAnova.f
+        .welchDf1 = emlWelchAnova.df1
+        .welchDf2 = emlWelchAnova.df2
+        .welchP = emlWelchAnova.p
+    else
+        @eml_appendWarning: .warning$, "Welch's F omitted -- "
+            ... + emlWelchAnova.error$
+        .warning$ = eml_appendWarning.result$
+    endif
+
+    ; GAMES-HOWELL NEEDS EVERY GROUP n >= 2 (the kernel's own refusal
+    ; condition); on refusal .gh* stay the undefined 1x1 placeholder set at
+    ; entry, and the omission is disclosed. THE ONLY NEW ARITHMETIC in this
+    ; wave's ANOVA door: the interval half-width, diff +/- (qCrit/sqrt(2))
+    ; * se, built here from the kernel's .qCritMatrix## and .seMatrix##
+    ; (order section 4.2; the formula is stated in the entry below).
+    @emlGamesHowell: .tableId, .dataCol$, .groupCol$, .anovaAlpha
+    if emlGamesHowell.error$ = ""
+        .ghDiffMat## = emlGamesHowell.meanDiff##
+        .ghSeMat## = emlGamesHowell.seMatrix##
+        .ghDfMat## = emlGamesHowell.dfMatrix##
+        .ghPMat## = emlGamesHowell.pMatrix##
+        .ghLowMat## = zero## (emlGamesHowell.nGroups, emlGamesHowell.nGroups)
+        .ghHighMat## = zero## (emlGamesHowell.nGroups, emlGamesHowell.nGroups)
+        for .ghI from 1 to emlGamesHowell.nGroups
+            for .ghJ from 1 to emlGamesHowell.nGroups
+                if .ghI = .ghJ or emlGamesHowell.qCritMatrix## [.ghI, .ghJ] = undefined
+                    .ghLowMat## [.ghI, .ghJ] = undefined
+                    .ghHighMat## [.ghI, .ghJ] = undefined
+                else
+                    .ghHalfWidth = (emlGamesHowell.qCritMatrix## [.ghI, .ghJ]
+                        ... / sqrt (2)) * emlGamesHowell.seMatrix## [.ghI, .ghJ]
+                    .ghLowMat## [.ghI, .ghJ] = emlGamesHowell.meanDiff## [.ghI, .ghJ]
+                        ... - .ghHalfWidth
+                    .ghHighMat## [.ghI, .ghJ] = emlGamesHowell.meanDiff## [.ghI, .ghJ]
+                        ... + .ghHalfWidth
+                endif
+            endfor
+        endfor
+    else
+        @eml_appendWarning: .warning$, "Games-Howell omitted -- "
+            ... + emlGamesHowell.error$
+        .warning$ = eml_appendWarning.result$
+    endif
+
     @emlCSVInit
     @emlReportAnovaComparison: .tableName$, .dataCol$, .groupCol$, .tableId, .nGroups, .doTukey
+
+    ; ── THE ALPHA-IN-FORCE HETEROSCEDASTIC BLOCK, PRINTED THROUGH @emlEmit
+    ; SO IT REACHES emlStoreReport$ TOO. Brown-Forsythe is always printed;
+    ; Welch and Games-Howell print beside the standard result only when
+    ; Brown-Forsythe rejects at the alpha in force -- never auto-switch
+    ; (order section 4.2's standing ruling). Placed after the omnibus
+    ; report and before the empty-cell note, so the caveat about excluded
+    ; rows reads last, closest to the declarations below it.
+    @emlReportAnovaHeteroscedastic: .groupCol$
 
     ; EMPTY-CELL DISCLOSURE, PRINTED THROUGH @emlEmit (9 Sep 2026,
     ; RULING_LEVEL2_DISCLOSURE_REACH / AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL
@@ -7164,6 +7268,22 @@ procedure emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
     @emlGlanceNum: "nobs", .nobs
     @emlGlanceNum: "n.groups", emlOneWayAnova.nGroups
     @emlGlanceStr: "method", "One-way ANOVA"
+
+    ; BROWN-FORSYTHE / WELCH, NAMED NEW (order section 4.2, "the entry ...
+    ; read them"). Computed by the door on every run, beside the standard
+    ; model; undefined (an empty glance cell) when the kernel that produced
+    ; them refused, same as every other undefined glance quantity here.
+    ; Games-Howell's own k x k matrix is not a model-level scalar and does
+    ; not belong in this one-row frame; it is named on the door, printed in
+    ; the report, and compared against R directly by the kit.
+    @emlGlanceNum: "bf.statistic", emlRunAnovaAnalysis.bfF
+    @emlGlanceNum: "bf.df1", emlRunAnovaAnalysis.bfDf1
+    @emlGlanceNum: "bf.df2", emlRunAnovaAnalysis.bfDf2
+    @emlGlanceNum: "bf.p.value", emlRunAnovaAnalysis.bfP
+    @emlGlanceNum: "welch.statistic", emlRunAnovaAnalysis.welchF
+    @emlGlanceNum: "welch.df1", emlRunAnovaAnalysis.welchDf1
+    @emlGlanceNum: "welch.df2", emlRunAnovaAnalysis.welchDf2
+    @emlGlanceNum: "welch.p.value", emlRunAnovaAnalysis.welchP
 
     ; ---- augment: the input table plus what the model says about each row ----
     ;

@@ -175,6 +175,8 @@ emlVocabGlance$ = "r.squared adj.r.squared sigma statistic p.value df"
 ... + " estimate parameter partial.eta.squared epsilon.squared"
 ... + " tie.correction gg.epsilon p.value.gg kendalls.w"
 ... + " skewness kurtosis method alternative warning"
+... + " bf.statistic bf.df1 bf.df2 bf.p.value"
+... + " welch.statistic welch.df1 welch.df2 welch.p.value"
 
 # augment's derived columns. The input table's own columns are carried
 # through ahead of these and are not vocabulary-checked, since they are the
