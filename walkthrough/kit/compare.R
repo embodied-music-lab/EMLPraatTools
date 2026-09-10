@@ -1461,7 +1461,34 @@ CONTRACT_CLAUSE_RULES <- list(
     list(proc = "emlRunTwoWayAnalysis", re = "_eta_squared$",               clause = "two-way-eta-squared-gap"),
     list(proc = "emlRunGroupedRegressionAnalysis", re = "^overall_adj_r_squared$",  clause = "grouped-regression-adjusted-r2"),
     list(proc = "emlRunDescriptiveAnalysis", re = "^ci_(low|high)$",        clause = "constant-column-mean-interval"),
-    list(proc = "emlCronbachAlpha",     re = "^alpha_if_deleted_",          clause = "alpha-two-item-scale")
+    list(proc = "emlCronbachAlpha",     re = "^alpha_if_deleted_",          clause = "alpha-two-item-scale"),
+
+    # API COMPLETION WAVE (9 Sep 2026, order section 4/8): one rule per new
+    # quantity family, each an optional block that can be undefined and
+    # disclosed on its own kernel's own refusal, independently of the rest
+    # of its door's output. See reader_sentences.md for the reader-facing
+    # story each clause below tells.
+    list(proc = "emlRunTwoWayAnalysis",
+         re = "^(emm_.*|se_.*_within_.*_(f|p)|posthoc_.*_(diff|se|padj|low|high)|omega_sq_.*)$",
+         clause = "two-way-optional-blocks"),
+    list(proc = "emlRunAnovaAnalysis",
+         re = "^(bf_(f|df1|df2|p)|welch_(f|df1|df2|p)|gh_.*_(diff|se|df|padj|low|high))$",
+         clause = "anova-robust-family"),
+    list(proc = "emlRunRegressionAnalysis",
+         re = "^(slope_ci_(low|high)|intercept_ci_(low|high)|ts_(slope|intercept|nslopes|n))$",
+         clause = "regression-ols-and-theilsen"),
+    list(proc = "emlRunCorrelationAnalysis",
+         re = "^(pearson_ci_(low|high)|group_.*_(n|r|t|df|p|low|high|skipped)|n_groups_(run|skipped))$",
+         clause = "correlation-ci-and-groups"),
+    list(proc = "emlRunTwoGroupAnalysis", re = "^diff_(low|high)$",         clause = "twogroup-mean-diff-interval"),
+    list(proc = "emlRunDescriptiveAnalysis",
+         re = "^(mode|mode_unique|mode_count|mad|mad_raw|geo_mean|harm_mean|trimmed_mean|winsorized_mean|trim_k)$",
+         clause = "descriptive-mean-family"),
+    list(proc = "emlRunDescriptiveAnalysis",
+         re = paste0("^group_.*_(n|mean|sd|variance|sem|median|q1|q3|iqr|min|max|range|",
+                     "skewness|kurtosis|ci_low|ci_high|mode|mode_unique|mode_count|mad|",
+                     "mad_raw|geo_mean|harm_mean|trimmed_mean|winsorized_mean|trim_k)$"),
+         clause = "descriptive-per-group")
 )
 
 # --- 4. THE LOOKUP, AND THE HARD ERROR --------------------------------------

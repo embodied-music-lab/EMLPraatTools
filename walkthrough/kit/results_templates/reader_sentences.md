@@ -144,6 +144,54 @@ Rows: 2. Dropping one respondent leaves two, and one item then has no
 variance. R's package deletes that item and computes on the rest; the plugin
 keeps it. The plugin matches the textbook formula, which gives -8/3 exactly.
 
+## two-way-optional-blocks
+Rows: ~40. The two-way door's estimated marginal means, simple effects and
+per-factor post hoc comparisons are each computed by their own kernel call,
+independently of the omnibus ANOVA and of each other. Where one of those
+calls refuses -- too few residual degrees of freedom for a simple effect, an
+unusable post hoc correction for a factor -- that block's own quantities are
+undefined and disclosed, while the rest of the door's output stands.
+
+## anova-robust-family
+Rows: ~24. Brown-Forsythe and Welch's F are computed on every ANOVA run;
+Games-Howell needs every group to have at least two observations, the same
+floor its kernel has always used. Where a group falls below that floor,
+Games-Howell's own quantities are undefined and disclosed; Brown-Forsythe and
+Welch are unaffected.
+
+## regression-ols-and-theilsen
+Rows: ~16. Ordinary least squares runs on every regression cell; Theil-Sen
+runs in addition wherever the cell requests it, and refuses on its own
+terms -- fewer than two distinct predictor values, or fewer than three
+observations. Where it refuses, its own four quantities are undefined and
+disclosed; the OLS fit is unaffected.
+
+## correlation-ci-and-groups
+Rows: ~20. The Fisher r-to-z interval around the overall Pearson r needs at
+least four complete pairs and an r short of +/-1; a grouping column, where
+one is given, is analysed group by group the same way, and a group short of
+four complete pairs is skipped and disclosed rather than forced through the
+same floor. `n_groups_run`/`n_groups_skipped` count that outcome and are
+zero, not undefined, when no grouping column is given.
+
+## twogroup-mean-diff-interval
+Rows: ~4. The mean-difference interval is built from the parametric branch's
+own standard error and degrees of freedom, so it exists exactly where that
+branch runs and is undefined and disclosed on the same terms as the
+parametric test statistic beside it.
+
+## descriptive-mean-family
+Rows: ~8. Mode, MAD, the trimmed and winsorized means are computed on every
+descriptive column. The geometric and harmonic means are undefined and
+disclosed wherever the column holds a value at or below zero, the same gate
+both sides apply.
+
+## descriptive-per-group
+Rows: ~72. A group of one observation reports its own n and mean and nothing
+else -- every other quantity in the per-group set is undefined and disclosed
+for that group, the same n=1 floor `emlDescribe`'s own kernel and the R
+oracle's per-group battery both apply.
+
 ## pairwise-oracle-cross-check
 Rows: ~432. Holm and Benjamini-Hochberg correction define no per-pair
 confidence level, so there is no interval for the plugin or R to print here
