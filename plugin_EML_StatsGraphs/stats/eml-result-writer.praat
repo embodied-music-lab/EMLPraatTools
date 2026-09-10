@@ -457,16 +457,9 @@ procedure eml_orderedCols: .vocab$, .which$
             .src [.n] = .c
         endfor
     endif
-    .rest$ = .vocab$ + " "
-    while .rest$ <> ""
-        .sp = index (.rest$, " ")
-        if .sp = 0
-            .tok$ = .rest$
-            .rest$ = ""
-        else
-            .tok$ = left$ (.rest$, .sp - 1)
-            .rest$ = mid$ (.rest$, .sp + 1, 100000)
-        endif
+    .vocabTok$# = splitBy$# (.vocab$, " ")
+    for .vt to size (.vocabTok$#)
+        .tok$ = .vocabTok$# [.vt]
         if .tok$ <> ""
             .found = 0
             if .which$ = "tidy"
@@ -516,7 +509,7 @@ procedure eml_orderedCols: .vocab$, .which$
                 .src [.n] = .found
             endif
         endif
-    endwhile
+    endfor
 endproc
 
 

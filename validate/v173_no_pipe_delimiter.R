@@ -54,6 +54,22 @@
 # it reads only @emlReshapeSeriesLong and @emlReshapeSeriesWide by name; the
 # two graphs-round frozen-set members §1b actually names.
 #
+# BROADENED, ORDER §10 (revised). Sections 10-11 below widen the check from
+# the six §1b fixed points to the full frozen statistical surface: every
+# round==kit procedure REGISTRY.tsv names (sources column carries "1") plus
+# every private helper/kernel it reaches, walked automatically rather than
+# hand-listed, is read for ANY hand-rolled text-to-vector splitter -- not
+# only "|", any delimiter -- and required to be either @emlCommaListToVector
+# or a Praat built-in. One real one was found this way and fixed:
+# @eml_orderedCols (stats/eml-result-writer.praat) hand-split its column-
+# vocabulary string on " " with its own index() loop; it now calls
+# `splitBy$# (.vocab$, " ")`. Section 11 confirms the one other hand-rolled
+# splitter this sweep found -- graphs/eml-graph-procedures.praat:7007's
+# @emlLightenColor comma parse -- is out of the round==kit closure (nothing
+# in stats/ reaches a graphs/-layer color helper) and is already logged in
+# validate/canon/helper_homes_allowlist.tsv; it is deferred to the graphs
+# round, not fixed here.
+#
 # SOURCE-LEVEL, NOT A RUN. This never launches Praat.
 #
 #     Rscript validate/v173_no_pipe_delimiter.R
@@ -328,7 +344,231 @@ check_true(V,
     "stats/eml-lmm.praat's mixed-model formula parser still reads \"(term | group)\" (kept by standing rule, untouched by §1b)",
     any(grepl('index \\(\\.groupContent\\$, "\\|"\\)', lmm_lines)))
 
+# ============================================================================
+# 10. THE BROADENED SWEEP (ORDER revised §10). Every round==kit procedure in
+#     REGISTRY.tsv -- the sources-column-1 emlRun* entry points, the ones the
+#     kit compares against R -- plus every private helper/kernel reached from
+#     one of them by an "@Name" call anywhere across
+#     plugin_EML_StatsGraphs/stats/*.praat, is read for the fingerprint a
+#     hand-rolled text-to-vector splitter actually has: a loop (for/while)
+#     that both calls index()/rindex()/index_regex() AND, in that SAME loop,
+#     accumulates the result into an indexed array element
+#     (".foo$ [.n] = ..." / ".foo# [.n] = ...") -- the
+#     @emlCommaListToVector shape, minus the @emlCommaListToVector call. A
+#     single index() used once to answer a yes/no or one-way-split question
+#     (a decimal point, a "Type name" selected$() parse, a doubled-quote
+#     scan, a row-by-row Table cell classification) is not this shape and is
+#     not flagged; every one of the false-positive categories that shape
+#     produced on this tree was read by hand once, this session, and is
+#     accounted for below rather than asserted.
+#
+#     WHY THE FULL PLUGIN-RELATIVE CLOSURE, NOT A HAND LIST OF FILES. "round"
+#     is not yet a REGISTRY.tsv column (065 adds it); until then, round==kit
+#     is read the way the order phrases it -- the entry points are the
+#     emlRun* doors REGISTRY.tsv's "sources" column marks 1 (the 15 original
+#     name-pattern admissions plus @emlRunCleanData, admitted the same way by
+#     the 9 Sep data-cleaning ruling) -- and the closure is walked from
+#     there, so a NEW private helper introduced next wave is swept
+#     automatically instead of waiting for someone to add it to a list here.
+# ============================================================================
+
+registry_path <- PLUGIN_FILE("REGISTRY.tsv")
+registry_lines <- read_lines_or_stop(registry_path)
+reg_data <- registry_lines[!grepl("^#", registry_lines) & nzchar(registry_lines)]
+reg_data <- reg_data[!grepl("^name\t", reg_data)]
+reg_fields <- strsplit(reg_data, "\t", fixed = TRUE)
+reg_name <- vapply(reg_fields, function(f) f[1], character(1))
+reg_sources <- vapply(reg_fields, function(f) if (length(f) >= 5) f[5] else "", character(1))
+kit_entry_names <- unique(reg_name[grepl("(^|,)1(,|$)", reg_sources)])
+check_true(V,
+    paste0("REGISTRY.tsv names at least 14 round==kit (sources column carries \"1\") entry points (found ",
+           length(kit_entry_names), ")"),
+    length(kit_entry_names) >= 14L)
+
+# A line whose first non-blank character is "#" or ";" is a comment in this
+# tree's house style (confirmed against stats/eml-analysis.praat's own
+# ";"-led prose blocks); blanked so neither the call-graph walk nor the
+# splitter fingerprint below ever reads a name or a shape out of prose.
+strip_praat_comment <- function(line) if (grepl("^\\s*[#;]", line)) "" else line
+
+stats_files <- Sys.glob(PLUGIN_FILE("stats", "*.praat"))
+proc_at <- new.env(parent = emptyenv())     # name -> list(file, start, end)
+file_lines <- new.env(parent = emptyenv())  # file -> character vector
+for (fp in stats_files) {
+    fl <- read_lines_or_stop(fp)
+    assign(fp, fl, envir = file_lines)
+    starts <- grep("^procedure\\s+[A-Za-z_][A-Za-z0-9_]*", fl)
+    for (s in starts) {
+        nm <- sub("^procedure\\s+([A-Za-z_][A-Za-z0-9_]*).*$", "\\1", fl[s])
+        rel_e <- which(grepl("^endproc", fl[(s + 1L):length(fl)]))
+        if (length(rel_e) == 0L) next
+        assign(nm, list(file = fp, start = s, end = s + rel_e[1]), envir = proc_at)
+    }
+}
+get_body <- function(nm) {
+    if (!exists(nm, envir = proc_at, inherits = FALSE)) return(NULL)
+    info <- get(nm, envir = proc_at, inherits = FALSE)
+    fl <- get(info$file, envir = file_lines, inherits = FALSE)
+    vapply(fl[info$start:info$end], strip_praat_comment, character(1), USE.NAMES = FALSE)
+}
+callees_of <- function(body) {
+    m <- gregexpr("@([A-Za-z_][A-Za-z0-9_]*)", body)
+    unique(sub("^@", "", unlist(regmatches(body, m))))
+}
+
+# BFS from the round==kit entry points over the stats/ call graph.
+visited <- character(0)
+queue <- kit_entry_names
+while (length(queue) > 0L) {
+    nm <- queue[1]; queue <- queue[-1]
+    if (nm %in% visited) next
+    visited <- c(visited, nm)
+    body <- get_body(nm)
+    if (is.null(body)) next
+    for (callee in callees_of(body)) {
+        if (!(callee %in% visited) && exists(callee, envir = proc_at, inherits = FALSE)) {
+            queue <- c(queue, callee)
+        }
+    }
+}
+check_true(V,
+    paste0("the round==kit call-graph closure over stats/*.praat reaches more than 100 procedures (found ",
+           length(visited), ")"),
+    length(visited) > 100L)
+
+# has_splitter_loop -- TRUE when some (for|while) ... (endfor|endwhile) block
+# in .body both calls index()/rindex()/index_regex() and accumulates into an
+# indexed array element. Nesting is tracked with a keyword stack (for/while
+# push, matching endfor/endwhile pop); if/endif is not tracked, which only
+# widens a loop's own range to include its own if-branches -- exactly where a
+# real splitter's token consumption lives.
+has_splitter_loop <- function(body) {
+    starts <- integer(0); kinds <- character(0)
+    for (i in seq_along(body)) {
+        if (grepl("^\\s*for\\b", body[i])) {
+            starts <- c(starts, i); kinds <- c(kinds, "for")
+        } else if (grepl("^\\s*while\\b", body[i])) {
+            starts <- c(starts, i); kinds <- c(kinds, "while")
+        } else if (grepl("^\\s*endfor\\b", body[i]) && length(starts) && kinds[length(kinds)] == "for") {
+            s <- starts[length(starts)]
+            starts <- starts[-length(starts)]; kinds <- kinds[-length(kinds)]
+            block <- body[s:i]
+            if (any(grepl("\\b(index|rindex|index_regex)\\s*\\(", block)) &&
+                any(grepl('\\.[A-Za-z_]\\w*[$#]\\s*\\[\\s*\\.[A-Za-z_]\\w*\\s*\\]\\s*=[^=]', block)))
+                return(TRUE)
+        } else if (grepl("^\\s*endwhile\\b", body[i]) && length(starts) && kinds[length(kinds)] == "while") {
+            s <- starts[length(starts)]
+            starts <- starts[-length(starts)]; kinds <- kinds[-length(kinds)]
+            block <- body[s:i]
+            if (any(grepl("\\b(index|rindex|index_regex)\\s*\\(", block)) &&
+                any(grepl('\\.[A-Za-z_]\\w*[$#]\\s*\\[\\s*\\.[A-Za-z_]\\w*\\s*\\]\\s*=[^=]', block)))
+                return(TRUE)
+        }
+    }
+    FALSE
+}
+
+# Two named, justified exceptions -- neither is a list-delimiter splitter, so
+# @emlCommaListToVector is not their fix (see the two checks that read them
+# by name below). Anything else that matches is a regression.
+WORD_WRAP_WHITELIST <- c("emlWrapText", "eml_saveReceiptLines")
+
+flagged <- character(0)
+for (nm in visited) {
+    body <- get_body(nm)
+    if (!is.null(body) && has_splitter_loop(body)) flagged <- c(flagged, nm)
+}
+unexplained <- setdiff(flagged, WORD_WRAP_WHITELIST)
+check_true(V,
+    paste0("every round==kit-reachable stats/ procedure with a splitter-loop shape is a named, ",
+           "justified exception -- flagged: ",
+           if (length(flagged)) paste(flagged, collapse = ", ") else "none",
+           "; unexplained: ",
+           if (length(unexplained)) paste(unexplained, collapse = ", ") else "none"),
+    length(unexplained) == 0L)
+
+# eml_orderedCols regression pin. Found by this broadened sweep: the vocab
+# string driving tidy/glance/augment column ordering (stats/eml-result-
+# writer.praat) was walked by a hand-rolled while/index($, " ") loop,
+# accumulating into .name$[.n] -- the exact shape this section detects, on a
+# delimiter (a bare space) @emlCommaListToVector does not even use. Fixed in
+# this commit to `splitBy$# (.vocab$, " ")`, a Praat built-in. Pinned here by
+# name so a future edit that reverts to the hand loop fails this assertion
+# immediately.
+check_true(V, "eml_orderedCols is reached by the round==kit closure",
+    "eml_orderedCols" %in% visited)
+oc_body <- get_body("eml_orderedCols")
+check_true(V,
+    paste0("stats/eml-result-writer.praat's @eml_orderedCols splits .vocab$ with splitBy$# ",
+           "(a Praat built-in), not a hand-rolled index() loop"),
+    !is.null(oc_body) &&
+        any(grepl('splitBy\\$# ?\\(\\.vocab\\$, ?" "\\)', oc_body)) &&
+        !any(grepl("\\b(index|rindex|index_regex)\\s*\\(", oc_body)))
+
+# emlWrapText / eml_saveReceiptLines -- read by name, confirming the
+# exception still applies rather than trusting it forever. Both build an
+# indexed .line$[] array inside a loop that also calls index(), which is why
+# the fingerprint above finds them -- and neither is a list-delimiter
+# splitter. @emlWrapText greedy-breaks PROSE at a character-width budget
+# (Praat has no word-wrap primitive, and @emlCommaListToVector's comma
+# convention has nothing to unify with a width-limited line break).
+# @eml_saveReceiptLines only separates already-distinct PHYSICAL LINES
+# (newline$, not a delimiter choice that could drift out of sync with a
+# writer elsewhere) before handing each one to @emlWrapText. Neither turns a
+# delimited LIST OF ITEMS into a vector of items to process further; both are
+# display formatting, the same kind of exception the header's markdown-table
+# and regex-alternation categories already are.
+wt_body <- get_body("emlWrapText")
+check_true(V,
+    paste0("stats/eml-output.praat's @emlWrapText still exists and still wraps prose with its ",
+           "own width-scan loop (named exception, not a list-delimiter splitter)"),
+    !is.null(wt_body) && has_splitter_loop(wt_body))
+src_body <- get_body("eml_saveReceiptLines")
+check_true(V,
+    paste0("stats/eml-output.praat's @eml_saveReceiptLines still exists and still splits its ",
+           "newline-separated input with its own loop (named exception, not a list-delimiter ",
+           "splitter)"),
+    !is.null(src_body) && has_splitter_loop(src_body))
+
+# ============================================================================
+# 11. THE GRAPHS-LAYER COMMA LOOP THIS SWEEP ALSO FOUND, DEFERRED BY NAME.
+#     graphs/eml-graph-procedures.praat's @emlLightenColor hand-parses an RGB
+#     triple ("{0.3, 0.5, 0.7}") with two index(.., ",")-driven splits at
+#     lines 7002 and 7007. It is never reached from the round==kit closure
+#     above (nothing in stats/ calls a graphs/-layer color helper), so
+#     section 10 never touches it -- the same graphs-round boundary section 8
+#     already draws for @emlReshapeSeriesLong/Wide. It is not fixed here: the
+#     order (§10) files it for the graphs round by name, and this file does
+#     not touch graphs/eml-graph-procedures.praat:7007.
+#
+#     ALREADY LOGGED, NOT LOGGED AGAIN. Both of @emlLightenColor's index(...,
+#     ",") lines (7002 and 7007) already carry a standing-ledger row --
+#     validate/canon/helper_homes_allowlist.tsv, "AUDIT_PROCEDURES_2026-09-08
+#     section 6 (deferred to the graphs/scripts round)" -- from the same
+#     comma-splitter canon @emlCommaListToVector's own helper_homes.tsv
+#     pattern row names. This check confirms the two rows are still there
+#     rather than adding a third record of the same fact in a second ledger.
+# ============================================================================
+
+lightencolor_path <- PLUGIN_FILE("graphs", "eml-graph-procedures.praat")
+lightencolor_lines <- read_lines_or_stop(lightencolor_path)
+check_true(V,
+    "graphs/eml-graph-procedures.praat:7007 is still @emlLightenColor's comma-split line (unchanged; deferred, not fixed, by this order)",
+    length(lightencolor_lines) >= 7007L &&
+        grepl('\\.comma2 = index \\(\\.rest\\$, ","\\)', lightencolor_lines[7007]))
+
+allowlist_path <- repo_path("validate", "canon", "helper_homes_allowlist.tsv")
+allowlist_lines <- read_lines_or_stop(allowlist_path)
+ledger_7002 <- grep("^graphs/eml-graph-procedures\\.praat\t7002\t", allowlist_lines)
+ledger_7007 <- grep("^graphs/eml-graph-procedures\\.praat\t7007\t", allowlist_lines)
+check_true(V,
+    "validate/canon/helper_homes_allowlist.tsv already carries the graphs-round deferral for @emlLightenColor's two comma-split lines (7002 and 7007)",
+    length(ledger_7002) >= 1L && length(ledger_7007) >= 1L)
+
 if (!exists("EML_SUITE")) {
-    eml_report("v173 no-pipe-delimiter canon -- six §1b fixes, read by name, stay fixed")
+    eml_report(paste0("v173 no-pipe-delimiter canon -- six §1b fixes stay fixed, and the ",
+                       "§10 sweep now covers the round==kit closure (", length(visited),
+                       " procedures): one real hand-rolled splitter found and fixed ",
+                       "(eml_orderedCols), the graphs-layer comma loop logged for the graphs round"))
     eml_exit()
 }
