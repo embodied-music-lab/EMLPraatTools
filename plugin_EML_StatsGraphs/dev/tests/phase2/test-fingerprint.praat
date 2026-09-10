@@ -2547,17 +2547,21 @@ endfor
 @emlGroupFingerprint: sortT, "v", "g"
 sortKeyBefore$ = emlGroupFingerprint.result$
 
+; @emlTukeyHSD deleted 9 Sep 2026 (superseded by @eml_tukeyPairwiseFromGroups,
+; which @emlOneWayAnova's tukey=1 path already called directly); the pairwise
+; matrices this needle reads are the identical ones @emlOneWayAnova now
+; exposes on itself.
 sortWas = emlGroupSortAlphabetical
 emlGroupSortAlphabetical = 0
-@emlTukeyHSD: sortT, "v", "g", 0.05
-discFirst$ = emlTukeyHSD.groupName$ [1]
-discSecond$ = emlTukeyHSD.groupName$ [2]
-discDiff = emlTukeyHSD.meanDiff## [1, 2]
+@emlOneWayAnova: sortT, "v", "g", 1
+discFirst$ = emlOneWayAnova.groupName$ [1]
+discSecond$ = emlOneWayAnova.groupName$ [2]
+discDiff = emlOneWayAnova.meanDiff## [1, 2]
 emlGroupSortAlphabetical = 1
-@emlTukeyHSD: sortT, "v", "g", 0.05
-alphaFirst$ = emlTukeyHSD.groupName$ [1]
-alphaSecond$ = emlTukeyHSD.groupName$ [2]
-alphaDiff = emlTukeyHSD.meanDiff## [1, 2]
+@emlOneWayAnova: sortT, "v", "g", 1
+alphaFirst$ = emlOneWayAnova.groupName$ [1]
+alphaSecond$ = emlOneWayAnova.groupName$ [2]
+alphaDiff = emlOneWayAnova.meanDiff## [1, 2]
 emlGroupSortAlphabetical = sortWas
 
 @emlGroupFingerprint: sortT, "v", "g"

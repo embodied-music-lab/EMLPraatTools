@@ -81,13 +81,12 @@
 #
 # Provides: @emlTTest, @emlTTestPaired, @emlCohenD,
 #   @emlPearsonCorrelation, @emlSpearmanCorrelation,
-#   @emlTTestAlt, @emlTTestPairedAlt,
-#   @emlPearsonCorrelationAlt, @emlSpearmanCorrelationAlt,
 #   @emlSpearmanExactP, @emlSpearmanCorrelationDispatch,
 #   @emlMannWhitneyU, @emlWilcoxonSignedRank,
 #   @emlRankBiserialR, @emlMatchedPairsR,
 #   @emlBonferroni, @emlHolm, @emlBenjaminiHochberg,
-#   @emlTableFromGroups, @emlOneWayAnova, @emlTwoWayAnova, @emlTukeyHSD,
+#   @emlTableFromGroups, @emlOneWayAnova, @emlTwoWayAnova,
+#   @eml_tukeyPairwiseFromGroups,
 #   @emlEpsilonSquared, @emlKruskalWallis, @emlDunnTest,
 #   @emlPairwiseT, @emlPairwiseWilcoxon, @emlScheffe,
 #   @emlBrownForsythe, @emlWelchAnova, @emlGamesHowell
@@ -99,9 +98,9 @@
 #     include eml-core-utilities.praat
 #     include eml-inferential.praat
 #
-#   @emlTukeyHSD (v0.9+) requires @emlCountGroups, @eml_getGroupData from
-#   eml-extract.praat. The calling script must include extract
-#   before inferential:
+#   @eml_tukeyPairwiseFromGroups (v0.9+) requires @emlCountGroups,
+#   @eml_getGroupData from eml-extract.praat. The calling script must
+#   include extract before inferential:
 #     include eml-extract.praat
 #     include eml-inferential.praat
 #
@@ -171,8 +170,6 @@
 #
 #   .tails counts tails and nothing else: it cannot say WHICH one-sided
 #   alternative is meant, and (v1, v2) and (v2, v1) return p and 1 - p.
-#   @emlTTestAlt names the alternative in words ("two-sided",
-#   "greater", "less") and cannot be misread; prefer it in new code.
 # ============================================================================
 
 procedure emlTTest: .v1#, .v2#, .tails, .equalVariances
@@ -260,92 +257,6 @@ endproc
 
 
 # ============================================================================
-# @emlTTestAlt
-# ============================================================================
-# @emlTTest with the alternative named in words rather than counted in
-# tails. Praat cannot overload a procedure and cannot add an argument
-# to @emlTTest without breaking every existing call site at once, so
-# the explicit form is a separate entry point onto the same kernel.
-#
-# Arguments:
-#   .v1#            - numeric vector, group 1
-#   .v2#            - numeric vector, group 2
-#   .alternative$   - "two-sided", "greater" (H1: mean1 > mean2) or
-#                     "less" (H1: mean1 < mean2). Nothing else.
-#   .equalVariances - 0 = Welch (default), 1 = Student (pooled)
-#
-# Output: the same fields as @emlTTest. .p is the p for the named
-#   alternative; .alternative$ echoes the name it was given. An
-#   unrecognised alternative sets .error$ and leaves every numeric
-#   output undefined — it is not silently treated as two-sided.
-# ============================================================================
-
-procedure emlTTestAlt: .v1#, .v2#, .alternative$, .equalVariances
-    .requested$ = .alternative$
-
-    # Initialize outputs
-    .t = undefined
-    .df = undefined
-    .p = undefined
-    .pGreater = undefined
-    .pLess = undefined
-    .alternative$ = ""
-    .mean1 = undefined
-    .mean2 = undefined
-    .sd1 = undefined
-    .sd2 = undefined
-    .meanDiff = undefined
-    .n1 = undefined
-    .n2 = undefined
-    .method$ = ""
-    .error$ = ""
-
-    .tails = 0
-    if .requested$ = "two-sided"
-        .tails = 2
-    elsif .requested$ = "greater"
-        .tails = 1
-    elsif .requested$ = "less"
-        .tails = 1
-    endif
-
-    if .tails = 0
-        .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
-    else
-        @emlTTest: .v1#, .v2#, .tails, .equalVariances
-        if emlTTest.error$ <> ""
-            .error$ = emlTTest.error$
-        else
-            .t = emlTTest.t
-            .df = emlTTest.df
-            .pGreater = emlTTest.pGreater
-            .pLess = emlTTest.pLess
-            .mean1 = emlTTest.mean1
-            .mean2 = emlTTest.mean2
-            .sd1 = emlTTest.sd1
-            .sd2 = emlTTest.sd2
-            .meanDiff = emlTTest.meanDiff
-            .n1 = emlTTest.n1
-            .n2 = emlTTest.n2
-            .method$ = emlTTest.method$
-        endif
-        .error$ = emlTTest.error$
-
-        if .error$ = ""
-            .alternative$ = .requested$
-            if .requested$ = "less"
-                .p = .pLess
-            else
-                # "two-sided" and "greater" are what the kernel already
-                # selected for .tails = 2 and .tails = 1 respectively.
-                .p = emlTTest.p
-            endif
-        endif
-    endif
-endproc
-
-
-# ============================================================================
 # @emlTTestPaired
 # ============================================================================
 # Paired-samples t-test.
@@ -380,8 +291,6 @@ endproc
 #
 #   .tails counts tails and nothing else: it cannot say WHICH one-sided
 #   alternative is meant, and (v1, v2) and (v2, v1) return p and 1 - p.
-#   @emlTTestPairedAlt names the alternative in words; prefer it in new
-#   code.
 # ============================================================================
 
 procedure emlTTestPaired: .v1#, .v2#, .tails
@@ -438,74 +347,6 @@ procedure emlTTestPaired: .v1#, .v2#, .tails
                 # One-tailed: fixed alternative H1 v1 > v2
                 .alternative$ = "greater"
                 .p = .pGreater
-            endif
-        endif
-    endif
-endproc
-
-
-# ============================================================================
-# @emlTTestPairedAlt
-# ============================================================================
-# @emlTTestPaired with the alternative named in words. See the note on
-# @emlTTestAlt for why this is a separate entry point rather than an
-# extra argument.
-#
-# Arguments:
-#   .v1#          - numeric vector, condition 1
-#   .v2#          - numeric vector, condition 2 (same length as v1#)
-#   .alternative$ - "two-sided", "greater" (H1: v1 > v2) or "less"
-#                   (H1: v1 < v2). Nothing else.
-#
-# Output: the same fields as @emlTTestPaired. An unrecognised
-#   alternative sets .error$ and leaves every numeric output undefined.
-# ============================================================================
-
-procedure emlTTestPairedAlt: .v1#, .v2#, .alternative$
-    .requested$ = .alternative$
-
-    # Initialize outputs
-    .t = undefined
-    .df = undefined
-    .p = undefined
-    .pGreater = undefined
-    .pLess = undefined
-    .alternative$ = ""
-    .meanDiff = undefined
-    .sdDiff = undefined
-    .seDiff = undefined
-    .n = undefined
-    .error$ = ""
-
-    .tails = 0
-    if .requested$ = "two-sided"
-        .tails = 2
-    elsif .requested$ = "greater"
-        .tails = 1
-    elsif .requested$ = "less"
-        .tails = 1
-    endif
-
-    if .tails = 0
-        .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
-    else
-        @emlTTestPaired: .v1#, .v2#, .tails
-        .error$ = emlTTestPaired.error$
-
-        if .error$ = ""
-            .t = emlTTestPaired.t
-            .df = emlTTestPaired.df
-            .pGreater = emlTTestPaired.pGreater
-            .pLess = emlTTestPaired.pLess
-            .meanDiff = emlTTestPaired.meanDiff
-            .sdDiff = emlTTestPaired.sdDiff
-            .seDiff = emlTTestPaired.seDiff
-            .n = emlTTestPaired.n
-            .alternative$ = .requested$
-            if .requested$ = "less"
-                .p = .pLess
-            else
-                .p = emlTTestPaired.p
             endif
         endif
     endif
@@ -678,9 +519,7 @@ endproc
 #   variable).
 #
 #   .tails counts tails and nothing else: it cannot say WHICH one-sided
-#   alternative is meant, and r = +0.96 and r = -0.96 return p and
-#   1 - p. @emlPearsonCorrelationAlt / @emlSpearmanCorrelationAlt name
-#   the alternative in words; prefer them in new code.
+#   alternative is meant, and r = +0.96 and r = -0.96 return p and 1 - p.
 # ============================================================================
 
 # ----------------------------------------------------------------------------
@@ -801,8 +640,7 @@ endproc
 
 procedure emlPearsonCorrelation: .x#, .y#, .tails
     ; Initialise every numeric output to undefined before the guard, matching
-    ; the sibling entry points @emlPearsonCorrelationAlt and
-    ; @emlSpearmanCorrelation, which already do this. Without it, a caller
+    ; @emlSpearmanCorrelation, which already does this. Without it, a caller
     ; that reads .r on an error path (e.g. zero variance) before this
     ; procedure has ever succeeded once in the running script reads an
     ; unassigned variable, and Praat aborts the whole script instead of
@@ -830,72 +668,6 @@ procedure emlPearsonCorrelation: .x#, .y#, .tails
         .n = eml_pearsonCore.n
         .warning$ = eml_pearsonCore.warning$
         .perfect = eml_pearsonCore.perfect
-    endif
-endproc
-
-
-# ============================================================================
-# @emlPearsonCorrelationAlt
-# ============================================================================
-# @emlPearsonCorrelation with the alternative named in words. See the
-# note on @emlTTestAlt for why this is a separate entry point.
-#
-# Arguments:
-#   .x#           - numeric vector, variable 1
-#   .y#           - numeric vector, variable 2 (same length as x#)
-#   .alternative$ - "two-sided", "greater" (H1: r > 0) or "less"
-#                   (H1: r < 0). Nothing else.
-#
-# Output: the same fields as @emlPearsonCorrelation. An unrecognised
-#   alternative sets .error$ and leaves every numeric output undefined.
-# ============================================================================
-
-procedure emlPearsonCorrelationAlt: .x#, .y#, .alternative$
-    .requested$ = .alternative$
-
-    .r = undefined
-    .t = undefined
-    .df = undefined
-    .p = undefined
-    .pGreater = undefined
-    .pLess = undefined
-    .alternative$ = ""
-    .n = undefined
-    .error$ = ""
-    .warning$ = ""
-    .perfect = 0
-
-    .tails = 0
-    if .requested$ = "two-sided"
-        .tails = 2
-    elsif .requested$ = "greater"
-        .tails = 1
-    elsif .requested$ = "less"
-        .tails = 1
-    endif
-
-    if .tails = 0
-        .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
-    else
-        @eml_pearsonCore: .x#, .y#, .tails
-        .error$ = eml_pearsonCore.error$
-        .r = eml_pearsonCore.r
-        .t = eml_pearsonCore.t
-        .df = eml_pearsonCore.df
-        .pGreater = eml_pearsonCore.pGreater
-        .pLess = eml_pearsonCore.pLess
-        .n = eml_pearsonCore.n
-        .warning$ = eml_pearsonCore.warning$
-        .perfect = eml_pearsonCore.perfect
-
-        if .error$ = ""
-            .alternative$ = .requested$
-            if .requested$ = "less"
-                .p = .pLess
-            else
-                .p = eml_pearsonCore.p
-            endif
-        endif
     endif
 endproc
 
@@ -940,8 +712,7 @@ endproc
 #
 #   .tails counts tails and nothing else and cannot say WHICH one-sided
 #   alternative is meant — see the note in @emlPearsonCorrelation's
-#   header, which shares this kernel. @emlSpearmanCorrelationAlt names
-#   the alternative in words; prefer it in new code.
+#   header, which shares this kernel.
 # ============================================================================
 
 procedure emlSpearmanCorrelation: .x#, .y#, .tails
@@ -993,72 +764,6 @@ procedure emlSpearmanCorrelation: .x#, .y#, .tails
             .alternative$ = eml_pearsonCore.alternative$
             .warning$ = eml_pearsonCore.warning$
             .perfect = eml_pearsonCore.perfect
-        endif
-    endif
-endproc
-
-
-# ============================================================================
-# @emlSpearmanCorrelationAlt
-# ============================================================================
-# @emlSpearmanCorrelation with the alternative named in words. See the
-# note on @emlTTestAlt for why this is a separate entry point.
-#
-# Arguments:
-#   .x#           - numeric vector, variable 1
-#   .y#           - numeric vector, variable 2 (same length as x#)
-#   .alternative$ - "two-sided", "greater" (H1: rho > 0) or "less"
-#                   (H1: rho < 0). Nothing else.
-#
-# Output: the same fields as @emlSpearmanCorrelation. An unrecognised
-#   alternative sets .error$ and leaves every numeric output undefined.
-# ============================================================================
-
-procedure emlSpearmanCorrelationAlt: .x#, .y#, .alternative$
-    .requested$ = .alternative$
-
-    .rho = undefined
-    .t = undefined
-    .df = undefined
-    .p = undefined
-    .pGreater = undefined
-    .pLess = undefined
-    .alternative$ = ""
-    .n = undefined
-    .error$ = ""
-    .warning$ = ""
-    .perfect = 0
-
-    .tails = 0
-    if .requested$ = "two-sided"
-        .tails = 2
-    elsif .requested$ = "greater"
-        .tails = 1
-    elsif .requested$ = "less"
-        .tails = 1
-    endif
-
-    if .tails = 0
-        .error$ = "alternative$ must be ""two-sided"", ""greater"" or ""less"""
-    else
-        @emlSpearmanCorrelation: .x#, .y#, .tails
-        .error$ = emlSpearmanCorrelation.error$
-        .rho = emlSpearmanCorrelation.rho
-        .t = emlSpearmanCorrelation.t
-        .df = emlSpearmanCorrelation.df
-        .pGreater = emlSpearmanCorrelation.pGreater
-        .pLess = emlSpearmanCorrelation.pLess
-        .n = emlSpearmanCorrelation.n
-        .warning$ = emlSpearmanCorrelation.warning$
-        .perfect = emlSpearmanCorrelation.perfect
-
-        if .error$ = ""
-            .alternative$ = .requested$
-            if .requested$ = "less"
-                .p = .pLess
-            else
-                .p = emlSpearmanCorrelation.p
-            endif
         endif
     endif
 endproc
@@ -1425,11 +1130,10 @@ endproc
 # @eml_spearmanPspearman above assume `exact` is TRUE.
 #
 # ONE-TAILED VARIANTS SELECT THE TAIL INSIDE THIS SAME PROCEDURE: both
-# .pGreater and .pLess are always computed, so a caller building the
-# Alt (named-alternative) entry point reads .pLess for "less" off THIS
-# call, the same way @emlSpearmanCorrelationAlt already reads .pLess off
-# @emlSpearmanCorrelation -- there is no separate one-tailed procedure
-# to keep in step with this one.
+# .pGreater and .pLess are always computed, so a caller naming an
+# alternative in words reads .pLess for "less" off @emlSpearmanCorrelation
+# directly -- there is no separate one-tailed procedure to keep in step
+# with this one.
 #
 # Input:
 #   .rho   - Spearman's rho, already computed (e.g. by
@@ -3554,216 +3258,6 @@ procedure emlTableFromGroups: .nGroups, .dataColName$, .factorColName$
             endfor
         endfor
     endif
-endproc
-
-
-# ============================================================================
-# @emlTukeyHSD
-# ============================================================================
-# Performs Tukey Honest Significant Difference post-hoc test on a Table.
-#
-# Computes pairwise q statistics directly from group means and pooled
-# MSE, using the validated studentized-range port
-# (@emlStudentizedRangeQ / @emlInvStudentizedRangeQ) for p-values and
-# critical values.
-#
-# Arguments:
-#   .tableId       - ID of a Table object (must be in object list)
-#   .dataColumn$   - name of the numeric data column
-#   .factorColumn$ - name of the string factor column
-#   .alpha         - significance level for critical q (e.g., 0.05)
-#
-# Output:
-#   .pMatrix##       - k × k symmetric matrix of pairwise p-values
-#                      (diagonal = 1, off-diagonal = Tukey p)
-#   .qMatrix##       - k × k symmetric matrix of q statistics
-#                      (diagonal = 0)
-#   .meanDiff##      - k × k antisymmetric mean differences
-#                      (meanDiff[i,j] = mean_i − mean_j)
-#   .qCritical       - critical q value at specified alpha
-#   .dMatrix##       - k × k antisymmetric Cohen's d matrix
-#                      (dMatrix[i,j] = d for group i vs group j; signed)
-#   .msWithin        - pooled mean square error (MSE)
-#   .dfWithin        - within-groups degrees of freedom (N − k)
-#   .groupName$[i]   - group label for row/column i (1..nGroups)
-#   .nGroups         - number of groups (k)
-#   .nPairs          - number of unique pairwise comparisons (k*(k-1)/2)
-#   .sortMap[s]      - maps sorted index s to extraction index
-#   .nUndefined      - number of comparisons whose q (and therefore p)
-#                      is undefined because the pooled SE was zero or
-#                      undefined; such cells hold undefined, not 1
-#   .warning$        - non-fatal disclosure, or "" if none
-#   .error$          - "" on success, diagnostic message on failure
-#   .groupData'g'#   - ONE EXTRACTION PER CASE (RULING_CONSOLIDATED_KERNELS
-#                      _2026-09-01.md §5): group g's data vector, cached at
-#                      the single @eml_getGroupData call this procedure
-#                      makes for that group. A caller that needs a group's
-#                      raw values after this procedure returns (e.g. a
-#                      reporter printing per-group descriptives) reads
-#                      emlTukeyHSD.groupData'g'# rather than re-extracting
-#                      from the table -- but only in the SAME turn: like
-#                      every other procedure-local output in this codebase,
-#                      it survives only until @emlTukeyHSD runs again.
-#
-# Access pattern:
-#   p-value for group 2 vs group 4: emlTukeyHSD.pMatrix##[2, 4]
-#   q statistic for group 1 vs 3:   emlTukeyHSD.qMatrix##[1, 3]
-#   mean difference (signed):        emlTukeyHSD.meanDiff##[1, 3]
-#   Cohen's d for group 1 vs 3:     emlTukeyHSD.dMatrix##[1, 3]
-#   group label for group 2:         emlTukeyHSD.groupName$[2]
-#
-# Notes:
-#   - Groups are sorted alphabetically (matches R convention)
-#   - Uses pairwise SE = sqrt(MSE * (1/n_i + 1/n_j) / 2) which
-#     handles unbalanced designs naturally
-#   - Cohen's d per pair uses two-group pooled SD (via @emlCohenD),
-#     consistent with standalone effect size computation
-#   - Requires >= 2 groups with enough observations for dfWithin >= 1
-#   - Uses @emlStudentizedRangeQ for p-values and
-#     @emlInvStudentizedRangeQ for critical q — no Report parsing or
-#     Table side effects
-#   - Dependencies: @emlCountGroups, @eml_getGroupData (eml-extract.praat),
-#     @eml_getGroupData (eml-extract.praat),
-#     @emlCohenD (eml-inferential.praat)
-#   - Original Table selection is restored on return
-# ============================================================================
-
-procedure emlTukeyHSD: .tableId, .dataColumn$, .factorColumn$, .alpha
-    .nGroups = 0
-    .nPairs = 0
-    .msWithin = undefined
-    .dfWithin = undefined
-    .qCritical = undefined
-    .nUndefined = 0
-    .warning$ = ""
-    .error$ = ""
-
-    # --- Validate inputs ---
-
-    selectObject: .tableId
-    .nRows = Get number of rows
-    if .nRows < 3
-        .error$ = "This test needs at least 3 observations; the table "
-        ... + "has " + string$ (.nRows) + "."
-    endif
-
-    if .error$ = ""
-        @emlRequireColumnPresent: .tableId, "Data column", .dataColumn$
-        .error$ = emlRequireColumnPresent.error$
-    endif
-
-    if .error$ = ""
-        @emlRequireColumnPresent: .tableId, "Factor column", .factorColumn$
-        .error$ = emlRequireColumnPresent.error$
-    endif
-
-    # --- Discover groups ---
-
-    if .error$ = ""
-        @emlCountGroups: .tableId, .factorColumn$
-        if emlCountGroups.error$ <> ""
-            .error$ = emlCountGroups.error$
-        else
-            .nGroups = emlCountGroups.nGroups
-        endif
-    endif
-
-    if .error$ = "" and .nGroups < 2
-        .error$ = "This test compares 2 or more groups; the group column "
-        ... + """" + .factorColumn$ + """ has " + string$ (.nGroups) + "."
-    endif
-
-    # --- Sort groups alphabetically ---
-
-    if .error$ = ""
-        # Group order controlled by emlGroupSortAlphabetical via
-        # @emlCountGroups. Copy labels directly; sortMap = identity.
-        for .s from 1 to .nGroups
-            .groupName$[.s] = emlCountGroups.groupLabel$[.s]
-            .sortMap[.s] = .s
-        endfor
-    endif
-
-    # --- Extract every group once, then hand the pairwise math to the one
-    # shared kernel ---
-    #
-    # ONE EXTRACTION PER GROUP PER CASE (RULING_CONSOLIDATED_KERNELS_2026-
-    # 09-01.md §5). Every group's vector is fetched here exactly once and
-    # cached under this procedure's own namespace as .groupData'.s'#
-    # (Praat's interpolated-name array idiom, already used this way
-    # elsewhere in this tree -- see eml-anova-kernel.praat's .gVals'.g'#).
-    # The old code called @eml_getGroupData again inside the pairwise loop,
-    # twice per (i, j) pair, which is the defect that ruling names as the
-    # reason an 18,009-row NIST case did not return in twelve minutes.
-    #
-    # The actual pooled-MSE / SE / q / p / mean-difference / Cohen's-d
-    # arithmetic now lives in exactly one place, @eml_tukeyPairwiseFromGroups
-    # below, which takes already-extracted data and never touches the
-    # table. This procedure builds that one flat vector and calls it.
-    # @emlOneWayAnova's own Tukey branch calls the SAME procedure, directly
-    # from vectors IT already extracted for the F-test, instead of calling
-    # @emlTukeyHSD (which would re-extract every group a second time) --
-    # so a nested ANOVA + Tukey run performs exactly one extraction pass
-    # per group, not two, and both callers execute identical code, so
-    # their numbers cannot drift apart.
-    #
-    # Safe to reuse: @eml_getGroupData is a pure read of an unmutated
-    # Table, so the cached vector is bit-identical to whatever a fresh call
-    # would return. Safe across CASES: a later call to this same procedure
-    # with fewer groups only reads indices 1..nGroups of THAT call, so a
-    # stale .groupData'.s'# left over from a larger previous case is never
-    # read -- the same bounded-index convention .groupN[.s] already relies
-    # on in this procedure.
-
-    if .error$ = ""
-        .totalN = 0
-        for .s from 1 to .nGroups
-            @eml_getGroupData: .tableId, .dataColumn$, .factorColumn$,
-            ... .groupName$[.s]
-            if eml_getGroupData.error$ <> ""
-                .error$ = eml_getGroupData.error$
-            else
-                .groupN[.s] = eml_getGroupData.n
-                .groupData'.s'# = eml_getGroupData.data#
-                .totalN = .totalN + .groupN[.s]
-            endif
-        endfor
-        ; EMPTY-CELL DISCLOSURE (9 Sep 2026, RULING_LEVEL2_DISCLOSURE_REACH
-        ; point 1): THE ONE SHARED CAPTURE, once here after the group loop --
-        ; see the identical comment in @emlOneWayAnova.
-        @eml_appendWarning: .warning$, eml_getGroupData.warning$
-        .warning$ = eml_appendWarning.result$
-
-        .allData# = zero# (.totalN)
-        .groupNVec# = zero# (.nGroups)
-        .offset = 0
-        for .s from 1 to .nGroups
-            .groupNVec#[.s] = .groupN[.s]
-            for .k from 1 to .groupN[.s]
-                .allData#[.offset + .k] = .groupData'.s'#[.k]
-            endfor
-            .offset = .offset + .groupN[.s]
-        endfor
-
-        @eml_tukeyPairwiseFromGroups: .nGroups, .allData#, .groupNVec#, .alpha
-        .error$ = eml_tukeyPairwiseFromGroups.error$
-        .warning$ = eml_tukeyPairwiseFromGroups.warning$
-        .nUndefined = eml_tukeyPairwiseFromGroups.nUndefined
-        .nPairs = eml_tukeyPairwiseFromGroups.nPairs
-        .msWithin = eml_tukeyPairwiseFromGroups.msWithin
-        .dfWithin = eml_tukeyPairwiseFromGroups.dfWithin
-        .qCritical = eml_tukeyPairwiseFromGroups.qCritical
-        if .error$ = ""
-            .pMatrix## = eml_tukeyPairwiseFromGroups.pMatrix##
-            .qMatrix## = eml_tukeyPairwiseFromGroups.qMatrix##
-            .meanDiff## = eml_tukeyPairwiseFromGroups.meanDiff##
-            .dMatrix## = eml_tukeyPairwiseFromGroups.dMatrix##
-        endif
-    endif
-
-    # --- Restore selection ---
-
-    selectObject: .tableId
 endproc
 
 

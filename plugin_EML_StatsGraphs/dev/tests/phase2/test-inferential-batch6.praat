@@ -1,9 +1,14 @@
 # ============================================================================
 # EML Stats : Test Suite — Inferential Statistics (Batch 6 + Batch 9)
 # ============================================================================
-# Tests: @emlTableFromGroups, @emlOneWayAnova, @emlTwoWayAnova, @emlTukeyHSD
+# Tests: @emlTableFromGroups, @emlOneWayAnova, @emlTwoWayAnova
 # Date: 18 March 2026
-# Version: 2.1 (Batch 9: TukeyHSD refactor, etaSquared, partialEtaSq,
+# Version: 2.2 (9 Sep 2026: @emlTukeyHSD deleted, superseded by
+#   @eml_tukeyPairwiseFromGroups, which @emlOneWayAnova's tukey=1 path
+#   already called directly -- its own dedicated test groups (6, 10) and
+#   error-path needle (9.3) removed with it; TEST GROUP 7 below still
+#   covers the pairwise arithmetic through @emlOneWayAnova.
+#   Was 2.1, Batch 9: TukeyHSD refactor, etaSquared, partialEtaSq,
 #   alphabetical group ordering, q statistics, unbalanced design test)
 #
 # Uses shared test helpers (eml-test-helpers.praat).
@@ -14,8 +19,8 @@
 # No eml-core-utilities.praat needed — Batch 6 procedures don't use
 # ranking helpers.
 #
-# NOTE: As of Batch 9, @emlTukeyHSD sorts groups alphabetically
-# (matching R convention). Earlier versions used Praat's mean-sorted order.
+# NOTE: group pairwise comparisons sort alphabetically (matching R
+# convention). Earlier versions used Praat's mean-sorted order.
 #
 # CHANGELOG
 # 2.1 (8 Aug 2026) — Three error-path needles (9.4, 9.5, 9.6) updated for
@@ -453,111 +458,6 @@ removeObject: tableId5
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TEST GROUP 6: @emlTukeyHSD — standalone, 4 groups
-# ══════════════════════════════════════════════════════════════════════════════
-
-@emlTestSection: "@emlTukeyHSD — standalone, 4 groups"
-
-# Test Set 6: {5,6,7,5.5,6.5}, {8,9,10,8.5,9.5}, {5.5,6,7.5,6,5}, {12,13,14,12.5,13.5}
-# Group means: Group1=6.0, Group2=9.0, Group3=6.0, Group4=13.0
-#
-# Alphabetical order (Batch 9+): Group1, Group2, Group3, Group4
-# MSE = 0.6875, dfWithin = 16
-# qCritical(0.05, 4, 16) = 4.046093
-#
-# scipy pairwise q and p (alphabetical):
-#   [1,2] G1vG2: q=8.0904, p=1.6781e-4, meanDiff=-3.0
-#   [1,3] G1vG3: q=0.0,    p=1.0,       meanDiff=0.0
-#   [1,4] G1vG4: q=18.878, p=2.4299e-9, meanDiff=-7.0
-#   [2,3] G2vG3: q=8.0904, p=1.6781e-4, meanDiff=3.0
-#   [2,4] G2vG4: q=10.787, p=5.6001e-6, meanDiff=-4.0
-#   [3,4] G3vG4: q=18.878, p=2.4299e-9, meanDiff=-7.0
-
-emlTableFromGroups.groupLabel$[1] = "Group1"
-emlTableFromGroups.groupLabel$[2] = "Group2"
-emlTableFromGroups.groupLabel$[3] = "Group3"
-emlTableFromGroups.groupLabel$[4] = "Group4"
-emlTableFromGroups.groupSize[1] = 5
-emlTableFromGroups.groupSize[2] = 5
-emlTableFromGroups.groupSize[3] = 5
-emlTableFromGroups.groupSize[4] = 5
-emlTableFromGroups.data# = {5, 6, 7, 5.5, 6.5, 8, 9, 10, 8.5, 9.5,
-    ... 5.5, 6, 7.5, 6, 5, 12, 13, 14, 12.5, 13.5}
-@emlTableFromGroups: 4, "value", "group"
-tableId6 = emlTableFromGroups.tableId
-
-@emlTukeyHSD: tableId6, "value", "group", 0.05
-
-@emlTestAssertEqualStr: "6 no error", "", emlTukeyHSD.error$
-@emlTestAssertEqualNum: "6 nGroups", 4, emlTukeyHSD.nGroups, tightTolerance
-@emlTestAssertEqualNum: "6 nPairs", 6, emlTukeyHSD.nPairs, tightTolerance
-
-# Group names in alphabetical order
-@emlTestAssertEqualStr: "6 groupName 1", "Group1", emlTukeyHSD.groupName$[1]
-@emlTestAssertEqualStr: "6 groupName 2", "Group2", emlTukeyHSD.groupName$[2]
-@emlTestAssertEqualStr: "6 groupName 3", "Group3", emlTukeyHSD.groupName$[3]
-@emlTestAssertEqualStr: "6 groupName 4", "Group4", emlTukeyHSD.groupName$[4]
-
-# Pooled MSE and degrees of freedom
-@emlTestAssertEqualNum: "6 msWithin", 0.6875, emlTukeyHSD.msWithin, tightTolerance
-@emlTestAssertEqualNum: "6 dfWithin", 16, emlTukeyHSD.dfWithin, tightTolerance
-
-# Critical q at alpha=0.05
-@emlTestAssertEqualNum: "6 qCritical", 4.046093,
-    ... emlTukeyHSD.qCritical, tolerance
-
-# Diagonal p = 1
-@emlTestAssertEqualNum: "6 diag [1,1]", 1.0, emlTukeyHSD.pMatrix##[1, 1], tightTolerance
-@emlTestAssertEqualNum: "6 diag [2,2]", 1.0, emlTukeyHSD.pMatrix##[2, 2], tightTolerance
-@emlTestAssertEqualNum: "6 diag [3,3]", 1.0, emlTukeyHSD.pMatrix##[3, 3], tightTolerance
-@emlTestAssertEqualNum: "6 diag [4,4]", 1.0, emlTukeyHSD.pMatrix##[4, 4], tightTolerance
-
-# Pairwise p-values (alphabetical order)
-@emlTestAssertEqualRel: "6 G1vG2 p [1,2]", 0.0001678125368753669,
-    ... emlTukeyHSD.pMatrix##[1, 2], 1e-5
-@emlTestAssertEqualNum: "6 G1vG3 p [1,3]", 1.0,
-    ... emlTukeyHSD.pMatrix##[1, 3], looseTolerance
-@emlTestAssertEqualRel: "6 G1vG4 p [1,4]", 2.449358382783373e-09,
-    ... emlTukeyHSD.pMatrix##[1, 4], 1e-5
-@emlTestAssertEqualRel: "6 G2vG3 p [2,3]", 0.0001678125368753669,
-    ... emlTukeyHSD.pMatrix##[2, 3], 1e-5
-@emlTestAssertEqualRel: "6 G2vG4 p [2,4]", 5.6000977631809334e-06,
-    ... emlTukeyHSD.pMatrix##[2, 4], 1e-5
-@emlTestAssertEqualRel: "6 G3vG4 p [3,4]", 2.449358382783373e-09,
-    ... emlTukeyHSD.pMatrix##[3, 4], 1e-5
-
-# Pairwise q statistics
-@emlTestAssertEqualNum: "6 G1vG2 q [1,2]", 8.0904,
-    ... emlTukeyHSD.qMatrix##[1, 2], tolerance
-@emlTestAssertEqualNum: "6 G1vG3 q [1,3]", 0.0,
-    ... emlTukeyHSD.qMatrix##[1, 3], tightTolerance
-@emlTestAssertEqualNum: "6 G1vG4 q [1,4]", 18.8776,
-    ... emlTukeyHSD.qMatrix##[1, 4], tolerance
-@emlTestAssertEqualNum: "6 G2vG4 q [2,4]", 10.7872,
-    ... emlTukeyHSD.qMatrix##[2, 4], tolerance
-
-# Mean differences (antisymmetric)
-@emlTestAssertEqualNum: "6 G1-G2 meanDiff [1,2]", -3.0,
-    ... emlTukeyHSD.meanDiff##[1, 2], tightTolerance
-@emlTestAssertEqualNum: "6 G1-G3 meanDiff [1,3]", 0.0,
-    ... emlTukeyHSD.meanDiff##[1, 3], tightTolerance
-@emlTestAssertEqualNum: "6 G1-G4 meanDiff [1,4]", -7.0,
-    ... emlTukeyHSD.meanDiff##[1, 4], tightTolerance
-@emlTestAssertEqualNum: "6 G2-G3 meanDiff [2,3]", 3.0,
-    ... emlTukeyHSD.meanDiff##[2, 3], tightTolerance
-
-# Symmetry checks (p and q symmetric, meanDiff antisymmetric)
-@emlTestAssertEqualNum: "6 p symm [2,1]=[1,2]",
-    ... emlTukeyHSD.pMatrix##[1, 2], emlTukeyHSD.pMatrix##[2, 1], tightTolerance
-@emlTestAssertEqualNum: "6 q symm [3,1]=[1,3]",
-    ... emlTukeyHSD.qMatrix##[1, 3], emlTukeyHSD.qMatrix##[3, 1], tightTolerance
-@emlTestAssertEqualNum: "6 meanDiff antisymm [2,1]",
-    ... emlTukeyHSD.meanDiff##[2, 1], -emlTukeyHSD.meanDiff##[1, 2], tightTolerance
-
-removeObject: tableId6
-
-
-# ══════════════════════════════════════════════════════════════════════════════
 # TEST GROUP 7: @emlOneWayAnova with tukey=1 chaining
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -719,21 +619,6 @@ endfor
 
 removeObject: tableId9b
 
-# --- 9.3: Too few observations (Tukey) ---
-
-tableId9c = Create Table with column names: "errTest3", 2, "val grp"
-selectObject: tableId9c
-Set numeric value: 1, "val", 10
-Set string value: 1, "grp", "X"
-Set numeric value: 2, "val", 20
-Set string value: 2, "grp", "Y"
-
-@emlTukeyHSD: tableId9c, "val", "grp", 0.05
-@emlTestAssertContains: "9.3 too few obs Tukey",
-    ... emlTukeyHSD.error$, "at least 3"
-
-removeObject: tableId9c
-
 # --- 9.4: Missing column (two-way) ---
 
 tableId9d = Create Table with column names: "errTest4", 4,
@@ -786,97 +671,6 @@ emlTableFromGroups.groupLabel$[1] = "X"
 ; offending value so the refusal must still report what it was given.
 @emlTestAssertContains: "9.6 zero groups",
     ... emlTableFromGroups.error$, "at least 1 group; got 0"
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TEST GROUP 10: @emlTukeyHSD — unbalanced 3-group design
-# ══════════════════════════════════════════════════════════════════════════════
-
-@emlTestSection: "@emlTukeyHSD — unbalanced 3 groups"
-
-# Test Set 10: A={10,12,11}, B={20,22,21,23}, C={15,17}
-# Unbalanced: n_A=3, n_B=4, n_C=2
-# Group means: A=11.0, B=21.5, C=16.0
-# Alphabetical: A, B, C
-#
-# MSE = 1.5, dfWithin = 6
-# qCritical(0.05, 3, 6) = 4.339195
-#
-# scipy pairwise (using pairwise SE):
-#   [1,2] AvB: q=15.8745, p=7.373e-5, meanDiff=-10.5
-#   [1,3] AvC: q=6.3246,  p=1.004e-2, meanDiff=-5.0
-#   [2,3] BvC: q=7.3333,  p=4.909e-3, meanDiff=5.5
-
-tableId10 = Create Table with column names: "unbalancedTest", 9,
-    ... "value group"
-
-# A: {10, 12, 11}
-selectObject: tableId10
-Set numeric value: 1, "value", 10
-Set string value: 1, "group", "A"
-Set numeric value: 2, "value", 12
-Set string value: 2, "group", "A"
-Set numeric value: 3, "value", 11
-Set string value: 3, "group", "A"
-
-# B: {20, 22, 21, 23}
-Set numeric value: 4, "value", 20
-Set string value: 4, "group", "B"
-Set numeric value: 5, "value", 22
-Set string value: 5, "group", "B"
-Set numeric value: 6, "value", 21
-Set string value: 6, "group", "B"
-Set numeric value: 7, "value", 23
-Set string value: 7, "group", "B"
-
-# C: {15, 17}
-Set numeric value: 8, "value", 15
-Set string value: 8, "group", "C"
-Set numeric value: 9, "value", 17
-Set string value: 9, "group", "C"
-
-@emlTukeyHSD: tableId10, "value", "group", 0.05
-
-@emlTestAssertEqualStr: "10 no error", "", emlTukeyHSD.error$
-@emlTestAssertEqualNum: "10 nGroups", 3, emlTukeyHSD.nGroups, tightTolerance
-@emlTestAssertEqualNum: "10 nPairs", 3, emlTukeyHSD.nPairs, tightTolerance
-
-# Group names in alphabetical order
-@emlTestAssertEqualStr: "10 groupName 1", "A", emlTukeyHSD.groupName$[1]
-@emlTestAssertEqualStr: "10 groupName 2", "B", emlTukeyHSD.groupName$[2]
-@emlTestAssertEqualStr: "10 groupName 3", "C", emlTukeyHSD.groupName$[3]
-
-# Pooled MSE and degrees of freedom
-@emlTestAssertEqualNum: "10 msWithin", 1.5, emlTukeyHSD.msWithin, tightTolerance
-@emlTestAssertEqualNum: "10 dfWithin", 6, emlTukeyHSD.dfWithin, tightTolerance
-@emlTestAssertEqualNum: "10 qCritical", 4.339195,
-    ... emlTukeyHSD.qCritical, tolerance
-
-# Pairwise p-values
-@emlTestAssertEqualNum: "10 AvB p [1,2]", 0.0000737,
-    ... emlTukeyHSD.pMatrix##[1, 2], tightTolerance
-@emlTestAssertEqualRel: "10 AvC p [1,3]", 0.010044272660155618,
-    ... emlTukeyHSD.pMatrix##[1, 3], 1e-5
-@emlTestAssertEqualRel: "10 BvC p [2,3]", 0.004909333978690866,
-    ... emlTukeyHSD.pMatrix##[2, 3], 1e-5
-
-# Pairwise q statistics
-@emlTestAssertEqualNum: "10 AvB q [1,2]", 15.8745,
-    ... emlTukeyHSD.qMatrix##[1, 2], tolerance
-@emlTestAssertEqualNum: "10 AvC q [1,3]", 6.3246,
-    ... emlTukeyHSD.qMatrix##[1, 3], tolerance
-@emlTestAssertEqualNum: "10 BvC q [2,3]", 7.3333,
-    ... emlTukeyHSD.qMatrix##[2, 3], tolerance
-
-# Mean differences
-@emlTestAssertEqualNum: "10 A-B meanDiff [1,2]", -10.5,
-    ... emlTukeyHSD.meanDiff##[1, 2], tightTolerance
-@emlTestAssertEqualNum: "10 A-C meanDiff [1,3]", -5.0,
-    ... emlTukeyHSD.meanDiff##[1, 3], tightTolerance
-@emlTestAssertEqualNum: "10 B-C meanDiff [2,3]", 5.5,
-    ... emlTukeyHSD.meanDiff##[2, 3], tightTolerance
-
-removeObject: tableId10
 
 
 # ══════════════════════════════════════════════════════════════════════════════
