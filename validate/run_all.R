@@ -2119,6 +2119,20 @@ scripts <- c(
                                  # divergence) a documented different model,
                                  # confirmed as actually different, never
                                  # silent disagreement.
+    ,
+    "v173_no_pipe_delimiter.R"   # ORDER_PIPE_DELIMITER_REMOVAL_2026-09-10
+                                 # (§1b): the six places "|" was retired as a
+                                 # list delimiter -- the reliability item
+                                 # list, the RM/Friedman col_a split in
+                                 # compare.R, @eml_kwScan's keyword lists,
+                                 # @emlErrorDialog's .remedy$ splitter, and
+                                 # the two graphs-round reshape doors -- read
+                                 # by name, the v105/v171 pattern, so a "|"
+                                 # delimiter creeping back into any of them
+                                 # is caught here rather than downstream as a
+                                 # silent numeric disagreement. The mixed-
+                                 # model formula parser is kept out of scope
+                                 # by standing rule and confirmed unchanged.
 )
 
 # ---------------------------------------------------------------------------
