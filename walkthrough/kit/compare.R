@@ -1495,7 +1495,18 @@ CONTRACT_CLAUSE_RULES <- list(
          re = paste0("^group_.*_(n|mean|sd|variance|sem|median|q1|q3|iqr|min|max|range|",
                      "skewness|kurtosis|ci_low|ci_high|mode|mode_unique|mode_count|mad|",
                      "mad_raw|geo_mean|harm_mean|trimmed_mean|winsorized_mean|trim_k)$"),
-         clause = "descriptive-per-group")
+         clause = "descriptive-per-group"),
+
+    # VECTORIZATION WAVE (10 Sep 2026): the normality door's own contracted
+    # battery -- n/mean/sd/median from emlDescribe, skewness/kurtosis from
+    # the same, w_statistic/p from Shapiro-Wilk -- all "always both" in
+    # quantities.tsv. Ruling (Fable): a CONTRACT_MISSING_PARTNER row on any
+    # of these needs the plain, honest reader sentence below regardless of
+    # the constant-column behavior change built this same wave, which makes
+    # the case rare but does not make it impossible.
+    list(proc = "emlRunNormalityAnalysis",
+         re = "^(n|mean|sd|median|skewness|kurtosis|w_statistic|p)$",
+         clause = "normality-quantities-missing-partner")
 )
 
 # --- 4. THE LOOKUP, AND THE HARD ERROR --------------------------------------

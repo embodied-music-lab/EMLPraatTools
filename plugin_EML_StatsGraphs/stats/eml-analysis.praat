@@ -546,6 +546,17 @@ endproc
 
 procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
 
+    ; CACHE EPOCH, BUMPED ON ENTRY (9 Sep 2026 speed wave). @eml_getGroupData
+    ; memoizes its per-(table, data column, group column, group label)
+    ; extraction within one door invocation, keyed in part on this counter;
+    ; bumping it here -- before that cache can be touched -- guarantees the
+    ; next cell (or a re-run on a table ID Praat recycled) never reads a
+    ; result this run computed. See @eml_getGroupData, eml-extract.praat.
+    if not variableExists ("eml_cacheEpoch")
+        eml_cacheEpoch = 0
+    endif
+    eml_cacheEpoch = eml_cacheEpoch + 1
+
     ; ---------------------------------------------------------------------
     ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
     ; The publication sits after the end label, beside the record hook and
@@ -3001,6 +3012,20 @@ endproc
 
 procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     ... .ssType, .adjMethod$
+
+    ; CACHE EPOCH, BUMPED ON ENTRY (9 Sep 2026 speed wave). @eml_ak2_gather
+    ; memoizes its per-(table, data column, factor1, factor2) scan within one
+    ; door invocation, keyed in part on this counter; bumping it here --
+    ; before that cache can be touched -- guarantees the next cell (or a
+    ; re-run on a table ID Praat recycled) never reads a result this run
+    ; computed. See @eml_ak2_gather, eml-anova-kernel.praat. Shared with
+    ; @emlRunAnovaAnalysis's own bump: either door entry invalidates both
+    ; caches, which only ever costs an extra miss, never a stale hit.
+    if not variableExists ("eml_cacheEpoch")
+        eml_cacheEpoch = 0
+    endif
+    eml_cacheEpoch = eml_cacheEpoch + 1
+
     .recResult$ = ""
     ; OPTIONAL-BRANCH OUTPUTS, INITIALISED AT ENTRY (9 Sep 2026, API
     ; completion wave, order section 4.1). Estimated marginal means, simple
@@ -3028,6 +3053,8 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     .seDfAwithinB = undefined
     .seDfBwithinA = undefined
     .seDfError = undefined
+    .emmTableId = .tableId
+    .emmTableCreated = 0
     .phADiff## = zero## (1, 1)
     .phAP## = zero## (1, 1)
     .phASe## = zero## (1, 1)
@@ -3082,6 +3109,30 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
         goto END_TWOWAY
     endif
 
+    ; SHARED COMPLETE-CASE TABLE FOR THE OPTIONAL BLOCK BELOW (9 Sep 2026,
+    ; missing-token wave, Ian's ruling). @emlTwoWayAnova already dropped the
+    ; incomplete rows for the omnibus internally (its own
+    ; @eml_twoWayCompleteCase, disposed when it returned); the three
+    ; OPTIONAL kernels below -- EMM, simple effects, post-hoc x2 -- read
+    ; whatever table they are given directly, so on a table with
+    ; missing-value tokens they need that SAME complete-case subset to
+    ; compute anything defined, matching R's complete.cases() frame. Built
+    ; ONCE here and shared by all four calls (DRY) rather than once per
+    ; kernel. On a table with no missing tokens the subset is still a
+    ; freshly-created Table, but its content is identical to .tableId's, so
+    ; results are unchanged from today.
+    @eml_twoWayCompleteCase: .tableId, .dataCol$, .factor1$, .factor2$
+    if eml_twoWayCompleteCase.error$ = ""
+        .emmTableId = eml_twoWayCompleteCase.subsetId
+        .emmTableCreated = 1
+    else
+        ; Should not happen -- the omnibus's own completeCase on this same
+        ; table already succeeded above -- but if it ever does, fall back
+        ; to the raw table: no worse than today's (pre-fix) behaviour.
+        .emmTableId = .tableId
+        .emmTableCreated = 0
+    endif
+
     ; OMEGA SQUARED, NAMED ON THE DOOR (order section 4.1). The kernel
     ; (@emlAnovaKernelTwoWay, via @emlTwoWayAnova's own re-export) has always
     ; computed these; this door now states them as its own fields too, the
@@ -3126,7 +3177,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     .twAlpha = emlReportAlpha.value
     .twAlphaText$ = emlReportAlpha.text$
 
-    @emlAnovaKernelTwoWayEMM: .tableId, .dataCol$, .factor1$, .factor2$,
+    @emlAnovaKernelTwoWayEMM: .emmTableId, .dataCol$, .factor1$, .factor2$,
     ... .twAlpha
     if emlAnovaKernelTwoWayEMM.ok = 1
         .emmA# = emlAnovaKernelTwoWayEMM.emmA#
@@ -3137,7 +3188,22 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
         .emmHighA# = emlAnovaKernelTwoWayEMM.highA#
         .emmLowB# = emlAnovaKernelTwoWayEMM.lowB#
         .emmHighB# = emlAnovaKernelTwoWayEMM.highB#
-        .emmDfError = emlAnovaKernelTwoWayEMM.dfError
+        ; THE RESIDUAL df, NOT emlAnovaKernelTwoWayEMM.dfError. That field
+        ; is @eml_ak2_gather's .n - .rs computed on whatever table THIS
+        ; call was given -- .tableId above, the door's RAW input table,
+        ; never listwise-excluded for this kernel the way @emlTwoWayAnova
+        ; already excluded it (via @eml_twoWayCompleteCase) before the
+        ; omnibus ran. On a table with no missing-token rows the two
+        ; coincide; on one that does (the missing-tokens fixture), .n there
+        ; is the UNEXCLUDED row count, so emlAnovaKernelTwoWayEMM.dfError is
+        ; the observation count net of cells, not the residual df of the
+        ; design the door actually reported everywhere else. .dfError sits
+        ; on the omnibus's own namespace correctly ALREADY -- emlTwoWayAnova
+        ; forwards @emlAnovaKernelTwoWay's dfError, which ran on the
+        ; complete-case .workTableId -- so this is the SAME pooled-error df
+        ; the reported omnibus F-tests and .msError above already use; the
+        ; EMM point estimates/SE/CI themselves are untouched by this line.
+        .emmDfError = emlTwoWayAnova.dfError
         for .emmI to emlAnovaKernelTwoWayEMM.r
             .levelsA$[.emmI] = emlAnovaKernelTwoWayEMM.lev1$[.emmI]
         endfor
@@ -3156,7 +3222,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     endif
     @emlReportTwoWayEMM: .factor1$, .factor2$
 
-    @emlAnovaKernelTwoWaySimpleEffects: .tableId, .dataCol$, .factor1$,
+    @emlAnovaKernelTwoWaySimpleEffects: .emmTableId, .dataCol$, .factor1$,
     ... .factor2$
     if emlAnovaKernelTwoWaySimpleEffects.ok = 1
         .seFAwithinB# = emlAnovaKernelTwoWaySimpleEffects.fAwithinB#
@@ -3173,7 +3239,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     endif
     @emlReportTwoWaySimpleEffects: .factor1$, .factor2$
 
-    @emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$,
+    @emlAnovaKernelTwoWayPostHoc: .emmTableId, .dataCol$, .factor1$, .factor2$,
     ... 1, .adjMethod$, .twAlpha
     if emlAnovaKernelTwoWayPostHoc.ok = 1
         .phADiff## = emlAnovaKernelTwoWayPostHoc.diff##
@@ -3188,7 +3254,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     endif
     @emlReportTwoWayPostHoc: .factor1$, 1
 
-    @emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$,
+    @emlAnovaKernelTwoWayPostHoc: .emmTableId, .dataCol$, .factor1$, .factor2$,
     ... 2, .adjMethod$, .twAlpha
     if emlAnovaKernelTwoWayPostHoc.ok = 1
         .phBDiff## = emlAnovaKernelTwoWayPostHoc.diff##
@@ -3232,6 +3298,15 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
         ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """" + ", " + string$ (.ssType) + ", """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Stats & Graphs > Compare two-way (ANOVA)...",
         ... .recResult$, .error$
+    endif
+
+    ; DISPOSE THE SHARED COMPLETE-CASE SUBSET, EXACTLY ONCE. Created (if at
+    ; all) only after the omnibus succeeded, above; a goto that reached
+    ; END_TWOWAY before that point never set .emmTableCreated, so this is a
+    ; no-op for every refusal path. All four optional kernels and their
+    ; reporters have already run by this point, so nothing still needs it.
+    if .emmTableCreated = 1 and .emmTableId <> .tableId
+        removeObject: .emmTableId
     endif
 
     selectObject: .tableId
@@ -3605,6 +3680,17 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
         .spearDf = emlSpearmanCorrelation.df
         .spearP = emlSpearmanCorrelation.p
         .spearErr$ = emlSpearmanCorrelation.error$
+        ; THE OVERALL t-approximation, captured the same v1.2-item-3 way as
+        ; .spearRho/.spearT/.spearDf/.spearP above. The per-group loop
+        ; further down calls @emlSpearmanCorrelationDispatch again for each
+        ; group, which overwrites the qualified global
+        ; emlSpearmanCorrelationDispatch.pAsymptotic with the LAST group's
+        ; value -- exactly the staleness the comment at "PER-GROUP
+        ; CORRELATIONS" below already guards .pearR/.spearRho/... against.
+        ; .pAsymptotic just was not one of the scalars that comment's
+        ; restoration covered. Restored into the global after the group
+        ; loop finishes, below.
+        .spearPAsymp = emlSpearmanCorrelationDispatch.pAsymptotic
     endif
 
     # Restore the captured outputs into the qualified names the reporter reads.
@@ -3686,12 +3772,15 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
         endif
         .grpSkipList$ = ""
         .grpSkipMore = 0
-        ; PASS 1: count complete pairs per group only, the same two-pass
-        ; shape @emlRunGroupedRegressionAnalysis uses -- so the block is
-        ; announced with its own header and counts before any group
-        ; prints, and groups too small to run (n < 4, this door's own
-        ; floor for the Fisher interval) are named on one summary line
-        ; rather than costing an orphan line each.
+        ; PASS 1: gather each group's paired data ONCE (order section 4.4
+        ; census re-extraction fix) -- the count used for the n >= 4 filter
+        ; and the vectors the correlation step below needs both come off
+        ; this same @eml_getGroupPairedData call, cached per group in
+        ; interpolated-name vectors (.grpDataX'.grpI'#/.grpDataY'.grpI'#),
+        ; the same per-slot caching shape eml-anova-kernel.praat's
+        ; eml_ak2gCache uses. The two-pass SHAPE stays -- header and counts
+        ; still print before any group -- only the second table scan is
+        ; gone.
         for .grpI from 1 to .grpTotal
             .grpLabel$ [.grpI] = emlCountGroups.groupLabel$ [.grpI]
             selectObject: .tableId
@@ -3699,8 +3788,17 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
             ... .groupCol$, .grpLabel$ [.grpI]
             if eml_getGroupPairedData.error$ <> ""
                 .grpN [.grpI] = 0
+                .grpDataX'.grpI'# = zero# (0)
+                .grpDataY'.grpI'# = zero# (0)
+                .grpCacheExcluded [.grpI] = 0
+                .grpCacheWarning$ [.grpI] = ""
             else
                 .grpN [.grpI] = eml_getGroupPairedData.n
+                .grpDataX'.grpI'# = eml_getGroupPairedData.dataX#
+                .grpDataY'.grpI'# = eml_getGroupPairedData.dataY#
+                .grpCacheExcluded [.grpI] = eml_getGroupPairedData.nExcluded
+                @eml_appendWarning: "", eml_getGroupPairedData.warning$
+                .grpCacheWarning$ [.grpI] = eml_appendWarning.result$
             endif
             if .grpN [.grpI] >= 4
                 .nGroupsRun = .nGroupsRun + 1
@@ -3765,18 +3863,17 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
             if .grpN [.grpI] >= 4
                 @emlUnderscoreToSpace: .grpLabel$ [.grpI]
                 .grpDisplay$ = emlUnderscoreToSpace.result$
-                selectObject: .tableId
-                @eml_getGroupPairedData: .tableId, .colX$, .colY$,
-                ... .groupCol$, .grpLabel$ [.grpI]
-                .grpX# = eml_getGroupPairedData.dataX#
-                .grpY# = eml_getGroupPairedData.dataY#
-                .grpThisN = eml_getGroupPairedData.n
-                .grpExcluded = eml_getGroupPairedData.nExcluded
+                ; PASS 2 reuses pass 1's cached extraction (.grpDataX/Y#,
+                ; .grpCacheExcluded/.grpCacheWarning$) instead of scanning
+                ; the table again -- see the PASS 1 comment above.
+                .grpX# = .grpDataX'.grpI'#
+                .grpY# = .grpDataY'.grpI'#
+                .grpThisN = .grpN [.grpI]
+                .grpExcluded = .grpCacheExcluded [.grpI]
                 ; EMPTY-CELL DISCLOSURE: the same shared capture
                 ; @emlRunGroupedRegressionAnalysis takes once per group,
                 ; because this door fits a SEPARATE correlation per group.
-                @eml_appendWarning: "", eml_getGroupPairedData.warning$
-                .grpWarning$ = eml_appendWarning.result$
+                .grpWarning$ = .grpCacheWarning$ [.grpI]
                 .grpTerm$ = .groupCol$ + " = " + .grpLabel$ [.grpI]
 
                 @emlReportHeader: .grpColDisplay$ + " = " + .grpDisplay$
@@ -3835,6 +3932,18 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
             ... + ": " + .grpSkipList$
         endif
         appendInfoLine: emlReportHeader.border$
+    endif
+
+    ; RESTORE THE OVERALL ASYMPTOTIC p. The per-group loop just above (when
+    ; grouped) called @emlSpearmanCorrelationDispatch once per group, so the
+    ; qualified global emlSpearmanCorrelationDispatch.pAsymptotic now holds
+    ; the LAST group's t-approximation rather than the whole-table one this
+    ; door computed earlier. Put back the captured overall value so every
+    ; reader of that global -- the same shape as the emlPearsonCorrelation.*/
+    ; emlSpearmanCorrelation.* restoration above -- sees the whole-table
+    ; figure, not a group's.
+    if .testType$ = "spearman" or .testType$ = "both"
+        emlSpearmanCorrelationDispatch.pAsymptotic = .spearPAsymp
     endif
 
     ; THE COEFFICIENT IS THE STEP. Built from the orchestrator's OWN locals,
@@ -4991,17 +5100,11 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
 
         # Descriptive shape measures
         @emlSkewness: .data#
-        if emlSkewness.error$ <> ""
-            .error$ = emlSkewness.error$
-            goto END_NORMALITY
-        endif
         .skewness = emlSkewness.result
+        .skewError$ = emlSkewness.error$
         @emlKurtosis: .data#
-        if emlKurtosis.error$ <> ""
-            .error$ = emlKurtosis.error$
-            goto END_NORMALITY
-        endif
         .kurtosis = emlKurtosis.result
+        .kurtError$ = emlKurtosis.error$
         @emlMean: .data#
         .mean = emlMean.result
         @emlSD: .data#
@@ -5009,10 +5112,42 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         @emlMedian: .data#
         .median = emlMedian.result
 
+        # CONSTANT-COLUMN RULING (Fable, 10 Sep 2026, ANSWER, Option B): a
+        # column whose standard deviation is zero is NOT a refusal. n, mean,
+        # sd (= 0) and median are always definable and are computed above
+        # exactly as on any other column. Skewness and kurtosis are 0/0 on a
+        # constant column -- @emlSkewness/@emlKurtosis already detected that
+        # and left .result undefined, the same standard undefined-marker
+        # mechanism every other door uses for an optional statistic that
+        # cannot be computed; this branch only stops their .error$ from
+        # being read as fatal, and adds the one disclosure line the ruling
+        # asks for. A non-constant column (.sd <> 0) is untouched below:
+        # either sub-procedure's .error$ (e.g. kurtosis needs n >= 4) still
+        # aborts the cell exactly as before.
+        if .sd = 0
+            .constantNote$ = "all values identical (sd = 0): skewness, "
+            ... + "kurtosis and the normality test are undefined."
+            if .warning$ = ""
+                .warning$ = .constantNote$
+            else
+                .warning$ = .warning$ + " " + .constantNote$
+            endif
+        elsif .skewError$ <> ""
+            .error$ = .skewError$
+            goto END_NORMALITY
+        elsif .kurtError$ <> ""
+            .error$ = .kurtError$
+            goto END_NORMALITY
+        endif
+
         # Shapiro-Wilk formal test
         ; ERROR-READ EXEMPT -- emlShapiroWilk.error$ is copied to .swError$ below and
         ; passed as an argument to @emlNormalityRecommendation, which performs the real
         ; check internally via a documented nested-if (.swUsable) gate.
+        ; On a constant column (.sd = 0, above) this call independently
+        ; detects the same zero range and leaves .w/.p undefined with its
+        ; own "All values identical (zero range)" .error$ -- no special
+        ; casing needed here.
         @emlShapiroWilk: .data#
         .swW = emlShapiroWilk.w
         .swP = emlShapiroWilk.p

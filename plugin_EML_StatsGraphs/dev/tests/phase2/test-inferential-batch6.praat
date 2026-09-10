@@ -61,7 +61,11 @@
 # appropriate application of this code.
 # ============================================================================
 
+include ../../../stats/eml-core-utilities.praat
+include ../../../stats/eml-core-descriptive.praat
 include ../../../stats/eml-extract.praat
+include ../../../stats/eml-studentized-range.praat
+include ../../../stats/eml-anova-kernel.praat
 include ../../../stats/eml-inferential.praat
 include ../eml-test-helpers.praat
 
@@ -276,7 +280,7 @@ Set numeric value: 20, "value", 28
 Set string value: 20, "Treatment", "Drug"
 Set string value: 20, "Sex", "Female"
 
-@emlTwoWayAnova: tableId4, "value", "Treatment", "Sex"
+@emlTwoWayAnova: tableId4, "value", "Treatment", "Sex", 3
 
 @emlTestAssertEqualStr: "4 no error", "", emlTwoWayAnova.error$
 
@@ -411,7 +415,7 @@ Set numeric value: 20, "value", 18
 Set string value: 20, "FactorA", "B"
 Set string value: 20, "FactorB", "Female"
 
-@emlTwoWayAnova: tableId5, "value", "FactorA", "FactorB"
+@emlTwoWayAnova: tableId5, "value", "FactorA", "FactorB", 3
 
 @emlTestAssertEqualStr: "5 no error", "", emlTwoWayAnova.error$
 
@@ -502,7 +506,11 @@ tableId7 = emlTableFromGroups.tableId
     ... emlOneWayAnova.pMatrix##[1, 2], 1e-5
 @emlTestAssertEqualRel: "7 Tukey G1vG3 p [1,3]", 0.00316727350416679,
     ... emlOneWayAnova.pMatrix##[1, 3], 1e-5
-@emlTestAssertEqualRel: "7 Tukey G2vG3 p [2,3]", 1.6833576830244112e-06,
+# This pair sits in the far tail of the studentized-range distribution,
+# where R's ptukey is inaccurate. The reference is scipy's
+# studentized_range.sf (1.6831113298643e-06), which the plugin matches to
+# ~9 significant figures. R's ptukey gives 1.6833576830244112e-06 here.
+@emlTestAssertEqualRel: "7 Tukey G2vG3 p [2,3]", 1.6831113298643e-06,
     ... emlOneWayAnova.pMatrix##[2, 3], 1e-5
 
 # q statistics
@@ -638,7 +646,7 @@ for iRow from 1 to 4
     endif
 endfor
 
-@emlTwoWayAnova: tableId9d, "value", "Missing", "Factor2"
+@emlTwoWayAnova: tableId9d, "value", "Missing", "Factor2", 3
 ; Wording: "First factor column", not the argument name factor1.
 ; The needle keeps the offending column name so the refusal must still say
 ; WHICH column it could not find.

@@ -6907,11 +6907,18 @@ procedure emlTheilSen: .x#, .y#
         .count = 0
 
         for .i from 1 to .n - 1
-            for .j from .i + 1 to .n
-                if .x# [.i] <> .x# [.j]
+            # Vectorized: compute all slopes from i to every j > i in one
+            # shot (same subtraction-then-division arithmetic as the
+            # scalar form, so results are bit-identical), then copy the
+            # valid (non-tied) entries into the flat accumulator.
+            .len = .n - .i
+            .dx# = part# (.x#, .i + 1, .n) - .x# [.i]
+            .dy# = part# (.y#, .i + 1, .n) - .y# [.i]
+            .seg# = .dy# / .dx#
+            for .k from 1 to .len
+                if .dx# [.k] <> 0
                     .count = .count + 1
-                    .slopes# [.count] = (.y# [.j] - .y# [.i])
-                    ... / (.x# [.j] - .x# [.i])
+                    .slopes# [.count] = .seg# [.k]
                 endif
             endfor
         endfor

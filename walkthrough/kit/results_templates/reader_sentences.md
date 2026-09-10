@@ -201,6 +201,14 @@ independent computation, `stats::pairwise.t.test` with unpooled variances,
 run down its own code path. R verifying R; the plugin has no counterpart,
 and none is owed.
 
+## normality-quantities-missing-partner
+Rows: ~0. Every normality cell owes n, mean, sd, median, skewness, kurtosis,
+the Shapiro-Wilk W and its p-value on both sides. Where one side's run left
+no row for one of these at all -- not a value, not an explicit
+undefined -- there is nothing on that side to set beside the other's; it is
+listed as incomplete on that quantity, not as a disagreement between the two
+programs.
+
 ## sweep
 Rows: ~32. This row belongs to the sweep study, a grid of group-count and
 imbalance shapes that is otherwise checked against R exactly like any other
