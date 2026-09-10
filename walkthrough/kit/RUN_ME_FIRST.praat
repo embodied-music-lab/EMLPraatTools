@@ -698,9 +698,11 @@ while length (emlKitRemaining$) > 0
         @emlKitRowSelected: emlKitSplit18.f$[3]
         if emlKitRowSelected.selected = 1
             emlKitDone = emlKitDone + 1
-            emlKitElapsed = emlKitElapsed + stopwatch
+            emlKitCellSecs = stopwatch
+            emlKitElapsed = emlKitElapsed + emlKitCellSecs
             @emlKitProgress: emlKitDone, emlKitTotal, emlKitSplit18.f$[1],
-            ... emlKitSplit18.f$[3], emlKitSplit18.f$[4], emlKitElapsed
+            ... emlKitSplit18.f$[3], emlKitSplit18.f$[4], emlKitCellSecs,
+            ... emlKitElapsed
             @emlKitProcessRow:
             ... emlKitSplit18.f$[1], emlKitSplit18.f$[2], emlKitSplit18.f$[3],
             ... emlKitSplit18.f$[4], emlKitSplit18.f$[5], emlKitSplit18.f$[6],
@@ -2574,23 +2576,17 @@ procedure emlKitFmtTime: .s
 endproc
 
 # @emlKitProgress -- draw one frame of the meter
-procedure emlKitProgress: .done, .total, .cellId$, .proc$, .dataset$, .elapsed
+procedure emlKitProgress: .done, .total, .cellId$, .proc$, .dataset$, .cellSecs, .elapsed
     if emlKitDemoProgress = 1
         .pct = 0
         if .total > 0
             .pct = 100 * .done / .total
         endif
         .fillX = 8 + (84 * .pct / 100)
-        .rate = 0
-        .eta = 0
-        if .done > 0
-            .rate = .elapsed / .done
-            .eta = .rate * (.total - .done)
-        endif
         @emlKitFmtTime: .elapsed
         .elapsed$ = emlKitFmtTime.r$
-        @emlKitFmtTime: .eta
-        .eta$ = emlKitFmtTime.r$
+        @emlKitFmtTime: .cellSecs
+        .cellSecs$ = emlKitFmtTime.r$
         @emlKitDemoSafe: .cellId$
         .cellSafe$ = emlKitDemoSafe.r$
         @emlKitDemoSafe: .proc$
@@ -2642,11 +2638,14 @@ procedure emlKitProgress: .done, .total, .cellId$, .proc$, .dataset$, .elapsed
         demo Line width: 1
         demo Colour: "{0.80, 0.84, 0.88}"
         demo Draw rounded rectangle: 6, 94, 9, 21, 1.5
-        demo Font size: 12
+        demo Colour: "{0.35, 0.40, 0.46}"
+        demo Font size: 10
+        demo Text: 30, "centre", 18, "half", "last cell"
+        demo Text: 70, "centre", 18, "half", "total elapsed"
         demo Colour: "Black"
-        demo Text: 22, "centre", 15, "half", "elapsed  " + .elapsed$
-        demo Text: 50, "centre", 15, "half", "ETA  " + .eta$
-        demo Text: 78, "centre", 15, "half", fixed$ (.rate, 1) + " s/cell"
+        demo Font size: 16
+        demo Text: 30, "centre", 13, "half", .cellSecs$
+        demo Text: 70, "centre", 13, "half", .elapsed$
 
         demoShow ()
     endif
