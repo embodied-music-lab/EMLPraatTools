@@ -3188,19 +3188,30 @@ procedure eml_twoWayCompleteCase: .tableId, .dataCol$, .factor1$, .factor2$
     # are the SAME condition (@eml_isMissingToken / @eml_classifyCell kind 1)
     # for the data column; the two factor columns are text, so the same
     # test is asked directly (an empty label is not a fourth level, exactly
-    # as a blank group label elsewhere is not).
+    # as a blank group label elsewhere is not). This pass also stamps a
+    # numeric keep-flag (1 = keep, 0 = excluded) into a scratch column on a
+    # working copy, so the complete-case subset below can be built with one
+    # native "Extract rows where column (number)" call instead of an
+    # excluded-row-at-a-time removal.
     .nDataMiss = 0
     .nF1Miss = 0
     .nF2Miss = 0
+    selectObject: .tableId
+    .workId = Copy: "eml_twowaycc_work"
+    Append column: "eml_twowaycc_keep"
     ; VECTOR-EXEMPT: cat2 -- per-row missing-value classification across three
     ; columns (two of them text), and the exclusion list this builds has no
     ; Table vector equivalent (confirmed against Praat 6.6.30: "Get all
     ; numbers in column" mis-reads a text column as string-pool indices, not
     ; values, so it cannot stand in for these raw-string reads). .rowF1$[]/
     ; .rowF2$[] retain what is read here so the empty-combination check below
-    ; can reuse it instead of re-reading the table.
+    ; can reuse it instead of re-reading the table. The keep-flag write below
+    ; rides this same unavoidable per-row pass; it re-selects .workId first
+    ; because @eml_classifyCell can reach @eml_strictOneCell, which creates
+    ; and removes its own scratch probe Table, leaving .workId no longer the
+    ; selected object by the time this point in the loop body is reached.
     for .row from 1 to .nRows
-        selectObject: .tableId
+        selectObject: .workId
         .dCell$ = Get value: .row, .dataCol$
         .f1Cell$ = Get value: .row, .factor1$
         .f2Cell$ = Get value: .row, .factor2$
@@ -3225,6 +3236,8 @@ procedure eml_twoWayCompleteCase: .tableId, .dataCol$, .factor1$, .factor2$
         endif
 
         if .dMissing = 1 or .f1Missing = 1 or .f2Missing = 1
+            selectObject: .workId
+            Set numeric value: .row, "eml_twowaycc_keep", 0
             .nExcluded = .nExcluded + 1
             .exRowAt[.nExcluded] = .row
             if .dMissing = 1
@@ -3252,28 +3265,29 @@ procedure eml_twoWayCompleteCase: .tableId, .dataCol$, .factor1$, .factor2$
                     .f2MissValAt$[.nF2Miss] = "empty"
                 endif
             endif
+        else
+            selectObject: .workId
+            Set numeric value: .row, "eml_twowaycc_keep", 1
         endif
     endfor
 
-    # --- build the subset, removing excluded rows from a COPY, highest row
-    # first so earlier indices stay valid.
-    selectObject: .tableId
-    .subsetId = Copy: "eml_twowaycc"
-    ; Praat's "for" only counts UP, so the descending walk needed here (each
-    ; removal shifts every later row index down by one, so removing must go
-    ; highest-row-first) is driven off .k and read backwards via .nExcluded -
-    ; .k + 1.
-    for .k from 1 to .nExcluded
-        .kk = .nExcluded - .k + 1
-        selectObject: .subsetId
-        Remove row: .exRowAt[.kk]
-    endfor
+    # --- build the complete-case subset with one native call on the keep
+    # flags just stamped above, then drop the scratch column and the working
+    # copy -- .subsetId ends up with exactly .tableId's columns, in order,
+    # restricted to the kept rows, in original row order.
+    selectObject: .workId
+    .subsetId = Extract rows where column (number): "eml_twowaycc_keep",
+        ... "equal to", 1
+    removeObject: .workId
+    selectObject: .subsetId
+    Remove column: "eml_twowaycc_keep"
 
     # --- the one remaining refusal: exclusion emptied a factor cell.
     # Reuses .rowF1$[]/.rowF2$[] (already read once above) for the surviving
-    # rows -- same values .subsetId holds at its post-removal row numbers,
-    # since .subsetId is an unmodified Copy: of .tableId with only the
-    # .exRowAt[] rows removed -- so no table is re-read here. Level discovery
+    # rows -- same values .subsetId holds at its rows, since .subsetId is
+    # exactly .tableId's kept rows in original order (the "Extract rows
+    # where column (number)" call above preserves row order) -- so no table
+    # is re-read here. Level discovery
     # keeps its original linear "seen" scan (bounded by .r/.s, as before);
     # what is gone is the O(.r * .s * rows) re-read this used to do to tally
     # each cell -- one O(rows) pass now fills .cellCount[], and the final
@@ -3355,6 +3369,13 @@ procedure eml_twoWayCompleteCase: .tableId, .dataCol$, .factor1$, .factor2$
     endif
 
     # --- disclosure, one clause per column, joined in read order.
+    ; VECTOR-EXEMPT: cat2 -- .dataMissRowAt[]/.dataMissValAt$[] (and the f1/f2
+    ; pairs) are plain indexed scripting variables, not vectors: their length
+    ; is not known until the classification pass above has run, and Praat
+    ; 6.6.30 vectors cannot be grown incrementally, only created at a known
+    ; size (zero#/empty$#) and then filled -- there is no bulk cast from an
+    ; indexed-variable array to a real #/$# vector, so each of the three
+    ; small copies below still needs its own loop.
     .dataRows# = zero# (.nDataMiss)
     .dataVals$# = empty$# (.nDataMiss)
     for .i from 1 to .nDataMiss
