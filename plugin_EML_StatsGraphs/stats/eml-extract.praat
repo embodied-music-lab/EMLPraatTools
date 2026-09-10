@@ -2837,18 +2837,90 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
         .allData# = Get all numbers in column: .dataCol$
         .data# = zero# (.nRows)
         .n = 0
-        ; VECTOR-EXEMPT: cat2 -- the group match test has no Table vector
-        ; equivalent (no zero-object "rows where column equals" selector), so
-        ; picking this group's rows out of .allData# still walks the table once.
+
+        # GROUP-MATCH SHORTCUT (10 Sep 2026 speed wave), same string-pool
+        # technique @eml_twoWayCompleteCase's empty-combination check uses
+        # (see its header comment on eml-extract.praat): on a column Praat
+        # treats as TEXT, "Get all numbers in column" does not fail or
+        # return the cells' values -- it silently returns each row's
+        # ALPHABETICAL-RANK substitute (@eml_strictNumericColumn's header),
+        # and that substitute is a PER-DISTINCT-RAW-STRING integer: two rows
+        # get the same number if and only if they hold the identical raw
+        # string (verified against Praat 6.6.30). That turns "does this
+        # row's group match?" into an O(nGroups) question instead of an
+        # O(nRows) one: decide each DISTINCT rank's match once (one "Get
+        # value" + @eml_normalizeLabel per distinct rank, not per row), then
+        # sieve every row by a pure integer compare against that verdict.
+        # TWO DIFFERENT RAW STRINGS THAT NORMALISE ALIKE (e.g. "Alpha " and
+        # "alpha") get two DIFFERENT ranks and are decided independently --
+        # each rank's own @eml_normalizeLabel call is what @eml_getGroupData
+        # already had to agree with @emlCountGroups, so this cannot select a
+        # different row set than the per-row test it replaces.
+        #
+        # That rank guarantee needs .groupCol$ to NOT be one Praat numericises
+        # in full: a fully-numeric column makes "Get all numbers in column"
+        # return the cells' actual VALUES instead of ranks, and two DIFFERENT
+        # raw strings that happen to parse to the same value ("1", "1.0",
+        # "01") would then collide onto one number -- and @eml_strictNumericColumn
+        # is not a safe test for that here: a merely LENIENT-numeric column
+        # (e.g. every cell parses under Praat's own percent-accepting reader,
+        # "30%" alongside "1" and "2") already measures as VALUES, not ranks,
+        # on Praat 6.6.30, even though @eml_strictNumericColumn.strict comes
+        # back 0 for it (its .hasPercent guard is answering a different,
+        # stricter question, for .dataCol$'s locale/coercion refusal, not
+        # this one). A column with an EMPTY cell that is otherwise all-numeric
+        # is worse still: Praat raises outright rather than falling back to
+        # ranks (also verified) -- something the untouched per-row loop below
+        # never risked, because "Get value" alone never raises on a missing
+        # cell.
+        #
+        # So rank mode is not detected here, it is FORCED, the same way
+        # @eml_strictNumericColumn forces its own sentinel verdict: copy the
+        # table, append one row whose .groupCol$ cell is a value no Praat
+        # number grammar can parse (letters), and read the ranks off that
+        # modified column. One non-numeric cell anywhere makes Praat rank
+        # the WHOLE column -- appended row included -- so this guarantees
+        # rank mode for rows 1..nRows regardless of what they hold (numeric,
+        # empty, percent, mixed), with no raise and no value-mode collision,
+        # for the cost of one more Copy + Append + probe, not a second
+        # O(nRows) column scan. The appended row's own rank (index nRows + 1)
+        # is read and discarded; it never contributes to any group's data.
+        selectObject: .tableId
+        .grpProbeId = Copy: "eml_ggdGroupRankProbe"
+        Append row
+        Set string value: .nRows + 1, .groupCol$, "EML_GGD_NONNUMERIC_RANK_PROBE"
+        .grpIdx# = Get all numbers in column: .groupCol$
+        removeObject: .grpProbeId
+
+        .nDistinctGrp = 0
+        ; VECTOR-EXEMPT: cat2 -- the per-row body below is a pure integer
+        ; compare against .distinctIdx[] (bounded by the handful of distinct
+        ; group ranks, not nRows) with no Table read in it; the only Table
+        ; reads left are one "Get value" + @eml_normalizeLabel per NEWLY-seen
+        ; rank, i.e. O(nGroups) of them, not O(nRows).
         for .row from 1 to .nRows
-            selectObject: .tableId
-            .grp$ = Get value: .row, .groupCol$
-            @eml_normalizeLabel: .grp$
-            if eml_normalizeLabel.result$ = .wantNorm$
+            .grpRank = .grpIdx#[.row]
+            .di = 0
+            for .d from 1 to .nDistinctGrp
+                if .distinctIdx[.d] = .grpRank
+                    .di = .d
+                endif
+            endfor
+            if .di = 0
+                .nDistinctGrp = .nDistinctGrp + 1
+                .di = .nDistinctGrp
+                .distinctIdx[.di] = .grpRank
+                selectObject: .tableId
+                .rawGrp$ = Get value: .row, .groupCol$
+                @eml_normalizeLabel: .rawGrp$
+                .distinctMatch[.di] = (eml_normalizeLabel.result$ = .wantNorm$)
+            endif
+            if .distinctMatch[.di] = 1
                 .n = .n + 1
                 .data#[.n] = .allData#[.row]
             endif
         endfor
+
         if .n < .nRows and .n > 0
             .data# = part# (.data#, 1, .n)
         elsif .n = 0
