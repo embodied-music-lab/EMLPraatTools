@@ -480,7 +480,7 @@ emlRunAnovaAnalysis	gh_<PAIR>_diff	pair	always	both	stats/eml-inferential.praat:
 emlRunAnovaAnalysis	gh_<PAIR>_se	pair	always	both	stats/eml-inferential.praat:6502 @emlGamesHowell .seMatrix##	See gh_<PAIR>_diff.
 emlRunAnovaAnalysis	gh_<PAIR>_df	pair	always	both	stats/eml-inferential.praat:6502 @emlGamesHowell .dfMatrix##	Welch-Satterthwaite per pair. See gh_<PAIR>_diff.
 emlRunAnovaAnalysis	gh_<PAIR>_padj	pair	always	both	stats/eml-inferential.praat:6502 @emlGamesHowell .pMatrix##	See gh_<PAIR>_diff. Joins D-PTUKEY/D-PTUKEY-MID by regex (compare.R) -- Games-Howell's own critical value is the studentised range, same distribution as Tukey's.
-emlRunAnovaAnalysis	gh_<PAIR>_low	pair	always	both	stats/eml-analysis.praat:766 emlRunAnovaAnalysis.ghLowMat## -- diff -+ (qCrit/sqrt(2))*se, built in the door from @emlGamesHowell's own .qCritMatrix##/.seMatrix## (stats/eml-inferential.praat:6502)	At emlReportAlpha.value. See gh_<PAIR>_diff; joins D-PTUKEY/D-PTUKEY-MID same as padj.
+emlRunAnovaAnalysis	gh_<PAIR>_low	pair	always	both	stats/eml-analysis.praat:766 emlRunAnovaAnalysis.ghLowMat## -- diff -+ qCrit*se, built in the door from @emlGamesHowell's own .qCritMatrix##/.seMatrix## (stats/eml-inferential.praat:6502; seMatrix## is already se_std/sqrt(2))	At emlReportAlpha.value. See gh_<PAIR>_diff; joins D-PTUKEY/D-PTUKEY-MID same as padj.
 emlRunAnovaAnalysis	gh_<PAIR>_high	pair	always	both	stats/eml-analysis.praat:766 emlRunAnovaAnalysis.ghHighMat## (see gh_<PAIR>_low)	See gh_<PAIR>_low.
 #
 # --- emlRunRegressionAnalysis: OLS intervals every run, Theil-Sen on

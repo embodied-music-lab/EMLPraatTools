@@ -759,9 +759,11 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     ; GAMES-HOWELL NEEDS EVERY GROUP n >= 2 (the kernel's own refusal
     ; condition); on refusal .gh* stay the undefined 1x1 placeholder set at
     ; entry, and the omission is disclosed. THE ONLY NEW ARITHMETIC in this
-    ; wave's ANOVA door: the interval half-width, diff +/- (qCrit/sqrt(2))
-    ; * se, built here from the kernel's .qCritMatrix## and .seMatrix##
-    ; (order section 4.2; the formula is stated in the entry below).
+    ; wave's ANOVA door: the interval half-width, diff +/- qCrit * se,
+    ; built here from the kernel's .qCritMatrix## and .seMatrix## (the
+    ; kernel's seMatrix## is already se_std/sqrt(2), matching
+    ; rstatix::games_howell_test; no extra /sqrt(2) here -- order section
+    ; 4.2; the formula is stated in the entry below).
     @emlGamesHowell: .tableId, .dataCol$, .groupCol$, .anovaAlpha
     if emlGamesHowell.error$ = ""
         .ghDiffMat## = emlGamesHowell.meanDiff##
@@ -776,8 +778,8 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
                     .ghLowMat## [.ghI, .ghJ] = undefined
                     .ghHighMat## [.ghI, .ghJ] = undefined
                 else
-                    .ghHalfWidth = (emlGamesHowell.qCritMatrix## [.ghI, .ghJ]
-                        ... / sqrt (2)) * emlGamesHowell.seMatrix## [.ghI, .ghJ]
+                    .ghHalfWidth = emlGamesHowell.qCritMatrix## [.ghI, .ghJ]
+                        ... * emlGamesHowell.seMatrix## [.ghI, .ghJ]
                     .ghLowMat## [.ghI, .ghJ] = emlGamesHowell.meanDiff## [.ghI, .ghJ]
                         ... - .ghHalfWidth
                     .ghHighMat## [.ghI, .ghJ] = emlGamesHowell.meanDiff## [.ghI, .ghJ]
