@@ -226,7 +226,14 @@ indexSet <- function(scope, cell, tmpl) {
         return(c(a, b, paste0(a, "__", b)))
     }
     if (cell$procedure %in% DECLARED_LEVEL_PROCS && scope %in% c("level", "pair")) {
-        lv <- slug(strsplit(cell$col_a, "|", fixed = TRUE)[[1]])
+        # Comma, in lockstep with run_analyses.R's parseConditions (commit
+        # 754f5c72 moved the reader; the pipe form here left the reader and
+        # this comparator disagreeing -- ORDER_PIPE_DELIMITER_REMOVAL_
+        # 2026-09-10, §1b closes it). slug() trims each element the same way
+        # parseConditions' trimws does; a trailing comma in col_a (matrix.tsv
+        # carries one on every RM/Friedman row) yields no trailing empty
+        # element from strsplit, so no extra empty-string "level" appears.
+        lv <- slug(strsplit(cell$col_a, ",", fixed = TRUE)[[1]])
         if (scope == "level") return(lv)
         out <- character(0)
         for (i in seq_along(lv)) for (j in seq_along(lv)) if (i < j)

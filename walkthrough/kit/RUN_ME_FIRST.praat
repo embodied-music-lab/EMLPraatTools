@@ -2276,34 +2276,21 @@ procedure emlKitDispatchSurvey: .cellId$, .proc$, .tableId, .colA$, .colB$,
         endif
 
     elsif .proc$ = "emlRunReliabilityAnalysis"
-        # DOORWAY over @emlCronbachAlpha / @emlAlphaInfluence. col_a is the
-        # pipe-delimited item-column list (matrix.tsv header note); THIS
-        # RUNNER splits it into the .itemCols$# vector the frozen signature
-        # takes, the same "|"-split @emlExtractConditionMatrix (RM/Friedman)
-        # does on its own input, done here instead because the reliability
-        # signature takes a vector, not a delimited string. .doInfluence
-        # rides in matrix.tsv's posthoc column (header note: a "do*" boolean,
-        # not a post-hoc test, reusing that column's shape).
-        .relN = 0
-        .relRest$ = .colA$ + "|"
-        .relBarPos = index (.relRest$, "|")
-        while .relBarPos > 0
-            .relTok$ = left$ (.relRest$, .relBarPos - 1)
-            if .relTok$ <> ""
-                .relN = .relN + 1
-                .relItemClean$ [.relN] = .relTok$
-            endif
-            .relRest$ = mid$ (.relRest$, .relBarPos + 1,
-            ... length (.relRest$) - .relBarPos)
-            .relBarPos = index (.relRest$, "|")
-        endwhile
-        # A string VECTOR (.name$#) must exist before an indexed assignment
-        # into it -- "{ }" does not parse as an empty literal (CLAUDE.md's
-        # own Praat note) and an out-of-bounds index into a never-created
-        # vector fails with "does not exist", not a resize. So .itemCols$#
-        # is allocated to the now-known .relN first, THEN filled.
+        # DOORWAY over @emlCronbachAlpha / @emlAlphaInfluence. col_a is
+        # matrix.tsv's comma-separated item-column list (matrix.tsv header
+        # note); THIS RUNNER converts it once with the one shared bridge
+        # (@emlCommaListToVector, stats/eml-core-utilities.praat), the same
+        # convention @emlExtractConditionMatrix (RM/Friedman) uses on its own
+        # input above, into the .itemCols$# vector the frozen signature
+        # takes -- the reliability signature takes a vector, not a delimited
+        # string, same as the RM/Friedman one. .doInfluence rides in
+        # matrix.tsv's posthoc column (header note: a "do*" boolean, not a
+        # post-hoc test, reusing that column's shape).
+        @emlCommaListToVector: .colA$
+        .relN = size (emlCommaListToVector.v$#)
         .itemCols$# = empty$# (.relN)
         for .relJ from 1 to .relN
+            .relItemClean$ [.relJ] = emlCommaListToVector.v$# [.relJ]
             @emlKitFindColRaw: .tableId, .relItemClean$ [.relJ]
             .itemCols$# [.relJ] = emlKitFindColRaw.rawName$
         endfor

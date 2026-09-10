@@ -2117,11 +2117,13 @@ process_normality <- function(row) {
     writeReport(cid, lines)
 }
 
-# --- shared repeated-measures helpers ---------------------------------------
+# --- shared col_a comma-list helper (RM/Friedman conditions, reliability
+# --- items -- ORDER_PIPE_DELIMITER_REMOVAL_2026-09-10, §1b) ----------------
 parseConditions <- function(colspec) {
     # Matches the plugin's emlCommaListToVector (eml-core-utilities.praat):
-    # the pipe form is gone (see eml-analysis.praat ~6383); the RM/Friedman
-    # condition list is comma-delimited, trimmed, empties dropped.
+    # the pipe form is gone (see eml-analysis.praat ~6383); every col_a list
+    # this file reads -- RM/Friedman conditions, reliability items -- is
+    # comma-delimited, trimmed, empties dropped.
     parts <- strsplit(colspec, ",")[[1]]
     trimws(parts)[nzchar(trimws(parts))]
 }
@@ -2541,8 +2543,11 @@ process_wilson <- function(row) {
 # the fixture (matrix.tsv col_a/col_b/col_c), not a whole-CSV matrix -- the
 # same shape the analysis-lane doorways take. matrix.tsv has no dedicated
 # itemCols/countCol/successValue slots (header's own note): the item list
-# rides pipe-delimited in col_a, countCol rides in col_c (empty = raw data),
-# successValue rides in col_b, and doInfluence rides in the posthoc column.
+# rides comma-delimited in col_a (parseConditions -- ORDER_PIPE_DELIMITER_
+# REMOVAL_2026-09-10, §1b; the pipe form is gone, same lockstep move as the
+# RM/Friedman col_a fix, commit 754f5c72), countCol rides in col_c (empty =
+# raw data), successValue rides in col_b, and doInfluence rides in the
+# posthoc column.
 # =============================================================================
 
 # emlRunReliabilityAnalysis: same psych::alpha / psych::alpha.ci oracle as
@@ -2556,7 +2561,7 @@ process_wilson <- function(row) {
 process_reliability_analysis <- function(row) {
     cid <- row$cell_id
     d <- readDataset(row$dataset)
-    items <- strsplit(row$col_a, "|", fixed = TRUE)[[1]]
+    items <- parseConditions(row$col_a)
     if (length(items) < 2) { refuseCell(cid, sprintf("Need at least 2 item columns (found %d).", length(items))); return(invisible()) }
     M <- as.matrix(as.data.frame(lapply(d[items], function(col) suppressWarnings(as.numeric(col)))))
     colnames(M) <- items
@@ -2580,7 +2585,7 @@ process_reliability_analysis <- function(row) {
     emit(cid, "n", n, "base::nrow"); emit(cid, "k", k, "base::ncol")
     emit(cid, "n_excluded", nExcl, "base::sum")
     lines <- c(sprintf("Reliability doorway -- %s (items=%s, conf=%.2f, doInfluence=%s)",
-                        row$dataset, paste(items, collapse = "|"), conf, doInfluence),
+                        row$dataset, paste(items, collapse = ", "), conf, doInfluence),
                sprintf("n=%d (excluded %d) k=%d", n, nExcl, k),
                sprintf("alpha=%.4f  CI[%.4f, %.4f] (psych::alpha / psych::alpha.ci, Feldt)", alphaVal, ci$lower.ci, ci$upper.ci), "")
     if (k >= 3) {
