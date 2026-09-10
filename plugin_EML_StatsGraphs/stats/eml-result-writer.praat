@@ -144,7 +144,13 @@
 # normal approximation and could not reach the requested level. Same word,
 # same column position in both frames, because it is the same kind of fact:
 # a caveat about the number beside it, not the number itself.
-emlVocabTidy$ = "term effect contrast null.value estimate estimate1"
+; "n" JOINS THE TIDY VOCABULARY (9 Sep 2026, API completion wave section
+; 4.4): the per-group tidy rows a grouped correlation writes need a row
+; count that varies row to row (unlike glance's "nobs", one count per
+; MODEL), and broom's own tidy.htest has no such column for cor.test to
+; borrow -- the same "addition, not parity" situation ruling 3 already put
+; skewness and kurtosis in this list for (see v71_tidy_vocab_and_warning.R).
+emlVocabTidy$ = "term n effect contrast null.value estimate estimate1"
 ... + " estimate2 std.error"
 ... + " df num.df den.df sumsq meansq"
 ... + " statistic p.value parameter conf.low conf.high adj.p.value"

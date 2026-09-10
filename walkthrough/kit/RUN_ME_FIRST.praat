@@ -1301,7 +1301,10 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
 
     elsif .proc$ = "emlRunCorrelationAnalysis"
         # --- 7. CORRELATION -----------------------------------------------
-        @emlRunCorrelationAnalysis: .tableId, .colA$, .colB$, .test$
+        # No matrix cell drives .groupCol$ yet (the grouped-correlation
+        # fixture and cells land in a later commit of this wave) -- "" here
+        # is the same no-grouping call every existing cell already made.
+        @emlRunCorrelationAnalysis: .tableId, .colA$, .colB$, .test$, ""
         @emlKitCorrelationRanSomething: .test$
         if emlRunCorrelationAnalysis.error$ <> ""
             .refused = 1

@@ -267,13 +267,45 @@ for .i from 1 to 20
 endfor
 
 selectObject: tableId
-@emlRunCorrelationAnalysis: tableId, "X", "Y", "pearson"
+@emlRunCorrelationAnalysis: tableId, "X", "Y", "pearson", ""
 .info$ = info$ ()
 
 @emlTestAssertTrue: "correlation has r-value",
     ... index (.info$, "r =") > 0 or index (.info$, "r ") > 0
+@emlTestAssertTrue: "correlation door names the Fisher interval",
+    ... emlRunCorrelationAnalysis.pearLow <> undefined
+    ... and emlRunCorrelationAnalysis.pearHigh <> undefined
 @emlTestAssertTrue: "correlation has p-value",
     ... index (.info$, "p") > 0
+
+removeObject: tableId
+
+# ── Grouped correlation: .groupCol$, .nGroupsRun/.nGroupsSkipped ──────────
+tableId = Create Table with column names: "test", 24, "grp X Y"
+for .i from 1 to 24
+    if .i <= 3
+        .g$ = "tiny"
+    elsif .i <= 13
+        .g$ = "A"
+    else
+        .g$ = "B"
+    endif
+    Set string value: .i, "grp", .g$
+    .x = randomGauss (0, 1)
+    Set numeric value: .i, "X", .x
+    Set numeric value: .i, "Y", .x * 2 + randomGauss (0, 0.5)
+endfor
+
+selectObject: tableId
+@emlRunCorrelationAnalysis: tableId, "X", "Y", "pearson", "grp"
+@emlTestAssertTrue: "grouped correlation runs the groups with n >= 4",
+    ... emlRunCorrelationAnalysis.nGroupsRun = 2
+@emlTestAssertTrue: "grouped correlation skips the group with n < 4",
+    ... emlRunCorrelationAnalysis.nGroupsSkipped = 1
+@emlTestAssertTrue: "grouped correlation discloses the skip",
+    ... emlRunCorrelationAnalysis.warning$ <> ""
+@emlTestAssertTrue: "grouped correlation scalars stay the overall values",
+    ... emlRunCorrelationAnalysis.n = 24
 
 removeObject: tableId
 

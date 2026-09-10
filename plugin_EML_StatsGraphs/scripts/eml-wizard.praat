@@ -1945,14 +1945,14 @@ elsif goal = 2
         ... wizardNormLabel.result$, "Pearson r",
         ... "n/a", corrCol1$, "", corrCol2$, displayTable$
         @emlRunCorrelationAnalysis: tableId, corrCol1$,
-        ... corrCol2$, "pearson"
+        ... corrCol2$, "pearson", wizCorrGroupCol$
     elsif test_approach = 2
         wizCorrTestType$ = "spearman"
         @wizardReportPlan: "Correlation",
         ... wizardNormLabel.result$, "Spearman ρ",
         ... "n/a", corrCol1$, "", corrCol2$, displayTable$
         @emlRunCorrelationAnalysis: tableId, corrCol1$,
-        ... corrCol2$, "spearman"
+        ... corrCol2$, "spearman", wizCorrGroupCol$
     else
         # "Both" — dispatched the way the menu door's correlation wrapper
         # dispatches its own "Both" row (eml-correlate.praat): testType$ =
@@ -1962,7 +1962,7 @@ elsif goal = 2
         ... wizardNormLabel.result$, "Both Pearson and Spearman",
         ... "n/a", corrCol1$, "", corrCol2$, displayTable$
         @emlRunCorrelationAnalysis: tableId, corrCol1$,
-        ... corrCol2$, "both"
+        ... corrCol2$, "both", wizCorrGroupCol$
     endif
     if emlRunCorrelationAnalysis.error$ <> ""
         # An analysis error must not tear down the wizard. Return

@@ -237,7 +237,7 @@ repeat
         endif
 
         selectObject: tableId
-        @emlRunCorrelationAnalysis: tableId, colX$, colY$, testType$
+        @emlRunCorrelationAnalysis: tableId, colX$, colY$, testType$, groupCol$
         if emlRunCorrelationAnalysis.error$ <> ""
             # An error must not strand the user on a form the error has
             # just ruled out. Present it with guidance, and honour Quit.

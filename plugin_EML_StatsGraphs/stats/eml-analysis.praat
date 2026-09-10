@@ -3442,7 +3442,7 @@ endproc
 #
 # ============================================================================
 
-procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
+procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .groupCol$
     ; .recResult$ is read past the end label on EVERY path, including a
     ; refusal -- see the record-workflow block below. Every sibling
     ; orchestrator (two-group, ANOVA, KW, pairwise, paired, ...) sets
@@ -3473,6 +3473,16 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
     .spearT = undefined
     .spearDf = undefined
     .spearP = undefined
+    ; FISHER R-TO-Z INTERVAL FOR r, order section 4.4. Undefined at entry
+    ; and left undefined -- disclosed -- whenever the Pearson branch does
+    ; not run, or runs on fewer than 4 pairs, or |r| = 1.
+    .pearLow = undefined
+    .pearHigh = undefined
+    ; PER-GROUP COUNTS, order section 4.4. 0 (not undefined) when
+    ; .groupCol$ is empty -- there is nothing to count, not something that
+    ; failed to be counted.
+    .nGroupsRun = 0
+    .nGroupsSkipped = 0
     .error$ = ""
     .warning$ = ""
     .ok = 0
@@ -3515,6 +3525,12 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
         .error$ = "Need at least 3 complete pairs for correlation."
         goto END_CORR
     endif
+
+    ; THE ALPHA IN FORCE (order section 4.4), resolved once and reused for
+    ; the overall Fisher interval below and for every per-group one -- never
+    ; a literal, and never re-resolved mid-door where it could drift.
+    @emlReportAlpha
+    .corrAlpha = emlReportAlpha.value
 
     # v1.2 item 3: capture each test's outputs into locals IMMEDIATELY after
     # its own call. @emlReportCorrelationAnalysis (and the CSV rows it emits)
@@ -3587,6 +3603,192 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
         ... .spearRho, .spearT, .spearDf, .spearP
     endif
 
+    ; FISHER R-TO-Z INTERVAL FOR THE OVERALL r (order section 4.4). Set
+    ; when the Pearson branch ran and .n >= 4 (@emlPearsonFisherInterval's
+    ; own floor -- 1/sqrt(n-3) needs n > 3); otherwise left undefined and
+    ; disclosed. Spearman gets no interval -- it matches R's cor.test,
+    ; which returns no conf.int for the rank test either.
+    if .error$ = "" and (.testType$ = "pearson" or .testType$ = "both") and .pearErr$ = ""
+        @emlPearsonFisherInterval: .pearR, .n, .corrAlpha
+        .pearLow = emlPearsonFisherInterval.low
+        .pearHigh = emlPearsonFisherInterval.high
+        if .pearLow = undefined
+            @eml_appendWarning: .warning$, "Interval for r omitted -- need "
+            ... + "at least 4 complete pairs and |r| < 1 (n = "
+            ... + string$ (.n) + ")"
+            .warning$ = eml_appendWarning.result$
+        endif
+    endif
+
+    ; PER-GROUP CORRELATIONS (order section 4.4). .groupCol$ empty = no
+    ; grouping. The scalars above (.pearR/.pearLow/.spearRho/...) stay the
+    ; OVERALL values throughout this block -- a caller reading them after a
+    ; grouped run reads the whole-table fit, never a group's; only tidy and
+    ; the two counts below carry the per-group results.
+    if .error$ = "" and .groupCol$ <> ""
+        selectObject: .tableId
+        @emlCountGroups: .tableId, .groupCol$
+        if emlCountGroups.error$ = ""
+            .grpTotal = emlCountGroups.nGroups
+        else
+            .grpTotal = 0
+            @eml_appendWarning: .warning$, "Grouping column """
+            ... + .groupCol$ + """: " + emlCountGroups.error$
+            .warning$ = eml_appendWarning.result$
+        endif
+        .grpSkipList$ = ""
+        .grpSkipMore = 0
+        ; PASS 1: count complete pairs per group only, the same two-pass
+        ; shape @emlRunGroupedRegressionAnalysis uses -- so the block is
+        ; announced with its own header and counts before any group
+        ; prints, and groups too small to run (n < 4, this door's own
+        ; floor for the Fisher interval) are named on one summary line
+        ; rather than costing an orphan line each.
+        for .grpI from 1 to .grpTotal
+            .grpLabel$ [.grpI] = emlCountGroups.groupLabel$ [.grpI]
+            selectObject: .tableId
+            @eml_getGroupPairedData: .tableId, .colX$, .colY$,
+            ... .groupCol$, .grpLabel$ [.grpI]
+            if eml_getGroupPairedData.error$ <> ""
+                .grpN [.grpI] = 0
+            else
+                .grpN [.grpI] = eml_getGroupPairedData.n
+            endif
+            if .grpN [.grpI] >= 4
+                .nGroupsRun = .nGroupsRun + 1
+            else
+                .nGroupsSkipped = .nGroupsSkipped + 1
+                if length (.grpSkipList$) < 45
+                    if .grpSkipList$ <> ""
+                        .grpSkipList$ = .grpSkipList$ + ", "
+                    endif
+                    @emlUnderscoreToSpace: .grpLabel$ [.grpI]
+                    .grpSkipList$ = .grpSkipList$ + emlUnderscoreToSpace.result$
+                else
+                    .grpSkipMore = .grpSkipMore + 1
+                endif
+            endif
+        endfor
+        if .grpSkipMore > 0
+            .grpSkipList$ = .grpSkipList$ + ", and " + string$ (.grpSkipMore)
+            ... + " more"
+        endif
+        if .nGroupsSkipped > 0
+            @eml_appendWarning: .warning$, string$ (.nGroupsSkipped) + " of "
+            ... + string$ (.grpTotal) + " group(s) skipped (fewer than 4 "
+            ... + "complete pairs): " + .grpSkipList$
+            .warning$ = eml_appendWarning.result$
+        endif
+
+        @emlUnderscoreToSpace: .groupCol$
+        .grpColDisplay$ = emlUnderscoreToSpace.result$
+        @emlReportHeader: "Correlation by " + .grpColDisplay$
+        @emlReportLineString: "Grouping column", .grpColDisplay$
+        @emlReportLine: "Groups", .grpTotal, 0
+        @emlReportLine: "Analysed", .nGroupsRun, 0
+
+        ; ONE export: tidy is rebuilt (glance, declared above, survives)
+        ; with the overall row(s) re-emitted as term "(overall)" plus one
+        ; row per group that ran -- the same shape
+        ; @emlRunGroupedRegressionAnalysis uses for regression.
+        @emlTidyClear
+        if .testType$ = "pearson" or .testType$ = "both"
+            @emlTidyRow: "(overall)"
+            @emlTidyNum: "n", .n
+            @emlTidyNum: "estimate", .pearR
+            @emlTidyNum: "statistic", .pearT
+            @emlTidyNum: "df", .pearDf
+            @emlTidyNum: "p.value", .pearP
+            if .pearLow <> undefined
+                @emlTidyNum: "conf.low", .pearLow
+                @emlTidyNum: "conf.high", .pearHigh
+            endif
+        endif
+        if .testType$ = "spearman" or .testType$ = "both"
+            @emlTidyRow: "(overall)"
+            @emlTidyNum: "n", .n
+            @emlTidyNum: "estimate", .spearRho
+            @emlTidyNum: "statistic", .spearT
+            @emlTidyNum: "df", .spearDf
+            @emlTidyNum: "p.value", .spearP
+        endif
+
+        for .grpI from 1 to .grpTotal
+            if .grpN [.grpI] >= 4
+                @emlUnderscoreToSpace: .grpLabel$ [.grpI]
+                .grpDisplay$ = emlUnderscoreToSpace.result$
+                selectObject: .tableId
+                @eml_getGroupPairedData: .tableId, .colX$, .colY$,
+                ... .groupCol$, .grpLabel$ [.grpI]
+                .grpX# = eml_getGroupPairedData.dataX#
+                .grpY# = eml_getGroupPairedData.dataY#
+                .grpThisN = eml_getGroupPairedData.n
+                .grpExcluded = eml_getGroupPairedData.nExcluded
+                ; EMPTY-CELL DISCLOSURE: the same shared capture
+                ; @emlRunGroupedRegressionAnalysis takes once per group,
+                ; because this door fits a SEPARATE correlation per group.
+                @eml_appendWarning: "", eml_getGroupPairedData.warning$
+                .grpWarning$ = eml_appendWarning.result$
+                .grpTerm$ = .groupCol$ + " = " + .grpLabel$ [.grpI]
+
+                @emlReportHeader: .grpColDisplay$ + " = " + .grpDisplay$
+                @emlReportLine: "N", .grpThisN, 0
+                if .grpExcluded > 0
+                    appendInfoLine: "  Note: " + string$ (.grpExcluded)
+                    ... + " row(s) excluded for missing data (analyzed n = "
+                    ... + string$ (.grpThisN) + " complete pairs)."
+                endif
+                if .grpWarning$ <> ""
+                    appendInfoLine: "  Note: " + .grpWarning$
+                endif
+
+                if .testType$ = "pearson" or .testType$ = "both"
+                    @emlPearsonCorrelation: .grpX#, .grpY#, 2
+                    if emlPearsonCorrelation.error$ = ""
+                        @emlPearsonFisherInterval: emlPearsonCorrelation.r,
+                        ... .grpThisN, .corrAlpha
+                        @emlReportLine: "Pearson r", emlPearsonCorrelation.r, 4
+                        @emlReportLine: "p", emlPearsonCorrelation.p, 4
+                        @emlTidyRow: .grpTerm$
+                        @emlTidyNum: "n", .grpThisN
+                        @emlTidyNum: "estimate", emlPearsonCorrelation.r
+                        @emlTidyNum: "statistic", emlPearsonCorrelation.t
+                        @emlTidyNum: "df", emlPearsonCorrelation.df
+                        @emlTidyNum: "p.value", emlPearsonCorrelation.p
+                        if emlPearsonFisherInterval.low <> undefined
+                            @emlTidyNum: "conf.low",
+                            ... emlPearsonFisherInterval.low
+                            @emlTidyNum: "conf.high",
+                            ... emlPearsonFisherInterval.high
+                        endif
+                    endif
+                endif
+                if .testType$ = "spearman" or .testType$ = "both"
+                    @emlSpearmanCorrelationDispatch: .grpX#, .grpY#, 2
+                    if emlSpearmanCorrelation.error$ = ""
+                        @emlReportLine: "Spearman rho",
+                        ... emlSpearmanCorrelation.rho, 4
+                        @emlReportLine: "p", emlSpearmanCorrelation.p, 4
+                        @emlTidyRow: .grpTerm$
+                        @emlTidyNum: "n", .grpThisN
+                        @emlTidyNum: "estimate", emlSpearmanCorrelation.rho
+                        @emlTidyNum: "statistic", emlSpearmanCorrelation.t
+                        @emlTidyNum: "df", emlSpearmanCorrelation.df
+                        @emlTidyNum: "p.value", emlSpearmanCorrelation.p
+                    endif
+                endif
+            endif
+        endfor
+
+        if .nGroupsSkipped > 0
+            @emlReportBlank
+            @emlReportLineString: "Skipped (n < 4)",
+            ... string$ (.nGroupsSkipped) + " of " + string$ (.grpTotal)
+            ... + ": " + .grpSkipList$
+        endif
+        appendInfoLine: emlReportHeader.border$
+    endif
+
     ; THE COEFFICIENT IS THE STEP. Built from the orchestrator's OWN locals,
     ; which lines 1770-1782 above restore explicitly after the reporters run,
     ; precisely so they cannot be stale here.
@@ -3626,7 +3828,7 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$
         @emlRecordAnalysisStep: .tableId, "Correlation",
         ... .colX$ + " with " + .colY$ + ", " + .testType$,
         ... "Correlation is not causation, and a single coefficient hides the shape of the cloud.",
-        ... "@emlRunCorrelationAnalysis: data, """ + .colX$ + """, """ + .colY$ + """, """ + .testType$ + """",
+        ... "@emlRunCorrelationAnalysis: data, """ + .colX$ + """, """ + .colY$ + """, """ + .testType$ + """, """ + .groupCol$ + """",
         ... "In the GUI: New > EML Stats & Graphs > Correlate two columns...",
         ... .recResult$, .error$
     endif

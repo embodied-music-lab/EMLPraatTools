@@ -509,8 +509,17 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
     .remedy$ = ""
     .col1Empty = 0
     .col1EmptyRows# = zero# (0)
+    ; Initialised here, not only in the row-wise branch below, because
+    ; @eml_getGroupPairedData reads .col1EmptyValues$#/.col2EmptyValues$#
+    ; UNCONDITIONALLY (guarded on .colXEmpty = 0, not on which path ran) --
+    ; a group whose data numericise strictly (the FAST path just below,
+    ; taken whole-column) left them never assigned, and Praat aborted with
+    ; "Unknown variable" on the first perfectly clean group a grouped
+    ; correlation or grouped regression was asked to fit.
+    .col1EmptyValues$# = empty$# (0)
     .col2Empty = 0
     .col2EmptyRows# = zero# (0)
+    .col2EmptyValues$# = empty$# (0)
     .level1Warning$ = ""
     .data1# = zero#(0)
     .data2# = zero#(0)

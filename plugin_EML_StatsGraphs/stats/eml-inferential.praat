@@ -673,6 +673,37 @@ endproc
 
 
 # ============================================================================
+# @emlPearsonFisherInterval -- Fisher r-to-z confidence interval for r
+# ============================================================================
+# z = atanh(r), se = 1/sqrt(n-3), interval = tanh(z +/- zCrit*se), zCrit from
+# the normal quantile (the transform is asymptotically normal, not t). Same
+# construction as the annotation bridge's inline interval
+# (graphs/eml-annotation-procedures.praat, scatter fit); this is the door's
+# own copy so a public procedure need not reach into the graphs layer.
+# invFisherQ/fisherQ are the F distribution and are NOT this transform.
+#
+# Undefined (both outputs) when n < 4 (se undefined) or |r| = 1 (atanh
+# infinite) -- caller discloses.
+#
+# Arguments: .r, .n, .alpha (two-sided level, e.g. 0.05 for 95%).
+# Output: .low, .high.
+# ============================================================================
+procedure emlPearsonFisherInterval: .r, .n, .alpha
+    .low = undefined
+    .high = undefined
+    if .r <> undefined and .n <> undefined and .n >= 4 and abs (.r) < 1
+        .zCrit = invGaussQ (.alpha / 2)
+        .z = 0.5 * ln ((1 + .r) / (1 - .r))
+        .se = 1 / sqrt (.n - 3)
+        .zLow = .z - .zCrit * .se
+        .zHigh = .z + .zCrit * .se
+        .low = (exp (2 * .zLow) - 1) / (exp (2 * .zLow) + 1)
+        .high = (exp (2 * .zHigh) - 1) / (exp (2 * .zHigh) + 1)
+    endif
+endproc
+
+
+# ============================================================================
 # @emlSpearmanCorrelation
 # ============================================================================
 # Spearman rank-order correlation coefficient.
