@@ -3711,12 +3711,15 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
         endif
         .grpSkipList$ = ""
         .grpSkipMore = 0
-        ; PASS 1: count complete pairs per group only, the same two-pass
-        ; shape @emlRunGroupedRegressionAnalysis uses -- so the block is
-        ; announced with its own header and counts before any group
-        ; prints, and groups too small to run (n < 4, this door's own
-        ; floor for the Fisher interval) are named on one summary line
-        ; rather than costing an orphan line each.
+        ; PASS 1: gather each group's paired data ONCE (order section 4.4
+        ; census re-extraction fix) -- the count used for the n >= 4 filter
+        ; and the vectors the correlation step below needs both come off
+        ; this same @eml_getGroupPairedData call, cached per group in
+        ; interpolated-name vectors (.grpDataX'.grpI'#/.grpDataY'.grpI'#),
+        ; the same per-slot caching shape eml-anova-kernel.praat's
+        ; eml_ak2gCache uses. The two-pass SHAPE stays -- header and counts
+        ; still print before any group -- only the second table scan is
+        ; gone.
         for .grpI from 1 to .grpTotal
             .grpLabel$ [.grpI] = emlCountGroups.groupLabel$ [.grpI]
             selectObject: .tableId
@@ -3724,8 +3727,17 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
             ... .groupCol$, .grpLabel$ [.grpI]
             if eml_getGroupPairedData.error$ <> ""
                 .grpN [.grpI] = 0
+                .grpDataX'.grpI'# = zero# (0)
+                .grpDataY'.grpI'# = zero# (0)
+                .grpCacheExcluded [.grpI] = 0
+                .grpCacheWarning$ [.grpI] = ""
             else
                 .grpN [.grpI] = eml_getGroupPairedData.n
+                .grpDataX'.grpI'# = eml_getGroupPairedData.dataX#
+                .grpDataY'.grpI'# = eml_getGroupPairedData.dataY#
+                .grpCacheExcluded [.grpI] = eml_getGroupPairedData.nExcluded
+                @eml_appendWarning: "", eml_getGroupPairedData.warning$
+                .grpCacheWarning$ [.grpI] = eml_appendWarning.result$
             endif
             if .grpN [.grpI] >= 4
                 .nGroupsRun = .nGroupsRun + 1
@@ -3790,18 +3802,17 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
             if .grpN [.grpI] >= 4
                 @emlUnderscoreToSpace: .grpLabel$ [.grpI]
                 .grpDisplay$ = emlUnderscoreToSpace.result$
-                selectObject: .tableId
-                @eml_getGroupPairedData: .tableId, .colX$, .colY$,
-                ... .groupCol$, .grpLabel$ [.grpI]
-                .grpX# = eml_getGroupPairedData.dataX#
-                .grpY# = eml_getGroupPairedData.dataY#
-                .grpThisN = eml_getGroupPairedData.n
-                .grpExcluded = eml_getGroupPairedData.nExcluded
+                ; PASS 2 reuses pass 1's cached extraction (.grpDataX/Y#,
+                ; .grpCacheExcluded/.grpCacheWarning$) instead of scanning
+                ; the table again -- see the PASS 1 comment above.
+                .grpX# = .grpDataX'.grpI'#
+                .grpY# = .grpDataY'.grpI'#
+                .grpThisN = .grpN [.grpI]
+                .grpExcluded = .grpCacheExcluded [.grpI]
                 ; EMPTY-CELL DISCLOSURE: the same shared capture
                 ; @emlRunGroupedRegressionAnalysis takes once per group,
                 ; because this door fits a SEPARATE correlation per group.
-                @eml_appendWarning: "", eml_getGroupPairedData.warning$
-                .grpWarning$ = eml_appendWarning.result$
+                .grpWarning$ = .grpCacheWarning$ [.grpI]
                 .grpTerm$ = .groupCol$ + " = " + .grpLabel$ [.grpI]
 
                 @emlReportHeader: .grpColDisplay$ + " = " + .grpDisplay$
