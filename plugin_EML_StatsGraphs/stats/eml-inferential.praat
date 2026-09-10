@@ -4736,6 +4736,7 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
     .shapiroError$ = ""
     .warning$ = ""
     .error$ = ""
+    .remedy$ = ""
 
     # --- Validate inputs ---
 
@@ -4761,20 +4762,33 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
         .error$ = emlRequireColumnPresent.error$
     endif
 
-    # --- The data column must be a column of numbers ---
+    # --- Listwise exclusion, then the data column must be numeric in every
+    # remaining row (9 Sep 2026, RULING_MISSING_VALUE_TOKENS) ---
     #
-    # STRICT, uniquely among the tests in this file. Every other path reads
-    # the data column row by row and can drop an unusable cell; the kernel
-    # this procedure now calls (@emlAnovaKernelTwoWay, via @eml_ak2_gather)
-    # reads the column the same row-wise way, but does not itself AUDIT its
-    # type -- a non-numeric cell there returns Praat's `undefined` and
-    # poisons every downstream sum silently, with .error$ never set. This
-    # guard is what stands between a mistyped column and that silent
-    # `undefined` propagation; it must run before the kernel is called.
+    # A row with a missing cell -- empty, or a @eml_isMissingToken value --
+    # in the data column or either factor column is excluded and disclosed,
+    # the same rule every other numeric-reading door applies; the kernel
+    # this procedure calls (@emlAnovaKernelTwoWay, via @eml_ak2_gather) reads
+    # every cell RAW with no per-row drop of its own (see that procedure's
+    # header), so @eml_twoWayCompleteCase builds the complete-case Table
+    # this door hands it, and still refuses -- unconditionally, same as
+    # before -- on a genuinely bad (non-missing-token) cell in the data
+    # column, since that is not something a repair or an exclusion can fix
+    # here. It also refuses if the exclusions themselves emptied a
+    # factor-level cell, naming that cell and the excluded rows.
+    .workTableId = .tableId
+    .removeWorkTable = 0
 
     if .error$ = ""
-        @emlRequireNumericColumn: .tableId, "Data column", .dataCol$, 1
-        .error$ = emlRequireNumericColumn.error$
+        @eml_twoWayCompleteCase: .tableId, .dataCol$, .factor1$, .factor2$
+        .error$ = eml_twoWayCompleteCase.error$
+        .remedy$ = eml_twoWayCompleteCase.remedy$
+        if .error$ = ""
+            .workTableId = eml_twoWayCompleteCase.subsetId
+            .removeWorkTable = 1
+            @eml_appendWarning: .warning$, eml_twoWayCompleteCase.warning$
+            .warning$ = eml_appendWarning.result$
+        endif
     endif
 
     # --- The two-way ANOVA kernel ---
@@ -4791,10 +4805,12 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
     # rows, or on fewer than 2 levels of either factor -- conditions the
     # pre-kernel version of this procedure either did not check at all or
     # handed silently to the built-in. That refusal is propagated as this
-    # procedure's own .error$ and nothing below it runs.
+    # procedure's own .error$ and nothing below it runs. It runs on
+    # .workTableId -- the complete-case Table above, which is .tableId
+    # unchanged when nothing was excluded.
 
     if .error$ = ""
-        @emlAnovaKernelTwoWay: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
+        @emlAnovaKernelTwoWay: .workTableId, .dataCol$, .factor1$, .factor2$, .ssType
         .error$ = emlAnovaKernelTwoWay.error$
     endif
 
@@ -4844,7 +4860,10 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
         .shapiroP = emlAnovaKernelTwoWay.shapiroP
         .shapiroN = emlAnovaKernelTwoWay.shapiroN
         .shapiroError$ = emlAnovaKernelTwoWay.shapiroError$
-        .warning$ = emlAnovaKernelTwoWay.warning$
+        # Folded, not overwritten: .warning$ may already carry the
+        # complete-case exclusion disclosure from above.
+        @eml_appendWarning: .warning$, emlAnovaKernelTwoWay.warning$
+        .warning$ = eml_appendWarning.result$
     endif
 
     # --- Per-cell / per-row detail, in the shape this procedure has
@@ -4863,15 +4882,18 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
     # find incomplete, so .nCells here is always .nLev1 * .nLev2.
 
     if .error$ = ""
-        selectObject: .tableId
+        selectObject: .workTableId
         .nObs = Get number of rows
         .nCells = 0
         .nLev1 = 0
         .nLev2 = 0
 
-        # The data column is strict-numeric (checked above), so read it once as
-        # a vector instead of cell by cell.
-        selectObject: .tableId
+        # The data column is strict-numeric on every remaining row (the
+        # complete-case pass above already excluded or refused on anything
+        # else), so read it once as a vector instead of cell by cell. Reads
+        # .workTableId -- the complete-case Table, .tableId unchanged when
+        # nothing was excluded.
+        selectObject: .workTableId
         .yCol# = Get all numbers in column: .dataCol$
         ; VECTOR-EXEMPT: cat2 -- builds the two-way design by first-seen order
         ; from the two TEXT factor columns (Praat has no "get all strings in
@@ -4934,8 +4956,11 @@ procedure emlTwoWayAnova: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
         .nRows = .nObs
     endif
 
-    # --- Restore selection ---
+    # --- Clean up the complete-case working copy, restore selection ---
 
+    if .removeWorkTable = 1
+        removeObject: .workTableId
+    endif
     selectObject: .tableId
 endproc
 

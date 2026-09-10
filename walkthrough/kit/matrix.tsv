@@ -508,9 +508,9 @@ c0377	analysis	emlRunPairedAnalysis	rp_r1_rmanova_input	soft	medium		both							
 c0378	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		parametric								ok	n = 2, the floor the guard allows		options
 c0379	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		nonparametric								ok	n = 2, the floor the guard allows		options
 c0380	analysis	emlRunPairedAnalysis	rp_r2_rmanova_input	soft	medium		both								ok	n = 2, the floor the guard allows		options
-c0381	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		parametric								refuse	S03's SPL_soft is "n/a" and is dropped, leaving 4 complete pairs; those pairs' differences are each exactly 10.0 (zero variance), so the paired t-test refuses on both sides -- not merely a dropped row as the prior note claimed		options
-c0382	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		nonparametric								ok	one non-numeric cell: dropped as missing, not refused		options
-c0383	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		both								ok	one non-numeric cell: dropped as missing, not refused		options
+c0381	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		parametric								refuse	"n/a" in SPL_soft (row 3) is a missing-value token: row excluded, disclosed, leaving 4 complete pairs; those pairs' differences are each exactly 10.0 (zero variance), so the paired t-test itself refuses on both sides		options
+c0382	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		nonparametric								ok	"n/a" in SPL_soft is a missing-value token: row excluded, disclosed		options
+c0383	analysis	emlRunPairedAnalysis	rp_r6_describe_input	SPL_soft	SPL_medium		both								ok	"n/a" in SPL_soft is a missing-value token: row excluded, disclosed		options
 c0384	analysis	emlRunPairedAnalysis	rp_r3_paired_input	SPL_soft	SPL_medium		both								refuse	every pair has the same difference: no variance for a paired test		options
 c0385	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	singing_F0_Hz		pearson								ok			options
 c0386	analysis	emlRunCorrelationAnalysis	v12_correlation_input	speaking_F0_Hz	singing_F0_Hz		spearman								ok			options
@@ -583,7 +583,7 @@ c0452	analysis	emlRunDescriptiveAnalysis	rp_r2_rmanova_input	loud											ok	n
 c0453	analysis	emlRunDescriptiveAnalysis	rp_r3_paired_input	SPL_soft											ok	constant column: zero variance		options
 c0454	analysis	emlRunDescriptiveAnalysis	rp_r3_paired_input	SPL_medium											ok	constant column: zero variance		options
 c0455	analysis	emlRunDescriptiveAnalysis	rp_r3_paired_input	SPL_loud											ok	constant column: zero variance		options
-c0456	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_soft											ok	one non-numeric cell (n/a): dropped as missing, disclosed		options
+c0456	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_soft											ok	"n/a" in SPL_soft is a missing-value token: row excluded, disclosed		options
 c0457	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_medium											ok			options
 c0458	analysis	emlRunDescriptiveAnalysis	rp_r6_describe_input	SPL_loud											ok			options
 c0460	analysis	emlRunDescriptiveAnalysis	v73_directional_input	idx											ok			options
@@ -624,9 +624,9 @@ c0494	analysis	emlRunNormalityAnalysis	rp_r2_rmanova_input	loud			both								re
 c0495	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_soft			both								ok	constant column: Shapiro-Wilk has no variance to work on		options
 c0496	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_medium			both								ok	constant column: Shapiro-Wilk has no variance to work on		options
 c0497	analysis	emlRunNormalityAnalysis	rp_r3_paired_input	SPL_loud			both								ok	constant column: Shapiro-Wilk has no variance to work on		options
-c0498	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_soft			both								ok	non-numeric cells dropped as missing		options
-c0499	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_medium			both								ok	non-numeric cells dropped as missing		options
-c0500	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_loud			both								ok	non-numeric cells dropped as missing		options
+c0498	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_soft			both								ok	"n/a" in SPL_soft is a missing-value token: row excluded, disclosed		options
+c0499	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_medium			both								ok	SPL_medium itself has no missing cell; noted alongside c0498/c0500 because the fixture's one missing cell ("n/a" in SPL_soft) is disclosed for the dataset		options
+c0500	analysis	emlRunNormalityAnalysis	rp_r6_describe_input	SPL_loud			both								ok	SPL_loud itself has no missing cell; noted alongside c0498/c0499 because the fixture's one missing cell ("n/a" in SPL_soft) is disclosed for the dataset		options
 c0502	analysis	emlRunNormalityAnalysis	v73_directional_input	idx			both								ok			options
 c0503	analysis	emlRunNormalityAnalysis	v73_directional_input	x			both								ok			options
 c0504	analysis	emlRunRegressionAnalysis	v13_regression_input	vibrato_regularity_pct	practice_hrs_wk										ok			options
@@ -687,8 +687,8 @@ c0558	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre,jitter_post,	
 c0559	analysis	emlRunFriedmanAnalysis	demo_paired_input	jitter_pre,jitter_post,				1	bh						ok	k = 2, the floor the orchestrator allows		options
 c0560	analysis	emlRunRepeatedMeasuresAnalysis	rp_r3_paired_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						refuse	every value identical: no variance to partition		options
 c0561	analysis	emlRunFriedmanAnalysis	rp_r3_paired_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						ok	every value identical: no variance to partition; Friedman ranks and survives where RM-ANOVA refuses		options
-c0562	analysis	emlRunRepeatedMeasuresAnalysis	rp_r6_describe_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						refuse	zero subject x condition residual on the 4 complete rows		options
-c0563	analysis	emlRunFriedmanAnalysis	rp_r6_describe_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						ok	zero subject x condition residual on the 4 complete rows; Friedman ranks and survives where RM-ANOVA refuses		options
+c0562	analysis	emlRunRepeatedMeasuresAnalysis	rp_r6_describe_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						refuse	"n/a" in SPL_soft (row 3, subject S03) is a missing-value token: row excluded, disclosed, leaving 4 complete rows; those rows step by exactly +10.0 per condition, so the RM-ANOVA itself refuses on zero subject x condition residual		options
+c0563	analysis	emlRunFriedmanAnalysis	rp_r6_describe_input	SPL_soft,SPL_medium,SPL_loud,				1	holm						ok	"n/a" in SPL_soft (row 3, subject S03) is a missing-value token: row excluded, disclosed, leaving 4 complete rows; Friedman ranks and survives where RM-ANOVA refuses on zero residual		options
 c0566	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.90			ok			options
 c0567	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.95			ok			options
 c0568	survey	emlCronbachAlpha	lane_survey_alpha_clean									0.99			ok			options

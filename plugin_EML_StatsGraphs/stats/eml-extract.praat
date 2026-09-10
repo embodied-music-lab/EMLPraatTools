@@ -220,7 +220,7 @@ procedure emlExtractColumn: .tableId, .columnName$
                 # wording cannot drift between them. One column read here, so
                 # one clause -- no join needed against another column.
                 @eml_emptyCellDisclosure: 0, .columnName$, "",
-                    ... .nEmpty, emlAuditColumn.emptyRows#
+                    ... .nEmpty, emlAuditColumn.emptyRows#, emlAuditColumn.emptyValues$#
                 @eml_appendWarning: .warning$, eml_emptyCellDisclosure.clause$
                 .warning$ = eml_appendWarning.result$
             endif
@@ -374,7 +374,8 @@ procedure emlExtractGroupVectors: .tableId, .measureCol$, .groupCol$, .label1$, 
                 # ascending row list, through the same shared builder
                 # @emlExtractColumn and @eml_getGroupData use.
                 @eml_emptyCellDisclosure: 0, .measureCol$, "",
-                    ... emlAuditColumn.nEmpty, emlAuditColumn.emptyRows#
+                    ... emlAuditColumn.nEmpty, emlAuditColumn.emptyRows#,
+                    ... emlAuditColumn.emptyValues$#
                 @eml_appendWarning: .warning$, eml_emptyCellDisclosure.clause$
                 .warning$ = eml_appendWarning.result$
             endif
@@ -573,8 +574,10 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
 
             .col1Empty = 0
             .col1EmptyRows# = zero# (0)
+            .col1EmptyValues$# = empty$# (0)
             .col2Empty = 0
             .col2EmptyRows# = zero# (0)
+            .col2EmptyValues$# = empty$# (0)
 
             if .clean1 = 0
                 @emlAuditColumn: .tableId, .col1$
@@ -594,6 +597,7 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
                 else
                     .col1Empty = emlAuditColumn.nEmpty
                     .col1EmptyRows# = emlAuditColumn.emptyRows#
+                    .col1EmptyValues$# = emlAuditColumn.emptyValues$#
                 endif
             endif
             if .error$ = "" and .clean2 = 0
@@ -614,6 +618,7 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
                 else
                     .col2Empty = emlAuditColumn.nEmpty
                     .col2EmptyRows# = emlAuditColumn.emptyRows#
+                    .col2EmptyValues$# = emlAuditColumn.emptyValues$#
                 endif
             endif
 
@@ -637,10 +642,10 @@ procedure emlExtractPairedColumns: .tableId, .col1$, .col2$
             # empty cell from sitting in each column independently.
             if .error$ = ""
                 @eml_emptyCellDisclosure: 0, .col1$, "",
-                    ... .col1Empty, .col1EmptyRows#
+                    ... .col1Empty, .col1EmptyRows#, .col1EmptyValues$#
                 .emptyDisclosure$ = eml_emptyCellDisclosure.clause$
                 @eml_emptyCellDisclosure: 0, .col2$, "",
-                    ... .col2Empty, .col2EmptyRows#
+                    ... .col2Empty, .col2EmptyRows#, .col2EmptyValues$#
                 @eml_joinDisclosureClauses: .emptyDisclosure$,
                     ... eml_emptyCellDisclosure.clause$
                 .emptyDisclosure$ = eml_joinDisclosureClauses.result$
@@ -1235,9 +1240,12 @@ endproc
 # The kinds, and why each is separate:
 #
 #   0  numeric     the cell reads as the number it looks like
-#   1  empty       nothing is there; this is missing data, and the
-#                  complete-case convention this plugin applies throughout
-#                  is the right treatment for it
+#   1  empty       nothing is there, OR the cell's text is one of the
+#                  missing-value tokens (@eml_isMissingToken: "na", "n/a",
+#                  "nan", "--undefined--", etc. -- 9 Sep 2026,
+#                  RULING_MISSING_VALUE_TOKENS). Either way this is missing
+#                  data, and the complete-case convention this plugin
+#                  applies throughout is the right treatment for it.
 #   2  locale      a comma stands where a decimal point belongs. Praat reads
 #                  "1,5" as 1 — not a dropped row, a DIFFERENT NUMBER. The
 #                  user has the value; it is being discarded or corrupted by
@@ -1301,7 +1309,19 @@ procedure eml_classifyCell: .raw$
         endif
     endwhile
 
-    if .trimmed$ = "" or .trimmed$ = "--undefined--"
+    if .trimmed$ = ""
+        .kind = 1
+        goto CLASSIFY_DONE
+    endif
+
+    # A missing-value token (9 Sep 2026, RULING_MISSING_VALUE_TOKENS): the
+    # SAME list @emlRepairClassify uses, asked at @eml_isMissingToken so the
+    # canon is stated once. Treated exactly like an empty cell -- excluded
+    # and disclosed, never refused. This is the read path every analysis
+    # door goes through (@eml_cleanVerdict, @eml_readCell, @emlAuditColumn),
+    # so the change reaches every door with no edit of its own.
+    @eml_isMissingToken: .trimmed$
+    if eml_isMissingToken.isMissing = 1
         .kind = 1
         goto CLASSIFY_DONE
     endif
@@ -1614,6 +1634,14 @@ endproc
 # same as always -- but the READER is told exactly which source rows were
 # dropped, not merely how many and where the first one was.
 #
+# EXTENDED 9 Sep 2026 (RULING_MISSING_VALUE_TOKENS) to cover a missing-value
+# TOKEN alongside a genuinely empty cell -- both are @eml_classifyCell kind 1
+# now, gathered by the same @emlAuditColumn pass -- so the clause names the
+# literal token per row ("row 47 NA") rather than the word "empty" for every
+# row alike. .values$# carries that per-row word: the caller writes "empty"
+# for a genuinely empty cell and the trimmed literal for a token, in the same
+# order as .rows#.
+#
 # ONE CLAUSE PER CALL. This builds the sentence for ONE column (ROW mode) or
 # ONE excluded subject (SUBJECT mode). A door with more than one column read,
 # or more than one excluded subject, calls this once per column/subject (in
@@ -1657,36 +1685,40 @@ endproc
 #                  SUBJECT mode: 1 to render the clause (a subject is either
 #                  excluded or not), 0 for "".
 #   .rows#       - ROW mode: the COMPLETE, ascending, SOURCE-TABLE row
-#                  numbers of every empty cell in .columnName$ -- no cap, no
-#                  truncation.
+#                  numbers of every excluded cell in .columnName$ -- no cap,
+#                  no truncation.
 #                  SUBJECT mode: exactly one element, .rows#[1], the
 #                  SOURCE-TABLE row of the causing cell.
+#   .values$#    - parallel to .rows#: "empty" for a genuinely empty cell,
+#                  else the cell's trimmed literal (a missing-value token,
+#                  e.g. "NA", "n/a"). Same length as .rows#.
 #
 # Output:
 #   .clause$ - "" when .nRows = 0. Otherwise:
-#     ROW mode:     "<col>: <n> empty cell(s) excluded (row(s) <r1>, <r2>, ...)"
-#                    singular wording when n = 1, e.g.
-#                    "jitter_pct: 1 empty cell excluded (row 88)"
-#     SUBJECT mode: "subject <id> excluded: empty cell in <col> (row <r>)"
+#     ROW mode:     "<col>: <n> cell(s) excluded (row <r1> <v1>, row <r2>
+#                    <v2>, ...)", singular wording when n = 1, e.g.
+#                    "jitter_pct: 1 cell excluded (row 88 empty)"
+#     SUBJECT mode: "subject <id> excluded: <col> (row <r> <v>)"
 # ============================================================================
-procedure eml_emptyCellDisclosure: .unitMode, .columnName$, .subjectId$, .nRows, .rows#
+procedure eml_emptyCellDisclosure: .unitMode, .columnName$, .subjectId$, .nRows, .rows#, .values$#
     .clause$ = ""
     if .nRows > 0
         if .unitMode = 1
-            .clause$ = "subject " + .subjectId$ + " excluded: empty cell in "
-            ... + .columnName$ + " (row " + string$ (round (.rows# [1])) + ")"
+            .clause$ = "subject " + .subjectId$ + " excluded: " + .columnName$
+            ... + " (row " + string$ (round (.rows# [1])) + " " + .values$# [1] + ")"
         else
             if .nRows = 1
-                .clause$ = .columnName$ + ": 1 empty cell excluded (row "
-                ... + string$ (round (.rows# [1])) + ")"
+                .clause$ = .columnName$ + ": 1 cell excluded (row "
+                ... + string$ (round (.rows# [1])) + " " + .values$# [1] + ")"
             else
                 .clause$ = .columnName$ + ": " + string$ (.nRows)
-                ... + " empty cells excluded (rows "
+                ... + " cells excluded (row "
                 for .i from 1 to .nRows
                     if .i > 1
-                        .clause$ = .clause$ + ", "
+                        .clause$ = .clause$ + ", row "
                     endif
                     .clause$ = .clause$ + string$ (round (.rows# [.i]))
+                    ... + " " + .values$# [.i]
                 endfor
                 .clause$ = .clause$ + ")"
             endif
@@ -1818,11 +1850,17 @@ endproc
 #   .firstLocaleValue$ / .firstUnreadableValue$ / .firstCoercedValue$
 #   .emptyRows# - (9 Sep 2026, AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST) the
 #               COMPLETE, ascending, SOURCE-TABLE row numbers of every
-#               genuinely empty cell -- length .nEmpty, zero#(0) when
-#               .nEmpty = 0 (including the fast path, which cannot see an
-#               empty cell by construction). .firstEmptyRow is kept too
-#               (= .emptyRows#[1] when .nEmpty > 0) for interface stability
-#               and for callers that only ever wanted the first row.
+#               excluded kind-1 cell -- a genuinely empty cell OR a
+#               missing-value token (RULING_MISSING_VALUE_TOKENS) -- length
+#               .nEmpty, zero#(0) when .nEmpty = 0 (including the fast path,
+#               which cannot see one by construction). .firstEmptyRow is
+#               kept too (= .emptyRows#[1] when .nEmpty > 0) for interface
+#               stability and for callers that only ever wanted the first
+#               row.
+#   .emptyValues$# - parallel to .emptyRows#: "empty" for a genuinely empty
+#               cell, else the cell's trimmed literal (the missing-value
+#               token, case as written). empty$#(0) when .nEmpty = 0. Feeds
+#               @eml_emptyCellDisclosure's .values$# directly.
 #   .commaMode - the column's @emlCommaColumnMode.mode (0 on the fast path)
 #   .note$    - user-facing LEVEL 2 sentences (@eml_auditNote), one per
 #               refusal condition present, "" if nothing was refused. Kept
@@ -1847,6 +1885,7 @@ procedure emlAuditColumn: .tableId, .columnName$
     .nLevel2 = 0
     .firstEmptyRow = 0
     .emptyRows# = zero# (0)
+    .emptyValues$# = empty$# (0)
     .firstLocaleRow = 0
     .firstUnreadableRow = 0
     .firstCoercedRow = 0
@@ -1935,6 +1974,11 @@ procedure emlAuditColumn: .tableId, .columnName$
             ; once .nEmpty is final; ascending by construction, since .row
             ; only increases.
             .emptyRowAt[.nEmpty] = .row
+            if eml_cleanVerdict.trimmed$ = ""
+                .emptyValueAt$[.nEmpty] = "empty"
+            else
+                .emptyValueAt$[.nEmpty] = eml_cleanVerdict.trimmed$
+            endif
         elsif eml_cleanVerdict.kind = 2
             .nValid = .nValid + 1
             .nDecimalRepaired = .nDecimalRepaired + 1
@@ -1999,8 +2043,10 @@ procedure emlAuditColumn: .tableId, .columnName$
 
     if .nEmpty > 0
         .emptyRows# = zero# (.nEmpty)
+        .emptyValues$# = empty$# (.nEmpty)
         for .ei from 1 to .nEmpty
             .emptyRows# [.ei] = .emptyRowAt[.ei]
+            .emptyValues$# [.ei] = .emptyValueAt$[.ei]
         endfor
     endif
 
@@ -2839,7 +2885,8 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
         # @eml_appendWarning's header (kernel-routed doors capture it once,
         # not once per group, for exactly that reason).
         @eml_emptyCellDisclosure: 0, .dataCol$, "",
-            ... emlAuditColumn.nEmpty, emlAuditColumn.emptyRows#
+            ... emlAuditColumn.nEmpty, emlAuditColumn.emptyRows#,
+            ... emlAuditColumn.emptyValues$#
         .emptyNote$ = eml_emptyCellDisclosure.clause$
         @eml_appendWarning: .warning$, .emptyNote$
         .warning$ = eml_appendWarning.result$
@@ -2933,9 +2980,11 @@ procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLa
                 ... .origRow# [round (emlExtractPairedColumns.col2EmptyRows# [.i])]
         endfor
 
-        @eml_emptyCellDisclosure: 0, .colX$, "", .colXEmpty, .colXEmptyRows#
+        @eml_emptyCellDisclosure: 0, .colX$, "", .colXEmpty, .colXEmptyRows#,
+            ... emlExtractPairedColumns.col1EmptyValues$#
         .emptyDisclosure$ = eml_emptyCellDisclosure.clause$
-        @eml_emptyCellDisclosure: 0, .colY$, "", .colYEmpty, .colYEmptyRows#
+        @eml_emptyCellDisclosure: 0, .colY$, "", .colYEmpty, .colYEmptyRows#,
+            ... emlExtractPairedColumns.col2EmptyValues$#
         @eml_joinDisclosureClauses: .emptyDisclosure$, eml_emptyCellDisclosure.clause$
         .emptyDisclosure$ = eml_joinDisclosureClauses.result$
 
@@ -2943,6 +2992,274 @@ procedure eml_getGroupPairedData: .tableId, .colX$, .colY$, .groupCol$, .groupLa
         .warning$ = eml_appendWarning.result$
     endif
     removeObject: .tempGroup
+endproc
+
+
+# ============================================================================
+# @eml_twoWayCompleteCase
+# ============================================================================
+# THE listwise-exclusion pass for the two-way door (9 Sep 2026,
+# RULING_MISSING_VALUE_TOKENS): a row with a missing cell -- empty, or a
+# @eml_isMissingToken value -- in the data column OR EITHER factor column is
+# excluded and disclosed, exactly as every other numeric-reading door
+# excludes one; the kernel this feeds (@emlAnovaKernelTwoWay, via
+# @emlTwoWayAnova) then runs on the remaining, possibly unbalanced design
+# (its Type I/II/III machinery already handles imbalance -- see that
+# kernel's own header). This matches R's `lm`/`aov` with `na.omit` and
+# SPSS `UNIANOVA`'s listwise exclusion.
+#
+# WHY THIS EXISTS SEPARATELY FROM @emlRequireNumericColumn. The kernel reads
+# every cell RAW (`Get value:`, no repair, no per-row drop -- see
+# @eml_ak2_gather's header), so a caller must hand it a table that is
+# ALREADY complete and already numeric in the data column; a generic
+# strict-numeric gate cannot also filter rows out of a Table, and doing
+# that row-by-row is what this procedure is for. The genuinely NON-missing
+# refusal conditions -- a LEVEL 2 cell (unrecognised text, an ambiguous
+# comma) anywhere in the data column, or a LEVEL 1 repair (decimal comma,
+# digit grouping, bare leading point) the kernel could not apply itself --
+# still refuse the WHOLE door, unchanged: this procedure only widens what
+# counts as "missing" for the exclude-and-disclose path, per the ruling.
+#
+# ONE FURTHER REFUSAL (per the ruling): if the exclusions leave a
+# factor-level combination with zero remaining observations, this procedure
+# refuses itself, naming the empty cell (both factor levels) and the rows
+# excluded -- the kernel's own generic "N empty combination(s)" message
+# never gets a chance to fire, because the caller could not otherwise say
+# WHICH cell emptied or WHY.
+#
+# Arguments:
+#   .tableId, .dataCol$, .factor1$, .factor2$ -- read-only; nothing here is
+#   ever written back to it.
+#
+# Output:
+#   .subsetId - a NEW Table, .tableId's rows with every excluded row
+#               removed, same columns; 0 on refusal. Caller removeObject:s
+#               it once the kernel has read it.
+#   .nExcluded - rows excluded (0 when nothing was missing)
+#   .warning$ - @emlAuditColumn.warning$ for .dataCol$ (LEVEL 1 disclosure,
+#               there are none since a LEVEL 1 cell refuses above) folded
+#               with the exclusion disclosure, one clause per column
+#               (.dataCol$, then .factor1$, then .factor2$, in that order,
+#               @eml_joinDisclosureClauses-joined, "" clauses skipped) --
+#               "" if nothing was excluded and nothing needed disclosing.
+#   .error$   - "" on success
+#   .remedy$  - set alongside .error$ on a LEVEL 2 refusal (names
+#               @emlRunCleanData); "" otherwise, including the empty-cell
+#               refusal (there is nothing to repair -- the remedy is a
+#               different table, not this one repaired).
+# ============================================================================
+procedure eml_twoWayCompleteCase: .tableId, .dataCol$, .factor1$, .factor2$
+    .error$ = ""
+    .remedy$ = ""
+    .warning$ = ""
+    .subsetId = 0
+    .nExcluded = 0
+
+    selectObject: .tableId
+    .nRows = Get number of rows
+
+    @emlAuditColumn: .tableId, .dataCol$
+    if emlAuditColumn.error$ <> ""
+        .error$ = emlAuditColumn.error$
+        goto TWOWAY_CC_DONE
+    endif
+    if emlAuditColumn.nLevel2 > 0
+        @eml_level2Refusal: "Data column", .dataCol$,
+            ... emlAuditColumn.firstLevel2Row, emlAuditColumn.firstLevel2Value$
+        .error$ = eml_level2Refusal.error$
+        .remedy$ = eml_level2Refusal.remedy$
+        goto TWOWAY_CC_DONE
+    endif
+    if emlAuditColumn.nRepaired > 0
+        .error$ = "Data column """ + .dataCol$ + """ is not numeric in "
+        ... + "every row. This test reads the column as a whole, so a cell "
+        ... + "needing repair (a decimal comma, digit grouping, or a bare "
+        ... + "leading point) cannot be repaired individually here."
+        if emlAuditColumn.note$ <> ""
+            .error$ = .error$ + " " + emlAuditColumn.note$
+        endif
+        goto TWOWAY_CC_DONE
+    endif
+    .warning$ = emlAuditColumn.warning$
+
+    # --- pass: decide, per row, which of the three columns (if any) is
+    # missing there. A genuinely empty cell and a listed missing-value token
+    # are the SAME condition (@eml_isMissingToken / @eml_classifyCell kind 1)
+    # for the data column; the two factor columns are text, so the same
+    # test is asked directly (an empty label is not a fourth level, exactly
+    # as a blank group label elsewhere is not).
+    .nDataMiss = 0
+    .nF1Miss = 0
+    .nF2Miss = 0
+    ; VECTOR-EXEMPT: cat2 -- per-row missing-value classification across three
+    ; columns (two of them text), and the exclusion list this builds has no
+    ; Table vector equivalent.
+    for .row from 1 to .nRows
+        selectObject: .tableId
+        .dCell$ = Get value: .row, .dataCol$
+        .f1Cell$ = Get value: .row, .factor1$
+        .f2Cell$ = Get value: .row, .factor2$
+
+        @eml_classifyCell: .dCell$
+        .dMissing = (eml_classifyCell.kind = 1)
+        .f1t$ = replace_regex$ (.f1Cell$, "^[ \t]+|[ \t]+$", "", 0)
+        if .f1t$ = ""
+            .f1Missing = 1
+        else
+            @eml_isMissingToken: .f1t$
+            .f1Missing = eml_isMissingToken.isMissing
+        endif
+        .f2t$ = replace_regex$ (.f2Cell$, "^[ \t]+|[ \t]+$", "", 0)
+        if .f2t$ = ""
+            .f2Missing = 1
+        else
+            @eml_isMissingToken: .f2t$
+            .f2Missing = eml_isMissingToken.isMissing
+        endif
+
+        if .dMissing = 1 or .f1Missing = 1 or .f2Missing = 1
+            .nExcluded = .nExcluded + 1
+            .exRowAt[.nExcluded] = .row
+            if .dMissing = 1
+                .nDataMiss = .nDataMiss + 1
+                .dataMissRowAt[.nDataMiss] = .row
+                if eml_classifyCell.trimmed$ = ""
+                    .dataMissValAt$[.nDataMiss] = "empty"
+                else
+                    .dataMissValAt$[.nDataMiss] = eml_classifyCell.trimmed$
+                endif
+            endif
+            if .f1Missing = 1
+                .nF1Miss = .nF1Miss + 1
+                .f1MissRowAt[.nF1Miss] = .row
+                .f1MissValAt$[.nF1Miss] = .f1t$
+                if .f1t$ = ""
+                    .f1MissValAt$[.nF1Miss] = "empty"
+                endif
+            endif
+            if .f2Missing = 1
+                .nF2Miss = .nF2Miss + 1
+                .f2MissRowAt[.nF2Miss] = .row
+                .f2MissValAt$[.nF2Miss] = .f2t$
+                if .f2t$ = ""
+                    .f2MissValAt$[.nF2Miss] = "empty"
+                endif
+            endif
+        endif
+    endfor
+
+    # --- build the subset, removing excluded rows from a COPY, highest row
+    # first so earlier indices stay valid.
+    selectObject: .tableId
+    .subsetId = Copy: "eml_twowaycc"
+    ; Praat's "for" only counts UP, so the descending walk needed here (each
+    ; removal shifts every later row index down by one, so removing must go
+    ; highest-row-first) is driven off .k and read backwards via .nExcluded -
+    ; .k + 1.
+    for .k from 1 to .nExcluded
+        .kk = .nExcluded - .k + 1
+        selectObject: .subsetId
+        Remove row: .exRowAt[.kk]
+    endfor
+
+    # --- the one remaining refusal: exclusion emptied a factor cell.
+    if .nExcluded > 0
+        selectObject: .subsetId
+        .remainRows = Get number of rows
+        .r = 0
+        .s = 0
+        for .row from 1 to .remainRows
+            selectObject: .subsetId
+            .l1$ = Get value: .row, .factor1$
+            .l2$ = Get value: .row, .factor2$
+            .seen1 = 0
+            for .i from 1 to .r
+                if .lev1$[.i] = .l1$
+                    .seen1 = 1
+                endif
+            endfor
+            if .seen1 = 0
+                .r = .r + 1
+                .lev1$[.r] = .l1$
+            endif
+            .seen2 = 0
+            for .j from 1 to .s
+                if .lev2$[.j] = .l2$
+                    .seen2 = 1
+                endif
+            endfor
+            if .seen2 = 0
+                .s = .s + 1
+                .lev2$[.s] = .l2$
+            endif
+        endfor
+        for .i from 1 to .r
+            for .j from 1 to .s
+                .cellCount = 0
+                for .row from 1 to .remainRows
+                    selectObject: .subsetId
+                    .l1$ = Get value: .row, .factor1$
+                    .l2$ = Get value: .row, .factor2$
+                    if .l1$ = .lev1$[.i] and .l2$ = .lev2$[.j]
+                        .cellCount = .cellCount + 1
+                    endif
+                endfor
+                if .cellCount = 0
+                    .error$ = "The cell """ + .lev1$[.i] + """ x """
+                    ... + .lev2$[.j] + """ has no remaining observations "
+                    ... + "after " + string$ (.nExcluded)
+                    ... + " row(s) were excluded for a missing cell "
+                    ... + "(row(s) "
+                    for .e from 1 to .nExcluded
+                        if .e > 1
+                            .error$ = .error$ + ", "
+                        endif
+                        .error$ = .error$ + string$ (.exRowAt[.e])
+                    endfor
+                    .error$ = .error$ + ")."
+                endif
+            endfor
+        endfor
+        if .error$ <> ""
+            removeObject: .subsetId
+            .subsetId = 0
+            goto TWOWAY_CC_DONE
+        endif
+    endif
+
+    # --- disclosure, one clause per column, joined in read order.
+    .dataRows# = zero# (.nDataMiss)
+    .dataVals$# = empty$# (.nDataMiss)
+    for .i from 1 to .nDataMiss
+        .dataRows# [.i] = .dataMissRowAt[.i]
+        .dataVals$# [.i] = .dataMissValAt$[.i]
+    endfor
+    .f1Rows# = zero# (.nF1Miss)
+    .f1Vals$# = empty$# (.nF1Miss)
+    for .i from 1 to .nF1Miss
+        .f1Rows# [.i] = .f1MissRowAt[.i]
+        .f1Vals$# [.i] = .f1MissValAt$[.i]
+    endfor
+    .f2Rows# = zero# (.nF2Miss)
+    .f2Vals$# = empty$# (.nF2Miss)
+    for .i from 1 to .nF2Miss
+        .f2Rows# [.i] = .f2MissRowAt[.i]
+        .f2Vals$# [.i] = .f2MissValAt$[.i]
+    endfor
+
+    @eml_emptyCellDisclosure: 0, .dataCol$, "", .nDataMiss, .dataRows#, .dataVals$#
+    .disclosure$ = eml_emptyCellDisclosure.clause$
+    @eml_emptyCellDisclosure: 0, .factor1$, "", .nF1Miss, .f1Rows#, .f1Vals$#
+    @eml_joinDisclosureClauses: .disclosure$, eml_emptyCellDisclosure.clause$
+    .disclosure$ = eml_joinDisclosureClauses.result$
+    @eml_emptyCellDisclosure: 0, .factor2$, "", .nF2Miss, .f2Rows#, .f2Vals$#
+    @eml_joinDisclosureClauses: .disclosure$, eml_emptyCellDisclosure.clause$
+    .disclosure$ = eml_joinDisclosureClauses.result$
+
+    @eml_appendWarning: .warning$, .disclosure$
+    .warning$ = eml_appendWarning.result$
+
+    label TWOWAY_CC_DONE
 endproc
 
 
@@ -3597,6 +3914,50 @@ endproc
 
 
 # ============================================================================
+# @eml_isMissingToken (internal helper)
+# ============================================================================
+# THE missing-value token list, stated ONCE (9 Sep 2026,
+# RULING_MISSING_VALUE_TOKENS): a non-empty cell whose text is on this list is
+# missing, exactly as an empty cell is -- excluded and disclosed, never
+# refused. Case-insensitive, and only these exact tokens: a cell reading "no
+# data recorded" is a note, not a placeholder, and silently treating it as
+# missing would destroy information.
+#
+# `--undefined--` and `undefined` (added 9 Sep 2026) are what Praat itself
+# writes for an undefined value: a Table cell set to undefined saves as
+# `--undefined--` in a tab-separated file, and Praat's own numeric grammar
+# already reads an empty string as undefined -- both are what Praat is
+# already telling the reader "there is no value here", not new information.
+#
+# @emlRepairClassify (below, the data-check/repair advisor) and
+# @eml_classifyCell (the read-time classifier every analysis door goes
+# through) both ask HERE rather than each spelling the list out, so the
+# canon cannot drift between the two call sites. The committed copy for the
+# R side, validate/canon/missing_tokens.tsv, is checked against THIS list by
+# validate/v171_missing_value_tokens.R, in the v105 pattern.
+#
+# Arguments:
+#   .s$ — the cell's contents, ALREADY TRIMMED of surrounding whitespace
+#
+# Output:
+#   .isMissing — 1 if .s$ (case-insensitively) is one of the tokens, 0
+#                otherwise. A genuinely empty string is NOT tested here --
+#                callers already have their own "empty" branch, tested
+#                before or alongside this one.
+# ============================================================================
+procedure eml_isMissingToken: .s$
+    .isMissing = 0
+    .low$ = replace_regex$ (.s$, "([A-Z])", "\l\1", 0)
+    if .low$ = "na" or .low$ = "n/a" or .low$ = "n.a." or .low$ = "nan"
+    ... or .low$ = "null" or .low$ = "nil" or .low$ = "-" or .low$ = "--"
+    ... or .low$ = "." or .low$ = "?" or .low$ = "missing"
+    ... or .low$ = "--undefined--" or .low$ = "undefined"
+        .isMissing = 1
+    endif
+endproc
+
+
+# ============================================================================
 # @emlRepairClassify
 # ============================================================================
 # Decide whether a single cell has an UNAMBIGUOUS intended value, and what it
@@ -3624,13 +3985,10 @@ procedure emlRepairClassify: .raw$
         goto REPAIR_CLASSIFY_DONE
     endif
 
-    # Placeholder for missing. Case-insensitive, and only these exact tokens:
-    # a cell reading "no data recorded" is a note, not a placeholder, and
-    # silently blanking it would destroy information.
-    .low$ = replace_regex$ (.s$, "([A-Z])", "\l\1", 0)
-    if .low$ = "na" or .low$ = "n/a" or .low$ = "n.a." or .low$ = "nan"
-    ... or .low$ = "null" or .low$ = "nil" or .low$ = "-" or .low$ = "--"
-    ... or .low$ = "." or .low$ = "?" or .low$ = "missing"
+    # Placeholder for missing. The list is @eml_isMissingToken's, stated once
+    # there (see its header).
+    @eml_isMissingToken: .s$
+    if eml_isMissingToken.isMissing = 1
         .kind = 3
         goto REPAIR_CLASSIFY_DONE
     endif

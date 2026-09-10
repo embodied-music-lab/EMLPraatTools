@@ -4436,6 +4436,7 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
     for .row from 1 to .nRows
         .rowComplete = 1
         .causingCol$ = ""
+        .causingTrimmed$ = ""
         for .j from 1 to .k
             @eml_readCell: .tableId, .row, .itemCols$# [.j], .clean [.j]
             .data## [.row, .j] = eml_readCell.value
@@ -4443,6 +4444,7 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
                 .rowComplete = 0
                 if .causingCol$ = ""
                     .causingCol$ = .itemCols$# [.j]
+                    .causingTrimmed$ = eml_readCell.trimmed$
                 endif
             endif
         endfor
@@ -4450,7 +4452,14 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
             .subjectId$ = "row " + string$ (.row)
             .causingRow# = zero# (1)
             .causingRow# [1] = .row
-            @eml_emptyCellDisclosure: 1, .causingCol$, .subjectId$, 1, .causingRow#
+            .causingValue$# = empty$# (1)
+            if .causingTrimmed$ = ""
+                .causingValue$# [1] = "empty"
+            else
+                .causingValue$# [1] = .causingTrimmed$
+            endif
+            @eml_emptyCellDisclosure: 1, .causingCol$, .subjectId$, 1, .causingRow#,
+                ... .causingValue$#
             @eml_joinDisclosureClauses: .emptyDisclosure$,
                 ... eml_emptyCellDisclosure.clause$
             .emptyDisclosure$ = eml_joinDisclosureClauses.result$
@@ -5693,12 +5702,14 @@ procedure emlExtractConditionMatrix: .tableId, .conditionCols$#
     for .row from 1 to .nRows
         .complete = 1
         .causingCol$ = ""
+        .causingTrimmed$ = ""
         for .j from 1 to .k
             @eml_readCell: .tableId, .row, .colLabel$ [.j], .clean [.j]
             if eml_readCell.value = undefined
                 .complete = 0
                 if .causingCol$ = ""
                     .causingCol$ = .colLabel$ [.j]
+                    .causingTrimmed$ = eml_readCell.trimmed$
                 endif
             endif
         endfor
@@ -5708,7 +5719,14 @@ procedure emlExtractConditionMatrix: .tableId, .conditionCols$#
             .subjectId$ = "row " + string$ (.row)
             .causingRow# = zero# (1)
             .causingRow# [1] = .row
-            @eml_emptyCellDisclosure: 1, .causingCol$, .subjectId$, 1, .causingRow#
+            .causingValue$# = empty$# (1)
+            if .causingTrimmed$ = ""
+                .causingValue$# [1] = "empty"
+            else
+                .causingValue$# [1] = .causingTrimmed$
+            endif
+            @eml_emptyCellDisclosure: 1, .causingCol$, .subjectId$, 1, .causingRow#,
+                ... .causingValue$#
             @eml_joinDisclosureClauses: .emptyDisclosure$,
                 ... eml_emptyCellDisclosure.clause$
             .emptyDisclosure$ = eml_joinDisclosureClauses.result$

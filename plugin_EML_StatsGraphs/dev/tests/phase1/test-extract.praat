@@ -491,8 +491,23 @@ appendInfoLine: ""
 @assertEqualNum: "D96 decimal comma is kind 2", 2, eml_classifyCell.kind, 0
 @assertEqualNum: "D96 decimal comma recovers 1.5", 1.5,
 ... eml_classifyCell.recovered, tolerance
+@eml_classifyCell: "gibberish_text"
+@assertEqualNum: "D96 unrecognised text is kind 3", 3, eml_classifyCell.kind, 0
+# RE-DERIVED 9 Sep 2026 under RULING_MISSING_VALUE_TOKENS: "n/a" is now a
+# listed missing-value token, treated exactly like an empty cell (kind 1),
+# not refused as unrecognised text (the old kind 3).
 @eml_classifyCell: "n/a"
-@assertEqualNum: "D96 text is kind 3", 3, eml_classifyCell.kind, 0
+@assertEqualNum: "D96 missing-value token n/a is kind 1, not refused", 1,
+... eml_classifyCell.kind, 0
+@eml_classifyCell: "NA"
+@assertEqualNum: "D96 token match is case-insensitive (NA)", 1,
+... eml_classifyCell.kind, 0
+@eml_classifyCell: "undefined"
+@assertEqualNum: "D96 the bare word undefined is kind 1", 1,
+... eml_classifyCell.kind, 0
+@eml_classifyCell: "missing"
+@assertEqualNum: "D96 missing-value token missing is kind 1", 1,
+... eml_classifyCell.kind, 0
 @eml_classifyCell: "1/2"
 @assertEqualNum: "D96 fraction is kind 4", 4, eml_classifyCell.kind, 0
 @eml_classifyCell: "2 3"

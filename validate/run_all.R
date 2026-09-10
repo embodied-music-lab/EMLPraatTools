@@ -2095,6 +2095,14 @@ scripts <- c(
                                  # (descriptives, normality, Kruskal-Wallis,
                                  # two-way) carry their level-2 fixture in
                                  # v14/v15/v10/v11 respectively.
+    ,
+    "v171_missing_value_tokens.R" # RULING_MISSING_VALUE_TOKENS (9 Sep
+                                 # 2026): the missing-value token list is
+                                 # stated once, at @eml_isMissingToken; this
+                                 # checks the committed R-side copy,
+                                 # validate/canon/missing_tokens.tsv, still
+                                 # says what that procedure says, the v105
+                                 # pattern (source-level, no Praat launch).
 )
 
 # ---------------------------------------------------------------------------
