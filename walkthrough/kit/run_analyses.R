@@ -126,7 +126,7 @@ dir.create(reportDir, showWarnings = FALSE)
 # on a first run against a clean R 4.5.2. Check them all and print the
 # install line the README already carries.
 .emlNeed <- c("rstatix", "effectsize", "car", "afex",
-              "multcomp", "nortest", "coin", "psych")
+              "multcomp", "nortest", "coin", "psych", "emmeans")
 .emlMissing <- .emlNeed[!vapply(.emlNeed, requireNamespace, logical(1),
                                 quietly = TRUE)]
 if (length(.emlMissing)) {
@@ -147,6 +147,7 @@ suppressPackageStartupMessages({
     library(nortest)
     library(coin)
     library(psych)
+    library(emmeans)   # two-way marginal means / simple effects / post hoc
 })
 # afex's load re-points the GLOBAL `contrasts` option at sum-to-zero coding,
 # for its OWN models' benefit. Every other aov()/lm() call in this file
@@ -295,6 +296,18 @@ read_matrix <- function(path) {
                colClasses = "character", na.strings = character(0), quote = "")
 }
 
+# --- missing-value token canon (validate/canon/missing_tokens.tsv) ---------
+# @eml_isMissingToken (stats/eml-extract.praat) is the one place the list is
+# stated on the Praat side; this file is a committed copy of the same list,
+# already checked against the source by validate/v171_missing_value_tokens.R
+# (the v105 pattern). Read here -- not hand-copied -- so a token added to the
+# canon reaches this runner with no edit here. Praat's classifier is
+# case-insensitive (kind 3), so the match below is too.
+.missingTokensPath <- file.path(dirname(dirname(kitDir)), "validate", "canon", "missing_tokens.tsv")
+.missingTokensRaw  <- readLines(.missingTokensPath, warn = FALSE)[-1]  # drop the "token" header
+EML_MISSING_TOKENS <- tolower(trimws(.missingTokensRaw[nzchar(trimws(.missingTokensRaw))]))
+isMissingToken <- function(v) tolower(trimws(as.character(v))) %in% EML_MISSING_TOKENS
+
 # =============================================================================
 # Dataset cache, coercion helpers, group ordering, pair naming
 # =============================================================================
@@ -302,8 +315,18 @@ read_matrix <- function(path) {
 readDataset <- function(name) {
     if (!exists(name, envir = .dsCache, inherits = FALSE)) {
         path <- file.path(dataDir, paste0(name, ".csv"))
-        d <- read.csv(path, stringsAsFactors = FALSE, na.strings = c("NA", "n/a", ""),
+        # na.strings = character(0): NO string is converted to NA at the
+        # read.csv level, so every cell arrives as the literal text it holds
+        # on disk. Missing-value-token exclusion is then done explicitly,
+        # below, from the canon list (case-insensitive) plus the empty
+        # string -- the same rule Praat applies at read time, read from the
+        # same file rather than a second hard-coded copy of it.
+        d <- read.csv(path, stringsAsFactors = FALSE, na.strings = character(0),
                       colClasses = "character", check.names = FALSE)
+        d[] <- lapply(d, function(col) {
+            col[isMissingToken(col) | trimws(col) == ""] <- NA
+            col
+        })
         assign(name, d, envir = .dsCache)
     }
     get(name, envir = .dsCache, inherits = FALSE)
@@ -428,6 +451,23 @@ buildConditionMatrix <- function(d, conds) {
 # "... otherwise .05"; RUN_ME_FIRST.praat never sets emlAlpha). Fixed here
 # for the same reason, not re-derived per row.
 EML_ALPHA <- 0.05
+
+# ALPHA FOR THE SIX ANALYSIS-LANE DOORS THIS WAVE ADDS INTERVAL WORK TO
+# (two-way, ANOVA, regression, correlation, two-group, descriptive). Mirrors
+# @emlReportAlpha's own rule verbatim (plugin_EML_StatsGraphs/stats/
+# eml-analysis.praat ~1873, the alpha every one of these doors actually
+# consults -- never a literal): a caller's `emlAlpha` global sets the alpha
+# in force only when it is a usable value (undefined, <= 0 or >= 1 all fall
+# back to .05). matrix.tsv's `conf` column drives that global for these
+# cells (0 = the sentinel for "no override", 0.10 = an explicit alpha), so
+# "0" and "0.10" read here exactly as @emlReportAlpha would read emlAlpha
+# set to those same two values -- a THIRD, alpha-shaped use of the shared
+# `conf` column, distinct from the survey lane's own use of `conf` AS a
+# confidence level (0.90/0.95/0.99) for Cronbach/Wilson/proportion.
+alphaInForce <- function(row) {
+    cv <- suppressWarnings(as.numeric(row$conf))
+    if (is.na(cv) || cv <= 0 || cv >= 1) EML_ALPHA else cv
+}
 
 # A CORRECTION'S PER-PAIR LEVEL, WHERE ONE EXISTS. Bonferroni is the only
 # adjustment among bonferroni/holm/bh that defines a per-pair simultaneous
@@ -598,10 +638,18 @@ process_two_group <- function(row) {
     ranPar <- FALSE
 
     if (testType %in% c("parametric", "both")) {
-        tt <- t.test(v1, v2, var.equal = equalVar)
+        # ORACLE for mean_diff's interval: t.test(conf.level = 1 - alpha)$conf.int,
+        # alpha from matrix.tsv's `conf` column (0 = default, "0.10" = an
+        # explicit override) -- same t.test call already used for t/df/p,
+        # just also read for the interval it already computes (group1 -
+        # group2, since v1/v2 are already ordered by group_order).
+        alpha <- alphaInForce(row)
+        tt <- t.test(v1, v2, var.equal = equalVar, conf.level = 1 - alpha)
         emit(cid, "t", unname(tt$statistic), "stats::t.test")
         emit(cid, "df", unname(tt$parameter), "stats::t.test")
         emit(cid, "p", tt$p.value, "stats::t.test")
+        emit(cid, "diff_low", tt$conf.int[1], "stats::t.test")
+        emit(cid, "diff_high", tt$conf.int[2], "stats::t.test")
         de <- effectsize::cohens_d(v1, v2, pooled_sd = TRUE, verbose = FALSE)
         emit(cid, "cohens_d", de$Cohens_d, "effectsize::cohens_d")
         ge <- effectsize::hedges_g(v1, v2, pooled_sd = TRUE, verbose = FALSE)
@@ -611,6 +659,8 @@ process_two_group <- function(row) {
         lines <- c(lines,
                    sprintf("%s t-test: t=%.4f df=%.2f p=%.4g",
                            if (equalVar) "Student" else "Welch", tt$statistic, tt$parameter, tt$p.value),
+                   sprintf("Mean difference: %.4f, %.4g%% CI [%.4f, %.4f]",
+                           mean(v1) - mean(v2), 100 * (1 - alpha), tt$conf.int[1], tt$conf.int[2]),
                    sprintf("Cohen's d: effectsize=%.4f rstatix=%.4f | Hedges' g (effectsize)=%.4f",
                            de$Cohens_d, drs$effsize, ge$Hedges_g))
         ranPar <- TRUE
@@ -652,6 +702,52 @@ process_two_group <- function(row) {
                            rbe$r_rank_biserial, wers$effsize))
     }
     writeReport(cid, lines)
+}
+
+# =============================================================================
+# Brown-Forsythe / Games-Howell -- PROMOTED FROM validate/v22_homogeneity.R
+# (its brown_forsythe()/games_howell() definitions, already the checked-
+# against-the-kernel oracle for these two quantities: eml-inferential.praat's
+# @emlBrownForsythe/@emlGamesHowell are validated against exactly this code).
+# Unchanged apart from: (1) taking a pre-ordered `levs` vector instead of
+# forcing alphabetical order, so groups follow the SAME group_order axis
+# every other grouped procedure in this file honours; (2) games_howell()
+# additionally returns conf.low/conf.high, which the validate script never
+# needed. Interval half-width = qcrit * se, se already defined below as
+# sqrt((vi/ni + vj/nj)/2) -- the plugin's own interval is diff +/-
+# (qCrit/sqrt(2)) * seMatrix, where seMatrix = sqrt(vi/ni + vj/nj) (no /2);
+# qcrit/sqrt(2) * sqrt(vi/ni+vj/nj) == qcrit * sqrt((vi/ni+vj/nj)/2), the
+# same number under THIS se's definition (order, section 4.2).
+# =============================================================================
+brown_forsythe <- function(x, g) {
+    z <- abs(x - ave(x, g, FUN = median))
+    a <- anova(lm(z ~ g))
+    list(f = a[["F value"]][1], p = a[["Pr(>F)"]][1],
+         df1 = a[["Df"]][1], df2 = a[["Df"]][2],
+         ssb = a[["Sum Sq"]][1], ssw = a[["Sum Sq"]][2])
+}
+games_howell <- function(x, g, levs, alpha = 0.05) {
+    g <- factor(g, levels = levs)
+    n <- tapply(x, g, length); m <- tapply(x, g, mean); v <- tapply(x, g, var)
+    k <- length(levs)
+    out <- NULL
+    for (i in seq_len(k - 1L)) for (j in (i + 1L):k) {
+        vi <- v[i] / n[i]; vj <- v[j] / n[j]
+        se <- sqrt((vi + vj) / 2)
+        q  <- abs(m[i] - m[j]) / se
+        df <- (vi + vj)^2 / (vi^2 / (n[i] - 1) + vj^2 / (n[j] - 1))
+        qcrit <- qtukey(1 - alpha, k, df)
+        halfw <- qcrit * se
+        out <- rbind(out, data.frame(
+            pair = pairLabel(levs[i], levs[j]),
+            estimate = unname(m[i] - m[j]), se = unname(se),
+            q = unname(q), df = unname(df),
+            p = unname(ptukey(q, k, df, lower.tail = FALSE)),
+            qcrit = unname(qcrit),
+            conf.low = unname(m[i] - m[j] - halfw), conf.high = unname(m[i] - m[j] + halfw),
+            stringsAsFactors = FALSE))
+    }
+    out
 }
 
 # =============================================================================
@@ -745,6 +841,103 @@ process_anova <- function(row) {
             emit(cid, paste0("posthoc_", pl, "_ci_high"), hiV, "stats::TukeyHSD")
             emit(cid, paste0("posthoc_", pl, "_padj"), tab[rn, "p adj"], "stats::TukeyHSD")
             lines <- c(lines, sprintf("Tukey %s: diff=%.4f [%.4f, %.4f] p.adj=%.4g", pl, diffV, loV, hiV, tab[rn, "p adj"]))
+        }
+    }
+
+    # =========================================================================
+    # Brown-Forsythe / Welch / Games-Howell -- computed on EVERY run, per the
+    # standing ruling (Brown-Forsythe always printed; Welch/Games-Howell
+    # printed beside the standard result only when Brown-Forsythe rejects at
+    # the alpha in force; never auto-switch). alpha comes from matrix.tsv's
+    # `conf` column (0 = default, "0.10" = an explicit override), the same
+    # sentinel @emlReportAlpha itself applies to its `emlAlpha` global.
+    # =========================================================================
+    alpha <- alphaInForce(row)
+    bf <- brown_forsythe(x, gf)
+    emit(cid, "bf_f", bf$f, "stats::anova(aov)"); emit(cid, "bf_df1", bf$df1, "stats::anova(aov)")
+    emit(cid, "bf_df2", bf$df2, "stats::anova(aov)"); emit(cid, "bf_p", bf$p, "stats::anova(aov)")
+    bfRejects <- if (is.na(bf$p)) NA_real_ else as.numeric(bf$p < alpha)
+    emit(cid, "bf_rejects", bfRejects, "r::alphaInForce")
+    lines <- c(lines, "", sprintf("Brown-Forsythe: F(%.0f,%.0f)=%.4f p=%.4g (alpha=%.4g, rejects=%s)",
+                                   bf$df1, bf$df2, bf$f, bf$p, alpha, if (isTRUE(bfRejects == 1)) "yes" else "no"))
+
+    wt <- tryCatch(oneway.test(x ~ gf, var.equal = FALSE), error = function(e) NULL)
+    if (!is.null(wt)) {
+        emit(cid, "welch_f", unname(wt$statistic), "stats::oneway.test")
+        emit(cid, "welch_df1", unname(wt$parameter[1]), "stats::oneway.test")
+        emit(cid, "welch_df2", unname(wt$parameter[2]), "stats::oneway.test")
+        emit(cid, "welch_p", wt$p.value, "stats::oneway.test")
+        lines <- c(lines, sprintf("Welch F(%.2f,%.2f)=%.4f p=%.4g",
+                                   unname(wt$parameter[1]), unname(wt$parameter[2]), unname(wt$statistic), wt$p.value))
+    } else {
+        lines <- c(lines, "Welch F: undefined (oneway.test refused -- see a flat/singleton group above)")
+    }
+
+    # ORACLE: rstatix::games_howell_test(conf.level = 1 - alpha) is the
+    # PRIMARY source of the emitted gh_* quantities. It is cross-checked,
+    # inline, against games_howell() above (promoted from
+    # validate/v22_homogeneity.R, already the checked-against-the-kernel
+    # definition) -- a real, printed comparison, not an assumption that the
+    # two agree.
+    dfp2 <- data.frame(value = x, group = gf)
+    ghR <- tryCatch(rstatix::games_howell_test(dfp2, value ~ group, conf.level = 1 - alpha, detailed = TRUE),
+                     error = function(e) NULL)
+    ghDef <- tryCatch(games_howell(x, g, levs, alpha = alpha), error = function(e) NULL)
+    if (!is.null(ghR)) {
+        ghR <- as.data.frame(ghR)
+        for (r in seq_len(nrow(ghR))) {
+            pl <- pairLabel(ghR$group1[r], ghR$group2[r])
+            # REORIENTED: rstatix::games_howell_test's own "estimate" is
+            # group2 MINUS group1 (verified empirically: A vs B with means
+            # 2 and 11 reports estimate=9, i.e. B-A) -- the OPPOSITE of the
+            # first-minus-second convention this file uses for every other
+            # pairwise comparison (TukeyHSD's and Dunn's reversal above do
+            # the same reorientation for the same reason). Negated here, so
+            # gh_<PAIR>_diff means group1(pl's first name) minus group2, and
+            # the interval bounds are negated AND swapped to match.
+            diffV <- -ghR$estimate[r]; loV <- -ghR$conf.high[r]; hiV <- -ghR$conf.low[r]
+            emit(cid, paste0("gh_", pl, "_diff"), diffV, "rstatix::games_howell_test")
+            emit(cid, paste0("gh_", pl, "_se"), ghR$se[r], "rstatix::games_howell_test")
+            emit(cid, paste0("gh_", pl, "_df"), ghR$df[r], "rstatix::games_howell_test")
+            emit(cid, paste0("gh_", pl, "_low"), loV, "rstatix::games_howell_test")
+            emit(cid, paste0("gh_", pl, "_high"), hiV, "rstatix::games_howell_test")
+            # padj: UNROUNDED, from the promoted definition (ghDef), NOT
+            # rstatix's own p.adj column. Reading rstatix's own source
+            # (games_howell_test's internal .games_howell_test) shows
+            # `p.adj = p_round(p, digits = 3)` -- hard-wired, no user-facing
+            # option -- rounded to 3 significant digits before it ever
+            # reaches the returned tibble. That is the exact "UNROUNDED
+            # p-VALUES" problem this file's own header already documents for
+            # rstatix::t_test/wilcox_test/dunn_test (search "UNROUNDED"
+            # above): a DISPLAY decision that must not reach this table.
+            # ghDef's p comes from the SAME formula rstatix computes
+            # internally before rounding it (t = |diff|/se,
+            # ptukey(t*sqrt(2), k, df, lower.tail=FALSE), confirmed against
+            # rstatix's own source above) -- so this is not a second,
+            # independently-derived p, it is rstatix's own number without
+            # the rounding.
+            dr <- if (!is.null(ghDef)) ghDef[ghDef$pair == pl, ] else NULL
+            if (!is.null(dr) && nrow(dr) == 1) {
+                emit(cid, paste0("gh_", pl, "_padj"), dr$p, "r::games_howell (rstatix's own unrounded p)")
+            } else {
+                emit(cid, paste0("gh_", pl, "_padj"), ghR$p.adj[r], "rstatix::games_howell_test")
+            }
+            lines <- c(lines, sprintf("Games-Howell %s: diff=%.4f [%.4f, %.4f] p.adj=%.4g",
+                                       pl, diffV, loV, hiV, if (!is.null(dr) && nrow(dr) == 1) dr$p else ghR$p.adj[r]))
+            # cross-check estimate/se/df/interval against the promoted
+            # definition (padj is skipped here -- it is now sourced FROM
+            # ghDef directly, so comparing it to itself proves nothing).
+            if (!is.null(dr) && nrow(dr) == 1) {
+                relerr <- function(a, b) if (is.finite(a) && is.finite(b)) abs(a - b) / max(abs(b), .Machine$double.xmin) else NA_real_
+                devs <- c(estimate = relerr(diffV, dr$estimate),
+                          se = relerr(ghR$se[r], dr$se), df = relerr(ghR$df[r], dr$df),
+                          low = relerr(loV, dr$conf.low), high = relerr(hiV, dr$conf.high))
+                bad <- devs[!is.na(devs) & devs > 1e-6]
+                if (length(bad)) {
+                    cat(sprintf("run_analyses.R: %s games_howell cross-check %s exceeds 1e-6: %s\n",
+                                cid, pl, paste(sprintf("%s=%.3g", names(bad), bad), collapse = ", ")))
+                }
+            }
         }
     }
     writeReport(cid, lines)
@@ -1108,6 +1301,23 @@ process_twoway <- function(row) {
     # alongside so the keys stay self-describing on their own.
     f1 <- slug(row$col_b); f2 <- slug(row$col_c)
     emitText(cid, "factor1_name", f1, "r::slug"); emitText(cid, "factor2_name", f2, "r::slug")
+    # ssTotal, computed once here: the ordinary centred sum of squares about
+    # the grand mean, the SAME single value @emlAnovaKernelTwoWay's own
+    # ssTotal is (eml-anova-kernel.praat: ".ssTotal = inner (.yc#, .yc#)",
+    # computed once and reused under every ss_type). omega^2 below is
+    # computed from THIS ssTotal, not from a type-dependent one --
+    # effectsize::omega_squared(fit, partial = FALSE) reproduces the SS-based
+    # classical formula (SS_effect - df_effect*MS_error)/(SS_total+MS_error)
+    # exactly against THIS ssTotal for a Type I table (confirmed: emitting
+    # effectsize::omega_squared(aov(x~a*b)) alongside this formula on
+    # v11_twoway_unbalanced_input.csv agreed to 1e-9), but effectsize's own
+    # Type II/III path substitutes a DIFFERENT ("generalized") denominator
+    # (SS_a+SS_b+SS_ab+SS_error) that does not match the kernel, which never
+    # switches denominators by type. The formula is applied directly here,
+    # under every ss_type, to match the kernel rather than effectsize's
+    # own Type II/III convention.
+    ssTotalAll <- sum((x - mean(x))^2)
+    msErrorAll <- ssRes / dfRes
     for (tm in terms) {
         tag <- if (tm == "a") f1 else if (tm == "b") f2 else paste0(f1, "__", f2)
         ss <- at[tm, "Sum Sq"]; dfT <- at[tm, "Df"]; Fv <- at[tm, "F value"]; pv <- at[tm, "Pr(>F)"]
@@ -1122,8 +1332,10 @@ process_twoway <- function(row) {
         eta <- esFull$Eta2[esFull$Parameter == tm]
         emit(cid, paste0(tag, "_partial_eta_squared"), peta, "effectsize::eta_squared")
         emit(cid, paste0(tag, "_eta_squared"), eta, "effectsize::eta_squared")
-        lines <- c(lines, sprintf("%s (%s): F(%.0f,%.0f)=%.4f p=%.4g partial_eta2=%.4f eta2=%.4f",
-                                   tag, tm, dfT, dfRes, Fv, pv, peta, eta))
+        omega <- (ss - dfT * msErrorAll) / (ssTotalAll + msErrorAll)
+        emit(cid, paste0("omega_sq_", tag), omega, "r::omega_squared (SS-based, matches emlAnovaKernelTwoWay)")
+        lines <- c(lines, sprintf("%s (%s): F(%.0f,%.0f)=%.4f p=%.4g partial_eta2=%.4f eta2=%.4f omega2=%.4f",
+                                   tag, tm, dfT, dfRes, Fv, pv, peta, eta, omega))
     }
     emit(cid, "ss_within", ssRes, atSource); emit(cid, "df_within", dfRes, atSource)
     emit(cid, "ms_within", ssRes / dfRes, atSource)
@@ -1136,9 +1348,97 @@ process_twoway <- function(row) {
     # leg's Praat side sets). Computed directly instead, the ordinary
     # centred sum of squares about the grand mean -- the one number every
     # SS type agrees is "the total" regardless of how it gets partitioned.
-    emit(cid, "ss_total", sum((x - mean(x))^2), "stats::mean")
+    emit(cid, "ss_total", ssTotalAll, "stats::mean")
     emit(cid, "df_total", length(x) - 1, "base::length")
     emit(cid, "n", length(x), "base::length")
+
+    # =========================================================================
+    # Estimated marginal means, simple effects, per-factor post hoc -- built
+    # from a SEPARATE fit with sum-to-zero (contr.sum) contrasts, independent
+    # of ss_type: these quantities are the same regardless of which SS type
+    # the omnibus table above used (only the omnibus F/p/SS/omega^2 above
+    # depend on ss_type), matching @emlAnovaKernelTwoWayEMM/SimpleEffects/
+    # PostHoc's own unconditional call after @emlTwoWayAnova succeeds
+    # (order, section 4.1). alpha from matrix.tsv's `conf` column, same
+    # sentinel rule as every other door this wave touches.
+    # =========================================================================
+    alpha <- alphaInForce(row)
+    confLevel <- 1 - alpha
+    fitEMM <- lm(x ~ a * b, data = dfr, contrasts = list(a = "contr.sum", b = "contr.sum"))
+
+    emmA <- emmeans::emmeans(fitEMM, ~a)
+    ciA <- as.data.frame(confint(emmA, level = confLevel))
+    for (i in seq_len(nrow(ciA))) {
+        lv <- slug(as.character(ciA$a[i]))
+        emit(cid, paste0("emm_", f1, "_", lv), ciA$emmean[i], "emmeans::emmeans")
+        emit(cid, paste0("emm_", f1, "_", lv, "_se"), ciA$SE[i], "emmeans::emmeans")
+        emit(cid, paste0("emm_", f1, "_", lv, "_low"), ciA$lower.CL[i], "emmeans::emmeans")
+        emit(cid, paste0("emm_", f1, "_", lv, "_high"), ciA$upper.CL[i], "emmeans::emmeans")
+    }
+    emmB <- emmeans::emmeans(fitEMM, ~b)
+    ciB <- as.data.frame(confint(emmB, level = confLevel))
+    for (i in seq_len(nrow(ciB))) {
+        lv <- slug(as.character(ciB$b[i]))
+        emit(cid, paste0("emm_", f2, "_", lv), ciB$emmean[i], "emmeans::emmeans")
+        emit(cid, paste0("emm_", f2, "_", lv, "_se"), ciB$SE[i], "emmeans::emmeans")
+        emit(cid, paste0("emm_", f2, "_", lv, "_low"), ciB$lower.CL[i], "emmeans::emmeans")
+        emit(cid, paste0("emm_", f2, "_", lv, "_high"), ciB$upper.CL[i], "emmeans::emmeans")
+    }
+    emit(cid, "emm_df_error", dfRes, "emmeans::emmeans")
+    lines <- c(lines, "", sprintf("Estimated marginal means (%.4g%% CI, alpha=%.4g):", 100 * confLevel, alpha))
+    for (i in seq_len(nrow(ciA))) lines <- c(lines, sprintf("  %s=%s: %.4f [%.4f, %.4f]", f1, ciA$a[i], ciA$emmean[i], ciA$lower.CL[i], ciA$upper.CL[i]))
+    for (i in seq_len(nrow(ciB))) lines <- c(lines, sprintf("  %s=%s: %.4f [%.4f, %.4f]", f2, ciB$b[i], ciB$emmean[i], ciB$lower.CL[i], ciB$upper.CL[i]))
+
+    # Simple effects: A within each level of B, and B within each level of A.
+    # emmeans::joint_tests(fit, by=...) is the package's own simple-effects
+    # call (an F test per stratum), the emmeans equivalent of
+    # @emlAnovaKernelTwoWaySimpleEffects's pooled-error F within each level.
+    jtAwithinB <- as.data.frame(emmeans::joint_tests(fitEMM, by = "b"))
+    for (i in seq_len(nrow(jtAwithinB))) {
+        lv <- slug(as.character(jtAwithinB$b[i]))
+        emit(cid, paste0("se_", f1, "_within_", f2, "_", lv, "_f"), jtAwithinB$F.ratio[i], "emmeans::joint_tests")
+        emit(cid, paste0("se_", f1, "_within_", f2, "_", lv, "_p"), jtAwithinB$p.value[i], "emmeans::joint_tests")
+    }
+    jtBwithinA <- as.data.frame(emmeans::joint_tests(fitEMM, by = "a"))
+    for (i in seq_len(nrow(jtBwithinA))) {
+        lv <- slug(as.character(jtBwithinA$a[i]))
+        emit(cid, paste0("se_", f2, "_within_", f1, "_", lv, "_f"), jtBwithinA$F.ratio[i], "emmeans::joint_tests")
+        emit(cid, paste0("se_", f2, "_within_", f1, "_", lv, "_p"), jtBwithinA$p.value[i], "emmeans::joint_tests")
+    }
+    lines <- c(lines, "", "Simple effects:")
+    for (i in seq_len(nrow(jtAwithinB))) lines <- c(lines, sprintf("  %s within %s=%s: F=%.4f p=%.4g", f1, f2, jtAwithinB$b[i], jtAwithinB$F.ratio[i], jtAwithinB$p.value[i]))
+    for (i in seq_len(nrow(jtBwithinA))) lines <- c(lines, sprintf("  %s within %s=%s: F=%.4f p=%.4g", f2, f1, jtBwithinA$a[i], jtBwithinA$F.ratio[i], jtBwithinA$p.value[i]))
+
+    # Post hoc pairwise comparisons per factor, at the ONE adjustment method
+    # this cell's `adjust` column names -- @emlRunTwoWayAnalysis's own
+    # .adjMethod$ accepts exactly bonferroni/holm/bh/tukey/scheffe (order,
+    # section 4.1); the fixtures drive all five, one matrix row per method
+    # (order, section 6), so the R oracle mirrors whichever ONE this row
+    # asked for rather than computing all five into one cell.
+    adjMethodMap <- c(bonferroni = "bonferroni", holm = "holm", bh = "BH", tukey = "tukey", scheffe = "scheffe")
+    adjMethodR <- if (row$adjust %in% names(adjMethodMap)) adjMethodMap[[row$adjust]] else "tukey"
+    postHocFactor <- function(emmObj, ftag) {
+        pr <- pairs(emmObj, adjust = adjMethodR)
+        prCI <- as.data.frame(confint(pr, level = confLevel))
+        prSumm <- as.data.frame(summary(pr))
+        for (i in seq_len(nrow(prCI))) {
+            parts <- strsplit(as.character(prCI$contrast[i]), " - ")[[1]]
+            pl <- pairLabel(trimws(parts[1]), trimws(parts[2]))
+            tagbase <- paste0("posthoc_", ftag, "_", pl)
+            emit(cid, paste0(tagbase, "_diff"), prCI$estimate[i], "emmeans::pairs")
+            emit(cid, paste0(tagbase, "_se"), prCI$SE[i], "emmeans::pairs")
+            emit(cid, paste0(tagbase, "_low"), prCI$lower.CL[i], "emmeans::pairs")
+            emit(cid, paste0(tagbase, "_high"), prCI$upper.CL[i], "emmeans::pairs")
+            emit(cid, paste0(tagbase, "_padj"), prSumm$p.value[i], "emmeans::pairs")
+            lines <- c(lines, sprintf("Post hoc (%s, %s) %s: diff=%.4f [%.4f, %.4f] p.adj=%.4g",
+                                       ftag, adjMethodR, pl, prCI$estimate[i], prCI$lower.CL[i], prCI$upper.CL[i], prSumm$p.value[i]))
+        }
+        lines
+    }
+    lines <- c(lines, "", sprintf("Post hoc pairwise (adjust=%s):", adjMethodR))
+    lines <- postHocFactor(emmA, f1)
+    lines <- postHocFactor(emmB, f2)
+
     writeReport(cid, lines)
 }
 
@@ -1297,14 +1597,24 @@ process_correlation <- function(row) {
         refuseCell(cid, "Zero variance in one column; correlation is undefined."); return(invisible())
     }
     emit(cid, "n", n, "base::sum")
+    alpha <- alphaInForce(row)
+    confLevel <- 1 - alpha
     lines <- c(sprintf("Correlation -- %s with %s (n=%d)", row$col_a, row$col_b, n), "")
     testType <- row$test
     if (testType %in% c("pearson", "both")) {
-        pe <- cor.test(xx, yy, method = "pearson")
+        # ORACLE for the interval: cor.test(method="pearson", conf.level =
+        # 1 - alpha)$conf.int (Fisher-z under the hood) -- set only when the
+        # Pearson branch runs and n >= 4 (undefined below that, matching
+        # the door's own Fisher-z guard, order section 4.4).
+        pe <- cor.test(xx, yy, method = "pearson", conf.level = confLevel)
         emit(cid, "r", unname(pe$estimate), "stats::cor.test")
         emit(cid, "t", unname(pe$statistic), "stats::cor.test")
         emit(cid, "df", unname(pe$parameter), "stats::cor.test")
         emit(cid, "p", pe$p.value, "stats::cor.test")
+        if (n >= 4) {
+            emit(cid, "pearson_ci_low", pe$conf.int[1], "stats::cor.test")
+            emit(cid, "pearson_ci_high", pe$conf.int[2], "stats::cor.test")
+        }
         # p_method: a LITERAL, not a composition -- Pearson's p never
         # branches between an exact and an approximate null. Always plain
         # "p_method" (never renamed under test=both -- no second Pearson
@@ -1312,6 +1622,7 @@ process_correlation <- function(row) {
         # spearman_p_method there instead).
         emitText(cid, "p_method", "t distribution", source = "stats::cor.test")
         lines <- c(lines, sprintf("Pearson: r=%.4f t(%d)=%.4f p=%.4g", pe$estimate, pe$parameter, pe$statistic, pe$p.value))
+        if (n >= 4) lines <- c(lines, sprintf("  %.4g%% CI (Fisher-z): [%.4f, %.4f]", 100 * confLevel, pe$conf.int[1], pe$conf.int[2]))
     }
     if (testType %in% c("spearman", "both")) {
         sp <- suppressWarnings(cor.test(xx, yy, method = "spearman"))
@@ -1345,7 +1656,148 @@ process_correlation <- function(row) {
         lines <- c(lines, sprintf("Spearman: rho=%.4f p=%.4g (exact/AS89) ; asymptotic p=%.4g",
                                    sp$estimate, sp$p.value, spA$p.value))
     }
+
+    # =========================================================================
+    # Per-group correlation. col_c empty = no grouping (order, section 4.4):
+    # a tidy row per group, term = group label; a group with n < 4 is
+    # skipped and disclosed (the same n >= 4 floor the overall Pearson
+    # interval above uses), never silently dropped.
+    # =========================================================================
+    if (nzchar(row$col_c)) {
+        gFull <- chrcol(d, row$col_c)
+        keepG <- keep & !is.na(gFull) & gFull != ""
+        levs <- orderedLevels(gFull[keepG], row$group_order)
+        nRun <- 0; nSkipped <- 0
+        lines <- c(lines, "", "Per-group Pearson correlation:")
+        for (lv in levs) {
+            sel <- keepG & gFull == lv
+            tag <- slug(lv)
+            ng <- sum(sel)
+            if (ng < 4) {
+                nSkipped <- nSkipped + 1
+                emitText(cid, paste0("group_", tag, "_skipped"), "1", source = "r::process_correlation")
+                lines <- c(lines, sprintf("  %s (n=%d): skipped, fewer than 4 complete pairs", lv, ng))
+                next
+            }
+            xg <- x[sel]; yg <- y[sel]
+            if (sd(xg) == 0 || sd(yg) == 0) {
+                nSkipped <- nSkipped + 1
+                emitText(cid, paste0("group_", tag, "_skipped"), "1", source = "r::process_correlation")
+                lines <- c(lines, sprintf("  %s (n=%d): skipped, zero variance in one column", lv, ng))
+                next
+            }
+            nRun <- nRun + 1
+            peg <- cor.test(xg, yg, method = "pearson", conf.level = confLevel)
+            emit(cid, paste0("group_", tag, "_n"), ng, "base::sum")
+            emit(cid, paste0("group_", tag, "_r"), unname(peg$estimate), "stats::cor.test")
+            emit(cid, paste0("group_", tag, "_t"), unname(peg$statistic), "stats::cor.test")
+            emit(cid, paste0("group_", tag, "_df"), unname(peg$parameter), "stats::cor.test")
+            emit(cid, paste0("group_", tag, "_p"), peg$p.value, "stats::cor.test")
+            emit(cid, paste0("group_", tag, "_low"), peg$conf.int[1], "stats::cor.test")
+            emit(cid, paste0("group_", tag, "_high"), peg$conf.int[2], "stats::cor.test")
+            lines <- c(lines, sprintf("  %s (n=%d): r=%.4f t(%d)=%.4f p=%.4g [%.4f, %.4f]",
+                                       lv, ng, peg$estimate, peg$parameter, peg$statistic, peg$p.value,
+                                       peg$conf.int[1], peg$conf.int[2]))
+        }
+        emit(cid, "n_groups_run", nRun, "base::length")
+        emit(cid, "n_groups_skipped", nSkipped, "base::length")
+    }
     writeReport(cid, lines)
+}
+
+# --- mode / winsorized mean, from the definition (order, section 4.6/7) ----
+# mode: mode_unique = 1 iff exactly one value attains the maximum count
+# (ties -- more than one value at the max -- are NOT unique, and the mode
+# reported is the smallest of them, an arbitrary but stated tie-break since
+# the door must report one number either way).
+modeStat <- function(x) {
+    tab <- table(x)
+    mx <- max(tab)
+    modes <- sort(as.numeric(names(tab)[tab == mx]))
+    list(mode = modes[1], unique = as.numeric(length(modes) == 1), count = unname(mx))
+}
+# winsorizedMean: k = floor(n*p) values replaced at each tail with the
+# (k+1)-th smallest/largest -- @emlWinsorizedMean's own definition verbatim
+# (eml-core-descriptive.praat ~473), not a package call (no base/installed R
+# function winsorizes this way without pulling in a new dependency for one
+# quantity).
+winsorizedMean <- function(x, p) {
+    n <- length(x)
+    k <- floor(n * p)
+    if (k == 0) return(mean(x))
+    s <- sort(x)
+    s[seq_len(k)] <- s[k + 1]
+    s[(n - k + 1):n] <- s[n - k]
+    mean(s)
+}
+
+# --- one descriptive battery, shared by the whole column and every group ---
+# `prefix` is "" for the whole column, "group_<label>_" per group -- the
+# same flat-quantity convention every other grouped procedure in this file
+# uses (grp_<tag>_slope, group_<label>_r, ...). n = 1: order, section 4.6 --
+# "reports n and mean only, the rest undefined and disclosed" -- so every
+# other quantity is EXPLICITLY marked undefined there rather than left to
+# whatever a single-point sd()/mad()/etc. would happen to return (0 for
+# mad(), NA for sd() -- inconsistent on their own, and not what the order
+# specifies).
+descQuantities <- c(
+    "sd", "variance", "sem", "median", "q1", "q3", "iqr", "min", "max", "range",
+    "skewness", "kurtosis", "ci_low", "ci_high", "mode", "mode_unique", "mode_count",
+    "mad", "mad_raw", "geo_mean", "harm_mean", "trimmed_mean", "winsorized_mean", "trim_k")
+emitDescriptiveSet <- function(cid, prefix, x, confLevel, trim) {
+    n <- length(x)
+    emit(cid, paste0(prefix, "n"), n, "base::length")
+    if (n < 1) return(invisible())
+    emit(cid, paste0(prefix, "mean"), mean(x), "stats::mean")
+    if (n == 1) {
+        for (q in descQuantities) emit(cid, paste0(prefix, q), NA_real_, "r::emitDescriptiveSet (n=1)")
+        return(invisible())
+    }
+    desc <- psych::describe(x)
+    emit(cid, paste0(prefix, "sd"), desc$sd, "psych::describe")
+    emit(cid, paste0(prefix, "median"), desc$median, "psych::describe")
+    emit(cid, paste0(prefix, "min"), desc$min, "psych::describe")
+    emit(cid, paste0(prefix, "max"), desc$max, "psych::describe")
+    emit(cid, paste0(prefix, "range"), desc$range, "psych::describe")
+    emit(cid, paste0(prefix, "sem"), desc$se, "psych::describe")
+    emit(cid, paste0(prefix, "skewness"), psych::skew(x, type = 2), "psych::skew")
+    emit(cid, paste0(prefix, "kurtosis"), psych::kurtosi(x, type = 2), "psych::kurtosi")
+    emit(cid, paste0(prefix, "variance"), stats::var(x), "stats::var")
+    qs <- stats::quantile(x, c(0.25, 0.75))
+    emit(cid, paste0(prefix, "q1"), qs[1], "stats::quantile")
+    emit(cid, paste0(prefix, "q3"), qs[2], "stats::quantile")
+    emit(cid, paste0(prefix, "iqr"), stats::IQR(x), "stats::IQR")
+    # t.test(x) throws "data are essentially constant" when sd(x)==0. That is
+    # a real, standard-tool refusal of ONE quantity (the mean's CI), guarded
+    # rather than left to throw and take the whole battery down with it.
+    if (stats::sd(x) > 0) {
+        ci <- t.test(x, conf.level = confLevel)$conf.int
+        emit(cid, paste0(prefix, "ci_low"), ci[1], "stats::t.test")
+        emit(cid, paste0(prefix, "ci_high"), ci[2], "stats::t.test")
+    } else {
+        emit(cid, paste0(prefix, "ci_low"), NA_real_, "stats::t.test")
+        emit(cid, paste0(prefix, "ci_high"), NA_real_, "stats::t.test")
+    }
+    md <- modeStat(x)
+    emit(cid, paste0(prefix, "mode"), md$mode, "r::modeStat")
+    emit(cid, paste0(prefix, "mode_unique"), md$unique, "r::modeStat")
+    emit(cid, paste0(prefix, "mode_count"), md$count, "r::modeStat")
+    emit(cid, paste0(prefix, "mad"), stats::mad(x), "stats::mad")               # scaled, constant=1.4826 (default)
+    emit(cid, paste0(prefix, "mad_raw"), stats::mad(x, constant = 1), "stats::mad")
+    # Geometric/harmonic mean: undefined and disclosed when any value <= 0
+    # (order, section 4.6) -- not merely NaN'd through log()/1/x, which for
+    # a MIX of positive and non-positive values can still return a finite
+    # (meaningless) number.
+    if (all(x > 0)) {
+        emit(cid, paste0(prefix, "geo_mean"), exp(mean(log(x))), "r::exp(mean(log(x)))")
+        emit(cid, paste0(prefix, "harm_mean"), 1 / mean(1 / x), "r::1/mean(1/x)")
+    } else {
+        emit(cid, paste0(prefix, "geo_mean"), NA_real_, "r::exp(mean(log(x)))")
+        emit(cid, paste0(prefix, "harm_mean"), NA_real_, "r::1/mean(1/x)")
+    }
+    emit(cid, paste0(prefix, "trimmed_mean"), mean(x, trim = trim), "stats::mean")
+    emit(cid, paste0(prefix, "winsorized_mean"), winsorizedMean(x, trim), "r::winsorizedMean")
+    emit(cid, paste0(prefix, "trim_k"), floor(n * trim), "r::floor(n*trim)")
 }
 
 # =============================================================================
@@ -1353,52 +1805,55 @@ process_correlation <- function(row) {
 # psych::describe for the classic shape/location/spread battery (mean, sd,
 # median, min, max, range, se, skew, kurtosis) -- the standard one-call
 # descriptive summary in R. Quartiles/IQR from stats::quantile (type 7, R's
-# default). 95% CI of the mean from stats::t.test(x)$conf.int.
+# default). CI of the mean from stats::t.test(x, conf.level = 1 - alpha).
 # =============================================================================
 process_descriptive <- function(row) {
     cid <- row$cell_id
     d <- readDataset(row$dataset)
-    x <- numcol(d, row$col_a)
-    nU <- sum(is.na(x)); x <- x[!is.na(x)]
+    xFull <- numcol(d, row$col_a)
+    validFull <- !is.na(xFull)
+    nU <- sum(!validFull)
+    x <- xFull[validFull]
     if (length(x) < 1) { refuseCell(cid, sprintf("Column '%s' contains no valid numeric values.", row$col_a)); return(invisible()) }
-    emit(cid, "n", length(x), "base::length")
-    desc <- psych::describe(x)
-    emit(cid, "mean", desc$mean, "psych::describe"); emit(cid, "sd", desc$sd, "psych::describe")
-    emit(cid, "median", desc$median, "psych::describe"); emit(cid, "min", desc$min, "psych::describe")
-    emit(cid, "max", desc$max, "psych::describe"); emit(cid, "range", desc$range, "psych::describe")
-    emit(cid, "sem", desc$se, "psych::describe")
-    emitShape(cid, x)
-    emit(cid, "variance", stats::var(x), "stats::var")
-    qs <- stats::quantile(x, c(0.25, 0.75))
-    emit(cid, "q1", qs[1], "stats::quantile"); emit(cid, "q3", qs[2], "stats::quantile")
-    emit(cid, "iqr", stats::IQR(x), "stats::IQR")   # stats::IQR, not q3-q1 written out
-    ciLine <- NULL
-    # t.test(x) throws "data are essentially constant" when sd(x)==0 (e.g. a
-    # column that is literally the same value in every row). That is a real,
-    # standard-tool refusal of ONE quantity (the mean's CI), not of the whole
-    # descriptive cell -- n/mean/sd/median/etc. are all still well-defined on
-    # a constant column, so only the CI is skipped, guarded rather than left
-    # to throw and take the whole cell down with it.
-    if (length(x) >= 2 && stats::sd(x) > 0) {
-        ci <- t.test(x)$conf.int
-        emit(cid, "ci_low", ci[1], "stats::t.test"); emit(cid, "ci_high", ci[2], "stats::t.test")
-        ciLine <- sprintf("95%% CI of the mean: [%.4f, %.4f] (stats::t.test)", ci[1], ci[2])
-    } else if (length(x) >= 2) {
-        # REPORTED AS UNDEFINED, NOT OMITTED. quantities.tsv contracts ci_low
-        # and ci_high on every descriptive cell, and a runner that writes no
-        # row has not reported the quantity -- it has gone quiet, which is the
-        # exact failure mode the contract exists to catch. The kit's own
-        # convention for "we reached this quantity and it has no value here"
-        # is the _undefined marker (n_undefined, gg_epsilon_undefined,
-        # chi_square_undefined), so the marker is what goes out.
-        emit(cid, "ci_low_undefined", 1, "stats::t.test")
-        emit(cid, "ci_high_undefined", 1, "stats::t.test")
-        ciLine <- "95% CI of the mean: undefined (zero variance -- t.test's own precondition fails)."
+    alpha <- alphaInForce(row)
+    confLevel <- 1 - alpha
+    # .trim: matrix.tsv's `adjust` column, read as a number here (0 <= trim
+    # < 0.5), the third reuse of that column across this wave's doors -- the
+    # survey lane's `adjust` is a boolean continuity-correction flag and the
+    # two-way door's `adjust` is a post-hoc method NAME; the descriptive
+    # door has neither concept, so its own numeric use collides with
+    # neither. Blank or out-of-range falls back to the dialog default
+    # (order, section 4.6: 0.2, from the defaults procedure).
+    trim <- suppressWarnings(as.numeric(row$adjust))
+    if (is.na(trim) || trim < 0 || trim >= 0.5) trim <- 0.2
+
+    emitDescriptiveSet(cid, "", x, confLevel, trim)
+    # skewness_b1/kurtosis_b2 (psych::describe's own type=3 default) are an
+    # already-declared R-side-only contrast against emitDescriptiveSet's
+    # type=2 skewness/kurtosis (D-SHAPE) -- unchanged by this wave, so kept
+    # exactly as emitShape already emitted them, on the overall column only.
+    if (length(x) >= 2) emitShape(cid, x)
+    lines <- c(sprintf("Descriptives -- %s (n=%d valid, %d undefined, trim=%.3g, alpha=%.4g)",
+                        row$col_a, length(x), nU, trim, alpha), "",
+               sprintf("mean=%.4f sd=%.4f median=%.4f min=%.4f max=%.4f", mean(x), sd(x), median(x), min(x), max(x)))
+
+    # Per group: col_b empty = none. A group with n = 1 still gets its own
+    # row (n and mean only, per emitDescriptiveSet's n==1 branch above); no
+    # group is silently skipped for being small, matching the descriptive
+    # door's own tidy-row mechanism (order, section 3: emlTidyRow/emlTidyNum/
+    # emlTidyStr, the same one grouped regression uses).
+    if (nzchar(row$col_b)) {
+        gAll <- chrcol(d, row$col_b)[validFull]
+        gAll[is.na(gAll)] <- ""
+        levs <- orderedLevels(gAll[gAll != ""], row$group_order)
+        lines <- c(lines, "", "Per-group descriptives:")
+        for (lv in levs) {
+            xg <- x[gAll == lv]
+            emitDescriptiveSet(cid, paste0("group_", slug(lv), "_"), xg, confLevel, trim)
+            lines <- c(lines, sprintf("  %s (n=%d): mean=%s", lv, length(xg),
+                                       if (length(xg) >= 1) sprintf("%.4f", mean(xg)) else "NA"))
+        }
     }
-    lines <- c(sprintf("Descriptives -- %s (n=%d valid, %d undefined)", row$col_a, length(x), nU), "",
-               sprintf("mean=%.4f sd=%.4f median=%.4f min=%.4f max=%.4f", desc$mean, desc$sd, desc$median, desc$min, desc$max),
-               sprintf("skewness=%.4f kurtosis=%.4f (psych::describe)", desc$skew, desc$kurtosis))
-    if (!is.null(ciLine)) lines <- c(lines, ciLine)
     writeReport(cid, lines)
 }
 
@@ -1421,6 +1876,26 @@ fitLM <- function(x, y) {
 # (one-predictor) case; not the unsigned multiple-R a package prints for a
 # model with more than one predictor.
 # =============================================================================
+# theilSen: the definition in base R (order, section 7) -- median of
+# pairwise slopes over distinct-x pairs; intercept = median(y) -
+# slope*median(x). No mblm in the container. Refuses (returns NULL) on
+# fewer than two distinct x or n < 3, the same two conditions
+# @emlTheilSen's own guard names.
+theilSen <- function(x, y) {
+    n <- length(x)
+    if (n < 3 || length(unique(x)) < 2) return(NULL)
+    slopes <- numeric(0)
+    for (i in seq_len(n - 1)) {
+        dx <- x[(i + 1):n] - x[i]
+        dy <- y[(i + 1):n] - y[i]
+        ok <- dx != 0
+        if (any(ok)) slopes <- c(slopes, dy[ok] / dx[ok])
+    }
+    if (length(slopes) == 0) return(NULL)
+    slope <- median(slopes)
+    list(slope = slope, intercept = median(y) - slope * median(x), nSlopes = length(slopes), n = n)
+}
+
 process_regression <- function(row) {
     cid <- row$cell_id
     d <- readDataset(row$dataset)
@@ -1431,6 +1906,8 @@ process_regression <- function(row) {
     xx <- x[keep]; yy <- y[keep]
     if (sd(xx) == 0) { refuseCell(cid, sprintf("Predictor column '%s' has zero variance.", row$col_b)); return(invisible()) }
     fl <- fitLM(xx, yy)
+    alpha <- alphaInForce(row)
+    confLevel <- 1 - alpha
     emit(cid, "n", n, "base::sum")
     emit(cid, "intercept", fl$intercept, "stats::lm"); emit(cid, "slope", fl$slope, "stats::lm")
     emit(cid, "intercept_se", fl$seIntercept, "stats::lm"); emit(cid, "slope_se", fl$seSlope, "stats::lm")
@@ -1446,10 +1923,33 @@ process_regression <- function(row) {
     # what this kit undertakes not to do.
     emit(cid, "r", stats::cor(xx, yy), "stats::cor")
     emit(cid, "f", unname(fl$fstat["value"]), "stats::lm")
-    lines <- c(sprintf("Simple regression -- %s ~ %s (n=%d)", row$col_a, row$col_b, n), "",
+    # ORACLE for the OLS intervals: confint(fit, level = 1 - alpha), t on
+    # dfRes -- always computed, since OLS runs every cell (order, section
+    # 4.3).
+    ci <- stats::confint(fl$fit, level = confLevel)
+    emit(cid, "slope_ci_low", ci["x", 1], "stats::confint"); emit(cid, "slope_ci_high", ci["x", 2], "stats::confint")
+    emit(cid, "intercept_ci_low", ci["(Intercept)", 1], "stats::confint"); emit(cid, "intercept_ci_high", ci["(Intercept)", 2], "stats::confint")
+    lines <- c(sprintf("Simple regression -- %s ~ %s (n=%d, alpha=%.4g)", row$col_a, row$col_b, n, alpha), "",
                sprintf("%s = %.4f + %.4f * %s", row$col_a, fl$intercept, fl$slope, row$col_b),
                sprintf("R^2=%.4f adjR^2=%.4f residual SE=%.4f", fl$r2, fl$adjR2, fl$sigma),
-               sprintf("slope: t=%.4f p=%.4g", fl$tSlope, fl$pSlope))
+               sprintf("slope: t=%.4f p=%.4g  %.4g%% CI [%.4f, %.4f]", fl$tSlope, fl$pSlope, 100 * confLevel, ci["x", 1], ci["x", 2]))
+
+    # Theil-Sen: computed additionally when this cell's `test` column names
+    # the estimator "theil-sen" -- @emlRunRegressionAnalysis's .estimator$
+    # ("ols" or "theil-sen") is the door's ONLY estimator-selecting
+    # argument, so this reuses the same column every other door's own
+    # test-type axis (parametric/nonparametric/both, pearson/spearman/both)
+    # already occupies, rather than a new one.
+    if (identical(row$test, "theil-sen")) {
+        ts <- theilSen(xx, yy)
+        if (!is.null(ts)) {
+            emit(cid, "ts_slope", ts$slope, "r::theilSen"); emit(cid, "ts_intercept", ts$intercept, "r::theilSen")
+            emit(cid, "ts_nslopes", ts$nSlopes, "r::theilSen"); emit(cid, "ts_n", ts$n, "r::theilSen")
+            lines <- c(lines, sprintf("Theil-Sen: slope=%.4f intercept=%.4f (n_slopes=%d)", ts$slope, ts$intercept, ts$nSlopes))
+        } else {
+            lines <- c(lines, "Theil-Sen: undefined (fewer than 2 distinct x, or n < 3)")
+        }
+    }
     writeReport(cid, lines)
 }
 
