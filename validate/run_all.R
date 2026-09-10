@@ -2103,6 +2103,22 @@ scripts <- c(
                                  # validate/canon/missing_tokens.tsv, still
                                  # says what that procedure says, the v105
                                  # pattern (source-level, no Praat launch).
+    ,
+    "v172_graph_door_census.R"   # API completion wave, order section
+                                 # 8.Census: every leg that section names --
+                                 # scatter vs correlation/regression (both
+                                 # estimators), the annotation ANOVA path vs
+                                 # the ANOVA door on both v22 fixtures, bar
+                                 # error bars and the time-series band vs
+                                 # descriptive per group, the bridge's three
+                                 # intervals vs the new door outputs, and
+                                 # box-plot quartiles vs .q1/.median/.q3 --
+                                 # driven live on a real Praat, each leg
+                                 # holding the two-outcome contract: standard-
+                                 # rule agreement, or (leg 2's alpha
+                                 # divergence) a documented different model,
+                                 # confirmed as actually different, never
+                                 # silent disagreement.
 )
 
 # ---------------------------------------------------------------------------
