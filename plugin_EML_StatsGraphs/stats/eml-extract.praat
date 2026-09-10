@@ -3102,12 +3102,18 @@ procedure eml_twoWayCompleteCase: .tableId, .dataCol$, .factor1$, .factor2$
     .nF2Miss = 0
     ; VECTOR-EXEMPT: cat2 -- per-row missing-value classification across three
     ; columns (two of them text), and the exclusion list this builds has no
-    ; Table vector equivalent.
+    ; Table vector equivalent (confirmed against Praat 6.6.30: "Get all
+    ; numbers in column" mis-reads a text column as string-pool indices, not
+    ; values, so it cannot stand in for these raw-string reads). .rowF1$[]/
+    ; .rowF2$[] retain what is read here so the empty-combination check below
+    ; can reuse it instead of re-reading the table.
     for .row from 1 to .nRows
         selectObject: .tableId
         .dCell$ = Get value: .row, .dataCol$
         .f1Cell$ = Get value: .row, .factor1$
         .f2Cell$ = Get value: .row, .factor2$
+        .rowF1$[.row] = .f1Cell$
+        .rowF2$[.row] = .f2Cell$
 
         @eml_classifyCell: .dCell$
         .dMissing = (eml_classifyCell.kind = 1)
@@ -3172,48 +3178,68 @@ procedure eml_twoWayCompleteCase: .tableId, .dataCol$, .factor1$, .factor2$
     endfor
 
     # --- the one remaining refusal: exclusion emptied a factor cell.
+    # Reuses .rowF1$[]/.rowF2$[] (already read once above) for the surviving
+    # rows -- same values .subsetId holds at its post-removal row numbers,
+    # since .subsetId is an unmodified Copy: of .tableId with only the
+    # .exRowAt[] rows removed -- so no table is re-read here. Level discovery
+    # keeps its original linear "seen" scan (bounded by .r/.s, as before);
+    # what is gone is the O(.r * .s * rows) re-read this used to do to tally
+    # each cell -- one O(rows) pass now fills .cellCount[], and the final
+    # .r x .s check (no row loop inside it) reports the LAST empty cell found
+    # in ascending (.i, .j) order, exactly as the old unbroken nested loop did.
     if .nExcluded > 0
-        selectObject: .subsetId
-        .remainRows = Get number of rows
+        .exPtr = 1
+        .remainRows = 0
+        for .row from 1 to .nRows
+            if .exPtr <= .nExcluded and .exRowAt[.exPtr] = .row
+                .exPtr = .exPtr + 1
+            else
+                .remainRows = .remainRows + 1
+                .survL1$[.remainRows] = .rowF1$[.row]
+                .survL2$[.remainRows] = .rowF2$[.row]
+            endif
+        endfor
         .r = 0
         .s = 0
         for .row from 1 to .remainRows
-            selectObject: .subsetId
-            .l1$ = Get value: .row, .factor1$
-            .l2$ = Get value: .row, .factor2$
-            .seen1 = 0
-            for .i from 1 to .r
-                if .lev1$[.i] = .l1$
-                    .seen1 = 1
+            .l1$ = .survL1$[.row]
+            .l2$ = .survL2$[.row]
+            .i = 0
+            for .ii from 1 to .r
+                if .lev1$[.ii] = .l1$
+                    .i = .ii
                 endif
             endfor
-            if .seen1 = 0
+            if .i = 0
                 .r = .r + 1
-                .lev1$[.r] = .l1$
+                .i = .r
+                .lev1$[.i] = .l1$
             endif
-            .seen2 = 0
-            for .j from 1 to .s
-                if .lev2$[.j] = .l2$
-                    .seen2 = 1
+            .j = 0
+            for .jj from 1 to .s
+                if .lev2$[.jj] = .l2$
+                    .j = .jj
                 endif
             endfor
-            if .seen2 = 0
+            if .j = 0
                 .s = .s + 1
-                .lev2$[.s] = .l2$
+                .j = .s
+                .lev2$[.j] = .l2$
             endif
+            .rowI[.row] = .i
+            .rowJ[.row] = .j
         endfor
         for .i from 1 to .r
             for .j from 1 to .s
-                .cellCount = 0
-                for .row from 1 to .remainRows
-                    selectObject: .subsetId
-                    .l1$ = Get value: .row, .factor1$
-                    .l2$ = Get value: .row, .factor2$
-                    if .l1$ = .lev1$[.i] and .l2$ = .lev2$[.j]
-                        .cellCount = .cellCount + 1
-                    endif
-                endfor
-                if .cellCount = 0
+                .cellCount[.i, .j] = 0
+            endfor
+        endfor
+        for .row from 1 to .remainRows
+            .cellCount[.rowI[.row], .rowJ[.row]] = .cellCount[.rowI[.row], .rowJ[.row]] + 1
+        endfor
+        for .i from 1 to .r
+            for .j from 1 to .s
+                if .cellCount[.i, .j] = 0
                     .error$ = "The cell """ + .lev1$[.i] + """ x """
                     ... + .lev2$[.j] + """ has no remaining observations "
                     ... + "after " + string$ (.nExcluded)

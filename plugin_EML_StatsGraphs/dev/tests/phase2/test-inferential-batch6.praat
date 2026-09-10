@@ -61,7 +61,11 @@
 # appropriate application of this code.
 # ============================================================================
 
+include ../../../stats/eml-core-utilities.praat
+include ../../../stats/eml-core-descriptive.praat
 include ../../../stats/eml-extract.praat
+include ../../../stats/eml-studentized-range.praat
+include ../../../stats/eml-anova-kernel.praat
 include ../../../stats/eml-inferential.praat
 include ../eml-test-helpers.praat
 
@@ -276,7 +280,7 @@ Set numeric value: 20, "value", 28
 Set string value: 20, "Treatment", "Drug"
 Set string value: 20, "Sex", "Female"
 
-@emlTwoWayAnova: tableId4, "value", "Treatment", "Sex"
+@emlTwoWayAnova: tableId4, "value", "Treatment", "Sex", 3
 
 @emlTestAssertEqualStr: "4 no error", "", emlTwoWayAnova.error$
 
@@ -411,7 +415,7 @@ Set numeric value: 20, "value", 18
 Set string value: 20, "FactorA", "B"
 Set string value: 20, "FactorB", "Female"
 
-@emlTwoWayAnova: tableId5, "value", "FactorA", "FactorB"
+@emlTwoWayAnova: tableId5, "value", "FactorA", "FactorB", 3
 
 @emlTestAssertEqualStr: "5 no error", "", emlTwoWayAnova.error$
 
@@ -638,7 +642,7 @@ for iRow from 1 to 4
     endif
 endfor
 
-@emlTwoWayAnova: tableId9d, "value", "Missing", "Factor2"
+@emlTwoWayAnova: tableId9d, "value", "Missing", "Factor2", 3
 ; Wording: "First factor column", not the argument name factor1.
 ; The needle keeps the offending column name so the refusal must still say
 ; WHICH column it could not find.
