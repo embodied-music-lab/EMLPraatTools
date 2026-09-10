@@ -1,3 +1,6 @@
+# Install any missing R packages before the run (reviewer reproducibility).
+install.packages(setdiff(c("rstatix","car","effectsize","afex","multcomp","nortest","coin","psych"), rownames(installed.packages())), repos = "https://cloud.r-project.org")
+
 # run_analyses.R -- R-side runner for the walkthrough kit.
 #
 # Reads matrix.tsv (the declaration both runners walk) and executes every row
