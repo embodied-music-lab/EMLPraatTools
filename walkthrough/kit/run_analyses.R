@@ -426,8 +426,11 @@ prepGroupedData <- function(cid, d, colData, colGroup, order) {
 }
 
 parseConditions <- function(colspec) {
-    parts <- strsplit(colspec, "\\|")[[1]]
-    parts[nzchar(trimws(parts))]
+    # Matches the plugin's emlCommaListToVector (eml-core-utilities.praat):
+    # the pipe form is gone (see eml-analysis.praat ~6383); the RM/Friedman
+    # condition list is comma-delimited, trimmed, empties dropped.
+    parts <- strsplit(colspec, ",")[[1]]
+    trimws(parts)[nzchar(trimws(parts))]
 }
 buildConditionMatrix <- function(d, conds) {
     M <- do.call(cbind, lapply(conds, function(cc) numcol(d, cc)))
@@ -2113,8 +2116,11 @@ process_normality <- function(row) {
 
 # --- shared repeated-measures helpers ---------------------------------------
 parseConditions <- function(colspec) {
-    parts <- strsplit(colspec, "\\|")[[1]]
-    parts[nzchar(trimws(parts))]
+    # Matches the plugin's emlCommaListToVector (eml-core-utilities.praat):
+    # the pipe form is gone (see eml-analysis.praat ~6383); the RM/Friedman
+    # condition list is comma-delimited, trimmed, empties dropped.
+    parts <- strsplit(colspec, ",")[[1]]
+    trimws(parts)[nzchar(trimws(parts))]
 }
 buildConditionMatrix <- function(d, conds) {
     M <- do.call(cbind, lapply(conds, function(cc) numcol(d, cc)))
