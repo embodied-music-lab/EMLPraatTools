@@ -645,6 +645,38 @@ emlKitNMismatch = 0
 emlKitMismatchList$ = ""
 emlKitHeaderSeen = 0
 
+# ── PROGRESS METER (Demo window) ────────────────────────────────────────────
+# Set to 0 for a headless run that has no Demo window (e.g. an automated
+# harness driving this with `praat --run`). Ian runs this from the Script
+# window, where the Demo window is available, so it defaults on.
+emlKitDemoProgress = 1
+# Denominator: count the data rows once so the bar and ETA have a total.
+emlKitTotal = 0
+emlKitCntRemain$ = readFile$ ("matrix.tsv") + newline$
+emlKitCntHeader = 0
+while length (emlKitCntRemain$) > 0
+    emlKitCntPos = index (emlKitCntRemain$, newline$)
+    emlKitCntLine$ = left$ (emlKitCntRemain$, emlKitCntPos - 1)
+    emlKitCntRemain$ = mid$ (emlKitCntRemain$, emlKitCntPos + 1,
+    ... length (emlKitCntRemain$) - emlKitCntPos)
+    if length (emlKitCntLine$) = 0
+        # blank
+    elsif left$ (emlKitCntLine$, 1) = "#"
+        # comment
+    elsif emlKitCntHeader = 0
+        if left$ (emlKitCntLine$, 7) = "cell_id"
+            emlKitCntHeader = 1
+        endif
+    else
+        emlKitTotal = emlKitTotal + 1
+    endif
+endwhile
+emlKitDone = 0
+# reset the clock and accumulate per-cell deltas, so the final Elapsed report
+# below stays correct even though the meter reads the clock every cell
+emlKitClockDiscard = stopwatch
+emlKitElapsed = 0
+
 emlKitRemaining$ = readFile$ ("matrix.tsv") + newline$
 
 while length (emlKitRemaining$) > 0
@@ -665,6 +697,10 @@ while length (emlKitRemaining$) > 0
         @emlKitSplit18: emlKitLine$
         @emlKitRowSelected: emlKitSplit18.f$[3]
         if emlKitRowSelected.selected = 1
+            emlKitDone = emlKitDone + 1
+            emlKitElapsed = emlKitElapsed + stopwatch
+            @emlKitProgress: emlKitDone, emlKitTotal, emlKitSplit18.f$[1],
+            ... emlKitSplit18.f$[3], emlKitSplit18.f$[4], emlKitElapsed
             @emlKitProcessRow:
             ... emlKitSplit18.f$[1], emlKitSplit18.f$[2], emlKitSplit18.f$[3],
             ... emlKitSplit18.f$[4], emlKitSplit18.f$[5], emlKitSplit18.f$[6],
@@ -2476,7 +2512,7 @@ writeFile: "audit/praat_environment.tsv", emlEnvTSVBuf$
 clearinfo
 writeInfoLine: "EML Stats & Graphs -- matrix.tsv walkthrough (Praat side)"
 appendInfoLine: ""
-emlKitElapsed = stopwatch - emlKitStartTime
+emlKitElapsed = emlKitElapsed + stopwatch
 appendInfoLine: "Cells run:        ", emlKitNCells
 appendInfoLine: "  -- ok:          ", emlKitNOk
 appendInfoLine: "  -- refused:     ", emlKitNRefused
@@ -2497,3 +2533,121 @@ else
     appendInfoLine: emlKitMismatchList$
 endif
 appendInfoLine: "Done."
+
+
+# ============================================================================
+# SECTION 6 -- PROGRESS METER (Demo window)
+# ============================================================================
+# A live meter drawn in the Demo window while the sweep runs: a percentage
+# bar, the current cell / procedure / dataset, and an elapsed / ETA / rate
+# panel. It never touches the Info window (that is the plugin's report and
+# the kit's own tally), so it cannot corrupt either. Every frame is a full
+# redraw after a three-line reset, per the Demo window best practices; the
+# window opens on the first demo command and updates on demoShow().
+
+# @emlKitDemoSafe -- Praat treats % # ^ _ as inline style toggles in text, so
+# a dataset name like "nist_SmLs09_input" would render half-subscripted.
+# Fold those to spaces for display only.
+procedure emlKitDemoSafe: .t$
+    .r$ = replace$ (.t$, "_", " ", 0)
+    .r$ = replace$ (.r$, "%", " ", 0)
+    .r$ = replace$ (.r$, "#", " ", 0)
+    .r$ = replace$ (.r$, "^", " ", 0)
+endproc
+
+# @emlKitFmtTime -- seconds to "M:SS"
+procedure emlKitFmtTime: .s
+    if .s < 0
+        .s = 0
+    endif
+    .m = floor (.s / 60)
+    .sec = round (.s - 60 * .m)
+    if .sec >= 60
+        .sec = .sec - 60
+        .m = .m + 1
+    endif
+    .ss$ = string$ (.sec)
+    if .sec < 10
+        .ss$ = "0" + .ss$
+    endif
+    .r$ = string$ (.m) + ":" + .ss$
+endproc
+
+# @emlKitProgress -- draw one frame of the meter
+procedure emlKitProgress: .done, .total, .cellId$, .proc$, .dataset$, .elapsed
+    if emlKitDemoProgress = 1
+        .pct = 0
+        if .total > 0
+            .pct = 100 * .done / .total
+        endif
+        .fillX = 8 + (84 * .pct / 100)
+        .rate = 0
+        .eta = 0
+        if .done > 0
+            .rate = .elapsed / .done
+            .eta = .rate * (.total - .done)
+        endif
+        @emlKitFmtTime: .elapsed
+        .elapsed$ = emlKitFmtTime.r$
+        @emlKitFmtTime: .eta
+        .eta$ = emlKitFmtTime.r$
+        @emlKitDemoSafe: .cellId$
+        .cellSafe$ = emlKitDemoSafe.r$
+        @emlKitDemoSafe: .proc$
+        .procSafe$ = emlKitDemoSafe.r$
+        @emlKitDemoSafe: .dataset$
+        .dataSafe$ = emlKitDemoSafe.r$
+
+        demo Helvetica
+        demo Font size: 11
+        demo Axes: 0, 100, 0, 100
+        demo Erase all
+
+        # title
+        demo Font size: 16
+        demo Colour: "{0.00, 0.45, 0.70}"
+        demo Text: 50, "centre", 91, "half", "EML Stats and Graphs      kit sweep"
+
+        # big percentage
+        demo Font size: 32
+        demo Text: 50, "centre", 79, "half", string$ (round (.pct)) + "%"
+
+        # progress bar: light track, blue fill, grey outline
+        demo Paint rounded rectangle: "{0.90, 0.92, 0.95}", 8, 92, 62, 70, 1.5
+        if .fillX > 8.1
+            demo Paint rectangle: "{0.00, 0.45, 0.70}", 8, .fillX, 62, 70
+        endif
+        demo Line width: 1
+        demo Colour: "{0.55, 0.60, 0.66}"
+        demo Draw rounded rectangle: 8, 92, 62, 70, 1.5
+
+        # cell counter
+        demo Font size: 12
+        demo Colour: "{0.35, 0.40, 0.46}"
+        demo Text: 50, "centre", 54, "half",
+        ... "cell " + string$ (.done) + " of " + string$ (.total)
+
+        # current cell + procedure
+        demo Font size: 15
+        demo Colour: "Black"
+        demo Text: 50, "centre", 46, "half", .cellSafe$ + "      " + .procSafe$
+
+        # dataset
+        demo Font size: 11
+        demo Colour: "{0.35, 0.40, 0.46}"
+        demo Text: 50, "centre", 39, "half", .dataSafe$
+
+        # metrics panel: elapsed / ETA / rate
+        demo Paint rounded rectangle: "{0.95, 0.96, 0.98}", 6, 94, 9, 21, 1.5
+        demo Line width: 1
+        demo Colour: "{0.80, 0.84, 0.88}"
+        demo Draw rounded rectangle: 6, 94, 9, 21, 1.5
+        demo Font size: 12
+        demo Colour: "Black"
+        demo Text: 22, "centre", 15, "half", "elapsed  " + .elapsed$
+        demo Text: 50, "centre", 15, "half", "ETA  " + .eta$
+        demo Text: 78, "centre", 15, "half", fixed$ (.rate, 1) + " s/cell"
+
+        demoShow ()
+    endif
+endproc
