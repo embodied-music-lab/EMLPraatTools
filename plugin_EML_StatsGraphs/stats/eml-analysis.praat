@@ -3645,6 +3645,17 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
         .spearDf = emlSpearmanCorrelation.df
         .spearP = emlSpearmanCorrelation.p
         .spearErr$ = emlSpearmanCorrelation.error$
+        ; THE OVERALL t-approximation, captured the same v1.2-item-3 way as
+        ; .spearRho/.spearT/.spearDf/.spearP above. The per-group loop
+        ; further down calls @emlSpearmanCorrelationDispatch again for each
+        ; group, which overwrites the qualified global
+        ; emlSpearmanCorrelationDispatch.pAsymptotic with the LAST group's
+        ; value -- exactly the staleness the comment at "PER-GROUP
+        ; CORRELATIONS" below already guards .pearR/.spearRho/... against.
+        ; .pAsymptotic just was not one of the scalars that comment's
+        ; restoration covered. Restored into the global after the group
+        ; loop finishes, below.
+        .spearPAsymp = emlSpearmanCorrelationDispatch.pAsymptotic
     endif
 
     # Restore the captured outputs into the qualified names the reporter reads.
@@ -3886,6 +3897,18 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
             ... + ": " + .grpSkipList$
         endif
         appendInfoLine: emlReportHeader.border$
+    endif
+
+    ; RESTORE THE OVERALL ASYMPTOTIC p. The per-group loop just above (when
+    ; grouped) called @emlSpearmanCorrelationDispatch once per group, so the
+    ; qualified global emlSpearmanCorrelationDispatch.pAsymptotic now holds
+    ; the LAST group's t-approximation rather than the whole-table one this
+    ; door computed earlier. Put back the captured overall value so every
+    ; reader of that global -- the same shape as the emlPearsonCorrelation.*/
+    ; emlSpearmanCorrelation.* restoration above -- sees the whole-table
+    ; figure, not a group's.
+    if .testType$ = "spearman" or .testType$ = "both"
+        emlSpearmanCorrelationDispatch.pAsymptotic = .spearPAsymp
     endif
 
     ; THE COEFFICIENT IS THE STEP. Built from the orchestrator's OWN locals,
