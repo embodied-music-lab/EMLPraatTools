@@ -151,6 +151,14 @@ if nNumericCols = 0
     exitScript: ""
 endif
 
+# THE TRIM DEFAULT, PERSISTED THE SAME WAY @emlWrapperCommonFields'
+# emlLastShowExplanations is: a session global set once here, remembered
+# across a return to this form, 0.2 the first time nothing has been chosen
+# yet (API completion wave order, section 4.6).
+if not variableExists ("emlLastDescribeTrim")
+    emlLastDescribeTrim = 0.2
+endif
+
 # ── Main loop ──────────────────────────────────────────────────────────────
 
 # Carried across the loop so "New" reopens on the column just described
@@ -169,6 +177,8 @@ repeat
         for iCol from 1 to nNumericCols
             option: numericCol$ [iCol]
         endfor
+        comment: ""
+        real: "Trim proportion", string$ (emlLastDescribeTrim)
         @emlWrapperCommonFields
     clicked = endPause: "Quit", "Run", 2, 0
     if clicked = 1
@@ -179,6 +189,8 @@ repeat
 
     dataColumn$ = column$
     selCol = column
+    trimProportion = trim_proportion
+    emlLastDescribeTrim = trimProportion
     @emlHandleCommonFields
 
     # ── Run analysis ───────────────────────────────────────────────────────
@@ -191,8 +203,11 @@ repeat
     # (@emlCSVAddDescriptiveRow) and records a workflow step, neither of
     # which this file did — which is why it had nothing to Save.
 
+    # No grouping column on this wrapper -- it describes ONE column of the
+    # whole table (the wizard's own "Describe by group" page is the
+    # grouped path, unchanged here).
     selectObject: tableId
-    @emlRunDescriptiveAnalysis: tableId, dataColumn$
+    @emlRunDescriptiveAnalysis: tableId, dataColumn$, "", trimProportion
     if emlRunDescriptiveAnalysis.error$ <> ""
         # An error must not strand the user on a form the error has
         # just ruled out. Present it with guidance, and honour Quit.

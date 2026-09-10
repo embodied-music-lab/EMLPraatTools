@@ -601,12 +601,32 @@ endproc
 # ----------------------------------------------------------------------------
 # @emlDescribe
 # Comprehensive descriptive statistics summary.
-# Input:  data# — numeric vector
+# Input:  data#            — numeric vector
+#         trim             — proportion trimmed from each tail for
+#                             .trimmedMean/.winsorizedMean (0 <= trim < 0.5);
+#                             the CALLER validates this range and this
+#                             procedure does not repeat the refusal -- see
+#                             @emlTrimmedMean/@emlWinsorizedMean, which
+#                             already return undefined outside it.
+#         confidenceLevel  — as a proportion (e.g. 0.95), passed straight to
+#                             @emlCI. NOT a literal here (API completion
+#                             wave, order section 4.6): the caller is what
+#                             knows the alpha in force, and this file sits
+#                             BELOW stats/eml-analysis.praat (where
+#                             @emlReportAlpha lives) in the include order --
+#                             several dev suites load this file alone, so
+#                             reading that global here would break them.
+#                             A caller with no alpha control of its own
+#                             passes 0.95, the old hardcoded level.
 # Output: .n, .mean, .sd, .variance, .sem
 #         .median, .q1, .q3, .iqr
 #         .min, .max, .range
 #         .skewness, .kurtosis
-#         .ci95Lower, .ci95Upper
+#         .ciLow, .ciHigh (at confidenceLevel)
+#         .mode, .modeUnique, .modeCount
+#         .mad (scaled by 1.4826), .madRaw
+#         .geoMean, .harmMean (undefined when any value <= 0)
+#         .trimmedMean, .winsorizedMean, .trimK (floor(n*trim))
 # Calls all other pp procedures and assembles results.
 #
 # This does NOT build a .summary$ as well — sixteen string concatenations
@@ -625,7 +645,7 @@ endproc
 # If a caller ever needs a pre-formatted block, render it from these outputs
 # at the point of use. Do not reintroduce a second renderer here.
 # ----------------------------------------------------------------------------
-procedure emlDescribe: .data#
+procedure emlDescribe: .data#, .trim, .confidenceLevel
     .n = size (.data#)
     if .n = 0
         .mean = undefined
@@ -641,8 +661,18 @@ procedure emlDescribe: .data#
         .range = undefined
         .skewness = undefined
         .kurtosis = undefined
-        .ci95Lower = undefined
-        .ci95Upper = undefined
+        .ciLow = undefined
+        .ciHigh = undefined
+        .mode = undefined
+        .modeUnique = 0
+        .modeCount = 0
+        .mad = undefined
+        .madRaw = undefined
+        .geoMean = undefined
+        .harmMean = undefined
+        .trimmedMean = undefined
+        .winsorizedMean = undefined
+        .trimK = undefined
     else
         @emlMean: .data#
         .mean = emlMean.result
@@ -674,15 +704,35 @@ procedure emlDescribe: .data#
         else
             .kurtosis = undefined
         endif
-        ; 0.95 IS THIS PROCEDURE'S CONTRACT, not an ignored setting. The
-        ; outputs are NAMED .ci95Lower / .ci95Upper, the descriptives report
-        ; heads them "95% Confidence Interval", and the descriptives dialog
-        ; carries no alpha control, so the constant and every label that
-        ; describes it state the same level. A caller wanting another level
-        ; calls @emlCI directly, which takes one.
-        @emlCI: .data#, 0.95
-        .ci95Lower = emlCI.lower
-        .ci95Upper = emlCI.upper
+        ; THE LEVEL IS THE CALLER'S (see the header note above) -- never a
+        ; literal here.
+        @emlCI: .data#, .confidenceLevel
+        .ciLow = emlCI.lower
+        .ciHigh = emlCI.upper
+
+        ; SIX MORE, NAMED ON THE DOOR (API completion wave, order section
+        ; 4.6): the mean-family and shape kernels @emlDescribe never called,
+        ; reached only from nothing or from the graphs layer before this.
+        @emlMode: .data#
+        .mode = emlMode.result
+        .modeUnique = emlMode.isUnique
+        .modeCount = emlMode.count
+        @emlMAD: .data#
+        .mad = emlMAD.result
+        .madRaw = emlMAD.rawMAD
+        @emlGeometricMean: .data#
+        .geoMean = emlGeometricMean.result
+        @emlHarmonicMean: .data#
+        .harmMean = emlHarmonicMean.result
+        @emlTrimmedMean: .data#, .trim
+        .trimmedMean = emlTrimmedMean.result
+        @emlWinsorizedMean: .data#, .trim
+        .winsorizedMean = emlWinsorizedMean.result
+        if .trim = undefined
+            .trimK = undefined
+        else
+            .trimK = floor (.n * .trim)
+        endif
     endif
 endproc
 

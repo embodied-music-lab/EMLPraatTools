@@ -134,7 +134,7 @@ Set string value: 8, "Group", "B"
 @reportTest: "Extract full numeric column (n=8)", .t1_1
 
 # --- Test 1.2: Descriptive stats on extracted column ---
-@emlDescribe: emlExtractColumn.data#
+@emlDescribe: emlExtractColumn.data#, 0.2, 0.95
 # Known: mean of {10,20,30,40,50,5,10,15} = 180/8 = 22.5
 .t1_2_meanOk = (abs(emlDescribe.mean - 22.5) < 0.01)
 .t1_2_nOk = (emlDescribe.n = 8)
@@ -149,14 +149,14 @@ Set string value: 8, "Group", "B"
 @reportTest: "Extract two groups (n1=5, n2=3)", .t1_3
 
 # --- Test 1.4: Stats on Group A ---
-@emlDescribe: emlExtractGroupVectors.group1#
+@emlDescribe: emlExtractGroupVectors.group1#, 0.2, 0.95
 .t1_4_mean = (abs(emlDescribe.mean - 30) < 0.01)
 .t1_4_median = (abs(emlDescribe.median - 30) < 0.01)
 .t1_4 = (.t1_4_mean and .t1_4_median)
 @reportTest: "Group A stats (mean=30, median=30)", .t1_4
 
 # --- Test 1.5: Stats on Group B ---
-@emlDescribe: emlExtractGroupVectors.group2#
+@emlDescribe: emlExtractGroupVectors.group2#, 0.2, 0.95
 .t1_5_mean = (abs(emlDescribe.mean - 10) < 0.01)
 .t1_5_median = (abs(emlDescribe.median - 10) < 0.01)
 .t1_5 = (.t1_5_mean and .t1_5_median)
@@ -164,9 +164,9 @@ Set string value: 8, "Group", "B"
 
 # --- Test 1.6: Formatted output ---
 @emlReportDescriptiveHeader
-@emlDescribe: emlExtractGroupVectors.group1#
+@emlDescribe: emlExtractGroupVectors.group1#, 0.2, 0.95
 @emlReportDescriptiveRow: "Group A", emlDescribe.n, emlDescribe.mean, emlDescribe.sd, emlDescribe.median
-@emlDescribe: emlExtractGroupVectors.group2#
+@emlDescribe: emlExtractGroupVectors.group2#, 0.2, 0.95
 @emlReportDescriptiveRow: "Group B", emlDescribe.n, emlDescribe.mean, emlDescribe.sd, emlDescribe.median
 # Visual check -- no assertion, just confirms no crash
 @reportTest: "Formatted descriptive table (visual check)", 1
@@ -197,7 +197,7 @@ Set string value: 8, "Group", "B"
 # This is the critical end-to-end test:
 # zero#(0) passed to @emlDescribe should return undefined, not crash
 emptyVector# = zero#(0)
-@emlDescribe: emptyVector#
+@emlDescribe: emptyVector#, 0.2, 0.95
 .t2_3_n = (emlDescribe.n = 0)
 .t2_3_mean = (emlDescribe.mean = undefined)
 .t2_3_sd = (emlDescribe.sd = undefined)
@@ -396,7 +396,7 @@ testPitch = To Pitch (filtered autocorrelation): 0, 75, 600, 15, "no", 0.03, 0.0
 .t5_1_hasData = (emlExtractPitchValues.n > 0)
 # A 440 Hz tone should produce values near 440
 if .t5_1_hasData
-    @emlDescribe: emlExtractPitchValues.data#
+    @emlDescribe: emlExtractPitchValues.data#, 0.2, 0.95
     .t5_1_freq = (abs(emlDescribe.mean - 440) < 5)
 else
     .t5_1_freq = 0
@@ -416,7 +416,7 @@ testIntensity = To Intensity: 75, 0, "yes"
 
 # --- Test 5.3: Intensity values are reasonable ---
 if emlExtractIntensityFrames.n > 0
-    @emlDescribe: emlExtractIntensityFrames.data#
+    @emlDescribe: emlExtractIntensityFrames.data#, 0.2, 0.95
     # Intensity of a 0.4 amplitude tone should be in a sensible dB range
     .t5_3 = (emlDescribe.mean > 50 and emlDescribe.mean < 100)
 else

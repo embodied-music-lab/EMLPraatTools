@@ -3874,8 +3874,39 @@ endproc
 #
 # ============================================================================
 
-procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
+procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$, .groupCol$, .trim
     .recResult$ = ""
+    ; THE FULL DESCRIPTIVE SET, NAMED ON THE DOOR (9 Sep 2026, API
+    ; completion wave, order section 4.6). Initialised undefined at entry
+    ; for the reason every other door's fields are: a caller reading before
+    ; the guards below run, or after a refusal, must see "no result", never
+    ; a stale number from a previous table.
+    .n = undefined
+    .mean = undefined
+    .sd = undefined
+    .variance = undefined
+    .sem = undefined
+    .median = undefined
+    .q1 = undefined
+    .q3 = undefined
+    .iqr = undefined
+    .min = undefined
+    .max = undefined
+    .range = undefined
+    .skewness = undefined
+    .kurtosis = undefined
+    .ciLow = undefined
+    .ciHigh = undefined
+    .mode = undefined
+    .modeUnique = 0
+    .modeCount = 0
+    .mad = undefined
+    .madRaw = undefined
+    .geoMean = undefined
+    .harmMean = undefined
+    .trimmedMean = undefined
+    .winsorizedMean = undefined
+    .trimK = undefined
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -3891,6 +3922,16 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
 
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
+
+    ; .trim VALIDATED BEFORE THE READ, same reason .adjMethod$/.estimator$
+    ; are validated before their own doors run: a bad dialog value is a
+    ; refusal on its own terms, not a silently-undefined trimmed mean.
+    if .trim = undefined or .trim < 0 or .trim >= 0.5
+        .error$ = "Trim proportion must be at least 0 and less than 0.5"
+        ... + " (got " + string$ (.trim) + ")."
+        .remedy$ = "Choose a trim proportion in the descriptive statistics dialog."
+        goto END_DESCRIBE
+    endif
 
     ; See the note in @emlRunTwoGroupAnalysis. This orchestrator
     ; already refused a text column, but with "contains no valid numeric
@@ -3922,14 +3963,55 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
         goto END_DESCRIBE
     endif
 
-    @emlDescribe: .data#
+    ; THE ALPHA IN FORCE (order section 4.6): @emlCI's own 0.95 literal, is
+    ; passed as an argument now that @emlDescribe takes one -- see the
+    ; header note on @emlDescribe (stats/eml-core-descriptive.praat) for why
+    ; this door reads emlReportAlpha.value itself rather than that lower
+    ; layer doing it.
+    @emlReportAlpha
+    .descAlpha = emlReportAlpha.value
+    @emlDescribe: .data#, .trim, 1 - .descAlpha
+
+    ; THE FULL SET, CAPTURED ONTO THE DOOR (order section 4.6).
+    .n = emlDescribe.n
+    .mean = emlDescribe.mean
+    .sd = emlDescribe.sd
+    .variance = emlDescribe.variance
+    .sem = emlDescribe.sem
+    .median = emlDescribe.median
+    .q1 = emlDescribe.q1
+    .q3 = emlDescribe.q3
+    .iqr = emlDescribe.iqr
+    .min = emlDescribe.min
+    .max = emlDescribe.max
+    .range = emlDescribe.range
+    .skewness = emlDescribe.skewness
+    .kurtosis = emlDescribe.kurtosis
+    .ciLow = emlDescribe.ciLow
+    .ciHigh = emlDescribe.ciHigh
+    .mode = emlDescribe.mode
+    .modeUnique = emlDescribe.modeUnique
+    .modeCount = emlDescribe.modeCount
+    .mad = emlDescribe.mad
+    .madRaw = emlDescribe.madRaw
+    .geoMean = emlDescribe.geoMean
+    .harmMean = emlDescribe.harmMean
+    .trimmedMean = emlDescribe.trimmedMean
+    .winsorizedMean = emlDescribe.winsorizedMean
+    .trimK = emlDescribe.trimK
+    if .geoMean = undefined or .harmMean = undefined
+        @eml_appendWarning: .warning$, "Geometric and/or harmonic mean "
+        ... + "omitted -- requires every value in """ + .dataCol$
+        ... + """ to be greater than 0"
+        .warning$ = eml_appendWarning.result$
+    endif
 
     # THE COUNT OF EXCLUDED ROWS ALSO SAYS WHY, because the three conditions
     # need different responses from the user.
     # @emlExtractColumn has the breakdown, so pass it through rather
     # than recomputing it here and risking a second, disagreeing account.
     @emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
-    ... .nUndefined, .warning$
+    ... .nUndefined, .warning$, .descAlpha, .trim
 
     # EXPORTABLE. The Save panel offers a CSV only when there is something
     # to export, so an orchestrator that fills neither collector leaves the
@@ -3938,12 +4020,125 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
     # It fills the LEGACY buffer rather than declaring -- see the note above
     # @emlCSVAddDescriptiveRow. It is UNCONVERTED in the broom sense, which
     # is what makes it harness/broom_cases/contamination_probe.praat's
-    # canonical unconverted subject.
+    # canonical unconverted subject. UNCHANGED here -- the legacy path stays
+    # exactly as it was (order section 4.6) -- and it is what the Save
+    # button exports whenever this run is NOT grouped.
     #
     # Filled AFTER the report and from the same @emlDescribe pass, so the file
     # and the screen cannot disagree.
     @emlCSVSetTable: .tableName$
     @emlCSVAddDescriptiveRow: .dataCol$
+
+    ; PER-GROUP DESCRIPTIVES (order section 4.6). .groupCol$ empty = no
+    ; grouping, and the door above is the whole of the answer -- the legacy
+    ; CSV row just filled is what Save exports. A non-empty column declares
+    ; ONE tidy frame (rows only -- no glance, no augment: Q2's answer to the
+    ; estimate) with one row per group, and THAT declaration is what Save
+    ; exports instead (the legacy buffer has no group column to carry the
+    ; label in -- the same reason @emlRunGroupedRegressionAnalysis's own
+    ; header gives). The scalars above stay the WHOLE-COLUMN values
+    ; throughout this block.
+    if .error$ = "" and .groupCol$ <> ""
+        selectObject: .tableId
+        @emlCountGroups: .tableId, .groupCol$
+        if emlCountGroups.error$ = ""
+            .grpTotal = emlCountGroups.nGroups
+        else
+            .grpTotal = 0
+            @eml_appendWarning: .warning$, "Grouping column """
+            ... + .groupCol$ + """: " + emlCountGroups.error$
+            .warning$ = eml_appendWarning.result$
+        endif
+
+        @emlUnderscoreToSpace: .groupCol$
+        .grpColDisplay$ = emlUnderscoreToSpace.result$
+        @emlReportHeader: "Descriptive Statistics by " + .grpColDisplay$
+        @emlReportLineString: "Grouping column", .grpColDisplay$
+        @emlReportLine: "Groups", .grpTotal, 0
+
+        @emlResultBegin: .tableName$, "Descriptive statistics"
+        .grpPartialList$ = ""
+        .grpPartialMore = 0
+        .grpPartialN = 0
+        for .grpI from 1 to .grpTotal
+            .grpLabel$ = emlCountGroups.groupLabel$ [.grpI]
+            selectObject: .tableId
+            @eml_getGroupData: .tableId, .dataCol$, .groupCol$, .grpLabel$
+            @emlUnderscoreToSpace: .grpLabel$
+            .grpDisplay$ = emlUnderscoreToSpace.result$
+            if eml_getGroupData.error$ <> ""
+                .grpN = 0
+            else
+                .grpN = eml_getGroupData.n
+            endif
+
+            @emlReportHeader: .grpColDisplay$ + " = " + .grpDisplay$
+            @emlReportLine: "N", .grpN, 0
+
+            @emlTidyRow: .grpLabel$
+            @emlTidyNum: "n", .grpN
+            if .grpN >= 2
+                @emlDescribe: eml_getGroupData.data#, .trim, 1 - .descAlpha
+                @emlReportLine: "Mean", emlDescribe.mean, 4
+                @emlReportLine: "SD", emlDescribe.sd, 4
+                @emlTidyNum: "mean", emlDescribe.mean
+                @emlTidyNum: "sd", emlDescribe.sd
+                @emlTidyNum: "variance", emlDescribe.variance
+                @emlTidyNum: "sem", emlDescribe.sem
+                @emlTidyNum: "median", emlDescribe.median
+                @emlTidyNum: "q1", emlDescribe.q1
+                @emlTidyNum: "q3", emlDescribe.q3
+                @emlTidyNum: "iqr", emlDescribe.iqr
+                @emlTidyNum: "min", emlDescribe.min
+                @emlTidyNum: "max", emlDescribe.max
+                @emlTidyNum: "range", emlDescribe.range
+                @emlTidyNum: "skewness", emlDescribe.skewness
+                @emlTidyNum: "kurtosis", emlDescribe.kurtosis
+                @emlTidyNum: "conf.low", emlDescribe.ciLow
+                @emlTidyNum: "conf.high", emlDescribe.ciHigh
+                @emlTidyNum: "mode", emlDescribe.mode
+                @emlTidyNum: "mode.unique", emlDescribe.modeUnique
+                @emlTidyNum: "mode.count", emlDescribe.modeCount
+                @emlTidyNum: "mad", emlDescribe.mad
+                @emlTidyNum: "mad.raw", emlDescribe.madRaw
+                @emlTidyNum: "geo.mean", emlDescribe.geoMean
+                @emlTidyNum: "harm.mean", emlDescribe.harmMean
+                @emlTidyNum: "trimmed.mean", emlDescribe.trimmedMean
+                @emlTidyNum: "winsorized.mean", emlDescribe.winsorizedMean
+                @emlTidyNum: "trim.k", emlDescribe.trimK
+            elsif .grpN = 1
+                @emlMean: eml_getGroupData.data#
+                @emlReportLine: "Mean", emlMean.result, 4
+                @emlReportNote: "Only 1 observation -- SD and every other "
+                ... + "quantity below n is undefined."
+                @emlTidyNum: "mean", emlMean.result
+                .grpPartialN = .grpPartialN + 1
+                if length (.grpPartialList$) < 45
+                    if .grpPartialList$ <> ""
+                        .grpPartialList$ = .grpPartialList$ + ", "
+                    endif
+                    .grpPartialList$ = .grpPartialList$ + .grpDisplay$
+                else
+                    .grpPartialMore = .grpPartialMore + 1
+                endif
+            else
+                @emlReportNote: "No observations."
+            endif
+        endfor
+        if .grpPartialMore > 0
+            .grpPartialList$ = .grpPartialList$ + ", and "
+            ... + string$ (.grpPartialMore) + " more"
+        endif
+        if .grpPartialN > 0
+            @eml_appendWarning: .warning$, string$ (.grpPartialN) + " of "
+            ... + string$ (.grpTotal) + " group(s) have only 1 observation "
+            ... + "(n and mean only; every other quantity is undefined): "
+            ... + .grpPartialList$
+            .warning$ = eml_appendWarning.result$
+        endif
+        appendInfoLine: emlReportHeader.border$
+        selectObject: .tableId
+    endif
 
     ; A descriptive pass has no single test statistic; what it has is how
     ; much data it actually described, which is the number a reader needs in
@@ -3972,7 +4167,7 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$
         @emlRecordAnalysisStep: .tableId, "Descriptive statistics",
         ... .dataCol$,
         ... "Descriptives only; no test was run and no assumption was checked.",
-        ... "@emlRunDescriptiveAnalysis: data, """ + .dataCol$ + """",
+        ... "@emlRunDescriptiveAnalysis: data, """ + .dataCol$ + """, """ + .groupCol$ + """, " + string$ (.trim),
         ... "In the GUI: New > EML Stats & Graphs > Describe Table column...",
         ... .recResult$, .error$
     endif
@@ -8344,8 +8539,12 @@ procedure emlCSVAddDescriptiveRow: .term$
     @emlCSVAdd: "Descriptive statistics", .term$, "variance",  emlDescribe.variance
     @emlCSVAdd: "Descriptive statistics", .term$, "skewness",  emlDescribe.skewness
     @emlCSVAdd: "Descriptive statistics", .term$, "kurtosis",  emlDescribe.kurtosis
-    @emlCSVAdd: "Descriptive statistics", .term$, "ci95.lower", emlDescribe.ci95Lower
-    @emlCSVAdd: "Descriptive statistics", .term$, "ci95.upper", emlDescribe.ci95Upper
+    ; Column names unchanged (legacy CSV path stays, order section 4.6) --
+    ; only the kernel field they read was renamed (.ci95Lower/.ci95Upper ->
+    ; .ciLow/.ciHigh, now that the level is the alpha in force and no
+    ; longer always 95).
+    @emlCSVAdd: "Descriptive statistics", .term$, "ci95.lower", emlDescribe.ciLow
+    @emlCSVAdd: "Descriptive statistics", .term$, "ci95.upper", emlDescribe.ciHigh
 endproc
 
 # --- 9. Normality ----------------------------------------------------------

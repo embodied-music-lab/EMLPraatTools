@@ -5266,7 +5266,7 @@ endproc
 # ============================================================================
 
 procedure emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
-... .nUndefined, .parseNote$
+... .nUndefined, .parseNote$, .alpha, .trim
     @emlUnderscoreToSpace: .dataCol$
     .displayColumn$ = emlUnderscoreToSpace.result$
     @emlUnderscoreToSpace: .tableName$
@@ -5326,9 +5326,40 @@ procedure emlReportDescriptiveAnalysis: .tableName$, .dataCol$, .nValid,
     @emlReportLine: "Kurtosis (excess)", emlDescribe.kurtosis, 4
 
     @emlReportBlank
-    @emlReportSection: "95% Confidence Interval"
-    @emlReportLine: "Lower", emlDescribe.ci95Lower, 4
-    @emlReportLine: "Upper", emlDescribe.ci95Upper, 4
+    ; THE LABEL NAMES THE LEVEL IN FORCE (API completion wave, order
+    ; section 4.6) -- .alpha is no longer the fixed 0.05 the old "95%"
+    ; heading assumed.
+    @emlCILevelLabel: .alpha
+    @emlReportSection: emlCILevelLabel.percent$ + "% Confidence Interval"
+    @emlReportLine: "Lower", emlDescribe.ciLow, 4
+    @emlReportLine: "Upper", emlDescribe.ciHigh, 4
+
+    ; SIX MORE MEAN-FAMILY QUANTITIES (API completion wave, order section
+    ; 4.6): the kernels @emlDescribe now calls but this reporter, until
+    ; now, never printed.
+    @emlReportBlank
+    @emlReportSection: "Other Location Estimates"
+    @emlReportLine: "Mode", emlDescribe.mode, 4
+    if emlDescribe.modeUnique = 0
+        @emlReportNote: "Mode is tied (" + string$ (emlDescribe.modeCount)
+        ... + " values share the top frequency); the value shown is the "
+        ... + "first encountered."
+    endif
+    @emlReportLine: "MAD (scaled)", emlDescribe.mad, 4
+    if emlDescribe.geoMean = undefined
+        @emlReportNote: "Geometric mean not shown -- requires all values > 0."
+    else
+        @emlReportLine: "Geometric mean", emlDescribe.geoMean, 4
+    endif
+    if emlDescribe.harmMean = undefined
+        @emlReportNote: "Harmonic mean not shown -- requires all values > 0."
+    else
+        @emlReportLine: "Harmonic mean", emlDescribe.harmMean, 4
+    endif
+    @emlReportLine: "Trimmed mean (" + string$ (.trim * 100) + "% each tail)",
+    ... emlDescribe.trimmedMean, 4
+    @emlReportLine: "Winsorized mean (" + string$ (.trim * 100)
+    ... + "% each tail)", emlDescribe.winsorizedMean, 4
 
     @emlReportFooter
 endproc

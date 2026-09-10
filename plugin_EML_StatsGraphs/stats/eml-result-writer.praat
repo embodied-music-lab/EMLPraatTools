@@ -150,12 +150,22 @@
 ; MODEL), and broom's own tidy.htest has no such column for cor.test to
 ; borrow -- the same "addition, not parity" situation ruling 3 already put
 ; skewness and kurtosis in this list for (see v71_tidy_vocab_and_warning.R).
+;
+; THE DESCRIPTIVE-STATISTICS WORDS BELOW JOIN FOR THE SAME REASON (order
+; section 4.6): a per-group descriptive row is not a model fit broom has a
+; tidy() method for at all, so every one of mean/sd/.../trim.k is a genuine
+; addition, not a broom name being matched. conf.low/conf.high, already
+; here for other doors, are reused for the descriptive CI rather than
+; adding a second pair of words for the same idea.
 emlVocabTidy$ = "term n effect contrast null.value estimate estimate1"
 ... + " estimate2 std.error"
 ... + " df num.df den.df sumsq meansq"
 ... + " statistic p.value parameter conf.low conf.high adj.p.value"
 ... + " gg.epsilon hf.epsilon df.gg p.value.gg"
 ... + " effect.size effect.size.type skewness kurtosis method alternative"
+... + " mean sd variance sem median q1 q3 iqr min max range"
+... + " mode mode.unique mode.count mad mad.raw geo.mean harm.mean"
+... + " trimmed.mean winsorized.mean trim.k"
 ... + " warning"
 
 # Glance order is broom::glance(lm)'s order exactly:

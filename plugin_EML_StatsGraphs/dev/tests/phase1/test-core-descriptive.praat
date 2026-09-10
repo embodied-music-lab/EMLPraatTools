@@ -527,8 +527,12 @@ procedure test_emlDescribe
     .header$ = "--- @emlDescribe ---"
     appendInfoLine: .header$
     # Comprehensive check with Dataset 1: {1,2,3,4,5}
+    # .trim = 0.2, .confidenceLevel = 0.95 -- the pre-existing defaults this
+    # suite's expected numbers were always computed against, now passed
+    # explicitly (API completion wave, order section 4.6: emlDescribe no
+    # longer hardcodes either).
     .d1# = {1, 2, 3, 4, 5}
-    @emlDescribe: .d1#
+    @emlDescribe: .d1#, 0.2, 0.95
     @assertExact: "describe n = 5", emlDescribe.n, 5
     @assertApprox: "describe mean = 3", emlDescribe.mean, 3, tolStat
     @assertApprox: "describe sd = 1.5811", emlDescribe.sd, 1.581139, tolStat
@@ -543,8 +547,27 @@ procedure test_emlDescribe
     @assertApprox: "describe range = 4", emlDescribe.range, 4, tolStat
     @assertApprox: "describe skewness = 0", emlDescribe.skewness, 0, tolStat
     @assertApprox: "describe kurtosis = -1.2", emlDescribe.kurtosis, -1.2, tolStat
-    @assertApprox: "describe ci95Lower", emlDescribe.ci95Lower, 1.036417, tolCI
-    @assertApprox: "describe ci95Upper", emlDescribe.ci95Upper, 4.963583, tolCI
+    @assertApprox: "describe ciLow", emlDescribe.ciLow, 1.036417, tolCI
+    @assertApprox: "describe ciHigh", emlDescribe.ciHigh, 4.963583, tolCI
+    # SIX MORE (API completion wave, order section 4.6): mode is a
+    # five-way tie on {1,2,3,4,5} (every value occurs once), so the first
+    # sorted value wins and .modeUnique is 0.
+    @assertApprox: "describe mode (tied, first value)", emlDescribe.mode,
+    ... 1, tolStat
+    @assertExact: "describe modeUnique = 0 (five-way tie)",
+    ... emlDescribe.modeUnique, 0
+    @assertExact: "describe modeCount = 1", emlDescribe.modeCount, 1
+    @assertApprox: "describe mad (scaled)", emlDescribe.mad, 1.4826, tolStat
+    @assertApprox: "describe madRaw", emlDescribe.madRaw, 1, tolStat
+    @assertApprox: "describe geoMean", emlDescribe.geoMean, 2.605171, tolStat
+    @assertApprox: "describe harmMean", emlDescribe.harmMean, 2.18978,
+    ... tolStat
+    # trim = 0.2 on n=5 -> k = floor(1) = 1 trimmed/replaced each tail.
+    @assertExact: "describe trimK = 1", emlDescribe.trimK, 1
+    @assertApprox: "describe trimmedMean = 3", emlDescribe.trimmedMean, 3,
+    ... tolStat
+    @assertApprox: "describe winsorizedMean = 3", emlDescribe.winsorizedMean,
+    ... 3, tolStat
     # EmlDescribe.summary$ was deleted on 6 Aug 2026: it was a second
     # renderer of the same values that no shipping code read, and it had
     # already drifted from the one users see -- it said "Kurtosis (excess)"

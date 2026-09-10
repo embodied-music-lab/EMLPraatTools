@@ -1387,27 +1387,30 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
 
     elsif .proc$ = "emlRunDescriptiveAnalysis"
         # --- 8. DESCRIPTIVE STATISTICS ------------------------------------
-        @emlRunDescriptiveAnalysis: .tableId, .colA$
+        # No matrix cell drives .groupCol$ or .trim yet (a later step of
+        # this wave); "" and 0.2 are the same no-grouping, dialog-default
+        # call every existing cell already made.
+        @emlRunDescriptiveAnalysis: .tableId, .colA$, "", 0.2
         if emlRunDescriptiveAnalysis.error$ <> ""
             .refused = 1
             .refuseReason$ = emlRunDescriptiveAnalysis.error$
         else
-            @emlKitNum: .cellId$, "n", emlDescribe.n
-            @emlKitNum: .cellId$, "mean", emlDescribe.mean
-            @emlKitNum: .cellId$, "sd", emlDescribe.sd
-            @emlKitNum: .cellId$, "variance", emlDescribe.variance
-            @emlKitNum: .cellId$, "sem", emlDescribe.sem
-            @emlKitNum: .cellId$, "median", emlDescribe.median
-            @emlKitNum: .cellId$, "q1", emlDescribe.q1
-            @emlKitNum: .cellId$, "q3", emlDescribe.q3
-            @emlKitNum: .cellId$, "iqr", emlDescribe.iqr
-            @emlKitNum: .cellId$, "min", emlDescribe.min
-            @emlKitNum: .cellId$, "max", emlDescribe.max
-            @emlKitNum: .cellId$, "range", emlDescribe.range
-            @emlKitNum: .cellId$, "skewness", emlDescribe.skewness
-            @emlKitNum: .cellId$, "kurtosis", emlDescribe.kurtosis
-            @emlKitNum: .cellId$, "ci_low", emlDescribe.ci95Lower
-            @emlKitNum: .cellId$, "ci_high", emlDescribe.ci95Upper
+            @emlKitNum: .cellId$, "n", emlRunDescriptiveAnalysis.n
+            @emlKitNum: .cellId$, "mean", emlRunDescriptiveAnalysis.mean
+            @emlKitNum: .cellId$, "sd", emlRunDescriptiveAnalysis.sd
+            @emlKitNum: .cellId$, "variance", emlRunDescriptiveAnalysis.variance
+            @emlKitNum: .cellId$, "sem", emlRunDescriptiveAnalysis.sem
+            @emlKitNum: .cellId$, "median", emlRunDescriptiveAnalysis.median
+            @emlKitNum: .cellId$, "q1", emlRunDescriptiveAnalysis.q1
+            @emlKitNum: .cellId$, "q3", emlRunDescriptiveAnalysis.q3
+            @emlKitNum: .cellId$, "iqr", emlRunDescriptiveAnalysis.iqr
+            @emlKitNum: .cellId$, "min", emlRunDescriptiveAnalysis.min
+            @emlKitNum: .cellId$, "max", emlRunDescriptiveAnalysis.max
+            @emlKitNum: .cellId$, "range", emlRunDescriptiveAnalysis.range
+            @emlKitNum: .cellId$, "skewness", emlRunDescriptiveAnalysis.skewness
+            @emlKitNum: .cellId$, "kurtosis", emlRunDescriptiveAnalysis.kurtosis
+            @emlKitNum: .cellId$, "ci_low", emlRunDescriptiveAnalysis.ciLow
+            @emlKitNum: .cellId$, "ci_high", emlRunDescriptiveAnalysis.ciHigh
         endif
 
     elsif .proc$ = "emlRunRegressionAnalysis"

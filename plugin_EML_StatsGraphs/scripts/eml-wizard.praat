@@ -2223,7 +2223,11 @@ elsif goal = 3
             @emlClearInfo
         endif
 
-        @emlRunDescriptiveAnalysis: tableId, data_column$
+        ; No group column on this page (single-variable describe); 0.2 is
+        ; the trim default, the same one @emlDescribe used to hardcode
+        ; (API completion wave, order section 4.6) -- the wizard offers no
+        ; trim control of its own.
+        @emlRunDescriptiveAnalysis: tableId, data_column$, "", 0.2
         # Describe must be able to save, which needs the orchestrator to
         # declare -- the Save button is offered only when there is something
         # to export.
@@ -4339,7 +4343,12 @@ procedure wizardRunDescribeByGroup: .tableId, .dataCol$, .groupCol$
             # separately; @emlDescribe computes those and thirteen more from the
             # same vector, so the reported row and the declared row are now the
             # same numbers by construction rather than by both being right.
-            @emlDescribe: eml_getGroupData.data#
+            ; This page reports only mean/SD/median and has no trim or
+            ; alpha control of its own -- 0.2/0.95 are @emlDescribe's own
+            ; former hardcoded defaults, passed through explicitly now that
+            ; the procedure takes them as arguments (API completion wave,
+            ; order section 4.6).
+            @emlDescribe: eml_getGroupData.data#, 0.2, 0.95
             .gMean = emlDescribe.mean
             .gSD = emlDescribe.sd
             .gMed = emlDescribe.median

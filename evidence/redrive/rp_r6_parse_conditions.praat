@@ -39,7 +39,7 @@ emlWizardExplain$ = ""
 writeInfo: ""
 t = Read Table from comma-separated file: "../csv/rp_r6_parse_conditions_input.csv"
 Rename: "r6 three parse conditions"
-@emlRunDescriptiveAnalysis: t, "SPL_soft"
+@emlRunDescriptiveAnalysis: t, "SPL_soft", "", 0.2
 
 text$ = info$ ()
 if left$ (text$, 1) = newline$

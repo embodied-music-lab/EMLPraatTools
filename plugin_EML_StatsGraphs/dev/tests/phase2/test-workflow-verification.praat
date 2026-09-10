@@ -390,6 +390,53 @@ selectObject: tableId
 removeObject: tableId
 
 # ============================================================================
+# SECTION J2: Descriptive report markers (.groupCol$, .trim -- order 4.6)
+# ============================================================================
+
+@emlTestSection: "Descriptive report markers"
+
+tableId = Create Table with column names: "test", 24, "grp Data"
+for .i from 1 to 24
+    if .i = 1
+        .g$ = "solo"
+    elsif .i <= 12
+        .g$ = "A"
+    else
+        .g$ = "B"
+    endif
+    Set string value: .i, "grp", .g$
+    Set numeric value: .i, "Data", 100 + randomGauss (0, 15)
+endfor
+
+selectObject: tableId
+@emlRunDescriptiveAnalysis: tableId, "Data", "", 0.2
+@emlTestAssertTrue: "descriptive door names the full set",
+    ... emlRunDescriptiveAnalysis.n = 24
+    ... and emlRunDescriptiveAnalysis.mode <> undefined
+    ... and emlRunDescriptiveAnalysis.mad <> undefined
+    ... and emlRunDescriptiveAnalysis.geoMean <> undefined
+    ... and emlRunDescriptiveAnalysis.trimmedMean <> undefined
+    ... and emlRunDescriptiveAnalysis.winsorizedMean <> undefined
+    ... and emlRunDescriptiveAnalysis.trimK = 4
+
+selectObject: tableId
+@emlRunDescriptiveAnalysis: tableId, "Data", "grp", 0.2
+@emlTestAssertTrue: "grouped descriptive scalars stay the overall values",
+    ... emlRunDescriptiveAnalysis.n = 24
+@emlTestAssertTrue: "grouped descriptive discloses the n=1 group",
+    ... emlRunDescriptiveAnalysis.warning$ <> ""
+    ... and index (emlRunDescriptiveAnalysis.warning$, "1 observation") > 0
+
+; Trim out of range refuses.
+selectObject: tableId
+@emlRunDescriptiveAnalysis: tableId, "Data", "", 0.6
+@emlTestAssertTrue: "trim >= 0.5 refuses",
+    ... emlRunDescriptiveAnalysis.error$ <> ""
+    ... and emlRunDescriptiveAnalysis.ok = 0
+
+removeObject: tableId
+
+# ============================================================================
 # SECTION K: Explanation helpers produce content
 # ============================================================================
 
