@@ -3516,8 +3516,9 @@ endproc
 # Notes:
 #   - Does NOT call Report one-way anova. No Info window side effect.
 #   - Group labels are in alphabetical order (matching @emlCountGroups)
-#   - When tukey=1, this procedure calls @emlTukeyHSD internally
-#     with alpha = 0.05. For custom alpha, call @emlTukeyHSD directly.
+#   - When tukey=1, this procedure calls @eml_tukeyPairwiseFromGroups
+#     directly (alpha = 0.05) rather than re-extracting groups through a
+#     second procedure.
 #   - Original Table selection is restored on return
 # ============================================================================
 
