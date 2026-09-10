@@ -51,6 +51,22 @@ endif
 # Answers after each run: before the fix a return to this form reseeded
 # from the original guesses and silently discarded what the user had set.
 
+# THE ADJUSTMENT DEFAULT, PERSISTED THE SAME WAY @emlWrapperCommonFields'
+# emlLastShowExplanations is: a session global set once here, remembered
+# across a return to this form and across wrappers, "tukey" the first time
+# nothing has been chosen yet -- the one default this field has (API
+# completion wave order, section 4.1).
+adjMethodKeys$# = { "bonferroni", "holm", "bh", "tukey", "scheffe" }
+if not variableExists ("emlLastTwoWayAdjMethod$")
+    emlLastTwoWayAdjMethod$ = "tukey"
+endif
+guessAdjIdx = 4
+for iAdj from 1 to size (adjMethodKeys$#)
+    if adjMethodKeys$# [iAdj] = emlLastTwoWayAdjMethod$
+        guessAdjIdx = iAdj
+    endif
+endfor
+
 allDone = 0
 repeat
     beginPause: "Two-Way ANOVA"
@@ -68,6 +84,12 @@ repeat
         for iCol from 1 to nCols
             option: emlTableColumnNames.name$ [iCol]
         endfor
+        optionmenu: "Post hoc adjustment", guessAdjIdx
+            option: "Bonferroni"
+            option: "Holm"
+            option: "Benjamini-Hochberg"
+            option: "Tukey"
+            option: "Scheffe"
         @emlWrapperCommonFields
     clicked = endPause: "Quit", "Run", 2, 0
     if clicked = 1
@@ -79,6 +101,9 @@ repeat
     dataCol$ = data_column$
     factor1$ = factor_1$
     factor2$ = factor_2$
+    adjMethodIdx = post_hoc_adjustment
+    adjMethod$ = adjMethodKeys$# [adjMethodIdx]
+    emlLastTwoWayAdjMethod$ = adjMethod$
     # Carry the answers forward so a return to this form shows them.
     @emlKeepChoice: dataCol$, guessDataIdx
     guessDataIdx = emlKeepChoice.idx
@@ -86,6 +111,7 @@ repeat
     guessGroupIdx = emlKeepChoice.idx
     @emlKeepChoice: factor2$, guessFactor2Idx
     guessFactor2Idx = emlKeepChoice.idx
+    guessAdjIdx = adjMethodIdx
     @emlHandleCommonFields
 
     if factor1$ = factor2$
@@ -102,7 +128,8 @@ repeat
         endif
     else
         selectObject: tableId
-        @emlRunTwoWayAnalysis: tableId, dataCol$, factor1$, factor2$, 3
+        @emlRunTwoWayAnalysis: tableId, dataCol$, factor1$, factor2$, 3,
+        ... adjMethod$
         if emlRunTwoWayAnalysis.error$ <> ""
             # An error must not strand the user on a form the error has
             # just ruled out. Present it with guidance, and honour Quit.

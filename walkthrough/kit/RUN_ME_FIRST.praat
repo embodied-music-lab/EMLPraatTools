@@ -1166,7 +1166,17 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
         else
             .ssTypeNum = number (.ssType$)
         endif
-        @emlRunTwoWayAnalysis: .tableId, .colA$, .colB$, .colC$, .ssTypeNum
+        # .adjust$ is matrix.tsv's own field, already carrying the five
+        # post-hoc adjustment keys for the one-way door above; blank on
+        # every cell that predates the two-way post-hoc wave defaults to
+        # "tukey", @emlRunTwoWayAnalysis's own dialog default.
+        if .adjust$ = ""
+            .twAdjMethod$ = "tukey"
+        else
+            .twAdjMethod$ = .adjust$
+        endif
+        @emlRunTwoWayAnalysis: .tableId, .colA$, .colB$, .colC$, .ssTypeNum,
+        ... .twAdjMethod$
         if emlRunTwoWayAnalysis.error$ <> ""
             .refused = 1
             .refuseReason$ = emlRunTwoWayAnalysis.error$

@@ -988,8 +988,14 @@ if goal = 1
             ... "n/a", data_column$, factor_1$ + " × " + factor_2$,
             ... "", displayTable$
 
+            # THE WIZARD HAS NO CONTROL FOR THIS (filed for the graphs
+            # round: wizard parity for the new options), so it passes the
+            # one default the dialog itself falls back to.
+            if not variableExists ("emlLastTwoWayAdjMethod$")
+                emlLastTwoWayAdjMethod$ = "tukey"
+            endif
             @emlRunTwoWayAnalysis: tableId, data_column$,
-            ... factor_1$, factor_2$, 3
+            ... factor_1$, factor_2$, 3, emlLastTwoWayAdjMethod$
             if emlRunTwoWayAnalysis.error$ <> ""
                 # An analysis error must not tear down the wizard. Return
                 # the user into the back-chain with every answer intact.

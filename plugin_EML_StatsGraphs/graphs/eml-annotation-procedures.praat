@@ -7816,6 +7816,178 @@ procedure emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
 endproc
 
 
+# @emlReportTwoWayEMM / @emlReportTwoWaySimpleEffects / @emlReportTwoWayPostHoc
+# ============================================================================
+# The three sections API completion wave section 4.1 adds to the two-way
+# report, printed in this order right after @emlReportTwoWayAnova: estimated
+# marginal means with intervals, simple effects, post hoc per factor. Each
+# reads the matching kernel's OWN globals (emlAnovaKernelTwoWayEMM.*, etc.),
+# fresh at the moment @emlRunTwoWayAnalysis calls it -- the same pattern
+# @emlReportTwoWayAnova itself uses for emlTwoWayAnova.* -- and the door's
+# own .adjMethod$/.twAlpha/.twAlphaText$ fields for the header, since those
+# are stated once on the door and never duplicated as parameters here.
+#
+# AN OPTIONAL BRANCH THAT REFUSED PRINTS "Not available", naming the
+# kernel's own .error$ text, rather than an empty or zero-filled table --
+# the same disclosure the door folds into its own .warning$.
+# ============================================================================
+procedure emlReportTwoWayEMM: .factor1$, .factor2$
+    @emlUnderscoreToSpace: .factor1$
+    .d1$ = emlUnderscoreToSpace.result$
+    @emlUnderscoreToSpace: .factor2$
+    .d2$ = emlUnderscoreToSpace.result$
+
+    @emlReportBlank
+    @emlReportSection: "Estimated Marginal Means"
+    if emlAnovaKernelTwoWayEMM.ok = 0
+        @emlReportNote: "Not available -- " + emlAnovaKernelTwoWayEMM.error$
+    else
+        @emlReportLineString: "Confidence level",
+        ... fixed$ (100 * (1 - emlRunTwoWayAnalysis.twAlpha), 1) + "%"
+        appendInfoLine: ""
+        appendInfoLine: left$ (.d1$ + "                         ", 24),
+        ... left$ ("EMM" + "            ", 12),
+        ... left$ ("SE" + "            ", 12),
+        ... "CI"
+        for .i from 1 to emlAnovaKernelTwoWayEMM.r
+            @eml_fixed: emlAnovaKernelTwoWayEMM.emmA#[.i], 4
+            .m$ = eml_fixed.result$
+            @eml_fixed: emlAnovaKernelTwoWayEMM.seA#[.i], 4
+            .s$ = eml_fixed.result$
+            @eml_fixed: emlAnovaKernelTwoWayEMM.lowA#[.i], 4
+            .lo$ = eml_fixed.result$
+            @eml_fixed: emlAnovaKernelTwoWayEMM.highA#[.i], 4
+            .hi$ = eml_fixed.result$
+            appendInfoLine: left$ (replace$ (emlAnovaKernelTwoWayEMM.lev1$[.i],
+            ... "_", " ", 0) + "                         ", 24),
+            ... left$ (.m$ + "            ", 12),
+            ... left$ (.s$ + "            ", 12),
+            ... "[" + .lo$ + ", " + .hi$ + "]"
+        endfor
+        for .j from 1 to emlAnovaKernelTwoWayEMM.s
+            @eml_fixed: emlAnovaKernelTwoWayEMM.emmB#[.j], 4
+            .m$ = eml_fixed.result$
+            @eml_fixed: emlAnovaKernelTwoWayEMM.seB#[.j], 4
+            .s$ = eml_fixed.result$
+            @eml_fixed: emlAnovaKernelTwoWayEMM.lowB#[.j], 4
+            .lo$ = eml_fixed.result$
+            @eml_fixed: emlAnovaKernelTwoWayEMM.highB#[.j], 4
+            .hi$ = eml_fixed.result$
+            appendInfoLine: left$ (replace$ (emlAnovaKernelTwoWayEMM.lev2$[.j],
+            ... "_", " ", 0) + "                         ", 24),
+            ... left$ (.m$ + "            ", 12),
+            ... left$ (.s$ + "            ", 12),
+            ... "[" + .lo$ + ", " + .hi$ + "]"
+        endfor
+        if emlAnovaKernelTwoWayEMM.warning$ <> ""
+            @emlReportNote: emlAnovaKernelTwoWayEMM.warning$
+        endif
+    endif
+endproc
+
+
+procedure emlReportTwoWaySimpleEffects: .factor1$, .factor2$
+    @emlUnderscoreToSpace: .factor1$
+    .d1$ = emlUnderscoreToSpace.result$
+    @emlUnderscoreToSpace: .factor2$
+    .d2$ = emlUnderscoreToSpace.result$
+
+    @emlReportBlank
+    @emlReportSection: "Simple Effects"
+    if emlAnovaKernelTwoWaySimpleEffects.ok = 0
+        @emlReportNote: "Not available -- "
+        ... + emlAnovaKernelTwoWaySimpleEffects.error$
+    else
+        appendInfoLine: "  " + .d1$ + " within each level of " + .d2$
+        ... + "  (df = " + string$ (emlAnovaKernelTwoWaySimpleEffects.dfAwithinB)
+        ... + ", " + string$ (emlAnovaKernelTwoWaySimpleEffects.dfError) + ")"
+        for .b from 1 to emlAnovaKernelTwoWaySimpleEffects.s
+            @eml_fixed: emlAnovaKernelTwoWaySimpleEffects.fAwithinB#[.b], 4
+            .f$ = eml_fixed.result$
+            @emlFormatP: emlAnovaKernelTwoWaySimpleEffects.pAwithinB#[.b]
+            appendInfoLine: "    "
+            ... + replace$ (emlAnovaKernelTwoWaySimpleEffects.lev2$[.b], "_",
+            ... " ", 0) + ": F = " + .f$ + ", " + emlFormatP.bare$
+        endfor
+        appendInfoLine: "  " + .d2$ + " within each level of " + .d1$
+        ... + "  (df = " + string$ (emlAnovaKernelTwoWaySimpleEffects.dfBwithinA)
+        ... + ", " + string$ (emlAnovaKernelTwoWaySimpleEffects.dfError) + ")"
+        for .a from 1 to emlAnovaKernelTwoWaySimpleEffects.r
+            @eml_fixed: emlAnovaKernelTwoWaySimpleEffects.fBwithinA#[.a], 4
+            .f$ = eml_fixed.result$
+            @emlFormatP: emlAnovaKernelTwoWaySimpleEffects.pBwithinA#[.a]
+            appendInfoLine: "    "
+            ... + replace$ (emlAnovaKernelTwoWaySimpleEffects.lev1$[.a], "_",
+            ... " ", 0) + ": F = " + .f$ + ", " + emlFormatP.bare$
+        endfor
+        if emlAnovaKernelTwoWaySimpleEffects.warning$ <> ""
+            @emlReportNote: emlAnovaKernelTwoWaySimpleEffects.warning$
+        endif
+    endif
+endproc
+
+
+procedure emlReportTwoWayPostHoc: .factorLabel$, .factorSelect
+    @emlUnderscoreToSpace: .factorLabel$
+    .d$ = emlUnderscoreToSpace.result$
+
+    @emlReportBlank
+    @emlReportSection: "Post Hoc -- " + .d$ + " ("
+    ... + emlRunTwoWayAnalysis.adjMethod$ + ", alpha = "
+    ... + emlRunTwoWayAnalysis.twAlphaText$ + ")"
+    if emlAnovaKernelTwoWayPostHoc.ok = 0
+        @emlReportNote: "Not available -- " + emlAnovaKernelTwoWayPostHoc.error$
+    else
+        if emlAnovaKernelTwoWayPostHoc.intervalMethod$ <> ""
+            @emlReportLineString: "Interval",
+            ... emlAnovaKernelTwoWayPostHoc.intervalMethod$
+        endif
+        appendInfoLine: ""
+        appendInfoLine: left$ ("Pair" + "                         ", 26),
+        ... left$ ("Diff" + "            ", 12),
+        ... left$ ("SE" + "            ", 12),
+        ... left$ ("p (adj)" + "                ", 14),
+        ... "CI"
+        for .i from 1 to emlAnovaKernelTwoWayPostHoc.k - 1
+            for .j from .i + 1 to emlAnovaKernelTwoWayPostHoc.k
+                .pairLabel$ = replace$ (emlAnovaKernelTwoWayPostHoc.levelName$[.i],
+                ... "_", " ", 0) + " - "
+                ... + replace$ (emlAnovaKernelTwoWayPostHoc.levelName$[.j],
+                ... "_", " ", 0)
+                @eml_fixed: emlAnovaKernelTwoWayPostHoc.diff##[.i, .j], 4
+                .diffText$ = eml_fixed.result$
+                @eml_fixed: emlAnovaKernelTwoWayPostHoc.se##[.i, .j], 4
+                .seText$ = eml_fixed.result$
+                @emlFormatP: emlAnovaKernelTwoWayPostHoc.pAdj##[.i, .j]
+                .pText$ = emlFormatP.bare$
+                if emlAnovaKernelTwoWayPostHoc.lowCI##[.i, .j] = undefined
+                    .ciText$ = "n/a"
+                else
+                    @eml_fixed: emlAnovaKernelTwoWayPostHoc.lowCI##[.i, .j], 4
+                    .lo$ = eml_fixed.result$
+                    @eml_fixed: emlAnovaKernelTwoWayPostHoc.highCI##[.i, .j], 4
+                    .hi$ = eml_fixed.result$
+                    .ciText$ = "[" + .lo$ + ", " + .hi$ + "]"
+                endif
+                appendInfoLine: left$ (.pairLabel$ + "                         ", 26),
+                ... left$ (.diffText$ + "            ", 12),
+                ... left$ (.seText$ + "            ", 12),
+                ... left$ (.pText$ + "                ", 14),
+                ... .ciText$
+            endfor
+        endfor
+        if emlAnovaKernelTwoWayPostHoc.nUndefined > 0
+            @emlReportNote: string$ (emlAnovaKernelTwoWayPostHoc.nUndefined)
+            ... + " of " + string$ (emlAnovaKernelTwoWayPostHoc.nPairs)
+            ... + " comparisons undefined (zero pairwise SE)."
+        endif
+        if emlAnovaKernelTwoWayPostHoc.warning$ <> ""
+            @emlReportNote: emlAnovaKernelTwoWayPostHoc.warning$
+        endif
+    endif
+endproc
+
+
 # ============================================================================
 # END OF EML ANNOTATION PROCEDURES
 # ============================================================================

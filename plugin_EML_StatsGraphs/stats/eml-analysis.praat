@@ -2853,8 +2853,46 @@ endproc
 #
 # ============================================================================
 
-procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$, .ssType
+procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
+    ... .ssType, .adjMethod$
     .recResult$ = ""
+    ; OPTIONAL-BRANCH OUTPUTS, INITIALISED AT ENTRY (9 Sep 2026, API
+    ; completion wave, order section 4.1). Estimated marginal means, simple
+    ; effects and the two per-factor post-hoc families are each computed by
+    ; their own kernel, on the same reasoning @emlTwoWayAnova's own
+    ; assumption-check fields document: a caller reading these before the
+    ; guards below run, or after a kernel refused, must see "no result" and
+    ; never a stale number from a previous table.
+    .omegaSqA = undefined
+    .omegaSqB = undefined
+    .omegaSqAB = undefined
+    .emmA# = zero# (0)
+    .emmB# = zero# (0)
+    .emmSeA# = zero# (0)
+    .emmSeB# = zero# (0)
+    .emmLowA# = zero# (0)
+    .emmHighA# = zero# (0)
+    .emmLowB# = zero# (0)
+    .emmHighB# = zero# (0)
+    .emmDfError = undefined
+    .seFAwithinB# = zero# (0)
+    .sePAwithinB# = zero# (0)
+    .seFBwithinA# = zero# (0)
+    .sePBwithinA# = zero# (0)
+    .seDfAwithinB = undefined
+    .seDfBwithinA = undefined
+    .seDfError = undefined
+    .phADiff## = zero## (1, 1)
+    .phAP## = zero## (1, 1)
+    .phASe## = zero## (1, 1)
+    .phALow## = zero## (1, 1)
+    .phAHigh## = zero## (1, 1)
+    .phBDiff## = zero## (1, 1)
+    .phBP## = zero## (1, 1)
+    .phBSe## = zero## (1, 1)
+    .phBLow## = zero## (1, 1)
+    .phBHigh## = zero## (1, 1)
+    .phMethod$ = ""
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -2871,6 +2909,21 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$, .ssTy
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
 
+    ; .adjMethod$ VALIDATED BEFORE THE OMNIBUS RUNS -- a bad dialog value is
+    ; a refusal on its own terms, named and remedied at the field that set
+    ; it, not something discovered only after the ANOVA table has already
+    ; been computed and printed. Accepts exactly what
+    ; @emlAnovaKernelTwoWayPostHoc accepts (its own header names the same
+    ; five methods).
+    if .adjMethod$ <> "bonferroni" and .adjMethod$ <> "holm"
+        ... and .adjMethod$ <> "bh" and .adjMethod$ <> "tukey"
+        ... and .adjMethod$ <> "scheffe"
+        .error$ = "Unrecognised post-hoc adjustment """ + .adjMethod$
+            ... + """; expected bonferroni, holm, bh, tukey or scheffe."
+        .remedy$ = "Choose an adjustment from the Post-hoc adjustment field."
+        goto END_TWOWAY
+    endif
+
     # NO INFO-WINDOW SAVE/RESTORE HERE, AND NONE NEEDED. @emlTwoWayAnova
     # routes through @emlAnovaKernelTwoWay rather than Praat's built-in
     # `Report two-way anova`, so it has no Info-window side effect to save
@@ -2880,6 +2933,15 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$, .ssTy
         .error$ = emlTwoWayAnova.error$
         goto END_TWOWAY
     endif
+
+    ; OMEGA SQUARED, NAMED ON THE DOOR (order section 4.1). The kernel
+    ; (@emlAnovaKernelTwoWay, via @emlTwoWayAnova's own re-export) has always
+    ; computed these; this door now states them as its own fields too, the
+    ; same way every other named quantity here is read off emlTwoWayAnova.*
+    ; once and republished under this procedure's name.
+    .omegaSqA = emlTwoWayAnova.omegaSqA
+    .omegaSqB = emlTwoWayAnova.omegaSqB
+    .omegaSqAB = emlTwoWayAnova.omegaSqAB
 
     ; Same reason as the Kruskal-Wallis path: the reporter re-runs the test.
     .recResult$ = .factor1$ + ": F(" + string$ (emlTwoWayAnova.dfA) + ", "
@@ -2899,6 +2961,100 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$, .ssTy
 
     @emlCSVInit
     @emlReportTwoWayAnova: .tableName$, .dataCol$, .factor1$, .factor2$
+
+    ; ── ESTIMATED MARGINAL MEANS, SIMPLE EFFECTS, POST HOC (order section
+    ; 4.1) ──────────────────────────────────────────────────────────────
+    ; These three kernels EXISTED, validated, reached from nowhere live
+    ; (the ruling this wave answers). Each is self-contained -- it re-reads
+    ; the table through its own @eml_ak2_gather rather than depending on
+    ; another kernel's call in this door -- so each is an INDEPENDENT
+    ; optional branch: one kernel's refusal does not stop the others from
+    ; running, and does not refuse this door. Captured into this
+    ; procedure's own fields IMMEDIATELY after each call, before the next
+    ; call (a different kernel, but @emlAnovaKernelTwoWayPostHoc calls
+    ; @emlAnovaKernelTwoWayEMM again internally) can touch the same
+    ; kernel's namespace a second time.
+    @emlReportAlpha
+    .twAlpha = emlReportAlpha.value
+    .twAlphaText$ = emlReportAlpha.text$
+
+    @emlAnovaKernelTwoWayEMM: .tableId, .dataCol$, .factor1$, .factor2$,
+    ... .twAlpha
+    if emlAnovaKernelTwoWayEMM.ok = 1
+        .emmA# = emlAnovaKernelTwoWayEMM.emmA#
+        .emmB# = emlAnovaKernelTwoWayEMM.emmB#
+        .emmSeA# = emlAnovaKernelTwoWayEMM.seA#
+        .emmSeB# = emlAnovaKernelTwoWayEMM.seB#
+        .emmLowA# = emlAnovaKernelTwoWayEMM.lowA#
+        .emmHighA# = emlAnovaKernelTwoWayEMM.highA#
+        .emmLowB# = emlAnovaKernelTwoWayEMM.lowB#
+        .emmHighB# = emlAnovaKernelTwoWayEMM.highB#
+        .emmDfError = emlAnovaKernelTwoWayEMM.dfError
+        for .emmI to emlAnovaKernelTwoWayEMM.r
+            .levelsA$[.emmI] = emlAnovaKernelTwoWayEMM.lev1$[.emmI]
+        endfor
+        for .emmJ to emlAnovaKernelTwoWayEMM.s
+            .levelsB$[.emmJ] = emlAnovaKernelTwoWayEMM.lev2$[.emmJ]
+        endfor
+    else
+        ; AN OPTIONAL BRANCH THAT CANNOT RUN DOES NOT REFUSE THE DOOR: the
+        ; omission is disclosed through the shared warning accumulator
+        ; (@eml_appendWarning, the same one the empty-cell disclosure above
+        ; folds through) and through the report, naming the block and the
+        ; kernel's own .error$ text.
+        @eml_appendWarning: .warning$, "Estimated marginal means omitted -- "
+            ... + emlAnovaKernelTwoWayEMM.error$
+        .warning$ = eml_appendWarning.result$
+    endif
+    @emlReportTwoWayEMM: .factor1$, .factor2$
+
+    @emlAnovaKernelTwoWaySimpleEffects: .tableId, .dataCol$, .factor1$,
+    ... .factor2$
+    if emlAnovaKernelTwoWaySimpleEffects.ok = 1
+        .seFAwithinB# = emlAnovaKernelTwoWaySimpleEffects.fAwithinB#
+        .sePAwithinB# = emlAnovaKernelTwoWaySimpleEffects.pAwithinB#
+        .seFBwithinA# = emlAnovaKernelTwoWaySimpleEffects.fBwithinA#
+        .sePBwithinA# = emlAnovaKernelTwoWaySimpleEffects.pBwithinA#
+        .seDfAwithinB = emlAnovaKernelTwoWaySimpleEffects.dfAwithinB
+        .seDfBwithinA = emlAnovaKernelTwoWaySimpleEffects.dfBwithinA
+        .seDfError = emlAnovaKernelTwoWaySimpleEffects.dfError
+    else
+        @eml_appendWarning: .warning$, "Simple effects omitted -- "
+            ... + emlAnovaKernelTwoWaySimpleEffects.error$
+        .warning$ = eml_appendWarning.result$
+    endif
+    @emlReportTwoWaySimpleEffects: .factor1$, .factor2$
+
+    @emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$,
+    ... 1, .adjMethod$, .twAlpha
+    if emlAnovaKernelTwoWayPostHoc.ok = 1
+        .phADiff## = emlAnovaKernelTwoWayPostHoc.diff##
+        .phASe## = emlAnovaKernelTwoWayPostHoc.se##
+        .phAP## = emlAnovaKernelTwoWayPostHoc.pAdj##
+        .phALow## = emlAnovaKernelTwoWayPostHoc.lowCI##
+        .phAHigh## = emlAnovaKernelTwoWayPostHoc.highCI##
+    else
+        @eml_appendWarning: .warning$, "Post-hoc on " + .factor1$
+            ... + " omitted -- " + emlAnovaKernelTwoWayPostHoc.error$
+        .warning$ = eml_appendWarning.result$
+    endif
+    @emlReportTwoWayPostHoc: .factor1$, 1
+
+    @emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$,
+    ... 2, .adjMethod$, .twAlpha
+    if emlAnovaKernelTwoWayPostHoc.ok = 1
+        .phBDiff## = emlAnovaKernelTwoWayPostHoc.diff##
+        .phBSe## = emlAnovaKernelTwoWayPostHoc.se##
+        .phBP## = emlAnovaKernelTwoWayPostHoc.pAdj##
+        .phBLow## = emlAnovaKernelTwoWayPostHoc.lowCI##
+        .phBHigh## = emlAnovaKernelTwoWayPostHoc.highCI##
+    else
+        @eml_appendWarning: .warning$, "Post-hoc on " + .factor2$
+            ... + " omitted -- " + emlAnovaKernelTwoWayPostHoc.error$
+        .warning$ = eml_appendWarning.result$
+    endif
+    @emlReportTwoWayPostHoc: .factor2$, 2
+    .phMethod$ = .adjMethod$
 
     if .error$ = ""
         @emlResultClearExtras
@@ -2925,7 +3081,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$, .ssTy
         @emlRecordAnalysisStep: .tableId, "Two-way ANOVA",
         ... .dataCol$ + " by " + .factor1$ + " and " + .factor2$,
         ... "Type of sums of squares and the balance of the design both matter here; see the report.",
-        ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """" + ", " + string$ (.ssType),
+        ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """" + ", " + string$ (.ssType) + ", """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Stats & Graphs > Compare two-way (ANOVA)...",
         ... .recResult$, .error$
     endif
