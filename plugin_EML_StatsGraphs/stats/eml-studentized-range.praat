@@ -301,44 +301,68 @@ procedure eml_srqRangeComplement: .w, .cc
     .h = (.domHi - .domLo) / .nPanels
 
     .cc2 = .cc - 2
-    .total = 0
-    for .p from 1 to .nPanels
-        .a0 = .domLo + (.p - 0.5) * .h
-        .b0 = .h / 2
-        .panelSum = 0
-        for .jj from 1 to .nlegq
-            if .jj <= .ihalfq
-                .jx = .jj
-                .sign = -1
-            else
-                .jx = .jj - .ihalfq
-                .sign = 1
-            endif
-            .u = .a0 + .sign * .xlegq# [.jx] * .b0
+    .b0 = .h / 2
 
-            .phiU = exp (-0.5 * .u * .u) * .oneOverSqrt2Pi
-            .aU = gaussQ (-.u)
-            .tU = gaussQ (.w - .u)
-            if .tU > .aU
-                .tU = .aU
-            endif
-            .bU = .aU - .tU
-
-            # SUM_{j=0}^{cc-2} aU^(cc-2-j) * bU^j -- cc = 2 gives the empty
-            # sum range (cc2 = 0), i.e. the single term aU^0*bU^0 = 1,
-            # matching the cc=2 closed form exactly. Plain powers, no
-            # division anywhere (aU can be arbitrarily close to 0 for very
-            # negative u, so a bU/aU ratio form was tried and rejected).
-            .sumPow = 0
-            for .j from 0 to .cc2
-                .sumPow = .sumPow + (.aU ^ (.cc2 - .j)) * (.bU ^ .j)
-            endfor
-
-            .integrand = .phiU * .tU * .sumPow
-            .panelSum = .panelSum + .alegq# [.jx] * .integrand
-        endfor
-        .total = .total + (.panelSum * .b0)
+    # VECTORIZED over the (nPanels x 16) node grid through Praat's compiled
+    # Formula engine. Same abscissae, weights, panels and integrand as the
+    # scalar form; only the per-node loop moves into Formula, because no
+    # distribution function (gaussQ) has a broadcasting vector form in
+    # 6.6.30 -- Formula is the one route that runs gaussQ across many values
+    # at compiled speed. The 16 mirrored Gauss-Legendre offsets (scaled by
+    # the panel half-width .b0) and weights are built once as column-indexed
+    # vectors; a0 per panel is domLo + (row - 0.5) * h. The node sum is
+    # reassociated into one Get-sum (b0 factored out, constant across
+    # panels), so a result can move ~1e-13 relative against the scalar form,
+    # inside the acceptance rule for this port. gaussQ's SUM_j term
+    # (SUM_{j=0}^{cc2} aU^(cc2-j) * bU^j) is accumulated across cc2+1 Formula
+    # passes; cc2 = 0 leaves the single term aU^0*bU^0 = 1, matching the cc=2
+    # closed form. Working matrices are created, summed and removed within
+    # this call; the caller's object selection is saved and restored.
+    .off# = zero# (16)
+    .wt# = zero# (16)
+    for .j to 8
+        .off# [.j]     = -.xlegq# [.j] * .b0
+        .off# [.j + 8] =  .xlegq# [.j] * .b0
+        .wt# [.j]      = .alegq# [.j]
+        .wt# [.j + 8]  = .alegq# [.j]
     endfor
+    eml_srqQ_domLo = .domLo
+    eml_srqQ_h = .h
+    eml_srqQ_w = .w
+    eml_srqQ_c = .oneOverSqrt2Pi
+    eml_srqQ_off# = .off#
+    eml_srqQ_wt# = .wt#
+    .savedSel# = selected# ()
+    Create simple Matrix: "eml_srqQ_u", .nPanels, 16, "0"
+    .uId = selected ("Matrix")
+    Formula: "eml_srqQ_domLo + (row - 0.5) * eml_srqQ_h + eml_srqQ_off# [col]"
+    selectObject: .uId
+    Copy: "eml_srqQ_a"
+    .aId = selected ("Matrix")
+    Formula: "gaussQ (-self)"
+    selectObject: .uId
+    Copy: "eml_srqQ_t"
+    .tId = selected ("Matrix")
+    Formula: "gaussQ (eml_srqQ_w - self)"
+    Formula: "min (self, Matrix_eml_srqQ_a [row, col])"
+    Create simple Matrix: "eml_srqQ_s", .nPanels, 16, "0"
+    .sId = selected ("Matrix")
+    for .j from 0 to .cc2
+        eml_srqQ_pcc = .cc2 - .j
+        eml_srqQ_pj = .j
+        selectObject: .sId
+        Formula: "self + (Matrix_eml_srqQ_a [row, col] ^ eml_srqQ_pcc) * ((Matrix_eml_srqQ_a [row, col] - Matrix_eml_srqQ_t [row, col]) ^ eml_srqQ_pj)"
+    endfor
+    selectObject: .sId
+    Copy: "eml_srqQ_f"
+    .fId = selected ("Matrix")
+    Formula: "eml_srqQ_wt# [col] * exp (-0.5 * Matrix_eml_srqQ_u [row, col] * Matrix_eml_srqQ_u [row, col]) * eml_srqQ_c * Matrix_eml_srqQ_t [row, col] * self"
+    .cellSum = Get sum
+    removeObject: .uId, .aId, .tId, .sId, .fId
+    if size (.savedSel#) > 0
+        selectObject: .savedSel#
+    endif
+    .total = .b0 * .cellSum
 
     .compRange = .cc * .total
     if .compRange < 0
@@ -539,6 +563,29 @@ endproc
 #                to its own internal tolerance within the panel budget
 #                (the returned .p is still the best available estimate)
 # ============================================================================
+# ============================================================================
+# @emlSrqFwdCacheInit
+# Session-level direct-mapped cache for @emlStudentizedRangeQ's forward
+# probability, keyed on the exact (q, k, df, nranges). It speeds repeated
+# identical evaluations -- chiefly a kit sweep, which runs each cell at two
+# alpha levels where the studentized-range p-values are identical across both
+# passes. A single analysis computes a distinct q per pair, so it sees no
+# hits. The cache never changes a returned value: fixed capacity, a collision
+# overwrites, and every hit is verified against the full stored key, so a
+# collision is a miss rather than a wrong answer.
+# ============================================================================
+procedure emlSrqFwdCacheInit
+    if not variableExists ("emlSrqFwdReady")
+        emlSrqFwdCap = 512
+        for .s from 0 to emlSrqFwdCap - 1
+            emlSrqFwdKey$ [.s] = ""
+            emlSrqFwdVal [.s] = 0
+        endfor
+        emlSrqFwdReady = 1
+    endif
+endproc
+
+
 procedure emlStudentizedRangeQ: .q, .k, .df, .nranges
     .ok = 0
     .error$ = ""
@@ -555,7 +602,23 @@ procedure emlStudentizedRangeQ: .q, .k, .df, .nranges
         .error$ = "nranges must be >= 1; got " + string$ (.nranges) + "."
     endif
 
+    # Session cache lookup (see @emlSrqFwdCacheInit). Keyed on the exact
+    # arguments; a hit returns the stored probability and skips the compute.
+    .srqHit = 0
     if .error$ = ""
+        @emlSrqFwdCacheInit
+        .srqKey$ = string$ (.q) + "," + string$ (.k) + "," + string$ (.df)
+        ... + "," + string$ (.nranges)
+        .srqHi = abs (round (.q * 97 + .k * 89 + .df * 83 + .nranges * 79))
+        .srqSlot = .srqHi - emlSrqFwdCap * floor (.srqHi / emlSrqFwdCap)
+        if emlSrqFwdKey$ [.srqSlot] = .srqKey$
+            .p = emlSrqFwdVal [.srqSlot]
+            .ok = 1
+            .srqHit = 1
+        endif
+    endif
+
+    if .error$ = "" and .srqHit = 0
         if .q <= 0
             .p = 1
             .ok = 1
@@ -854,6 +917,9 @@ procedure emlStudentizedRangeQ: .q, .k, .df, .nranges
             endif
             .ok = 1
         endif
+        # store the freshly computed probability under its exact key
+        emlSrqFwdKey$ [.srqSlot] = .srqKey$
+        emlSrqFwdVal [.srqSlot] = .p
     endif
 endproc
 
