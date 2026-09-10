@@ -25,17 +25,42 @@
 #   col_a        1st column argument: dataCol / col1 / colX / depCol /
 #                predCol, or the pipe-delimited condition list for the
 #                repeated-measures pair, or the case label for Wilson
-#   col_b        2nd column argument: groupCol / col2 / colY / factor1 / respCol
-#   col_c        3rd: factor2, or the grouping column for grouped regression
+#   col_b        2nd column argument: groupCol / col2 / colY / factor1 / respCol,
+#                or (API completion wave, order section 4.6) the grouping
+#                column for emlRunDescriptiveAnalysis
+#   col_c        3rd: factor2, the grouping column for grouped regression, or
+#                (API completion wave, order section 4.4) the grouping
+#                column for emlRunCorrelationAnalysis
 #   test         the test-selecting argument, verbatim as passed; empty where
-#                the procedure has no test axis
+#                the procedure has no test axis; also (API completion wave,
+#                order section 4.3) emlRunRegressionAnalysis's .estimator$
+#                ("ols" | "theil-sen", empty = "ols") -- the same column
+#                every other door's own test-type axis already occupies
 #   posthoc      post-hoc selector as passed: 0/1 for doTukey, doDunn and
 #                doPostHoc; empty where the procedure has none
-#   adjust       bonferroni | holm | bh | none; empty where not taken
+#   adjust       bonferroni | holm | bh | none, or (two-way post-hoc adjustment
+#                wave) tukey | scheffe for emlRunTwoWayAnalysis's .adjMethod$
+#                (empty = "tukey", the dialog default); also (API completion
+#                wave, order section 4.6) emlRunDescriptiveAnalysis's .trim,
+#                read as a number (0 <= trim < 0.5, empty or out of range =
+#                0.2, the dialog default) -- a THIRD reuse of this column,
+#                colliding with neither the two-way method name nor the
+#                survey lane's own boolean continuity-correction use
 #   equal_var    0/1, two-group only
 #   group_order  discovery | alphabetical -> emlGroupSortAlphabetical 0/1;
 #                empty where the procedure never calls @emlCountGroups
-#   conf         confidence level, survey lane
+#   conf         confidence level, survey lane; also (API completion wave,
+#                order section 4.1-4.6) the alpha in force for the six
+#                analysis-lane doors this wave adds interval work to
+#                (two-way, ANOVA, regression, correlation, two-group,
+#                descriptive) -- 0 is the sentinel for "no override" (the
+#                plugin's own 0.05 default), a value in (0,1) such as
+#                "0.10" sets the global emlAlpha every one of those doors'
+#                own @emlReportAlpha call already reads, mirrored by
+#                run_analyses.R's alphaInForce(). A THIRD, alpha-shaped
+#                reuse of this column, distinct from both its survey-lane
+#                confidence-level use and the analysis lane's own absence
+#                of an alpha column before this wave.
 #   correction   Yates on/off, chi-square only
 #   prereq       a call that must run first in the same session, "proc:args"
 #   expect       ok | refuse -- a refusal that happens correctly is evidence
@@ -813,3 +838,43 @@ c0686	survey	emlRunProportionAnalysis	lane_survey_prop_raw	passed	yes							0.95
 c0687	survey	emlRunProportionAnalysis	lane_survey_prop_raw	passed	yes							0.99			ok	raw one-row-per-respondent; conf 0.99		options
 c0688	survey	emlRunProportionAnalysis	lane_survey_prop_counts	response	yes	n						0.95			ok	pre-aggregated (37 yes, 83 no); count column in col_c; successValue in col_b		options
 c0689	survey	emlRunProportionAnalysis	lane_survey_prop_counts	response	yes	n						0.99			ok	pre-aggregated; conf 0.99		options
+c0696	analysis	emlRunAnovaAnalysis	v22_heteroscedastic_input	SPL_dB	group			1			discovery	0			ok	Brown-Forsythe rejects at alpha; Welch and Games-Howell print beside the standard result		options
+c0697	analysis	emlRunAnovaAnalysis	v22_heteroscedastic_input	SPL_dB	group			1			discovery	0.10			ok	Brown-Forsythe rejects at alpha; Welch and Games-Howell print beside the standard result; alpha=0.10		options
+c0698	analysis	emlRunAnovaAnalysis	v22_homoscedastic_input	SPL_dB	group			1			discovery	0			ok	Brown-Forsythe does not reject; Welch and Games-Howell computed and named, not printed		options
+c0699	analysis	emlRunAnovaAnalysis	v22_homoscedastic_input	SPL_dB	group			1			discovery	0.10			ok	Brown-Forsythe does not reject; Welch and Games-Howell computed and named, not printed; alpha=0.10		options
+c0700	analysis	emlRunRegressionAnalysis	v13_regression_ties_input	y	x		ols					0			ok	five distinct x values (four rows each); Theil-Sen skips equal-x pairs, ts_nslopes < n(n-1)/2; estimator=ols		options
+c0701	analysis	emlRunRegressionAnalysis	v13_regression_ties_input	y	x		ols					0.10			ok	five distinct x values (four rows each); Theil-Sen skips equal-x pairs, ts_nslopes < n(n-1)/2; estimator=ols; alpha=0.10		options
+c0702	analysis	emlRunRegressionAnalysis	v13_regression_ties_input	y	x		theil-sen					0			ok	five distinct x values (four rows each); Theil-Sen skips equal-x pairs, ts_nslopes < n(n-1)/2; estimator=theil-sen		options
+c0703	analysis	emlRunRegressionAnalysis	v13_regression_ties_input	y	x		theil-sen					0.10			ok	five distinct x values (four rows each); Theil-Sen skips equal-x pairs, ts_nslopes < n(n-1)/2; estimator=theil-sen; alpha=0.10		options
+c0704	analysis	emlRunRegressionAnalysis	v13_regression_theil_input	y	x		ols					0			ok	two gross outliers; OLS and Theil-Sen differ, both graded; estimator=ols		options
+c0705	analysis	emlRunRegressionAnalysis	v13_regression_theil_input	y	x		ols					0.10			ok	two gross outliers; OLS and Theil-Sen differ, both graded; estimator=ols; alpha=0.10		options
+c0706	analysis	emlRunRegressionAnalysis	v13_regression_theil_input	y	x		theil-sen					0			ok	two gross outliers; OLS and Theil-Sen differ, both graded; estimator=theil-sen		options
+c0707	analysis	emlRunRegressionAnalysis	v13_regression_theil_input	y	x		theil-sen					0.10			ok	two gross outliers; OLS and Theil-Sen differ, both graded; estimator=theil-sen; alpha=0.10		options
+c0708	analysis	emlRunCorrelationAnalysis	v12_correlation_groups_input	x	y	group	pearson					0			ok	grouped (pearson); group 1 (n=3) skipped and disclosed, others r~0.9/0.0/-0.7		options
+c0709	analysis	emlRunCorrelationAnalysis	v12_correlation_groups_input	x	y	group	pearson					0.10			ok	grouped (pearson); group 1 (n=3) skipped and disclosed, others r~0.9/0.0/-0.7; alpha=0.10		options
+c0710	analysis	emlRunCorrelationAnalysis	v12_correlation_groups_input	x	y	group	spearman					0			ok	grouped (spearman); group 1 (n=3) skipped and disclosed, others r~0.9/0.0/-0.7		options
+c0711	analysis	emlRunCorrelationAnalysis	v12_correlation_groups_input	x	y	group	spearman					0.10			ok	grouped (spearman); group 1 (n=3) skipped and disclosed, others r~0.9/0.0/-0.7; alpha=0.10		options
+c0712	analysis	emlRunCorrelationAnalysis	v12_correlation_groups_input	x	y	group	both					0			ok	grouped (both); group 1 (n=3) skipped and disclosed, others r~0.9/0.0/-0.7		options
+c0713	analysis	emlRunCorrelationAnalysis	v12_correlation_groups_input	x	y	group	both					0.10			ok	grouped (both); group 1 (n=3) skipped and disclosed, others r~0.9/0.0/-0.7; alpha=0.10		options
+c0714	analysis	emlRunDescriptiveAnalysis	v14_descriptive_groups_input	value	group							0			ok	grouped; n=1/5/12/30; n=30 group has a unique mode; n=5 group has a zero in value (geo/harm mean refuse, disclosed)		options
+c0715	analysis	emlRunDescriptiveAnalysis	v14_descriptive_groups_input	value	group							0.10			ok	grouped; n=1/5/12/30; n=30 group has a unique mode; n=5 group has a zero in value (geo/harm mean refuse, disclosed); alpha=0.10		options
+c0716	analysis	emlRunDescriptiveAnalysis	v14_descriptive_groups_input	value_pos	group							0			ok	grouped, strictly-positive column: geometric and harmonic mean compute in every group (contrast with the value column's n=5 refusal)		options
+c0717	analysis	emlRunAnovaAnalysis	v15_missing_tokens_input	x	group			0			discovery				ok	x carries one each of empty/NA/n-a/--undefined--/?/. ; six rows excluded and disclosed, listwise		options
+c0718	analysis	emlRunCorrelationAnalysis	v15_missing_tokens_input	x	y		pearson								ok	x carries the six missing-value tokens; rows excluded and disclosed		options
+c0719	analysis	emlRunRegressionAnalysis	v15_missing_tokens_input	y	x		ols								ok	predictor x carries the six missing-value tokens; rows excluded and disclosed		options
+c0720	analysis	emlRunDescriptiveAnalysis	v15_missing_tokens_input	x	group										ok	x carries the six missing-value tokens; rows excluded and disclosed, per group and overall		options
+c0721	analysis	emlRunTwoWayAnalysis	v15_missing_tokens_input	x	group	factor2									ok	x carries the six missing-value tokens; listwise-excluded on data/factor1/factor2, kernel runs on the remaining possibly-unbalanced design		options
+c0722	analysis	emlRunTwoWayAnalysis	v15_missing_tokens_emptycell_input	x	group	factor2									refuse	all four rows of one factor-cell are NA in x; exclusion empties that cell, door refuses naming the empty cell and the excluded rows		options
+c0723	analysis	emlRunDescriptiveAnalysis	v15_missing_tokens_emptycell_input	x	group										ok	one cell's four rows are NA in x; every other door excludes and lists them (no factor-cell concept here, so no refusal)		options
+c0724	analysis	emlRunTwoWayAnalysis	v11_twoway_input	SPL_dB	voice_type	task			bonferroni						ok	balanced 2x2 (companion to c0357, which runs the implicit tukey default); post-hoc adjustment=bonferroni		options
+c0725	analysis	emlRunTwoWayAnalysis	v11_twoway_input	SPL_dB	voice_type	task			holm						ok	balanced 2x2 (companion to c0357, which runs the implicit tukey default); post-hoc adjustment=holm		options
+c0726	analysis	emlRunTwoWayAnalysis	v11_twoway_input	SPL_dB	voice_type	task			bh						ok	balanced 2x2 (companion to c0357, which runs the implicit tukey default); post-hoc adjustment=bh		options
+c0727	analysis	emlRunTwoWayAnalysis	v11_twoway_input	SPL_dB	voice_type	task			scheffe						ok	balanced 2x2 (companion to c0357, which runs the implicit tukey default); post-hoc adjustment=scheffe		options
+c0728	analysis	emlRunTwoWayAnalysis	v11_twoway_unbalanced_input	SPL_dB	voice_type	task			bonferroni						ok	unbalanced 2x2 (companion to c0674, which runs the implicit tukey default); post-hoc adjustment=bonferroni		options
+c0729	analysis	emlRunTwoWayAnalysis	v11_twoway_unbalanced_input	SPL_dB	voice_type	task			holm						ok	unbalanced 2x2 (companion to c0674, which runs the implicit tukey default); post-hoc adjustment=holm		options
+c0730	analysis	emlRunTwoWayAnalysis	v11_twoway_unbalanced_input	SPL_dB	voice_type	task			bh						ok	unbalanced 2x2 (companion to c0674, which runs the implicit tukey default); post-hoc adjustment=bh		options
+c0731	analysis	emlRunTwoWayAnalysis	v11_twoway_unbalanced_input	SPL_dB	voice_type	task			scheffe						ok	unbalanced 2x2 (companion to c0674, which runs the implicit tukey default); post-hoc adjustment=scheffe		options
+c0732	analysis	emlRunTwoWayAnalysis	v11_twoway_3level_input	SPL_dB	voice_type	task			bonferroni						ok	unbalanced 3x2 (companion to c0675, which runs the implicit tukey default); post-hoc adjustment=bonferroni		options
+c0733	analysis	emlRunTwoWayAnalysis	v11_twoway_3level_input	SPL_dB	voice_type	task			holm						ok	unbalanced 3x2 (companion to c0675, which runs the implicit tukey default); post-hoc adjustment=holm		options
+c0734	analysis	emlRunTwoWayAnalysis	v11_twoway_3level_input	SPL_dB	voice_type	task			bh						ok	unbalanced 3x2 (companion to c0675, which runs the implicit tukey default); post-hoc adjustment=bh		options
+c0735	analysis	emlRunTwoWayAnalysis	v11_twoway_3level_input	SPL_dB	voice_type	task			scheffe						ok	unbalanced 3x2 (companion to c0675, which runs the implicit tukey default); post-hoc adjustment=scheffe		options

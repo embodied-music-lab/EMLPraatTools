@@ -888,6 +888,24 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
     .refused = 0
     .refuseReason$ = ""
 
+    ; THE ALPHA IN FORCE FOR THE SIX ANALYSIS-LANE DOORS THIS WAVE ADDS
+    ; INTERVAL WORK TO (API completion wave, order section 8). @emlReportAlpha
+    ; (stats/eml-analysis.praat) reads the global `emlAlpha` when it is a
+    ; usable value (0 < emlAlpha < 1) and falls back to 0.05 otherwise -- the
+    ; SAME global every one of these doors already consults internally,
+    ; never a literal passed as an argument. matrix.tsv's `conf` column
+    ; drives it here for the analysis lane, the third reuse of that column
+    ; run_analyses.R's own alphaInForce() documents (0 = the sentinel for
+    ; "no override", "0.10" = an explicit alpha) -- SET AND RESET ON EVERY
+    ; CELL so a "0.10" row never leaks its override into the next cell,
+    ; which may have no `conf` value at all.
+    .kitConfN = number (.conf$)
+    if .kitConfN <> undefined and .kitConfN > 0 and .kitConfN < 1
+        emlAlpha = .kitConfN
+    else
+        emlAlpha = undefined
+    endif
+
     if .proc$ = "emlRunTwoGroupAnalysis"
         # --- 1. TWO INDEPENDENT GROUPS -----------------------------------
         .equalVarN = number (.equalVar$)
@@ -910,6 +928,12 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
             ... emlRunTwoGroupAnalysis.median2
             @emlKitNum: .cellId$, "mean_diff", emlRunTwoGroupAnalysis.mean1
             ... - emlRunTwoGroupAnalysis.mean2
+            # THE MEAN-DIFFERENCE INTERVAL (order section 4.5/8), named on
+            # the door as .diffLow/.diffHigh; set only when the parametric
+            # branch ran (pooled or Welch per .equalVar$), undefined and
+            # disclosed otherwise -- the _undefined marker.
+            @emlKitNum: .cellId$, "diff_low", emlRunTwoGroupAnalysis.diffLow
+            @emlKitNum: .cellId$, "diff_high", emlRunTwoGroupAnalysis.diffHigh
 
             .parRan = (emlRunTwoGroupAnalysis.stOmniLabel$ = "t")
             .nonRan = (emlRunTwoGroupAnalysis.stOmniLabel$ = "U")
@@ -968,6 +992,48 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
             @emlKitNum: .cellId$, "ss_total", emlOneWayAnova.ssTotal
             @emlKitNum: .cellId$, "ms_between", emlOneWayAnova.msBetween
             @emlKitNum: .cellId$, "ms_within", emlOneWayAnova.msWithin
+
+            # BROWN-FORSYTHE / WELCH / GAMES-HOWELL, COMPUTED EVERY RUN
+            # (order section 4.2, section 8 declarations). Named on the
+            # door as .bf*/.welch*/.gh*; emitted here under the plain
+            # bf_/welch_/gh_ names run_analyses.R's own oracle already uses.
+            @emlKitNum: .cellId$, "bf_f", emlRunAnovaAnalysis.bfF
+            @emlKitNum: .cellId$, "bf_df1", emlRunAnovaAnalysis.bfDf1
+            @emlKitNum: .cellId$, "bf_df2", emlRunAnovaAnalysis.bfDf2
+            @emlKitNum: .cellId$, "bf_p", emlRunAnovaAnalysis.bfP
+            @emlKitNum: .cellId$, "bf_rejects", emlRunAnovaAnalysis.bfRejects
+            @emlKitNum: .cellId$, "welch_f", emlRunAnovaAnalysis.welchF
+            @emlKitNum: .cellId$, "welch_df1", emlRunAnovaAnalysis.welchDf1
+            @emlKitNum: .cellId$, "welch_df2", emlRunAnovaAnalysis.welchDf2
+            @emlKitNum: .cellId$, "welch_p", emlRunAnovaAnalysis.welchP
+            # Games-Howell needs every group n >= 2 (the kernel's own
+            # floor); the door leaves .ghDiffMat## etc. at their entry
+            # zero##(1,1) when it could not run, which is why this loop is
+            # gated on the group count actually reached rather than on
+            # emlRunAnovaAnalysis.ok, which stays 1 either way.
+            .nGH = emlRunAnovaAnalysis.stNGroups
+            if numberOfRows (emlRunAnovaAnalysis.ghDiffMat##) <> .nGH
+                .nGH = 0
+            endif
+            for .ghPi from 1 to .nGH - 1
+                for .ghPj from .ghPi + 1 to .nGH
+                    @emlKitPairName: emlPublishInLabel$ [.ghPi],
+                    ... emlPublishInLabel$ [.ghPj]
+                    .ghPn$ = "gh_" + emlKitPairName.result$
+                    @emlKitNum: .cellId$, .ghPn$ + "_diff",
+                    ... emlRunAnovaAnalysis.ghDiffMat## [.ghPi, .ghPj]
+                    @emlKitNum: .cellId$, .ghPn$ + "_se",
+                    ... emlRunAnovaAnalysis.ghSeMat## [.ghPi, .ghPj]
+                    @emlKitNum: .cellId$, .ghPn$ + "_df",
+                    ... emlRunAnovaAnalysis.ghDfMat## [.ghPi, .ghPj]
+                    @emlKitNum: .cellId$, .ghPn$ + "_padj",
+                    ... emlRunAnovaAnalysis.ghPMat## [.ghPi, .ghPj]
+                    @emlKitNum: .cellId$, .ghPn$ + "_low",
+                    ... emlRunAnovaAnalysis.ghLowMat## [.ghPi, .ghPj]
+                    @emlKitNum: .cellId$, .ghPn$ + "_high",
+                    ... emlRunAnovaAnalysis.ghHighMat## [.ghPi, .ghPj]
+                endfor
+            endfor
 
             # The pairwise Cohen's d matrix is ALWAYS populated (Tukey's own
             # when doTukey=1, the orchestrator's own fallback loop when
@@ -1227,6 +1293,125 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
             ... emlTwoWayAnova.msAB
             @emlKitNum: .cellId$, .f1$ + "__" + .f2$
             ... + "_partial_eta_squared", emlTwoWayAnova.partialEtaSqAB
+
+            # OMEGA SQUARED, NAMED NEW ON THE DOOR (order section 4.1/8).
+            @emlKitNum: .cellId$, "omega_sq_" + .f1$,
+            ... emlRunTwoWayAnalysis.omegaSqA
+            @emlKitNum: .cellId$, "omega_sq_" + .f2$,
+            ... emlRunTwoWayAnalysis.omegaSqB
+            @emlKitNum: .cellId$, "omega_sq_" + .f1$ + "__" + .f2$,
+            ... emlRunTwoWayAnalysis.omegaSqAB
+
+            # ESTIMATED MARGINAL MEANS, SIMPLE EFFECTS, POST HOC (order
+            # section 4.1/8) -- the three kernels this wave wired onto the
+            # door. Each is an independent optional branch (the door's own
+            # .warning$ discloses a kernel that could not run); the
+            # matrices here stay at their entry zero##(1,1)/zero#(0) in
+            # that case, so every loop below is bounded by the ACTUAL level
+            # count read off @emlTwoWayAnova (.nLev1/.nLev2), guarded by
+            # the vector/matrix's own size rather than assumed.
+            .twR = emlTwoWayAnova.nLev1
+            .twS = emlTwoWayAnova.nLev2
+            if size (emlRunTwoWayAnalysis.emmA#) = .twR
+                for .twI to .twR
+                    @emlKitSlug: emlRunTwoWayAnalysis.levelsA$ [.twI]
+                    .twLA$ = "emm_" + .f1$ + "_" + emlKitSlug.result$
+                    @emlKitNum: .cellId$, .twLA$,
+                    ... emlRunTwoWayAnalysis.emmA# [.twI]
+                    @emlKitNum: .cellId$, .twLA$ + "_se",
+                    ... emlRunTwoWayAnalysis.emmSeA# [.twI]
+                    @emlKitNum: .cellId$, .twLA$ + "_low",
+                    ... emlRunTwoWayAnalysis.emmLowA# [.twI]
+                    @emlKitNum: .cellId$, .twLA$ + "_high",
+                    ... emlRunTwoWayAnalysis.emmHighA# [.twI]
+                endfor
+            endif
+            if size (emlRunTwoWayAnalysis.emmB#) = .twS
+                for .twJ to .twS
+                    @emlKitSlug: emlRunTwoWayAnalysis.levelsB$ [.twJ]
+                    .twLB$ = "emm_" + .f2$ + "_" + emlKitSlug.result$
+                    @emlKitNum: .cellId$, .twLB$,
+                    ... emlRunTwoWayAnalysis.emmB# [.twJ]
+                    @emlKitNum: .cellId$, .twLB$ + "_se",
+                    ... emlRunTwoWayAnalysis.emmSeB# [.twJ]
+                    @emlKitNum: .cellId$, .twLB$ + "_low",
+                    ... emlRunTwoWayAnalysis.emmLowB# [.twJ]
+                    @emlKitNum: .cellId$, .twLB$ + "_high",
+                    ... emlRunTwoWayAnalysis.emmHighB# [.twJ]
+                endfor
+            endif
+            @emlKitNum: .cellId$, "emm_df_error",
+            ... emlRunTwoWayAnalysis.emmDfError
+
+            # SIMPLE EFFECTS: A within each level of B, B within each level
+            # of A -- one F/p per slice, per @emlAnovaKernelTwoWaySimpleEffects'
+            # own indexing.
+            if size (emlRunTwoWayAnalysis.seFAwithinB#) = .twS
+                for .twJ to .twS
+                    @emlKitSlug: emlRunTwoWayAnalysis.levelsB$ [.twJ]
+                    .twSeA$ = "se_" + .f1$ + "_within_" + .f2$ + "_"
+                    ... + emlKitSlug.result$
+                    @emlKitNum: .cellId$, .twSeA$ + "_f",
+                    ... emlRunTwoWayAnalysis.seFAwithinB# [.twJ]
+                    @emlKitNum: .cellId$, .twSeA$ + "_p",
+                    ... emlRunTwoWayAnalysis.sePAwithinB# [.twJ]
+                endfor
+            endif
+            if size (emlRunTwoWayAnalysis.seFBwithinA#) = .twR
+                for .twI to .twR
+                    @emlKitSlug: emlRunTwoWayAnalysis.levelsA$ [.twI]
+                    .twSeB$ = "se_" + .f2$ + "_within_" + .f1$ + "_"
+                    ... + emlKitSlug.result$
+                    @emlKitNum: .cellId$, .twSeB$ + "_f",
+                    ... emlRunTwoWayAnalysis.seFBwithinA# [.twI]
+                    @emlKitNum: .cellId$, .twSeB$ + "_p",
+                    ... emlRunTwoWayAnalysis.sePBwithinA# [.twI]
+                endfor
+            endif
+
+            # POST HOC PER FACTOR, at the ONE adjustment method this row's
+            # own .adjust$ named (.twAdjMethod$ above). posthoc_<FACTOR>_<PAIR>_*
+            # under the plain _low/_high names (not _ci_low/_ci_high) --
+            # run_analyses.R's own oracle (emmeans::pairs/confint) already
+            # uses these.
+            if numberOfRows (emlRunTwoWayAnalysis.phADiff##) = .twR
+                for .twI from 1 to .twR - 1
+                    for .twJ from .twI + 1 to .twR
+                        @emlKitPairName: emlRunTwoWayAnalysis.levelsA$ [.twI],
+                        ... emlRunTwoWayAnalysis.levelsA$ [.twJ]
+                        .twPn$ = "posthoc_" + .f1$ + "_" + emlKitPairName.result$
+                        @emlKitNum: .cellId$, .twPn$ + "_diff",
+                        ... emlRunTwoWayAnalysis.phADiff## [.twI, .twJ]
+                        @emlKitNum: .cellId$, .twPn$ + "_se",
+                        ... emlRunTwoWayAnalysis.phASe## [.twI, .twJ]
+                        @emlKitNum: .cellId$, .twPn$ + "_padj",
+                        ... emlRunTwoWayAnalysis.phAP## [.twI, .twJ]
+                        @emlKitNum: .cellId$, .twPn$ + "_low",
+                        ... emlRunTwoWayAnalysis.phALow## [.twI, .twJ]
+                        @emlKitNum: .cellId$, .twPn$ + "_high",
+                        ... emlRunTwoWayAnalysis.phAHigh## [.twI, .twJ]
+                    endfor
+                endfor
+            endif
+            if numberOfRows (emlRunTwoWayAnalysis.phBDiff##) = .twS
+                for .twI from 1 to .twS - 1
+                    for .twJ from .twI + 1 to .twS
+                        @emlKitPairName: emlRunTwoWayAnalysis.levelsB$ [.twI],
+                        ... emlRunTwoWayAnalysis.levelsB$ [.twJ]
+                        .twPn$ = "posthoc_" + .f2$ + "_" + emlKitPairName.result$
+                        @emlKitNum: .cellId$, .twPn$ + "_diff",
+                        ... emlRunTwoWayAnalysis.phBDiff## [.twI, .twJ]
+                        @emlKitNum: .cellId$, .twPn$ + "_se",
+                        ... emlRunTwoWayAnalysis.phBSe## [.twI, .twJ]
+                        @emlKitNum: .cellId$, .twPn$ + "_padj",
+                        ... emlRunTwoWayAnalysis.phBP## [.twI, .twJ]
+                        @emlKitNum: .cellId$, .twPn$ + "_low",
+                        ... emlRunTwoWayAnalysis.phBLow## [.twI, .twJ]
+                        @emlKitNum: .cellId$, .twPn$ + "_high",
+                        ... emlRunTwoWayAnalysis.phBHigh## [.twI, .twJ]
+                    endfor
+                endfor
+            endif
         endif
 
     elsif .proc$ = "emlRunPairedAnalysis"
@@ -1301,10 +1486,11 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
 
     elsif .proc$ = "emlRunCorrelationAnalysis"
         # --- 7. CORRELATION -----------------------------------------------
-        # No matrix cell drives .groupCol$ yet (the grouped-correlation
-        # fixture and cells land in a later commit of this wave) -- "" here
-        # is the same no-grouping call every existing cell already made.
-        @emlRunCorrelationAnalysis: .tableId, .colA$, .colB$, .test$, ""
+        # .colC$ is matrix.tsv's own field for the grouping column (order
+        # section 4.4/8): the third column argument, the same slot grouped
+        # regression's own grouping column already occupies. Empty means no
+        # grouping, the same call every cell that predates this wave made.
+        @emlRunCorrelationAnalysis: .tableId, .colA$, .colB$, .test$, .colC$
         @emlKitCorrelationRanSomething: .test$
         if emlRunCorrelationAnalysis.error$ <> ""
             .refused = 1
@@ -1329,6 +1515,16 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                     # arm to collide with; Spearman's own row below takes
                     # the spearman_p_method name there instead).
                     @emlKitText: .cellId$, "p_method", "t distribution"
+                    # THE FISHER r-TO-z INTERVAL (order section 4.4/8),
+                    # named on the door as .pearLow/.pearHigh; emitted here
+                    # under the pearson_ci_low/pearson_ci_high names
+                    # run_analyses.R's own oracle (cor.test's own
+                    # conf.int) already uses. Undefined and disclosed when
+                    # n < 4 or |r| = 1 -- the _undefined marker.
+                    @emlKitNum: .cellId$, "pearson_ci_low",
+                    ... emlRunCorrelationAnalysis.pearLow
+                    @emlKitNum: .cellId$, "pearson_ci_high",
+                    ... emlRunCorrelationAnalysis.pearHigh
                 endif
             endif
             if .test$ = "spearman" or .test$ = "both"
@@ -1383,14 +1579,80 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                     endif
                 endif
             endif
+
+            # PER-GROUP PEARSON CORRELATIONS (order section 4.4/8). .colC$
+            # empty = no grouping -- @emlRunCorrelationAnalysis's own
+            # .nGroupsRun/.nGroupsSkipped stay 0 there, so this loop simply
+            # does not run. A group with fewer than 4 complete pairs is
+            # skipped and disclosed (group_<LEVEL>_skipped), the same floor
+            # the overall Fisher interval above uses. Re-derives with the
+            # SAME extractor and kernels the door itself calls internally
+            # (@emlCountGroups, @eml_getGroupPairedData, @emlPearsonCorrelation,
+            # @emlPearsonFisherInterval) -- reading the computation a second
+            # time for output, not a second way of computing it.
+            if .colC$ <> ""
+                @emlReportAlpha
+                .cgAlpha = emlReportAlpha.value
+                @emlCountGroups: .tableId, .colC$
+                if emlCountGroups.error$ = ""
+                    for .cgI from 1 to emlCountGroups.nGroups
+                        .cgLabel$ = emlCountGroups.groupLabel$ [.cgI]
+                        @eml_getGroupPairedData: .tableId, .colA$, .colB$,
+                        ... .colC$, .cgLabel$
+                        if eml_getGroupPairedData.error$ = ""
+                            .cgN = eml_getGroupPairedData.n
+                        else
+                            .cgN = 0
+                        endif
+                        @emlKitSlug: .cgLabel$
+                        .cgTag$ = "group_" + emlKitSlug.result$
+                        if .cgN >= 4
+                            @emlPearsonCorrelation: eml_getGroupPairedData.dataX#,
+                            ... eml_getGroupPairedData.dataY#, 2
+                            if emlPearsonCorrelation.error$ = ""
+                                @emlPearsonFisherInterval: emlPearsonCorrelation.r,
+                                ... .cgN, .cgAlpha
+                                @emlKitNum: .cellId$, .cgTag$ + "_n", .cgN
+                                @emlKitNum: .cellId$, .cgTag$ + "_r",
+                                ... emlPearsonCorrelation.r
+                                @emlKitNum: .cellId$, .cgTag$ + "_t",
+                                ... emlPearsonCorrelation.t
+                                @emlKitNum: .cellId$, .cgTag$ + "_df",
+                                ... emlPearsonCorrelation.df
+                                @emlKitNum: .cellId$, .cgTag$ + "_p",
+                                ... emlPearsonCorrelation.p
+                                @emlKitNum: .cellId$, .cgTag$ + "_low",
+                                ... emlPearsonFisherInterval.low
+                                @emlKitNum: .cellId$, .cgTag$ + "_high",
+                                ... emlPearsonFisherInterval.high
+                            endif
+                        else
+                            @emlKitText: .cellId$, .cgTag$ + "_skipped", "1"
+                        endif
+                    endfor
+                endif
+                @emlKitNum: .cellId$, "n_groups_run",
+                ... emlRunCorrelationAnalysis.nGroupsRun
+                @emlKitNum: .cellId$, "n_groups_skipped",
+                ... emlRunCorrelationAnalysis.nGroupsSkipped
+            endif
         endif
 
     elsif .proc$ = "emlRunDescriptiveAnalysis"
         # --- 8. DESCRIPTIVE STATISTICS ------------------------------------
-        # No matrix cell drives .groupCol$ or .trim yet (a later step of
-        # this wave); "" and 0.2 are the same no-grouping, dialog-default
-        # call every existing cell already made.
-        @emlRunDescriptiveAnalysis: .tableId, .colA$, "", 0.2
+        # .colB$ is matrix.tsv's own field for the grouping column (order
+        # section 4.6/8), the same 2nd-argument slot every other door's own
+        # groupCol occupies. .adjust$, read as a number, is .trim (0 <= trim
+        # < 0.5) -- the third reuse of that column commit j's own note
+        # documents (the two-way door's own adjust is a post-hoc method
+        # NAME, the survey lane's is a boolean; this door has neither
+        # concept). Blank or out-of-range falls back to 0.2, the dialog
+        # default.
+        .descTrim = number (.adjust$)
+        if .descTrim = undefined or .descTrim < 0 or .descTrim >= 0.5
+            .descTrim = 0.2
+        endif
+        @emlRunDescriptiveAnalysis: .tableId, .colA$, .colB$, .descTrim
         if emlRunDescriptiveAnalysis.error$ <> ""
             .refused = 1
             .refuseReason$ = emlRunDescriptiveAnalysis.error$
@@ -1411,14 +1673,124 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
             @emlKitNum: .cellId$, "kurtosis", emlRunDescriptiveAnalysis.kurtosis
             @emlKitNum: .cellId$, "ci_low", emlRunDescriptiveAnalysis.ciLow
             @emlKitNum: .cellId$, "ci_high", emlRunDescriptiveAnalysis.ciHigh
+            # THE SIX MEAN-FAMILY QUANTITIES, NAMED NEW ON THE DOOR (order
+            # section 4.6/8): the kernels @emlDescribe never called before
+            # this wave.
+            @emlKitNum: .cellId$, "mode", emlRunDescriptiveAnalysis.mode
+            @emlKitNum: .cellId$, "mode_unique",
+            ... emlRunDescriptiveAnalysis.modeUnique
+            @emlKitNum: .cellId$, "mode_count",
+            ... emlRunDescriptiveAnalysis.modeCount
+            @emlKitNum: .cellId$, "mad", emlRunDescriptiveAnalysis.mad
+            @emlKitNum: .cellId$, "mad_raw", emlRunDescriptiveAnalysis.madRaw
+            @emlKitNum: .cellId$, "geo_mean", emlRunDescriptiveAnalysis.geoMean
+            @emlKitNum: .cellId$, "harm_mean",
+            ... emlRunDescriptiveAnalysis.harmMean
+            @emlKitNum: .cellId$, "trimmed_mean",
+            ... emlRunDescriptiveAnalysis.trimmedMean
+            @emlKitNum: .cellId$, "winsorized_mean",
+            ... emlRunDescriptiveAnalysis.winsorizedMean
+            @emlKitNum: .cellId$, "trim_k", emlRunDescriptiveAnalysis.trimK
+
+            # PER-GROUP DESCRIPTIVES (order section 4.6/8). .colB$ empty =
+            # no grouping. A group with n = 1 gets n and mean only, the
+            # rest undefined and disclosed (matching @emlDescribe's own
+            # n=1 branch); no group is silently skipped. Re-derives with
+            # the SAME extractor and kernel the door itself calls
+            # internally (@emlCountGroups, @eml_getGroupData, @emlDescribe).
+            if .colB$ <> ""
+                @emlReportAlpha
+                .dgAlpha = emlReportAlpha.value
+                @emlCountGroups: .tableId, .colB$
+                if emlCountGroups.error$ = ""
+                    for .dgI from 1 to emlCountGroups.nGroups
+                        .dgLabel$ = emlCountGroups.groupLabel$ [.dgI]
+                        @eml_getGroupData: .tableId, .colA$, .colB$, .dgLabel$
+                        if eml_getGroupData.error$ = ""
+                            .dgN = eml_getGroupData.n
+                        else
+                            .dgN = 0
+                        endif
+                        @emlKitSlug: .dgLabel$
+                        .dgTag$ = "group_" + emlKitSlug.result$
+                        @emlKitNum: .cellId$, .dgTag$ + "_n", .dgN
+                        if .dgN >= 2
+                            @emlDescribe: eml_getGroupData.data#, .descTrim,
+                            ... 1 - .dgAlpha
+                            @emlKitNum: .cellId$, .dgTag$ + "_mean",
+                            ... emlDescribe.mean
+                            @emlKitNum: .cellId$, .dgTag$ + "_sd",
+                            ... emlDescribe.sd
+                            @emlKitNum: .cellId$, .dgTag$ + "_variance",
+                            ... emlDescribe.variance
+                            @emlKitNum: .cellId$, .dgTag$ + "_sem",
+                            ... emlDescribe.sem
+                            @emlKitNum: .cellId$, .dgTag$ + "_median",
+                            ... emlDescribe.median
+                            @emlKitNum: .cellId$, .dgTag$ + "_q1",
+                            ... emlDescribe.q1
+                            @emlKitNum: .cellId$, .dgTag$ + "_q3",
+                            ... emlDescribe.q3
+                            @emlKitNum: .cellId$, .dgTag$ + "_iqr",
+                            ... emlDescribe.iqr
+                            @emlKitNum: .cellId$, .dgTag$ + "_min",
+                            ... emlDescribe.min
+                            @emlKitNum: .cellId$, .dgTag$ + "_max",
+                            ... emlDescribe.max
+                            @emlKitNum: .cellId$, .dgTag$ + "_range",
+                            ... emlDescribe.range
+                            @emlKitNum: .cellId$, .dgTag$ + "_skewness",
+                            ... emlDescribe.skewness
+                            @emlKitNum: .cellId$, .dgTag$ + "_kurtosis",
+                            ... emlDescribe.kurtosis
+                            @emlKitNum: .cellId$, .dgTag$ + "_ci_low",
+                            ... emlDescribe.ciLow
+                            @emlKitNum: .cellId$, .dgTag$ + "_ci_high",
+                            ... emlDescribe.ciHigh
+                            @emlKitNum: .cellId$, .dgTag$ + "_mode",
+                            ... emlDescribe.mode
+                            @emlKitNum: .cellId$, .dgTag$ + "_mode_unique",
+                            ... emlDescribe.modeUnique
+                            @emlKitNum: .cellId$, .dgTag$ + "_mode_count",
+                            ... emlDescribe.modeCount
+                            @emlKitNum: .cellId$, .dgTag$ + "_mad",
+                            ... emlDescribe.mad
+                            @emlKitNum: .cellId$, .dgTag$ + "_mad_raw",
+                            ... emlDescribe.madRaw
+                            @emlKitNum: .cellId$, .dgTag$ + "_geo_mean",
+                            ... emlDescribe.geoMean
+                            @emlKitNum: .cellId$, .dgTag$ + "_harm_mean",
+                            ... emlDescribe.harmMean
+                            @emlKitNum: .cellId$, .dgTag$ + "_trimmed_mean",
+                            ... emlDescribe.trimmedMean
+                            @emlKitNum: .cellId$,
+                            ... .dgTag$ + "_winsorized_mean",
+                            ... emlDescribe.winsorizedMean
+                            @emlKitNum: .cellId$, .dgTag$ + "_trim_k",
+                            ... emlDescribe.trimK
+                        elsif .dgN = 1
+                            @emlMean: eml_getGroupData.data#
+                            @emlKitNum: .cellId$, .dgTag$ + "_mean",
+                            ... emlMean.result
+                        endif
+                    endfor
+                endif
+            endif
         endif
 
     elsif .proc$ = "emlRunRegressionAnalysis"
         # --- 9. LINEAR REGRESSION ------------------------------------------
-        # No per-row estimator column in matrix.tsv yet (added in a
-        # later step of this wave); "ols" is @emlRunRegressionAnalysis's
-        # own dialog default.
-        @emlRunRegressionAnalysis: .tableId, .colA$, .colB$, "ols"
+        # .test$ is matrix.tsv's own field (order section 8 / commit j's
+        # own note): @emlRunRegressionAnalysis's .estimator$ ("ols" or
+        # "theil-sen") reuses the same column every other door's own
+        # test-type axis occupies. Blank -- every cell that predates this
+        # wave -- falls back to "ols", the dialog default.
+        if .test$ = ""
+            .estimator$ = "ols"
+        else
+            .estimator$ = .test$
+        endif
+        @emlRunRegressionAnalysis: .tableId, .colA$, .colB$, .estimator$
         if emlRunRegressionAnalysis.error$ <> ""
             .refused = 1
             .refuseReason$ = emlRunRegressionAnalysis.error$
@@ -1445,6 +1817,30 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                 ... * (emlLinearRegression.n - 1) / (emlLinearRegression.n - 2)
                 @emlKitNum: .cellId$, "adj_r_squared", .adjR2
             endif
+
+            # THE INTERVALS, ALWAYS COMPUTED (order section 4.3/8): t on
+            # dfRes, at the alpha in force. Named on the door as
+            # .slopeLow/.slopeHigh/.interceptLow/.interceptHigh; emitted
+            # here under the *_ci_low/*_ci_high names run_analyses.R's own
+            # oracle (stats::confint) already uses.
+            @emlKitNum: .cellId$, "slope_ci_low",
+            ... emlRunRegressionAnalysis.slopeLow
+            @emlKitNum: .cellId$, "slope_ci_high",
+            ... emlRunRegressionAnalysis.slopeHigh
+            @emlKitNum: .cellId$, "intercept_ci_low",
+            ... emlRunRegressionAnalysis.interceptLow
+            @emlKitNum: .cellId$, "intercept_ci_high",
+            ... emlRunRegressionAnalysis.interceptHigh
+
+            # THEIL-SEN, COMPUTED ADDITIONALLY when this row's estimator is
+            # "theil-sen" -- undefined and disclosed (the _undefined marker)
+            # otherwise, or on the kernel's own refusal.
+            @emlKitNum: .cellId$, "ts_slope", emlRunRegressionAnalysis.tsSlope
+            @emlKitNum: .cellId$, "ts_intercept",
+            ... emlRunRegressionAnalysis.tsIntercept
+            @emlKitNum: .cellId$, "ts_nslopes",
+            ... emlRunRegressionAnalysis.tsNSlopes
+            @emlKitNum: .cellId$, "ts_n", emlRunRegressionAnalysis.tsN
         endif
 
     elsif .proc$ = "emlRunGroupedRegressionAnalysis"

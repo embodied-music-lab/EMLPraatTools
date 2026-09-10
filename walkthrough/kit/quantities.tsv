@@ -317,19 +317,19 @@ emlRunGroupedRegressionAnalysis	grp_<LEVEL>_r_squared	level	always	both	stats/em
 emlRunGroupedRegressionAnalysis	grp_<LEVEL>_slope_se	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .seSlope per group	
 emlRunGroupedRegressionAnalysis	grp_<LEVEL>_slope_t	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .tSlope per group	
 emlRunGroupedRegressionAnalysis	grp_<LEVEL>_p	level	always	both	stats/eml-inferential.praat:5581 @emlLinearRegression .pSlope per group	
-emlRunTwoWayAnalysis	n	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	Parsed from Praat's own built-in Report two-way anova; see D-TWOWAY-PRECISION for the precision ceiling that parse imposes.
-emlRunTwoWayAnalysis	factor1_name	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
-emlRunTwoWayAnalysis	factor2_name	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
-emlRunTwoWayAnalysis	ss_within	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
-emlRunTwoWayAnalysis	df_within	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
-emlRunTwoWayAnalysis	ms_within	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
-emlRunTwoWayAnalysis	ss_total	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
-emlRunTwoWayAnalysis	df_total	cell	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
-emlRunTwoWayAnalysis	<TERM>_ss	term	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	One per term. The three terms are col_b, col_c and their interaction col_b__col_c -- taken from the declaration, not from the output.
-emlRunTwoWayAnalysis	<TERM>_df	term	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
-emlRunTwoWayAnalysis	<TERM>_ms	term	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
-emlRunTwoWayAnalysis	<TERM>_f	term	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
-emlRunTwoWayAnalysis	<TERM>_p	term	always	both	stats/eml-analysis.praat:2405 @emlRunTwoWayAnalysis	
+emlRunTwoWayAnalysis	n	cell	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	Parsed from Praat's own built-in Report two-way anova; see D-TWOWAY-PRECISION for the precision ceiling that parse imposes.
+emlRunTwoWayAnalysis	factor1_name	cell	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
+emlRunTwoWayAnalysis	factor2_name	cell	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
+emlRunTwoWayAnalysis	ss_within	cell	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
+emlRunTwoWayAnalysis	df_within	cell	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
+emlRunTwoWayAnalysis	ms_within	cell	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
+emlRunTwoWayAnalysis	ss_total	cell	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
+emlRunTwoWayAnalysis	df_total	cell	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
+emlRunTwoWayAnalysis	<TERM>_ss	term	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	One per term. The three terms are col_b, col_c and their interaction col_b__col_c -- taken from the declaration, not from the output.
+emlRunTwoWayAnalysis	<TERM>_df	term	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
+emlRunTwoWayAnalysis	<TERM>_ms	term	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
+emlRunTwoWayAnalysis	<TERM>_f	term	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
+emlRunTwoWayAnalysis	<TERM>_p	term	always	both	stats/eml-anova-kernel.praat:227 @emlAnovaKernelTwoWay (via @emlTwoWayAnova, stats/eml-inferential.praat:4207)	
 emlRunTwoWayAnalysis	<TERM>_partial_eta_squared	term	always	both	stats/eml-analysis.praat:5298 @emlTwoWayAnova.partialEtaSqA/B/AB	
 emlRunTwoWayAnalysis	<TERM>_eta_squared	term	always	r	run_analyses.R effectsize	R side alone. Non-partial eta-squared per term; the plugin reports partial only. A coverage gap. See D-TWOWAY-ETA.
 emlRunRepeatedMeasuresAnalysis	f	cell	always	both	stats/eml-analysis.praat:4054 @emlRMAnovaTest .fStat	
@@ -438,3 +438,116 @@ emlRunProportionAnalysis	prop_hat	cell	always	both	stats/eml-analysis.praat:4877
 emlRunProportionAnalysis	ci_low	cell	always	both	stats/eml-analysis.praat:4878 @emlRunProportionAnalysis .ciLow (copies @emlWilsonInterval Output .ciLow, stats/eml-categorical.praat:222)	At the cell's own conf axis.
 emlRunProportionAnalysis	ci_high	cell	always	both	stats/eml-analysis.praat:4879 @emlRunProportionAnalysis .ciHigh (copies @emlWilsonInterval Output .ciHigh, stats/eml-categorical.praat:222)	At the cell's own conf axis.
 emlRunProportionAnalysis	n	cell	always	both	stats/eml-analysis.praat:4860 @emlRunProportionAnalysis .n (doorway's own tally, raw mode counts usable rows / pre-aggregated mode sums the count column)	NOT copied from the kernel -- the doorway computes n itself while tallying successes, then passes both to @emlWilsonInterval as scalars.
+#
+# ===========================================================================
+# API COMPLETION WAVE (9 Sep 2026, order section 4/8): rows added below for
+# every new quantity the six analysis-lane doors gained. Same authority
+# rule as the header above -- read off the kernel's own header or, where a
+# door republishes a kernel field under its own name, the door's capture
+# site (never a literal re-derivation). scope/when/sides/source/note follow
+# the columns block above; no new column was needed.
+# ===========================================================================
+#
+# --- emlRunTwoWayAnalysis: estimated marginal means, simple effects, post
+# hoc per factor, omega squared (order section 4.1) ------------------------
+emlRunTwoWayAnalysis	emm_<FACTOR>_<LEVEL>	level	always	both	stats/eml-anova-kernel.praat:1113 @emlAnovaKernelTwoWayEMM .emmA#/.emmB#; write site stats/eml-analysis.praat:3108 emlRunTwoWayAnalysis.emmA#/.emmB#	One per level of each factor -- <FACTOR> is factor1_name/factor2_name (col_b/col_c slugged), <LEVEL> the level label in the same order the kernel's own vectors are indexed, never re-sorted. Optional branch: undefined and disclosed in .warning$ when @emlAnovaKernelTwoWayEMM refuses.
+emlRunTwoWayAnalysis	emm_<FACTOR>_<LEVEL>_se	level	always	both	stats/eml-anova-kernel.praat:1113 @emlAnovaKernelTwoWayEMM .seA#/.seB#	See emm_<FACTOR>_<LEVEL>.
+emlRunTwoWayAnalysis	emm_<FACTOR>_<LEVEL>_low	level	always	both	stats/eml-anova-kernel.praat:1113 @emlAnovaKernelTwoWayEMM .lowA#/.lowB#	At the cell's own conf axis (emlReportAlpha.value). See emm_<FACTOR>_<LEVEL>.
+emlRunTwoWayAnalysis	emm_<FACTOR>_<LEVEL>_high	level	always	both	stats/eml-anova-kernel.praat:1113 @emlAnovaKernelTwoWayEMM .highA#/.highB#	See emm_<FACTOR>_<LEVEL>_low.
+emlRunTwoWayAnalysis	emm_df_error	cell	always	both	stats/eml-anova-kernel.praat:1113 @emlAnovaKernelTwoWayEMM .dfError	Optional branch, same as emm_<FACTOR>_<LEVEL>.
+emlRunTwoWayAnalysis	se_<A>_within_<B>_<LEVEL>_f	level	always	both	stats/eml-anova-kernel.praat:1328 @emlAnovaKernelTwoWaySimpleEffects .fAwithinB#	<A> is factor1_name, <B> factor2_name, <LEVEL> one of B's levels -- A's simple effect within that slice of B. Optional branch: undefined and disclosed when @emlAnovaKernelTwoWaySimpleEffects refuses (dfError <= 0).
+emlRunTwoWayAnalysis	se_<A>_within_<B>_<LEVEL>_p	level	always	both	stats/eml-anova-kernel.praat:1328 @emlAnovaKernelTwoWaySimpleEffects .pAwithinB#	See se_<A>_within_<B>_<LEVEL>_f.
+emlRunTwoWayAnalysis	se_<B>_within_<A>_<LEVEL>_f	level	always	both	stats/eml-anova-kernel.praat:1328 @emlAnovaKernelTwoWaySimpleEffects .fBwithinA#	<LEVEL> one of A's levels -- B's simple effect within that slice of A. Same optional-branch gate as se_<A>_within_<B>_<LEVEL>_f.
+emlRunTwoWayAnalysis	se_<B>_within_<A>_<LEVEL>_p	level	always	both	stats/eml-anova-kernel.praat:1328 @emlAnovaKernelTwoWaySimpleEffects .pBwithinA#	See se_<B>_within_<A>_<LEVEL>_f.
+emlRunTwoWayAnalysis	posthoc_<FACTOR>_<PAIR>_diff	pair	always	both	stats/eml-anova-kernel.praat:1514 @emlAnovaKernelTwoWayPostHoc .diff## (factorSelect 1 then 2)	<FACTOR> is factor1_name/factor2_name; <PAIR> a pair of that factor's own levels. At the ONE adjustment method the row's own adjust column names (bonferroni/holm/bh/tukey/scheffe -- @emlRunTwoWayAnalysis's .adjMethod$). Optional branch per factor: undefined and disclosed when that factor's @emlAnovaKernelTwoWayPostHoc call refuses.
+emlRunTwoWayAnalysis	posthoc_<FACTOR>_<PAIR>_se	pair	always	both	stats/eml-anova-kernel.praat:1514 @emlAnovaKernelTwoWayPostHoc .se##	See posthoc_<FACTOR>_<PAIR>_diff.
+emlRunTwoWayAnalysis	posthoc_<FACTOR>_<PAIR>_padj	pair	always	both	stats/eml-anova-kernel.praat:1514 @emlAnovaKernelTwoWayPostHoc .pAdj##	See posthoc_<FACTOR>_<PAIR>_diff. Under adjust=tukey, joins D-PTUKEY/D-PTUKEY-MID by regex (compare.R) -- the studentised-range family, same diagnosis as the one-way door's own Tukey padj.
+emlRunTwoWayAnalysis	posthoc_<FACTOR>_<PAIR>_low	pair	always	both	stats/eml-anova-kernel.praat:1514 @emlAnovaKernelTwoWayPostHoc .lowCI##	Named "_low"/"_high", not "_ci_low"/"_ci_high" -- matches emmeans::pairs/confint's own bound names, the R oracle's spelling for this quantity (unlike every other posthoc family's interval in this file). See posthoc_<FACTOR>_<PAIR>_diff; under adjust=tukey joins D-PTUKEY/D-PTUKEY-MID same as padj.
+emlRunTwoWayAnalysis	posthoc_<FACTOR>_<PAIR>_high	pair	always	both	stats/eml-anova-kernel.praat:1514 @emlAnovaKernelTwoWayPostHoc .highCI##	See posthoc_<FACTOR>_<PAIR>_low.
+emlRunTwoWayAnalysis	omega_sq_<TERM>	term	always	both	stats/eml-inferential.praat:4207 @emlTwoWayAnova .omegaSqA/.omegaSqB/.omegaSqAB; write site stats/eml-analysis.praat:3082 emlRunTwoWayAnalysis.omegaSqA/B/AB	One per term (col_b, col_c, their interaction), same term set <TERM> already uses above. SS-based definition, effectsize::omega_squared(partial=FALSE) on the R side (order section 7) -- confirmed to match.
+#
+# --- emlRunAnovaAnalysis: Brown-Forsythe, Welch, Games-Howell, computed
+# every run (order section 4.2) --------------------------------------------
+emlRunAnovaAnalysis	bf_f	cell	always	both	stats/eml-inferential.praat:5958 @emlBrownForsythe .f	Printed on every run (standing ruling); never gated on posthoc.
+emlRunAnovaAnalysis	bf_df1	cell	always	both	stats/eml-inferential.praat:5958 @emlBrownForsythe .df1
+emlRunAnovaAnalysis	bf_df2	cell	always	both	stats/eml-inferential.praat:5958 @emlBrownForsythe .df2
+emlRunAnovaAnalysis	bf_p	cell	always	both	stats/eml-inferential.praat:5958 @emlBrownForsythe .p
+emlRunAnovaAnalysis	welch_f	cell	always	both	stats/eml-inferential.praat:6211 @emlWelchAnova .f	Computed every run; printed beside the standard result only when Brown-Forsythe rejects at the alpha in force (standing ruling) -- contracted regardless, since a plugin figure that computes a quantity is a quantity this file owes.
+emlRunAnovaAnalysis	welch_df1	cell	always	both	stats/eml-inferential.praat:6211 @emlWelchAnova .df1
+emlRunAnovaAnalysis	welch_df2	cell	always	both	stats/eml-inferential.praat:6211 @emlWelchAnova .df2
+emlRunAnovaAnalysis	welch_p	cell	always	both	stats/eml-inferential.praat:6211 @emlWelchAnova .p
+emlRunAnovaAnalysis	gh_<PAIR>_diff	pair	always	both	stats/eml-inferential.praat:6502 @emlGamesHowell .meanDiff##	Needs every group n >= 2 (the kernel's own floor); undefined and disclosed on kernel refusal, .ok on the door unaffected.
+emlRunAnovaAnalysis	gh_<PAIR>_se	pair	always	both	stats/eml-inferential.praat:6502 @emlGamesHowell .seMatrix##	See gh_<PAIR>_diff.
+emlRunAnovaAnalysis	gh_<PAIR>_df	pair	always	both	stats/eml-inferential.praat:6502 @emlGamesHowell .dfMatrix##	Welch-Satterthwaite per pair. See gh_<PAIR>_diff.
+emlRunAnovaAnalysis	gh_<PAIR>_padj	pair	always	both	stats/eml-inferential.praat:6502 @emlGamesHowell .pMatrix##	See gh_<PAIR>_diff. Joins D-PTUKEY/D-PTUKEY-MID by regex (compare.R) -- Games-Howell's own critical value is the studentised range, same distribution as Tukey's.
+emlRunAnovaAnalysis	gh_<PAIR>_low	pair	always	both	stats/eml-analysis.praat:766 emlRunAnovaAnalysis.ghLowMat## -- diff -+ (qCrit/sqrt(2))*se, built in the door from @emlGamesHowell's own .qCritMatrix##/.seMatrix## (stats/eml-inferential.praat:6502)	At emlReportAlpha.value. See gh_<PAIR>_diff; joins D-PTUKEY/D-PTUKEY-MID same as padj.
+emlRunAnovaAnalysis	gh_<PAIR>_high	pair	always	both	stats/eml-analysis.praat:766 emlRunAnovaAnalysis.ghHighMat## (see gh_<PAIR>_low)	See gh_<PAIR>_low.
+#
+# --- emlRunRegressionAnalysis: OLS intervals every run, Theil-Sen on
+# request (order section 4.3) -----------------------------------------------
+emlRunRegressionAnalysis	slope_ci_low	cell	always	both	stats/eml-analysis.praat:4340 emlRunRegressionAnalysis.slopeLow -- slope -+ invStudentQ(alpha/2, dfRes)*seSlope, built in the door from @emlLinearRegression's own .slope/.seSlope/.dfRes (stats/eml-inferential.praat:6771)	At emlReportAlpha.value, t on dfRes. Computed every run (OLS always runs).
+emlRunRegressionAnalysis	slope_ci_high	cell	always	both	stats/eml-analysis.praat:4340 emlRunRegressionAnalysis.slopeHigh (see slope_ci_low)	See slope_ci_low.
+emlRunRegressionAnalysis	intercept_ci_low	cell	always	both	stats/eml-analysis.praat:4340 emlRunRegressionAnalysis.interceptLow (see slope_ci_low)	See slope_ci_low.
+emlRunRegressionAnalysis	intercept_ci_high	cell	always	both	stats/eml-analysis.praat:4340 emlRunRegressionAnalysis.interceptHigh (see slope_ci_low)	See slope_ci_low.
+emlRunRegressionAnalysis	ts_slope	cell	test=theil-sen	both	stats/eml-inferential.praat:6886 @emlTheilSen .slope	Computed additionally when .estimator$ = "theil-sen" (matrix.tsv's own test column). Undefined and disclosed on the kernel's own refusal (fewer than two distinct x, or n < 3) or when the estimator is "ols".
+emlRunRegressionAnalysis	ts_intercept	cell	test=theil-sen	both	stats/eml-inferential.praat:6886 @emlTheilSen .intercept	median(y) - slope*median(x), the kernel's own definition. See ts_slope.
+emlRunRegressionAnalysis	ts_nslopes	cell	test=theil-sen	both	stats/eml-inferential.praat:6886 @emlTheilSen .nSlopes	Count of pairwise slopes over distinct-x pairs only -- less than n(n-1)/2 whenever ties in x exist. See ts_slope.
+emlRunRegressionAnalysis	ts_n	cell	test=theil-sen	both	stats/eml-analysis.praat:4368 emlRunRegressionAnalysis.tsN (= .nValid, the same paired-complete count the OLS fit used)	See ts_slope.
+#
+# --- emlRunCorrelationAnalysis: Fisher r-to-z interval, per-group
+# correlations (order section 4.4) ------------------------------------------
+emlRunCorrelationAnalysis	pearson_ci_low	cell	test:pearson,both	both	stats/eml-inferential.praat:691 @emlPearsonFisherInterval .low; write site stats/eml-analysis.praat:3648 emlRunCorrelationAnalysis.pearLow	Fisher-z at emlReportAlpha.value: atanh(r) -+ z*(1/sqrt(n-3)), back-transformed. Pearson arm only. Undefined and disclosed when n < 4 or |r| = 1.
+emlRunCorrelationAnalysis	pearson_ci_high	cell	test:pearson,both	both	stats/eml-inferential.praat:691 @emlPearsonFisherInterval .high; write site stats/eml-analysis.praat:3649 emlRunCorrelationAnalysis.pearHigh	See pearson_ci_low.
+emlRunCorrelationAnalysis	group_<LEVEL>_n	level	always	both	stats/eml-analysis.praat eml_getGroupPairedData.n, per group (col_c = the grouping column)	.groupCol$ empty = no grouping, and this quantity is not owed. A group with fewer than 4 complete pairs is skipped (group_<LEVEL>_skipped) instead.
+emlRunCorrelationAnalysis	group_<LEVEL>_r	level	always	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .r, per group	See group_<LEVEL>_n.
+emlRunCorrelationAnalysis	group_<LEVEL>_t	level	always	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .t, per group	See group_<LEVEL>_n.
+emlRunCorrelationAnalysis	group_<LEVEL>_df	level	always	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .df, per group	See group_<LEVEL>_n.
+emlRunCorrelationAnalysis	group_<LEVEL>_p	level	always	both	stats/eml-inferential.praat:600 @emlPearsonCorrelation .p, per group	See group_<LEVEL>_n.
+emlRunCorrelationAnalysis	group_<LEVEL>_low	level	always	both	stats/eml-inferential.praat:691 @emlPearsonFisherInterval .low, per group	See group_<LEVEL>_n; same Fisher-z definition as the overall pearson_ci_low.
+emlRunCorrelationAnalysis	group_<LEVEL>_high	level	always	both	stats/eml-inferential.praat:691 @emlPearsonFisherInterval .high, per group	See group_<LEVEL>_low.
+emlRunCorrelationAnalysis	group_<LEVEL>_skipped	level	always	both	stats/eml-analysis.praat eml_getGroupPairedData.n < 4, per group	A group with fewer than 4 complete pairs is skipped and disclosed under this name instead of the n/r/t/df/p/low/high set above -- the two are mutually exclusive per group.
+emlRunCorrelationAnalysis	n_groups_run	cell	always	both	stats/eml-extract.praat:4370 write site .nGroupsRun	0 (not undefined) when .groupCol$ is empty -- there is nothing to count, not something that failed to be counted.
+emlRunCorrelationAnalysis	n_groups_skipped	cell	always	both	stats/eml-extract.praat:4370 write site .nGroupsSkipped	See n_groups_run.
+#
+# --- emlRunTwoGroupAnalysis: mean-difference interval (order section 4.5) --
+emlRunTwoGroupAnalysis	diff_low	cell	test:parametric,both	both	stats/eml-analysis.praat:356 emlRunTwoGroupAnalysis.diffLow -- meanDiff -+ half-width from @emlTTest's own .se/.df (pooled or Welch per .equalVar), stats/eml-inferential.praat:90	At emlReportAlpha.value. Parametric arm only, same gate as t/df/cohens_d above.
+emlRunTwoGroupAnalysis	diff_high	cell	test:parametric,both	both	stats/eml-analysis.praat:357 emlRunTwoGroupAnalysis.diffHigh (see diff_low)	See diff_low.
+#
+# --- emlRunDescriptiveAnalysis: the six mean-family quantities, per-group
+# descriptives (order section 4.6) -------------------------------------------
+emlRunDescriptiveAnalysis	mode	cell	always	both	stats/eml-core-descriptive.praat:122 @emlMode .result	mode_unique = 1 iff exactly one value attains the maximum count; ties report the smallest of the modes (the kernel's own tie-break).
+emlRunDescriptiveAnalysis	mode_unique	cell	always	both	stats/eml-core-descriptive.praat:122 @emlMode .isUnique	See mode.
+emlRunDescriptiveAnalysis	mode_count	cell	always	both	stats/eml-core-descriptive.praat:122 @emlMode .count	See mode.
+emlRunDescriptiveAnalysis	mad	cell	always	both	stats/eml-core-descriptive.praat:512 @emlMAD .result	Scaled, constant 1.4826 (stats::mad's own default).
+emlRunDescriptiveAnalysis	mad_raw	cell	always	both	stats/eml-core-descriptive.praat:512 @emlMAD .rawMAD	Unscaled, constant 1 (stats::mad(x, constant=1)).
+emlRunDescriptiveAnalysis	geo_mean	cell	always	both	stats/eml-core-descriptive.praat:396 @emlGeometricMean .result	Undefined and disclosed when any value in the column is <= 0.
+emlRunDescriptiveAnalysis	harm_mean	cell	always	both	stats/eml-core-descriptive.praat:417 @emlHarmonicMean .result	Undefined and disclosed when any value in the column is <= 0, same gate as geo_mean.
+emlRunDescriptiveAnalysis	trimmed_mean	cell	always	both	stats/eml-core-descriptive.praat:438 @emlTrimmedMean .result	At .trim (matrix.tsv's own adjust column, 0 <= trim < 0.5; default 0.2 from the defaults procedure).
+emlRunDescriptiveAnalysis	winsorized_mean	cell	always	both	stats/eml-core-descriptive.praat:473 @emlWinsorizedMean .result	k = floor(n*trim) values replaced at each tail with the (k+1)-th smallest/largest, the kernel's own definition. Same .trim as trimmed_mean.
+emlRunDescriptiveAnalysis	trim_k	cell	always	both	stats/eml-analysis.praat floor(n*.trim), write site emlRunDescriptiveAnalysis.trimK	See trimmed_mean/winsorized_mean.
+emlRunDescriptiveAnalysis	group_<LEVEL>_n	level	always	both	stats/eml-analysis.praat eml_getGroupData.n, per group (col_b = the grouping column)	.groupCol$ empty = no grouping. A group with n = 1 reports n and mean only (group_<LEVEL>_mean), the rest of this set undefined and disclosed; n = 0 reports neither.
+emlRunDescriptiveAnalysis	group_<LEVEL>_mean	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .mean, per group (n=1: @emlMean directly)	The one quantity a group of n=1 still reports. See group_<LEVEL>_n.
+emlRunDescriptiveAnalysis	group_<LEVEL>_sd	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .sd, per group	Undefined at n=1. See group_<LEVEL>_n.
+emlRunDescriptiveAnalysis	group_<LEVEL>_variance	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .variance, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_sem	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .sem, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_median	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .median, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_q1	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .q1, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_q3	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .q3, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_iqr	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .iqr, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_min	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .min, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_max	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .max, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_range	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .range, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_skewness	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .skewness, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_kurtosis	level	always	both	stats/eml-core-descriptive.praat:585 @emlDescribe .kurtosis, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_ci_low	level	always	both	stats/eml-core-descriptive.praat:542 @emlCI .lower (via @emlDescribe .ciLow), per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_ci_high	level	always	both	stats/eml-core-descriptive.praat:542 @emlCI .upper (via @emlDescribe .ciHigh), per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_mode	level	always	both	stats/eml-core-descriptive.praat:122 @emlMode .result, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_mode_unique	level	always	both	stats/eml-core-descriptive.praat:122 @emlMode .isUnique, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_mode_count	level	always	both	stats/eml-core-descriptive.praat:122 @emlMode .count, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_mad	level	always	both	stats/eml-core-descriptive.praat:512 @emlMAD .result, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_mad_raw	level	always	both	stats/eml-core-descriptive.praat:512 @emlMAD .rawMAD, per group	Undefined at n=1.
+emlRunDescriptiveAnalysis	group_<LEVEL>_geo_mean	level	always	both	stats/eml-core-descriptive.praat:396 @emlGeometricMean .result, per group	Undefined at n=1, and undefined/disclosed when any value in the group is <= 0.
+emlRunDescriptiveAnalysis	group_<LEVEL>_harm_mean	level	always	both	stats/eml-core-descriptive.praat:417 @emlHarmonicMean .result, per group	See group_<LEVEL>_geo_mean.
+emlRunDescriptiveAnalysis	group_<LEVEL>_trimmed_mean	level	always	both	stats/eml-core-descriptive.praat:438 @emlTrimmedMean .result, per group	Undefined at n=1; same .trim as the whole-column trimmed_mean.
+emlRunDescriptiveAnalysis	group_<LEVEL>_winsorized_mean	level	always	both	stats/eml-core-descriptive.praat:473 @emlWinsorizedMean .result, per group	Undefined at n=1; same .trim as the whole-column winsorized_mean.
+emlRunDescriptiveAnalysis	group_<LEVEL>_trim_k	level	always	both	stats/eml-analysis.praat floor(n*.trim), per group	Undefined at n=1.

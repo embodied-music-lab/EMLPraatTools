@@ -275,7 +275,8 @@ DECLARED <- list(
                      "the measured family is 261 rows including the graded variants and the",
                      "_undefined markers.")),
 
-    list(q = "^posthoc_.*_padj$", where = "diff", id = "D-PTUKEY",
+    list(q = "^(posthoc_.*_padj|posthoc_.*_(low|high)|gh_.*_(padj|low|high))$",
+         where = "diff", id = "D-PTUKEY",
          maxrel = 5e-3, vmax = 1e-9,
          why = paste("EXTREME-TAIL QUADRATURE, DIAGNOSED 27 AUGUST 2026, AND",
                      "ENVIRONMENT-DEPENDENT. Both sides evaluate the studentised range",
@@ -294,7 +295,8 @@ DECLARED <- list(
                      "difference is nil. A padj disagreement anywhere else is not covered",
                      "and stays unexplained.")),
 
-    list(q = "^posthoc_.*_padj$", where = "diff", id = "D-PTUKEY-MID",
+    list(q = "^(posthoc_.*_padj|posthoc_.*_(low|high)|gh_.*_(padj|low|high))$",
+         where = "diff", id = "D-PTUKEY-MID",
          maxrel = 1e-5, vmin = 1e-9, vmax = 1e-5,
          why = paste("TIER 2 OF THE ptukey QUADRATURE FAMILY, ruled 27 August 2026.",
                      "Same diagnosis as D-PTUKEY: the studentised range statistic is",
@@ -310,16 +312,16 @@ DECLARED <- list(
                      "which this run shows it holds. A run exceeding either tier is a",
                      "finding routed back, never a raise.")),
 
-    list(q = "^(task|voice_type)(__(task|voice_type))?_(ss|ms|f|p|partial_eta_squared)$",
-         where = "diff", id = "D-TWOWAY-PRECISION",
-         proc = "emlRunTwoWayAnalysis", maxrel = 2e-8,
-         why = paste("PRECISION CEILING, NOT A DISAGREEMENT.",
-                     "@emlRunTwoWayAnalysis does not compute the two-way ANOVA: it parses",
-                     "the text of Praat's own 'Report two-way anova', which prints SS to",
-                     "about nine significant digits. Every quantity derived from those sums",
-                     "inherits that ceiling. Measured worst relative disagreement in this",
-                     "run: 1.223e-8, against the 2e-8 bound this clause has carried since",
-                     "26 August. The bound is asserted below, not assumed.")),
+    # RETIRED (API completion wave, order section 8): D-TWOWAY-PRECISION is
+    # gone from DECLARED[] as of this wave, INPUT TO NOTHING -- its premise
+    # is no longer true. @emlRunTwoWayAnalysis never parsed Praat's own
+    # "Report two-way anova" text on this branch of the tree: it calls
+    # @emlTwoWayAnova, which computes via @emlAnovaKernelTwoWay directly
+    # (walkthrough/kit/audit/door_probe_anova-kernel.md, resolved this
+    # wave), so the nine-significant-digit text-parse ceiling this clause
+    # named does not apply. A two-way cell that now disagrees compares at
+    # the standard rule like any other cell; a run that exceeds it is a
+    # finding, not a clause to restore.
 
     list(q = "^refuse_reason$", where = "diff", id = "D-WORDING",
          why = paste("Refusal wording differs between implementations. That the SET of cells",
@@ -1421,7 +1423,6 @@ ID_TO_CLAUSE <- c(
     "D-WILCOXEST"        = "r-shift-estimate",
     "D-PTUKEY"           = "tukey-tail-quadrature",
     "D-PTUKEY-MID"       = "tukey-tail-quadrature",
-    "D-TWOWAY-PRECISION" = "two-way-precision",
     "D-WORDING"          = "refusal-wording",
     "D-ALPHA2ITEM"       = "alpha-two-item-scale",
     "D-ALPHADROP"        = "alpha-three-person-sample"

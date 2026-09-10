@@ -1,5 +1,19 @@
 # Door probe — stats/eml-anova-kernel.praat
 
+## RESOLVED (API completion wave, section 4.1/8)
+
+`scripts/eml-lib-stats.praat:94` now reads `include ../stats/eml-anova-
+kernel.praat` — the 4 September include fix this probe's crash called for.
+`stats/eml-inferential.praat`'s call to `@emlAnovaKernelTwoWay` (the line
+this probe's live drive reproduced dying on) now resolves, and the same
+module brings `@emlAnovaKernelTwoWayEMM`, `@emlAnovaKernelTwoWaySimpleEffects`
+and `@emlAnovaKernelTwoWayPostHoc` into scope for `emlRunTwoWayAnalysis`
+(stats/eml-analysis.praat), which this wave wires onto that door (order
+section 4.1) so the three kernels this probe found EXISTING BUT UNREACHED
+are now reached from the live menu path, not just from the fixed include.
+The crash this probe documented is closed; the transcript above is kept
+verbatim as the record of what broke and how it was driven.
+
 Probe for the ruling `mailbox/to-fable/MEMO_THREE_DOORS_NOT_ONE_2026-09-02.md`
 raised: `validate/v162_door_chain_population.R` finds `stats/eml-anova-
 kernel.praat` in `setup.praat`'s module table but unreached by the
