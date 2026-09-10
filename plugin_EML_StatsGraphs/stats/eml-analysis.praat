@@ -3053,6 +3053,8 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     .seDfAwithinB = undefined
     .seDfBwithinA = undefined
     .seDfError = undefined
+    .emmTableId = .tableId
+    .emmTableCreated = 0
     .phADiff## = zero## (1, 1)
     .phAP## = zero## (1, 1)
     .phASe## = zero## (1, 1)
@@ -3107,6 +3109,30 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
         goto END_TWOWAY
     endif
 
+    ; SHARED COMPLETE-CASE TABLE FOR THE OPTIONAL BLOCK BELOW (9 Sep 2026,
+    ; missing-token wave, Ian's ruling). @emlTwoWayAnova already dropped the
+    ; incomplete rows for the omnibus internally (its own
+    ; @eml_twoWayCompleteCase, disposed when it returned); the three
+    ; OPTIONAL kernels below -- EMM, simple effects, post-hoc x2 -- read
+    ; whatever table they are given directly, so on a table with
+    ; missing-value tokens they need that SAME complete-case subset to
+    ; compute anything defined, matching R's complete.cases() frame. Built
+    ; ONCE here and shared by all four calls (DRY) rather than once per
+    ; kernel. On a table with no missing tokens the subset is still a
+    ; freshly-created Table, but its content is identical to .tableId's, so
+    ; results are unchanged from today.
+    @eml_twoWayCompleteCase: .tableId, .dataCol$, .factor1$, .factor2$
+    if eml_twoWayCompleteCase.error$ = ""
+        .emmTableId = eml_twoWayCompleteCase.subsetId
+        .emmTableCreated = 1
+    else
+        ; Should not happen -- the omnibus's own completeCase on this same
+        ; table already succeeded above -- but if it ever does, fall back
+        ; to the raw table: no worse than today's (pre-fix) behaviour.
+        .emmTableId = .tableId
+        .emmTableCreated = 0
+    endif
+
     ; OMEGA SQUARED, NAMED ON THE DOOR (order section 4.1). The kernel
     ; (@emlAnovaKernelTwoWay, via @emlTwoWayAnova's own re-export) has always
     ; computed these; this door now states them as its own fields too, the
@@ -3151,7 +3177,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     .twAlpha = emlReportAlpha.value
     .twAlphaText$ = emlReportAlpha.text$
 
-    @emlAnovaKernelTwoWayEMM: .tableId, .dataCol$, .factor1$, .factor2$,
+    @emlAnovaKernelTwoWayEMM: .emmTableId, .dataCol$, .factor1$, .factor2$,
     ... .twAlpha
     if emlAnovaKernelTwoWayEMM.ok = 1
         .emmA# = emlAnovaKernelTwoWayEMM.emmA#
@@ -3196,7 +3222,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     endif
     @emlReportTwoWayEMM: .factor1$, .factor2$
 
-    @emlAnovaKernelTwoWaySimpleEffects: .tableId, .dataCol$, .factor1$,
+    @emlAnovaKernelTwoWaySimpleEffects: .emmTableId, .dataCol$, .factor1$,
     ... .factor2$
     if emlAnovaKernelTwoWaySimpleEffects.ok = 1
         .seFAwithinB# = emlAnovaKernelTwoWaySimpleEffects.fAwithinB#
@@ -3213,7 +3239,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     endif
     @emlReportTwoWaySimpleEffects: .factor1$, .factor2$
 
-    @emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$,
+    @emlAnovaKernelTwoWayPostHoc: .emmTableId, .dataCol$, .factor1$, .factor2$,
     ... 1, .adjMethod$, .twAlpha
     if emlAnovaKernelTwoWayPostHoc.ok = 1
         .phADiff## = emlAnovaKernelTwoWayPostHoc.diff##
@@ -3228,7 +3254,7 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     endif
     @emlReportTwoWayPostHoc: .factor1$, 1
 
-    @emlAnovaKernelTwoWayPostHoc: .tableId, .dataCol$, .factor1$, .factor2$,
+    @emlAnovaKernelTwoWayPostHoc: .emmTableId, .dataCol$, .factor1$, .factor2$,
     ... 2, .adjMethod$, .twAlpha
     if emlAnovaKernelTwoWayPostHoc.ok = 1
         .phBDiff## = emlAnovaKernelTwoWayPostHoc.diff##
@@ -3272,6 +3298,15 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
         ... "@emlRunTwoWayAnalysis: data, """ + .dataCol$ + """, """ + .factor1$ + """, """ + .factor2$ + """" + ", " + string$ (.ssType) + ", """ + .adjMethod$ + """",
         ... "In the GUI: New > EML Stats & Graphs > Compare two-way (ANOVA)...",
         ... .recResult$, .error$
+    endif
+
+    ; DISPOSE THE SHARED COMPLETE-CASE SUBSET, EXACTLY ONCE. Created (if at
+    ; all) only after the omnibus succeeded, above; a goto that reached
+    ; END_TWOWAY before that point never set .emmTableCreated, so this is a
+    ; no-op for every refusal path. All four optional kernels and their
+    ; reporters have already run by this point, so nothing still needs it.
+    if .emmTableCreated = 1 and .emmTableId <> .tableId
+        removeObject: .emmTableId
     endif
 
     selectObject: .tableId
