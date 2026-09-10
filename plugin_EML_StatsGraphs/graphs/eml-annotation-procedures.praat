@@ -6578,6 +6578,44 @@ endproc
 
 
 # ============================================================================
+# @emlReportRegressionTheilSen
+# ============================================================================
+# Printed FIRST, ahead of @emlReportRegressionAnalysis's own OLS report,
+# when the door's .estimator$ is "theil-sen" (order section 4.3: "the
+# report leads with the requested estimator and prints the other beneath
+# it"). Reads emlRunRegressionAnalysis.ts*, set by the door immediately
+# after its own @emlTheilSen call.
+# ============================================================================
+procedure emlReportRegressionTheilSen: .predCol$, .depCol$
+    @emlUnderscoreToSpace: .predCol$
+    .displayPred$ = emlUnderscoreToSpace.result$
+    @emlUnderscoreToSpace: .depCol$
+    .displayDep$ = emlUnderscoreToSpace.result$
+
+    @emlReportHeader: "Theil-Sen Regression"
+    @emlReportLineString: "Response (Y)", .displayDep$
+    @emlReportLineString: "Predictor (X)", .displayPred$
+    if emlRunRegressionAnalysis.tsSlope = undefined
+        @emlReportNote: "Not available -- Theil-Sen needs at least two "
+        ... + "distinct predictor values."
+    else
+        @emlReportLine: "N", emlRunRegressionAnalysis.tsN, 0
+        @emlReportLine: "Slope pairs used",
+        ... emlRunRegressionAnalysis.tsNSlopes, 0
+        @eml_fixed: emlRunRegressionAnalysis.tsSlope, 4
+        .fx1$ = eml_fixed.result$
+        @eml_fixed: emlRunRegressionAnalysis.tsIntercept, 4
+        .fx2$ = eml_fixed.result$
+        @emlReportLineString: "Equation", "y = " + .fx1$ + "x + " + .fx2$
+        @emlReportLine: "Slope", emlRunRegressionAnalysis.tsSlope, 4
+        @emlReportLine: "Intercept", emlRunRegressionAnalysis.tsIntercept, 4
+    endif
+    @emlReportBlank
+    @emlReportSection: "Ordinary Least Squares (for comparison)"
+endproc
+
+
+# ============================================================================
 # @emlReportRegressionAnalysis
 # ============================================================================
 # Formatted Info window report for simple linear regression.

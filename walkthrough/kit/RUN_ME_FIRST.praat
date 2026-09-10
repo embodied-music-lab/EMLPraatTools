@@ -624,7 +624,10 @@ procedure emlKitRunPrereq: .tableId, .prereq$
     .arg1$ = left$ (.args$, .commaPos - 1)
     .arg2$ = mid$ (.args$, .commaPos + 1, length (.args$) - .commaPos)
     if .proc$ = "emlRunRegressionAnalysis"
-        @emlRunRegressionAnalysis: .tableId, .arg1$, .arg2$
+        # No per-row estimator column in matrix.tsv yet (added in a
+        # later step of this wave); "ols" is @emlRunRegressionAnalysis's
+        # own dialog default.
+        @emlRunRegressionAnalysis: .tableId, .arg1$, .arg2$, "ols"
     else
         .ok = 0
     endif
@@ -1406,7 +1409,10 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
 
     elsif .proc$ = "emlRunRegressionAnalysis"
         # --- 9. LINEAR REGRESSION ------------------------------------------
-        @emlRunRegressionAnalysis: .tableId, .colA$, .colB$
+        # No per-row estimator column in matrix.tsv yet (added in a
+        # later step of this wave); "ols" is @emlRunRegressionAnalysis's
+        # own dialog default.
+        @emlRunRegressionAnalysis: .tableId, .colA$, .colB$, "ols"
         if emlRunRegressionAnalysis.error$ <> ""
             .refused = 1
             .refuseReason$ = emlRunRegressionAnalysis.error$
@@ -1462,7 +1468,7 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
         # This is one computation read a second time for output, not a
         # second way of computing it. It must happen BEFORE the per-group
         # loop below, which overwrites emlLinearRegression on every group.
-        @emlRunRegressionAnalysis: .tableId, .colB$, .colA$
+        @emlRunRegressionAnalysis: .tableId, .colB$, .colA$, "ols"
         if emlRunRegressionAnalysis.error$ = ""
             @emlKitNum: .cellId$, "overall_r_squared",
             ... emlLinearRegression.rSquared

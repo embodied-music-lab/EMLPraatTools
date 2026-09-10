@@ -1,13 +1,10 @@
 # ============================================================================
 # EML Stats & Graphs — Simple Linear Regression
 # ============================================================================
-# Purpose: OLS simple linear regression (slope, intercept, R², SE, F, p).
-#          OLS is the only estimator this wrapper offers. The plugin also
-#          ships a Theil-Sen robust estimator (@emlTheilSen), but it is
-#          reachable only from the draw layer, and only on a Spearman
-#          scatter — not from here.
+# Purpose: Simple linear regression (slope, intercept, R², SE, F, p), OLS or
+#          Theil-Sen.
 # Date: 11 May 2026
-# Version: 2.2
+# Version: 2.3
 #
 # ATTRIBUTION
 # Framework: EML PraatGen by Ian Howell
@@ -48,6 +45,18 @@ endif
 # What the user had set.
 selGroupIdx = 1
 selGroupName$ = ""
+
+; THE ESTIMATOR DEFAULT, PERSISTED THE SAME WAY @emlWrapperCommonFields'
+; emlLastShowExplanations is: a session global set once here, remembered
+; across a return to this form, "ols" the first time nothing has been
+; chosen yet (API completion wave order, section 4.3).
+if not variableExists ("emlLastRegressionEstimator$")
+    emlLastRegressionEstimator$ = "ols"
+endif
+guessEstIdx = 1
+if emlLastRegressionEstimator$ = "theil-sen"
+    guessEstIdx = 2
+endif
 
 allDone = 0
 repeat
@@ -133,6 +142,10 @@ repeat
             comment: "     (no column in this Table has a usable number"
             comment: "     of groups — overall only)"
         endif
+        comment: ""
+        optionmenu: "Estimator", guessEstIdx
+            option: "OLS"
+            option: "Theil-Sen"
         @emlWrapperCommonFields
     clicked = endPause: "Quit", "Run", 2, 0
     if clicked = 1
@@ -158,6 +171,14 @@ repeat
         groupCol$ = grpName$ [group_column - 1]
     endif
     selGroupName$ = groupCol$
+
+    if estimator = 2
+        estimator$ = "theil-sen"
+    else
+        estimator$ = "ols"
+    endif
+    emlLastRegressionEstimator$ = estimator$
+    guessEstIdx = estimator
 
     @emlHandleCommonFields
 
@@ -188,7 +209,7 @@ repeat
         endif
     else
         selectObject: tableId
-        @emlRunRegressionAnalysis: tableId, respCol$, predCol$
+        @emlRunRegressionAnalysis: tableId, respCol$, predCol$, estimator$
         if emlRunRegressionAnalysis.error$ <> ""
             # An error must not strand the user on a form the error has
             # just ruled out. Present it with guidance, and honour Quit.

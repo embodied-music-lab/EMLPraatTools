@@ -1681,7 +1681,11 @@ elsif goal = 2
         ... "OLS regression (R², F-test)",
         ... "n/a", predictor_column$, "", response_column$, displayTable$
 
-        @emlRunRegressionAnalysis: tableId, response_column$, predictor_column$
+        # THE WIZARD HAS NO CONTROL FOR THIS (filed for the graphs round:
+        # wizard parity for the new options), so it passes the one default
+        # the dialog itself falls back to.
+        @emlRunRegressionAnalysis: tableId, response_column$, predictor_column$,
+        ... "ols"
         if emlRunRegressionAnalysis.error$ <> ""
             # An analysis error must not tear down the wizard. Return
             # the user into the back-chain with every answer intact.
@@ -2833,7 +2837,11 @@ elsif goal = 4
     ... "OLS regression (R², F-test)",
     ... "n/a", predictor_column$, "", outcome_column$, displayTable$
 
-    @emlRunRegressionAnalysis: tableId, outcome_column$, predictor_column$
+    # THE WIZARD HAS NO CONTROL FOR THIS (filed for the graphs round: wizard
+    # parity for the new options), so it passes the one default the dialog
+    # itself falls back to.
+    @emlRunRegressionAnalysis: tableId, outcome_column$, predictor_column$,
+    ... "ols"
     if emlRunRegressionAnalysis.error$ <> ""
         # An analysis error must not tear down the wizard. Return
         # the user into the back-chain with every answer intact.

@@ -291,7 +291,7 @@ for .i from 1 to 20
 endfor
 
 selectObject: tableId
-@emlRunRegressionAnalysis: tableId, "Y", "X"
+@emlRunRegressionAnalysis: tableId, "Y", "X", "ols"
 .info$ = info$ ()
 
 @emlTestAssertTrue: "regression has equation or coefficients",

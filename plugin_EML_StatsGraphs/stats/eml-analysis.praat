@@ -3756,10 +3756,41 @@ endproc
 #
 # ============================================================================
 
-procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
+procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$, .estimator$
     ; The line the record carries. Empty until the fit succeeds, so a refusal
     ; records its refusal and no coefficients.
     .recResult$ = ""
+    ; OLS AND THEIL-SEN, NAMED ON THE DOOR (9 Sep 2026, API completion wave,
+    ; section 4.3). Initialised undefined at entry for the reason every
+    ; other door's fields are: a caller reading before the guards below run,
+    ; or after a refusal, must see "no result", never a stale number from a
+    ; previous table.
+    .n = undefined
+    .slope = undefined
+    .intercept = undefined
+    .rSquared = undefined
+    .fStat = undefined
+    .dfReg = undefined
+    .dfRes = undefined
+    .pF = undefined
+    .seSlope = undefined
+    .seIntercept = undefined
+    .tSlope = undefined
+    .pSlope = undefined
+    .tIntercept = undefined
+    .pIntercept = undefined
+    .seResidual = undefined
+    .slopeLow = undefined
+    .slopeHigh = undefined
+    .interceptLow = undefined
+    .interceptHigh = undefined
+    ; Theil-Sen: computed additionally, only when requested (O(n^2), the
+    ; entry says so). Undefined otherwise, and undefined and disclosed on
+    ; the kernel's own refusal (fewer than two distinct x values).
+    .tsSlope = undefined
+    .tsIntercept = undefined
+    .tsNSlopes = undefined
+    .tsN = undefined
     ; The three-file declaration flag is cleared HERE, at entry, and not at
     ; @emlCSVInit -- an orchestrator can fail its guards and reach `goto END_*`
     ; without ever calling @emlCSVInit, and the flag from the PREVIOUS analysis
@@ -3777,7 +3808,16 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
     .tableName$ = selected$ ("Table")
     .nRows = Get number of rows
 
-    if .nRows < 3
+    ; .estimator$ VALIDATED BEFORE THE FIT, same reason the two-way door
+    ; validates .adjMethod$ before running its omnibus: a bad dialog value
+    ; is a refusal on its own terms.
+    if .estimator$ <> "ols" and .estimator$ <> "theil-sen"
+        .error$ = "Unrecognised estimator """ + .estimator$
+            ... + """; expected ols or theil-sen."
+        .remedy$ = "Choose an estimator from the Estimator field."
+    endif
+
+    if .error$ = "" and .nRows < 3
         .error$ = "Need at least 3 rows for regression."
     endif
 
@@ -3844,6 +3884,55 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
             ... + newline$ + "  R-squared = "
             ... + fixed$ (emlLinearRegression.rSquared, 4)
             ... + ", n = " + string$ (.nValid)
+
+            ; THE FULL OLS SET, NAMED ON THE DOOR (order section 4.3). OLS
+            ; is computed on every run, whichever estimator was requested.
+            .n = emlLinearRegression.n
+            .slope = emlLinearRegression.slope
+            .intercept = emlLinearRegression.intercept
+            .rSquared = emlLinearRegression.rSquared
+            .fStat = emlLinearRegression.fStat
+            .dfReg = emlLinearRegression.dfReg
+            .dfRes = emlLinearRegression.dfRes
+            .pF = emlLinearRegression.pF
+            .seSlope = emlLinearRegression.seSlope
+            .seIntercept = emlLinearRegression.seIntercept
+            .tSlope = emlLinearRegression.tSlope
+            .pSlope = emlLinearRegression.pSlope
+            .tIntercept = emlLinearRegression.tIntercept
+            .pIntercept = emlLinearRegression.pIntercept
+            .seResidual = emlLinearRegression.seResidual
+
+            ; INTERVALS AT THE ALPHA IN FORCE, t on dfRes (order section
+            ; 4.3). emlReportAlpha.value is this tree's one answer to
+            ; "significant against what" -- never a literal.
+            @emlReportAlpha
+            .regAlpha = emlReportAlpha.value
+            if .dfRes <> undefined and .dfRes >= 1
+                .regTCrit = invStudentQ (.regAlpha / 2, .dfRes)
+                .slopeLow = .slope - .regTCrit * .seSlope
+                .slopeHigh = .slope + .regTCrit * .seSlope
+                .interceptLow = .intercept - .regTCrit * .seIntercept
+                .interceptHigh = .intercept + .regTCrit * .seIntercept
+            endif
+
+            ; THEIL-SEN, COMPUTED ADDITIONALLY when requested (O(n^2) --
+            ; feasible at the sample sizes this plugin sees, infeasible to
+            ; hide). Undefined and disclosed on the kernel's own refusal
+            ; (fewer than two distinct x values, or n < 2).
+            if .estimator$ = "theil-sen"
+                @emlTheilSen: .xClean#, .yClean#
+                if emlTheilSen.error$ = ""
+                    .tsSlope = emlTheilSen.slope
+                    .tsIntercept = emlTheilSen.intercept
+                    .tsNSlopes = emlTheilSen.nSlopes
+                    .tsN = .nValid
+                else
+                    @eml_appendWarning: .warning$, "Theil-Sen omitted -- "
+                        ... + emlTheilSen.error$
+                    .warning$ = eml_appendWarning.result$
+                endif
+            endif
         endif
     endif
 
@@ -3851,6 +3940,13 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         .nUndefined = .nRows - .nValid
 
         @emlCSVInit
+        ; THE REPORT LEADS WITH THE REQUESTED ESTIMATOR and prints the
+        ; other beneath it (order section 4.3). OLS is always computed and
+        ; always printed by @emlReportRegressionAnalysis; when Theil-Sen was
+        ; requested, its own section prints FIRST, ahead of that OLS report.
+        if .estimator$ = "theil-sen"
+            @emlReportRegressionTheilSen: .predCol$, .depCol$
+        endif
         @emlReportRegressionAnalysis: .tableName$, .depCol$, .predCol$,
         ... .nValid, .nUndefined
 
@@ -3879,7 +3975,7 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$
         @emlRecordAnalysisStep: .tableId, "Linear regression",
         ... .depCol$ + " on " + .predCol$,
         ... "Residual diagnostics are not run on this path.",
-        ... "@emlRunRegressionAnalysis: data, """ + .depCol$ + """, """ + .predCol$ + """",
+        ... "@emlRunRegressionAnalysis: data, """ + .depCol$ + """, """ + .predCol$ + """, """ + .estimator$ + """",
         ... "In the GUI: New > EML Stats & Graphs > Linear regression...",
         ... .recResult$, .error$
     endif
