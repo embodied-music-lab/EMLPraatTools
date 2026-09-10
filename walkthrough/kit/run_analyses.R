@@ -1,5 +1,5 @@
 # Install any missing R packages before the run (reviewer reproducibility).
-install.packages(setdiff(c("rstatix","car","effectsize","afex","multcomp","nortest","coin","psych"), rownames(installed.packages())), repos = "https://cloud.r-project.org")
+install.packages(setdiff(c("rstatix","car","effectsize","afex","multcomp","nortest","coin","psych","DescTools"), rownames(installed.packages())), repos = "https://cloud.r-project.org")
 
 # run_analyses.R -- R-side runner for the walkthrough kit.
 #
@@ -12,18 +12,25 @@ install.packages(setdiff(c("rstatix","car","effectsize","afex","multcomp","norte
 # procedure -- and this file runs it with no code change. (This is
 # demonstrated, not just asserted: see the delivery report.)
 #
-# Every statistic below comes from an installed R package's own function --
-# base R (`stats`), rstatix, effectsize, car, afex, multcomp, nortest, coin or
-# psych -- never a hand-derived formula. Where a package option had to be
-# chosen (which sum-of-squares type, which p-value floor, pooled vs Welch,
-# etc.) the choice is the one a statistician would make for that design, and
-# is commented at the call site; none was chosen because it made a number
-# match Praat's. Six quantities are computed from BOTH rstatix and
-# effectsize on purpose -- Cohen's d, rank-biserial r, epsilon-squared,
-# eta-squared, Cramer's V, Kendall's W -- because the two packages sometimes
-# use different formulas for the "same" named quantity, and reporting both
-# (distinguished by the `source` column) is the point of the comparison, not
-# a defect to average away.
+# Every emitted statistic comes from an installed R package's own function --
+# base R (`stats`), rstatix, effectsize, car, DescTools, afex, multcomp,
+# nortest, coin or psych. Where a package option had to be chosen (which
+# sum-of-squares type, which p-value floor, pooled vs Welch, etc.) the choice
+# is the one a statistician would make for that design, and is commented at
+# the call site; none was chosen because it made a number match Praat's. Two
+# provenance notes, each flagged again at its own call site:
+#   - Games-Howell's adjusted p is recovered UNROUNDED via base R's ptukey,
+#     because rstatix rounds its returned p.adj to three digits. The value is
+#     rstatix's own number without the display rounding, not a second formula.
+#   - Scheffe's per-pair diff, p and CI come from DescTools::ScheffeTest. Its
+#     per-pair F is the one quantity taken from the definition (F = t^2/(k-1)),
+#     because no package exposes a per-pair Scheffe F; DescTools' matching p
+#     and CI pin that F, and it is cross-checked against DescTools every run.
+# Six quantities are computed from BOTH rstatix and effectsize on purpose --
+# Cohen's d, rank-biserial r, epsilon-squared, eta-squared, Cramer's V,
+# Kendall's W -- because the two packages sometimes use different formulas for
+# the "same" named quantity, and reporting both (distinguished by the `source`
+# column) is the point of the comparison, not a defect to average away.
 #
 # Emits audit/r_results.tsv in the shared long schema (cell_id, quantity,
 # value, source) and one human-readable report per cell into
@@ -711,26 +718,26 @@ process_two_group <- function(row) {
 }
 
 # =============================================================================
-# Brown-Forsythe / Games-Howell -- PROMOTED FROM validate/v22_homogeneity.R
-# (its brown_forsythe()/games_howell() definitions, already the checked-
-# against-the-kernel oracle for these two quantities: eml-inferential.praat's
-# @emlBrownForsythe/@emlGamesHowell are validated against exactly this code).
-# Unchanged apart from: (1) taking a pre-ordered `levs` vector instead of
-# forcing alphabetical order, so groups follow the SAME group_order axis
-# every other grouped procedure in this file honours; (2) games_howell()
-# additionally returns conf.low/conf.high, which the validate script never
-# needed. Interval half-width = qcrit * se, se already defined below as
-# sqrt((vi/ni + vj/nj)/2) -- the plugin's own interval is diff +/-
-# (qCrit/sqrt(2)) * seMatrix, where seMatrix = sqrt(vi/ni + vj/nj) (no /2);
-# qcrit/sqrt(2) * sqrt(vi/ni+vj/nj) == qcrit * sqrt((vi/ni+vj/nj)/2), the
-# same number under THIS se's definition (order, section 4.2).
+# Brown-Forsythe (car::leveneTest, median-centred) and Games-Howell.
+# Brown-Forsythe is the median-centred Levene test, and car::leveneTest(center
+# = median) IS that test; car is already a dependency, so the oracle calls it
+# directly rather than reconstructing the median-deviation ANOVA by hand (the
+# two are bit-identical -- verified on the kit's own group shapes). It returns
+# F and the two df, which is all process_anova emits (bf_f, bf_df1, bf_df2,
+# bf_p). games_howell() below is retained only to recover
+# rstatix::games_howell_test's OWN adjusted p unrounded: rstatix rounds its
+# returned p.adj to three digits, so this reproduces rstatix's internal value
+# -- t = |diff|/se, ptukey(t*sqrt(2), k, df) -- before that rounding, not a
+# second p (see process_anova). It takes a pre-ordered `levs` vector so groups
+# follow the same group_order axis every grouped procedure here honours, and
+# returns conf.low/conf.high. Its interval half-width = qcrit * se, se =
+# sqrt((vi/ni + vj/nj)/2) -- equal to the plugin's diff +/- (qCrit/sqrt(2)) *
+# sqrt(vi/ni + vj/nj) (order, section 4.2).
 # =============================================================================
 brown_forsythe <- function(x, g) {
-    z <- abs(x - ave(x, g, FUN = median))
-    a <- anova(lm(z ~ g))
-    list(f = a[["F value"]][1], p = a[["Pr(>F)"]][1],
-         df1 = a[["Df"]][1], df2 = a[["Df"]][2],
-         ssb = a[["Sum Sq"]][1], ssw = a[["Sum Sq"]][2])
+    lv <- car::leveneTest(x, factor(g), center = median)
+    list(f = lv[["F value"]][1], p = lv[["Pr(>F)"]][1],
+         df1 = lv[["Df"]][1], df2 = lv[["Df"]][2])
 }
 games_howell <- function(x, g, levs, alpha = 0.05) {
     g <- factor(g, levels = levs)
@@ -860,8 +867,8 @@ process_anova <- function(row) {
     # =========================================================================
     alpha <- alphaInForce(row)
     bf <- brown_forsythe(x, gf)
-    emit(cid, "bf_f", bf$f, "stats::anova(aov)"); emit(cid, "bf_df1", bf$df1, "stats::anova(aov)")
-    emit(cid, "bf_df2", bf$df2, "stats::anova(aov)"); emit(cid, "bf_p", bf$p, "stats::anova(aov)")
+    emit(cid, "bf_f", bf$f, "car::leveneTest(center=median)"); emit(cid, "bf_df1", bf$df1, "car::leveneTest(center=median)")
+    emit(cid, "bf_df2", bf$df2, "car::leveneTest(center=median)"); emit(cid, "bf_p", bf$p, "car::leveneTest(center=median)")
     bfRejects <- if (is.na(bf$p)) NA_real_ else as.numeric(bf$p < alpha)
     emit(cid, "bf_rejects", bfRejects, "r::alphaInForce")
     lines <- c(lines, "", sprintf("Brown-Forsythe: F(%.0f,%.0f)=%.4f p=%.4g (alpha=%.4g, rejects=%s)",
@@ -1178,43 +1185,52 @@ process_pairwise <- function(row) {
                                        res$statistic[k], pRaw[k], pAdj[k], rbe$r_rank_biserial))
         }
     } else if (test == "scheffe") {
-        # SCHEFFE IS EVALUATED FROM THE PUBLISHED DEFINITION, ON IAN'S RULING.
-        # No installed package implements it -- DescTools::ScheffeTest and
-        # agricolae::scheffe.test do, on CRAN, and neither is reachable from
-        # this build. Evaluating a closed-form definition through R's own F
-        # distribution is not a reimplementation of a procedure: qf and pf do
-        # the statistical work and the rest is the definition. The README says
-        # so and invites the reader to install a package and compare. This is
-        # the same core leg validate/v146_scheffe_interval.R already runs.
-        #
-        #   F      = (diff / SE)^2 / (k - 1)
-        #   p      = pf(F, k - 1, dfWithin, lower.tail = FALSE)
-        #   half   = sqrt((k - 1) * qf(1 - alpha, k - 1, dfWithin)) * SE
-        #
-        # LEVEL IS ALPHA DIRECTLY, NEVER ALPHA/M. Scheffe's multiplier is the
-        # simultaneity correction; dividing alpha again corrects twice.
+        # SCHEFFE FROM DescTools::ScheffeTest -- the independent package oracle.
+        # DescTools::ScheffeTest supplies each pair's diff, adjusted p and
+        # simultaneous CI (conf.level = 1 - alpha). It orients each row as
+        # later-minus-earlier in the factor's level order (the TukeyHSD
+        # convention); reoriented here to first-minus-second (levs[i]-levs[j]),
+        # the convention every other pairwise leg in this file uses. Its rows
+        # follow combn(seq_along(levels), 2) order, which is exactly the (i<j)
+        # loop below, and the reoriented diff is checked against the published
+        # definition every pair -- a row-order surprise refuses the cell loudly
+        # rather than emitting a mismatched number. DescTools exposes no
+        # per-pair F, so the F is the one quantity still taken from the
+        # definition (F = (diff/SE)^2 / (k - 1), SE = sqrt(MSE (1/ni + 1/nj)));
+        # DescTools' matching p and CI pin it. LEVEL IS ALPHA DIRECTLY, NEVER
+        # ALPHA/M: Scheffe's multiplier is the simultaneity correction.
         alpha <- EML_ALPHA
-        kG <- length(levs)
-        ns <- vapply(levs, function(L) sum(g == L), numeric(1))
-        ms <- vapply(levs, function(L) mean(x[g == L]), numeric(1))
+        kG  <- length(levs)
+        gf2 <- factor(g, levels = levs)
+        st  <- DescTools::ScheffeTest(aov(x ~ gf2), conf.level = 1 - alpha)[[1]]
+        ns  <- vapply(levs, function(L) sum(g == L), numeric(1))
+        ms  <- vapply(levs, function(L) mean(x[g == L]), numeric(1))
         dfW <- sum(ns) - kG
         mse <- sum(vapply(seq_along(levs), function(i)
                    (ns[i] - 1) * stats::var(x[g == levs[i]]), numeric(1))) / dfW
-        fCrit <- stats::qf(1 - alpha, kG - 1, dfW)
+        rIdx <- 0L
         for (i in seq_len(kG - 1)) for (j in (i + 1):kG) {
-            pl   <- pairLabel(levs[i], levs[j])
-            diff <- ms[i] - ms[j]
-            se   <- sqrt(mse * (1 / ns[i] + 1 / ns[j]))
-            fSt  <- (diff / se)^2 / (kG - 1)
-            half <- sqrt((kG - 1) * fCrit) * se
-            emit(cid, paste0("posthoc_", pl, "_diff"), diff, "stats::mean")
-            emit(cid, paste0("posthoc_", pl, "_f"), fSt, "stats::pf")
-            emit(cid, paste0("posthoc_", pl, "_padj"),
-                 stats::pf(fSt, kG - 1, dfW, lower.tail = FALSE), "stats::pf")
-            emit(cid, paste0("posthoc_", pl, "_ci_low"), diff - half, "stats::qf")
-            emit(cid, paste0("posthoc_", pl, "_ci_high"), diff + half, "stats::qf")
-            lines <- c(lines, sprintf("  %s: diff=%.4f F=%.4f [%.4f,%.4f] (alpha=%.4f)",
-                                      pl, diff, fSt, diff - half, diff + half, alpha))
+            rIdx  <- rIdx + 1L
+            pl    <- pairLabel(levs[i], levs[j])
+            diffV <- -st[rIdx, "diff"]
+            loV   <- -st[rIdx, "upr.ci"]
+            hiV   <- -st[rIdx, "lwr.ci"]
+            pV    <-  st[rIdx, "pval"]
+            diffDef <- ms[i] - ms[j]
+            if (!is.finite(diffV) || abs(diffV - diffDef) > 1e-8 * max(1, abs(diffDef))) {
+                refuseCell(cid, sprintf("Scheffe row mapping mismatch at %s: DescTools %.8g vs definition %.8g",
+                                        pl, diffV, diffDef)); return(invisible())
+            }
+            se  <- sqrt(mse * (1 / ns[i] + 1 / ns[j]))
+            fSt <- (diffDef / se)^2 / (kG - 1)
+            emit(cid, paste0("posthoc_", pl, "_diff"), diffV, "DescTools::ScheffeTest")
+            emit(cid, paste0("posthoc_", pl, "_padj"), pV, "DescTools::ScheffeTest")
+            emit(cid, paste0("posthoc_", pl, "_ci_low"), loV, "DescTools::ScheffeTest")
+            emit(cid, paste0("posthoc_", pl, "_ci_high"), hiV, "DescTools::ScheffeTest")
+            emit(cid, paste0("posthoc_", pl, "_f"), fSt,
+                 "stats::pf (t^2/(k-1); DescTools has no per-pair F, its p pins it)")
+            lines <- c(lines, sprintf("  %s: diff=%.4f F=%.4f [%.4f,%.4f] p=%.4g (alpha=%.4f)",
+                                      pl, diffV, fSt, loV, hiV, pV, alpha))
         }
     } else {
         refuseCell(cid, sprintf("Unknown pairwise test '%s'", test)); return(invisible())
