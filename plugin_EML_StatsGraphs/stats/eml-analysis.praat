@@ -546,6 +546,17 @@ endproc
 
 procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
 
+    ; CACHE EPOCH, BUMPED ON ENTRY (9 Sep 2026 speed wave). @eml_getGroupData
+    ; memoizes its per-(table, data column, group column, group label)
+    ; extraction within one door invocation, keyed in part on this counter;
+    ; bumping it here -- before that cache can be touched -- guarantees the
+    ; next cell (or a re-run on a table ID Praat recycled) never reads a
+    ; result this run computed. See @eml_getGroupData, eml-extract.praat.
+    if not variableExists ("eml_cacheEpoch")
+        eml_cacheEpoch = 0
+    endif
+    eml_cacheEpoch = eml_cacheEpoch + 1
+
     ; ---------------------------------------------------------------------
     ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
     ; The publication sits after the end label, beside the record hook and
@@ -3001,6 +3012,20 @@ endproc
 
 procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     ... .ssType, .adjMethod$
+
+    ; CACHE EPOCH, BUMPED ON ENTRY (9 Sep 2026 speed wave). @eml_ak2_gather
+    ; memoizes its per-(table, data column, factor1, factor2) scan within one
+    ; door invocation, keyed in part on this counter; bumping it here --
+    ; before that cache can be touched -- guarantees the next cell (or a
+    ; re-run on a table ID Praat recycled) never reads a result this run
+    ; computed. See @eml_ak2_gather, eml-anova-kernel.praat. Shared with
+    ; @emlRunAnovaAnalysis's own bump: either door entry invalidates both
+    ; caches, which only ever costs an extra miss, never a stale hit.
+    if not variableExists ("eml_cacheEpoch")
+        eml_cacheEpoch = 0
+    endif
+    eml_cacheEpoch = eml_cacheEpoch + 1
+
     .recResult$ = ""
     ; OPTIONAL-BRANCH OUTPUTS, INITIALISED AT ENTRY (9 Sep 2026, API
     ; completion wave, order section 4.1). Estimated marginal means, simple

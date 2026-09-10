@@ -2734,6 +2734,55 @@ endproc
 # column:" is ever called.
 # ============================================================================
 procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
+    ; MEMOIZATION (9 Sep 2026 speed wave). One door invocation (one "cell")
+    ; asks this exact (table, data column, group column, group label)
+    ; question up to three times -- once each from @emlBrownForsythe,
+    ; @emlWelchAnova, @emlGamesHowell -- and got the identical O(k*N)
+    ; extraction three times over. The key is every argument, length-prefixed
+    ; so "ab"+"c" can never fold the same as "a"+"bc", PLUS eml_cacheEpoch,
+    ; which @emlRunAnovaAnalysis/@emlRunTwoWayAnalysis bump on entry (see
+    ; eml-analysis.praat) -- so a later cell, or a table ID Praat recycles
+    ; after a Remove, can never read an earlier cell's rows. The cache is
+    ; also wiped whenever the epoch moves, so it never holds more than one
+    ; cell's worth of entries. A caller that never goes through a door (a
+    ; direct test call) shares epoch 0 with every other direct call, which is
+    ; exactly the pre-existing assumption: identical arguments must mean the
+    ; identical question.
+    if not variableExists ("eml_cacheEpoch")
+        eml_cacheEpoch = 0
+    endif
+    ; Praat's "or" is not short-circuiting -- a single combined condition
+    ; would evaluate eml_ggdCache.epoch even on the branch where it does not
+    ; exist yet, and abort. Two separate tests instead.
+    if not variableExists ("eml_ggdCache.epoch")
+        eml_ggdCache.count = 0
+        eml_ggdCache.epoch = eml_cacheEpoch
+    elsif eml_ggdCache.epoch <> eml_cacheEpoch
+        eml_ggdCache.count = 0
+        eml_ggdCache.epoch = eml_cacheEpoch
+    endif
+    .cacheKey$ = string$ (.tableId) + "|" + string$ (length (.dataCol$)) + ":" + .dataCol$
+        ... + "|" + string$ (length (.groupCol$)) + ":" + .groupCol$
+        ... + "|" + string$ (length (.groupLabel$)) + ":" + .groupLabel$
+        ... + "|" + string$ (eml_cacheEpoch)
+    .cacheHit = 0
+    for .ggdI from 1 to eml_ggdCache.count
+        if .cacheHit = 0 and eml_ggdCache.key$[.ggdI] = .cacheKey$
+            .cacheHit = .ggdI
+        endif
+    endfor
+    if .cacheHit > 0
+        .error$ = eml_ggdCache.err$[.cacheHit]
+        .remedy$ = eml_ggdCache.rem$[.cacheHit]
+        .n = eml_ggdCache.nn[.cacheHit]
+        .data# = eml_ggdCache.data'.cacheHit'#
+        .nExcluded = eml_ggdCache.nex[.cacheHit]
+        .note$ = eml_ggdCache.note$[.cacheHit]
+        .warning$ = eml_ggdCache.warn$[.cacheHit]
+        .emptyNote$ = eml_ggdCache.empty$[.cacheHit]
+        goto GETGROUPDATA_DONE
+    endif
+
     .error$ = ""
     .remedy$ = ""
     .n = 0
@@ -2903,6 +2952,20 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
 
     label GETGROUPDATA_DONE
     .ok = (.error$ = "")
+
+    if .cacheHit = 0
+        eml_ggdCache.count = eml_ggdCache.count + 1
+        .ggdSlot = eml_ggdCache.count
+        eml_ggdCache.key$[.ggdSlot] = .cacheKey$
+        eml_ggdCache.err$[.ggdSlot] = .error$
+        eml_ggdCache.rem$[.ggdSlot] = .remedy$
+        eml_ggdCache.nn[.ggdSlot] = .n
+        eml_ggdCache.data'.ggdSlot'# = .data#
+        eml_ggdCache.nex[.ggdSlot] = .nExcluded
+        eml_ggdCache.note$[.ggdSlot] = .note$
+        eml_ggdCache.warn$[.ggdSlot] = .warning$
+        eml_ggdCache.empty$[.ggdSlot] = .emptyNote$
+    endif
 endproc
 
 

@@ -525,6 +525,90 @@ endproc
 #   .ssError, .dfError, .ssTotal, .dfTotal
 # ============================================================================
 procedure eml_ak2_gather: .tableId, .dataCol$, .factor1$, .factor2$
+    ; MEMOIZATION (9 Sep 2026 speed wave). One two-way cell asks this exact
+    ; (table, data column, factor1, factor2) question up to ~4 times --
+    ; from @emlAnovaKernelTwoWay, @emlAnovaKernelTwoWayEMM (once directly,
+    ; once more inside @emlAnovaKernelTwoWayPostHoc), and
+    ; @emlAnovaKernelTwoWaySimpleEffects -- and re-ran this O(rows) two-pass
+    ; scan every time. Same key/epoch scheme as @eml_getGroupData's cache
+    ; (eml-extract.praat): length-prefixed arguments plus eml_cacheEpoch,
+    ; which @emlRunAnovaAnalysis/@emlRunTwoWayAnalysis bump on entry, wiping
+    ; this cache along with it.
+    ;
+    ; .ak2Stage records how far THIS call's own computation got (0 = the
+    ; column/row-count guard failed before pass 1; 1 = pass 1 ran, so
+    ; .r/.s/.rs/.lev1$/.lev2$ are real; 2 = pass 2 also ran, so the per-row
+    ; and per-cell vectors and .grandSum/.grandMean/.minCellN/.maxCellN are
+    ; real; 3 = the final block ran too, so .cellMean# through .dfTotal are
+    ; real). A field past the reached stage is UNTOUCHED this call, exactly
+    ; as the uncached code already leaves it (Praat's procedure fields are
+    ; persistent, so it still holds whatever an earlier call left) -- the
+    ; cache mirrors that by storing and restoring only up to .ak2Stage,
+    ; never reading a field neither this call nor the cache is sure is set.
+    if not variableExists ("eml_cacheEpoch")
+        eml_cacheEpoch = 0
+    endif
+    ; Praat's "or" is not short-circuiting -- a single combined condition
+    ; would evaluate eml_ak2gCache.epoch even on the branch where it does not
+    ; exist yet, and abort. Two separate tests instead.
+    if not variableExists ("eml_ak2gCache.epoch")
+        eml_ak2gCache.count = 0
+        eml_ak2gCache.epoch = eml_cacheEpoch
+    elsif eml_ak2gCache.epoch <> eml_cacheEpoch
+        eml_ak2gCache.count = 0
+        eml_ak2gCache.epoch = eml_cacheEpoch
+    endif
+    .cacheKey$ = string$ (.tableId) + "|" + string$ (length (.dataCol$)) + ":" + .dataCol$
+        ... + "|" + string$ (length (.factor1$)) + ":" + .factor1$
+        ... + "|" + string$ (length (.factor2$)) + ":" + .factor2$
+        ... + "|" + string$ (eml_cacheEpoch)
+    .cacheHit = 0
+    for .ak2I from 1 to eml_ak2gCache.count
+        if .cacheHit = 0 and eml_ak2gCache.key$[.ak2I] = .cacheKey$
+            .cacheHit = .ak2I
+        endif
+    endfor
+    if .cacheHit > 0
+        .error$ = eml_ak2gCache.err$[.cacheHit]
+        .n = eml_ak2gCache.n[.cacheHit]
+        .ak2Stage = eml_ak2gCache.stage[.cacheHit]
+        if .ak2Stage >= 1
+            .r = eml_ak2gCache.r[.cacheHit]
+            .s = eml_ak2gCache.s[.cacheHit]
+            .rs = eml_ak2gCache.rs[.cacheHit]
+            for .ak2J from 1 to .r
+                .lev1$[.ak2J] = eml_ak2gCache.lev1'.cacheHit'$[.ak2J]
+            endfor
+            for .ak2J from 1 to .s
+                .lev2$[.ak2J] = eml_ak2gCache.lev2'.cacheHit'$[.ak2J]
+            endfor
+        endif
+        if .ak2Stage >= 2
+            .y# = eml_ak2gCache.y'.cacheHit'#
+            .aIdx# = eml_ak2gCache.aIdx'.cacheHit'#
+            .bIdx# = eml_ak2gCache.bIdx'.cacheHit'#
+            .cellOf# = eml_ak2gCache.cellOf'.cacheHit'#
+            .cellN# = eml_ak2gCache.cellN'.cacheHit'#
+            .cellSum# = eml_ak2gCache.cellSum'.cacheHit'#
+            .grandSum = eml_ak2gCache.grandSum[.cacheHit]
+            .grandMean = eml_ak2gCache.grandMean[.cacheHit]
+            .minCellN = eml_ak2gCache.minCellN[.cacheHit]
+            .maxCellN = eml_ak2gCache.maxCellN[.cacheHit]
+        endif
+        if .ak2Stage >= 3
+            .cellMean# = eml_ak2gCache.cellMean'.cacheHit'#
+            .balanced = eml_ak2gCache.balanced[.cacheHit]
+            .balanceStatement$ = eml_ak2gCache.balanceStatement$[.cacheHit]
+            .yc# = eml_ak2gCache.yc'.cacheHit'#
+            .ssError = eml_ak2gCache.ssError[.cacheHit]
+            .dfError = eml_ak2gCache.dfError[.cacheHit]
+            .ssTotal = eml_ak2gCache.ssTotal[.cacheHit]
+            .dfTotal = eml_ak2gCache.dfTotal[.cacheHit]
+        endif
+        goto AK2_GATHER_DONE
+    endif
+
+    .ak2Stage = 0
     .error$ = ""
     .n = 0
     .r = 0
@@ -591,6 +675,7 @@ procedure eml_ak2_gather: .tableId, .dataCol$, .factor1$, .factor2$
             .error$ = "The second factor """ + .factor2$ + """ needs at "
                 ... + "least 2 levels; found " + string$ (.s) + "."
         endif
+        .ak2Stage = 1
     endif
 
     # --- pass 2: resolve each row to (aIdx, bIdx, cellOf), accumulate ---
@@ -658,6 +743,7 @@ procedure eml_ak2_gather: .tableId, .dataCol$, .factor1$, .factor2$
                 ... + "; this kernel (and Type III sums of squares in "
                 ... + "general) requires every cell to be non-empty."
         endif
+        .ak2Stage = 2
     endif
 
     if .error$ = ""
@@ -705,6 +791,50 @@ procedure eml_ak2_gather: .tableId, .dataCol$, .factor1$, .factor2$
         .ssTotal = inner (.yc#, .yc#)
         .dfError = .n - .rs
         .dfTotal = .n - 1
+        .ak2Stage = 3
+    endif
+
+    label AK2_GATHER_DONE
+    if .cacheHit = 0
+        eml_ak2gCache.count = eml_ak2gCache.count + 1
+        .ak2Slot = eml_ak2gCache.count
+        eml_ak2gCache.key$[.ak2Slot] = .cacheKey$
+        eml_ak2gCache.err$[.ak2Slot] = .error$
+        eml_ak2gCache.n[.ak2Slot] = .n
+        eml_ak2gCache.stage[.ak2Slot] = .ak2Stage
+        if .ak2Stage >= 1
+            eml_ak2gCache.r[.ak2Slot] = .r
+            eml_ak2gCache.s[.ak2Slot] = .s
+            eml_ak2gCache.rs[.ak2Slot] = .rs
+            for .ak2J from 1 to .r
+                eml_ak2gCache.lev1'.ak2Slot'$[.ak2J] = .lev1$[.ak2J]
+            endfor
+            for .ak2J from 1 to .s
+                eml_ak2gCache.lev2'.ak2Slot'$[.ak2J] = .lev2$[.ak2J]
+            endfor
+        endif
+        if .ak2Stage >= 2
+            eml_ak2gCache.y'.ak2Slot'# = .y#
+            eml_ak2gCache.aIdx'.ak2Slot'# = .aIdx#
+            eml_ak2gCache.bIdx'.ak2Slot'# = .bIdx#
+            eml_ak2gCache.cellOf'.ak2Slot'# = .cellOf#
+            eml_ak2gCache.cellN'.ak2Slot'# = .cellN#
+            eml_ak2gCache.cellSum'.ak2Slot'# = .cellSum#
+            eml_ak2gCache.grandSum[.ak2Slot] = .grandSum
+            eml_ak2gCache.grandMean[.ak2Slot] = .grandMean
+            eml_ak2gCache.minCellN[.ak2Slot] = .minCellN
+            eml_ak2gCache.maxCellN[.ak2Slot] = .maxCellN
+        endif
+        if .ak2Stage >= 3
+            eml_ak2gCache.cellMean'.ak2Slot'# = .cellMean#
+            eml_ak2gCache.balanced[.ak2Slot] = .balanced
+            eml_ak2gCache.balanceStatement$[.ak2Slot] = .balanceStatement$
+            eml_ak2gCache.yc'.ak2Slot'# = .yc#
+            eml_ak2gCache.ssError[.ak2Slot] = .ssError
+            eml_ak2gCache.dfError[.ak2Slot] = .dfError
+            eml_ak2gCache.ssTotal[.ak2Slot] = .ssTotal
+            eml_ak2gCache.dfTotal[.ak2Slot] = .dfTotal
+        endif
     endif
 endproc
 
