@@ -1631,11 +1631,16 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                         endif
                     endfor
                 endif
-                @emlKitNum: .cellId$, "n_groups_run",
-                ... emlRunCorrelationAnalysis.nGroupsRun
-                @emlKitNum: .cellId$, "n_groups_skipped",
-                ... emlRunCorrelationAnalysis.nGroupsSkipped
             endif
+            # n_groups_run/n_groups_skipped (order section 4.4/8): scope=cell,
+            # presence=always -- 0 (not undefined) when .colC$ is empty, the
+            # door's own @emlRunCorrelationAnalysis.nGroupsRun/.nGroupsSkipped
+            # stay 0 there (comment above), so this emits unconditionally on
+            # every successful cell, not only grouped ones.
+            @emlKitNum: .cellId$, "n_groups_run",
+            ... emlRunCorrelationAnalysis.nGroupsRun
+            @emlKitNum: .cellId$, "n_groups_skipped",
+            ... emlRunCorrelationAnalysis.nGroupsSkipped
         endif
 
     elsif .proc$ = "emlRunDescriptiveAnalysis"

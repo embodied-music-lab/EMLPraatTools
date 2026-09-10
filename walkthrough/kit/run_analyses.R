@@ -1663,11 +1663,11 @@ process_correlation <- function(row) {
     # skipped and disclosed (the same n >= 4 floor the overall Pearson
     # interval above uses), never silently dropped.
     # =========================================================================
+    nRun <- 0; nSkipped <- 0
     if (nzchar(row$col_c)) {
         gFull <- chrcol(d, row$col_c)
         keepG <- keep & !is.na(gFull) & gFull != ""
         levs <- orderedLevels(gFull[keepG], row$group_order)
-        nRun <- 0; nSkipped <- 0
         lines <- c(lines, "", "Per-group Pearson correlation:")
         for (lv in levs) {
             sel <- keepG & gFull == lv
@@ -1699,9 +1699,11 @@ process_correlation <- function(row) {
                                        lv, ng, peg$estimate, peg$parameter, peg$statistic, peg$p.value,
                                        peg$conf.int[1], peg$conf.int[2]))
         }
-        emit(cid, "n_groups_run", nRun, "base::length")
-        emit(cid, "n_groups_skipped", nSkipped, "base::length")
     }
+    # n_groups_run/n_groups_skipped: scope=cell, presence=always -- 0 (not
+    # NA) when col_c is empty, matching the plugin door's own initialisation.
+    emit(cid, "n_groups_run", nRun, "base::length")
+    emit(cid, "n_groups_skipped", nSkipped, "base::length")
     writeReport(cid, lines)
 }
 
