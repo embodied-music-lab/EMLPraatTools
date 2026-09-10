@@ -1,1 +1,0 @@
-REFUSED: Group column 'fam' has 5 group(s) after excluding blanks; this test compares exactly 2.

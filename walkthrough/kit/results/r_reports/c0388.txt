@@ -1,3 +1,0 @@
-Correlation -- speaking_F0_Hz with age_years (n=30)
-
-Pearson: r=-0.0158 t(28)=-0.0838 p=0.9338

@@ -1,1 +1,0 @@
-REFUSED: Zero variance in one column; correlation is undefined.

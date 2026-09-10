@@ -465,3 +465,12 @@ _mailbox_live/
 # moment anyone checked it out, and would let the ledger report a pass count
 # that no run on that machine produced.
 validate/RUN_ALL_SUMMARY.tsv
+
+# EML kit regenerated outputs — RUN_ME_FIRST.praat / run_analyses.R / compare.R
+/walkthrough/kit/audit/praat_results.tsv
+/walkthrough/kit/audit/r_results.tsv
+/walkthrough/kit/audit/praat_environment.tsv
+/walkthrough/kit/audit/r_environment.tsv
+/walkthrough/kit/audit/r_sessionInfo.txt
+/walkthrough/kit/results/*
+!/walkthrough/kit/results/.gitkeep
