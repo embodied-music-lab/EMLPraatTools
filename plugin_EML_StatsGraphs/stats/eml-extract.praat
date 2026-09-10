@@ -3273,33 +3273,81 @@ endproc
 
 
 # ============================================================================
+# @emlColumnRoleKeywordDefaults (internal helper, THE defaults procedure for
+# @emlGuessColumnRoles' keyword lists)
+# ============================================================================
+# These keyword lists are not user-choosable settings and never travel as
+# text -- there is no dialog field and no kit column behind them, so they are
+# not delimited strings at all (ORDER_PIPE_DELIMITER_REMOVAL_2026-09-10,
+# §1b). Each is a house-syntax string vector, declared once, here, and
+# @eml_kwScan iterates the vector directly. No splitting, anywhere.
+#
+# Output: one string vector per (role, weight-tier) pair @emlGuessColumnRoles
+# scores against. Names read <role><Tier>$#; tiers keep the weights they
+# have always carried (10 = unambiguous, 8 = strong/domain, 6 = general or
+# boundary-checked-short).
+# ============================================================================
+procedure emlColumnRoleKeywordDefaults
+    .group10$# = { "group", "condition", "category" }
+    .group8$# = { "treatment", "species", "vowel", "phoneme", "diagnosis",
+    ... "pathology", "severity", "consonant", "language", "dialect" }
+    .group6$# = { "class", "type", "sex", "gender", "style", "task",
+    ... "register", "ensemble", "choir", "cohort", "genre", "mode", "status",
+    ... "label", "level", "setting", "location", "method", "technique",
+    ... "instrument", "stimulus", "repertoire", "voice_type", "age_group",
+    ... "section", "part", "region", "site" }
+
+    .data10$# = { "value", "score", "measurement", "jitter", "shimmer" }
+    .data8$# = { "intensity", "frequency", "pitch", "duration", "hnr",
+    ... "cpps", "amplitude", "bandwidth", "formant", "energy", "power",
+    ... "contact_quotient" }
+    .data8short$# = { "f0", "f1", "f2", "f3", "f4", "cq", "cpp" }
+    .data6$# = { "mean", "rate", "ratio", "result", "outcome", "response",
+    ... "rating", "measure", "percent", "proportion", "slope", "median",
+    ... "average", "threshold", "alpha_ratio", "cog", "spectral", "harmonic",
+    ... "noise", "spl", "snr", "fraction", "extent", "area", "count",
+    ... "total", "period", "cycle" }
+
+    .subject10$# = { "participant", "subject", "speaker", "singer" }
+    .subject8$# = { "patient", "listener", "rater", "talker", "client",
+    ... "student", "evaluator", "assessor" }
+    .subject6$# = { "performer", "respondent", "child", "adult", "judge" }
+    .subject6short$# = { "id" }
+
+    .time10$# = { "trial", "session", "timepoint", "baseline" }
+    .time8$# = { "repetition", "block", "recording", "iteration" }
+    .time6$# = { "visit", "phase", "wave", "attempt", "occasion", "round",
+    ... "stage" }
+    .time6short$# = { "pre", "post", "rep", "day", "week", "time", "date",
+    ... "take" }
+endproc
+
+
+# ============================================================================
 # @eml_kwScan (internal helper)
 # ============================================================================
-# Scan a "|"-delimited keyword list against a column name.
+# Scan a keyword vector against a column name. House syntax throughout: the
+# list arrives as a string vector (@emlColumnRoleKeywordDefaults is the one
+# canonical source), never a delimited string -- there is nothing here to
+# split.
 # Applies word-boundary check for keywords <= 4 characters to reduce
 # false positives (e.g., "id" in "video", "rate" in "moderate").
 # Boundary = start of string, or preceded by _, space, or hyphen.
 #
 # Input:
 #   .colName$ — column name to test
-#   .kwList$  — "|"-delimited keywords (e.g., "group|condition")
+#   .kwList$# — keyword string vector (e.g., @emlColumnRoleKeywordDefaults.group10$#)
 #
 # Output:
 #   .hit — 1 if any keyword matched with boundary rules, 0 otherwise
 # ============================================================================
 
-procedure eml_kwScan: .colName$, .kwList$
+procedure eml_kwScan: .colName$, .kwList$#
     .hit = 0
-    .rem$ = .kwList$
-    while .rem$ <> "" and .hit = 0
-        .pipePos = index (.rem$, "|")
-        if .pipePos > 0
-            .kw$ = left$ (.rem$, .pipePos - 1)
-            .rem$ = right$ (.rem$, length (.rem$) - .pipePos)
-        else
-            .kw$ = .rem$
-            .rem$ = ""
-        endif
+    .n = size (.kwList$#)
+    .i = 1
+    while .i <= .n and .hit = 0
+        .kw$ = .kwList$# [.i]
         if .kw$ <> ""
             .pos = index_caseInsensitive (.colName$, .kw$)
             if .pos > 0
@@ -3318,6 +3366,7 @@ procedure eml_kwScan: .colName$, .kwList$
                 endif
             endif
         endif
+        .i = .i + 1
     endwhile
 endproc
 
@@ -3378,7 +3427,10 @@ procedure emlGuessColumnRoles: .tableId
 
     # ── PASS 1: Keyword scoring ──────────────────────────────────────
     # Score each column (0-10) for each role. Keywords grouped by
-    # weight tier: 10 = unambiguous, 8 = strong, 6 = moderate.
+    # weight tier: 10 = unambiguous, 8 = strong, 6 = moderate. The lists
+    # themselves are declared once, canonically, by
+    # @emlColumnRoleKeywordDefaults (§1b) -- called here, read below.
+    @emlColumnRoleKeywordDefaults
 
     for .col from 1 to .nCols
         .cn$ = emlTableColumnNames.name$[.col]
@@ -3390,19 +3442,19 @@ procedure emlGuessColumnRoles: .tableId
         # ── Group score ──
 
         # Weight 10: unambiguous categorical identifiers
-        @eml_kwScan: .cn$, "group|condition|category"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.group10$#
         if eml_kwScan.hit = 1 and .gS[.col] < 10
             .gS[.col] = 10
         endif
 
         # Weight 8: domain-specific categorical terms
-        @eml_kwScan: .cn$, "treatment|species|vowel|phoneme|diagnosis|pathology|severity|consonant|language|dialect"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.group8$#
         if eml_kwScan.hit = 1 and .gS[.col] < 8
             .gS[.col] = 8
         endif
 
         # Weight 6: general categorical terms
-        @eml_kwScan: .cn$, "class|type|sex|gender|style|task|register|ensemble|choir|cohort|genre|mode|status|label|level|setting|location|method|technique|instrument|stimulus|repertoire|voice_type|age_group|section|part|region|site"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.group6$#
         if eml_kwScan.hit = 1 and .gS[.col] < 6
             .gS[.col] = 6
         endif
@@ -3410,25 +3462,25 @@ procedure emlGuessColumnRoles: .tableId
         # ── Data score ──
 
         # Weight 10: unambiguous measurement terms
-        @eml_kwScan: .cn$, "value|score|measurement|jitter|shimmer"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.data10$#
         if eml_kwScan.hit = 1 and .dS[.col] < 10
             .dS[.col] = 10
         endif
 
         # Weight 8: acoustic and scientific measures
-        @eml_kwScan: .cn$, "intensity|frequency|pitch|duration|hnr|cpps|amplitude|bandwidth|formant|energy|power|contact_quotient"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.data8$#
         if eml_kwScan.hit = 1 and .dS[.col] < 8
             .dS[.col] = 8
         endif
 
         # Weight 8: short acoustic keywords (boundary-checked)
-        @eml_kwScan: .cn$, "f0|f1|f2|f3|f4|cq|cpp"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.data8short$#
         if eml_kwScan.hit = 1 and .dS[.col] < 8
             .dS[.col] = 8
         endif
 
         # Weight 6: general numeric/measurement terms
-        @eml_kwScan: .cn$, "mean|rate|ratio|result|outcome|response|rating|measure|percent|proportion|slope|median|average|threshold|alpha_ratio|cog|spectral|harmonic|noise|spl|snr|fraction|extent|area|count|total|period|cycle"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.data6$#
         if eml_kwScan.hit = 1 and .dS[.col] < 6
             .dS[.col] = 6
         endif
@@ -3436,25 +3488,25 @@ procedure emlGuessColumnRoles: .tableId
         # ── Subject score ──
 
         # Weight 10: unambiguous participant identifiers
-        @eml_kwScan: .cn$, "participant|subject|speaker|singer"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.subject10$#
         if eml_kwScan.hit = 1 and .sS[.col] < 10
             .sS[.col] = 10
         endif
 
         # Weight 8: domain-specific person identifiers
-        @eml_kwScan: .cn$, "patient|listener|rater|talker|client|student|evaluator|assessor"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.subject8$#
         if eml_kwScan.hit = 1 and .sS[.col] < 8
             .sS[.col] = 8
         endif
 
         # Weight 6: general person/case terms
-        @eml_kwScan: .cn$, "performer|respondent|child|adult|judge"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.subject6$#
         if eml_kwScan.hit = 1 and .sS[.col] < 6
             .sS[.col] = 6
         endif
 
         # Weight 6: short identifier keywords (boundary-checked)
-        @eml_kwScan: .cn$, "id"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.subject6short$#
         if eml_kwScan.hit = 1 and .sS[.col] < 6
             .sS[.col] = 6
         endif
@@ -3462,25 +3514,25 @@ procedure emlGuessColumnRoles: .tableId
         # ── Time score ──
 
         # Weight 10: unambiguous temporal/trial identifiers
-        @eml_kwScan: .cn$, "trial|session|timepoint|baseline"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.time10$#
         if eml_kwScan.hit = 1 and .tS[.col] < 10
             .tS[.col] = 10
         endif
 
         # Weight 8: repeated-measures temporal terms
-        @eml_kwScan: .cn$, "repetition|block|recording|iteration"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.time8$#
         if eml_kwScan.hit = 1 and .tS[.col] < 8
             .tS[.col] = 8
         endif
 
         # Weight 6: general temporal/order terms
-        @eml_kwScan: .cn$, "visit|phase|wave|attempt|occasion|round|stage"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.time6$#
         if eml_kwScan.hit = 1 and .tS[.col] < 6
             .tS[.col] = 6
         endif
 
         # Weight 6: short temporal keywords (boundary-checked)
-        @eml_kwScan: .cn$, "pre|post|rep|day|week|time|date|take"
+        @eml_kwScan: .cn$, emlColumnRoleKeywordDefaults.time6short$#
         if eml_kwScan.hit = 1 and .tS[.col] < 6
             .tS[.col] = 6
         endif
