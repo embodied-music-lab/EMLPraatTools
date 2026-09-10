@@ -1777,6 +1777,37 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                             @emlMean: eml_getGroupData.data#
                             @emlKitNum: .cellId$, .dgTag$ + "_mean",
                             ... emlMean.result
+                            # n = 1: order section 4.6 -- "reports n and
+                            # mean only, the rest undefined and disclosed".
+                            # Every other quantity is EXPLICITLY passed
+                            # undefined here so @emlKitNum's own
+                            # <quantity>_undefined marker fires, matching
+                            # run_analyses.R's emitDescriptiveSet n==1
+                            # branch (descQuantities) name for name.
+                            @emlKitNum: .cellId$, .dgTag$ + "_sd", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_variance", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_sem", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_median", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_q1", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_q3", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_iqr", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_min", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_max", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_range", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_skewness", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_kurtosis", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_ci_low", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_ci_high", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_mode", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_mode_unique", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_mode_count", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_mad", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_mad_raw", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_geo_mean", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_harm_mean", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_trimmed_mean", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_winsorized_mean", undefined
+                            @emlKitNum: .cellId$, .dgTag$ + "_trim_k", undefined
                         endif
                     endfor
                 endif
