@@ -1247,6 +1247,56 @@ process_pairwise <- function(row) {
 # No group_order axis here (matrix.tsv's own header, note B8: this
 # procedure never calls @emlCountGroups), so none is read.
 # =============================================================================
+
+# --- full-precision simple-effects F/p, replacing emmeans::joint_tests's own
+# display-rounded return (order section 4.1/8; found in the fix wave, 10 Sep
+# 2026). emmeans:::test.emmGrid's joint branch (the function joint_tests
+# calls internally) builds F.ratio as `F.ratio = round(F, 3)` -- a LITERAL
+# round() baked into the returned numeric column, not a print-time format,
+# and not reachable through emm_options(opt.digits = FALSE) (verified: that
+# option changes nothing here). p.value, by contrast, is computed from the
+# UNROUNDED F one line earlier in the same function and so already carries
+# full precision -- only F.ratio needed recovering.
+# Recovered by replicating emmeans:::test.emmGrid's own joint-test algebra
+# one level short of its own round(): for the interaction contrast object
+# emmeans builds internally (the "consec" contrast of the by-sliced EMMs),
+# it orthogonalises the contrast rows via QR (tQ, tR), forms
+# z = tQ %*% bhat and zcov = tQ %*% V %*% t(tQ) from that SAME contrast
+# object's own bhat/V (the full model's coefficient estimates and
+# covariance, not a per-slice refit -- df2 is the full model's residual df,
+# matching joint_tests's own df2 column), and F = sum(z * solve(zcov, z)) /
+# r. Cross-checked against emmeans::joint_tests's own rounded F.ratio (must
+# round to the same 3 decimals) and against its own p.value (must agree to
+# machine precision, since both are pf(F, r, df2) on the same F) on three
+# synthetic two- and three-level fixtures before use here; both held exactly.
+jointTestFullPrecision <- function(fitEMM, factor, by) {
+    emm <- emmeans::emmeans(fitEMM, factor, by = by)
+    cobj <- emmeans::contrast(emm, interaction = "consec", by = by)
+    L <- cobj@linfct; bhat <- cobj@bhat; V <- cobj@V; grid <- cobj@grid
+    byrows <- split(seq_len(nrow(L)), grid[[by]])
+    byLevels <- names(byrows)
+    out <- data.frame(lv = byLevels, df1 = NA_real_, df2 = NA_real_,
+                       F.ratio = NA_real_, p.value = NA_real_,
+                       stringsAsFactors = FALSE)
+    names(out)[1] <- by
+    for (i in seq_along(byLevels)) {
+        rows <- byrows[[byLevels[i]]]
+        LL <- L[rows, , drop = FALSE]
+        qrLt <- qr(t(LL))
+        r <- qrLt$rank
+        tR <- t(qr.R(qrLt))[seq_len(r), seq_len(r), drop = FALSE]
+        tQ <- t(qr.Q(qrLt))[seq_len(r), , drop = FALSE]
+        z <- tQ %*% bhat
+        zcov <- tQ %*% V %*% t(tQ)
+        Fstat <- sum(z * solve(zcov, z)) / r
+        df2 <- fitEMM$df.residual
+        pval <- pf(Fstat, r, df2, lower.tail = FALSE)
+        out$df1[i] <- r; out$df2[i] <- df2
+        out$F.ratio[i] <- Fstat; out$p.value[i] <- pval
+    }
+    out
+}
+
 process_twoway <- function(row) {
     cid <- row$cell_id
     d <- readDataset(row$dataset)
@@ -1392,17 +1442,24 @@ process_twoway <- function(row) {
     # Simple effects: A within each level of B, and B within each level of A.
     # emmeans::joint_tests(fit, by=...) is the package's own simple-effects
     # call (an F test per stratum), the emmeans equivalent of
-    # @emlAnovaKernelTwoWaySimpleEffects's pooled-error F within each level.
-    jtAwithinB <- as.data.frame(emmeans::joint_tests(fitEMM, by = "b"))
+    # @emlAnovaKernelTwoWaySimpleEffects's pooled-error F within each level
+    # -- but its own F.ratio column is display-rounded to 3 decimals
+    # (emmeans:::test.emmGrid's own round(F, 3), not a print-time format;
+    # see jointTestFullPrecision's header above), which disagreed with the
+    # plugin's full-precision F at ~1e-5, far above the 1e-9 rule. Replaced
+    # here with jointTestFullPrecision, which replicates joint_tests's own
+    # algebra one step short of that round() and matches its p.value (never
+    # rounded) exactly.
+    jtAwithinB <- jointTestFullPrecision(fitEMM, "a", "b")
     for (i in seq_len(nrow(jtAwithinB))) {
         lv <- slug(as.character(jtAwithinB$b[i]))
-        emit(cid, paste0("se_", f1, "_within_", f2, "_", lv, "_f"), jtAwithinB$F.ratio[i], "emmeans::joint_tests")
+        emit(cid, paste0("se_", f1, "_within_", f2, "_", lv, "_f"), jtAwithinB$F.ratio[i], "r::jointTestFullPrecision (emmeans::joint_tests algebra, unrounded)")
         emit(cid, paste0("se_", f1, "_within_", f2, "_", lv, "_p"), jtAwithinB$p.value[i], "emmeans::joint_tests")
     }
-    jtBwithinA <- as.data.frame(emmeans::joint_tests(fitEMM, by = "a"))
+    jtBwithinA <- jointTestFullPrecision(fitEMM, "b", "a")
     for (i in seq_len(nrow(jtBwithinA))) {
         lv <- slug(as.character(jtBwithinA$a[i]))
-        emit(cid, paste0("se_", f2, "_within_", f1, "_", lv, "_f"), jtBwithinA$F.ratio[i], "emmeans::joint_tests")
+        emit(cid, paste0("se_", f2, "_within_", f1, "_", lv, "_f"), jtBwithinA$F.ratio[i], "r::jointTestFullPrecision (emmeans::joint_tests algebra, unrounded)")
         emit(cid, paste0("se_", f2, "_within_", f1, "_", lv, "_p"), jtBwithinA$p.value[i], "emmeans::joint_tests")
     }
     lines <- c(lines, "", "Simple effects:")
