@@ -474,3 +474,5 @@ validate/RUN_ALL_SUMMARY.tsv
 /walkthrough/kit/audit/r_sessionInfo.txt
 /walkthrough/kit/results/*
 !/walkthrough/kit/results/.gitkeep
+
+/walkthrough/kit/audit/VERDICT.txt
