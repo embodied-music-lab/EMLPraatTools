@@ -2560,12 +2560,46 @@ endproc
 # Extract the rows belonging to one group, matching the group label on its
 # normalised form (see @eml_normalizeLabel) so that "Male", "male" and
 # " Male" select the same rows that @emlCountGroups counted as one group.
+# Shared by @eml_getGroupData's fast path and @eml_getGroupPairedData --
+# both need exactly this: one group's rows, matched on the normalised
+# label, pulled out with a single native selector call instead of a per-row
+# loop that builds the subset by hand.
 #
-# When the request and every cell are already in canonical form,
-# normalisation is a no-op and the original single-command C-level
-# extraction is used unchanged. Only messy label columns pay for the
-# normalising copy, and the copy is always of the table — the caller's
-# Table is never modified.
+# ONE PASS over .tableId discovers every DISTINCT raw spelling in
+# .groupCol$ (one "Get value" per row) and, for each NEWLY-seen spelling
+# only, calls @eml_normalizeLabel once to decide whether it matches --
+# O(k) normalisation calls for k distinct spellings, not one per row, same
+# discipline @emlCountGroups already uses. The raw spellings whose
+# normalised form equals the target's are the "matching raw set"; the same
+# pass also records, for every row that matches, its position in .tableId
+# (this is .origRow# below -- no separate walk of .tableId is needed for
+# it). The subset itself is then built with exactly ONE native call:
+#   - zero matches: "Extract rows where: "0"" (an always-false formula)
+#     still returns a real 0-row Table with .tableId's columns, which a
+#     caller reading it (@emlExtractPairedColumns) needs -- not a null id.
+#   - exactly one matching raw spelling (the overwhelmingly common case,
+#     including every column where normalisation changes nothing): the
+#     plain "Extract rows where column (text)" selector on that raw value.
+#   - more than one matching raw spelling (two different spellings
+#     normalise alike, e.g. "Male" and " male"): "Extract rows where:"
+#     with an OR of one self$[...] equality per matching spelling. TWO
+#     DIFFERENT RAW STRINGS THAT NORMALISE ALIKE get two DIFFERENT
+#     OR-terms and are both included, so this selects the same row set the
+#     per-row test it replaces would have.
+# All three forms preserve .tableId's row order (Praat documents "Extract
+# rows where..." as doing so), which is exactly what .origRow# relies on:
+# the k-th matching row found in the discovery pass above IS the k-th row
+# of .subsetId.
+#
+# THE FORMULA ARGUMENT MUST BE A QUOTED STRING (confirmed on Praat 6.6.30):
+# an unquoted `self$ [...]` written directly after the command's colon
+# fails with "The name 'self$' is restricted to formulas for objects" --
+# self$/self are only recognised once "Extract rows where:" is handed a
+# STRING to parse as its own formula language, not when the expression is
+# parsed inline as top-level script syntax. A literal double quote inside a
+# matching raw spelling is doubled (replace$ (...,"""","""""" ,0)), which is
+# how Praat escapes one inside a string, so a spelling like `He said "hi"`
+# cannot terminate the formula's own string literal early.
 #
 # Arguments:
 #   .tableId     - ID of the Table object
@@ -2573,19 +2607,18 @@ endproc
 #   .groupLabel$ - label value to match
 #
 # Output:
-#   .subsetId    - new Table containing only that group's rows. Caller
-#                  owns it and must remove it. NOTE: on the normalising
-#                  path the group column of the subset holds the
-#                  normalised label, not the original spelling.
+#   .subsetId    - new Table containing only that group's rows, in
+#                  .tableId's original row order. Caller owns it and must
+#                  remove it. Every column, .groupCol$ included, is copied
+#                  VERBATIM from .tableId -- the subset's group column now
+#                  always holds each row's original spelling, never a
+#                  normalised substitute. No caller reads .groupCol$ back
+#                  off the subset (@eml_getGroupPairedData only reads
+#                  .colX$/.colY$ from it), so this is not a behaviour
+#                  change for either caller.
 #   .origRow#    - (9 Sep 2026, AMENDMENT_EMPTY_CELL_DISCLOSURE_FULL_LIST)
-#                  ascending vector, length = the subset's row count, mapping
-#                  subset row k to its SOURCE .tableId row number.
-#                  ".subsetId" is built by "Extract rows where column..."
-#                  (or, on the normalising path, that same command run on a
-#                  normalised copy), which Praat documents as preserving the
-#                  matched rows' relative order -- so a second pass here,
-#                  walking .tableId with the identical match test in the
-#                  identical order, lines up with the subset row for row.
+#                  ascending vector, length = the subset's row count,
+#                  mapping subset row k to its SOURCE .tableId row number.
 #                  Needed because a disclosure built FROM the subset table
 #                  (@emlExtractPairedColumns run on .subsetId, as
 #                  @eml_getGroupPairedData does) names subset-relative rows,
@@ -2596,60 +2629,65 @@ procedure eml_groupSubset: .tableId, .groupCol$, .groupLabel$
     @eml_normalizeLabel: .groupLabel$
     .wantNorm$ = eml_normalizeLabel.result$
 
-    .needNormalize = 0
-    if .groupLabel$ <> .wantNorm$
-        .needNormalize = 1
-    endif
-
     selectObject: .tableId
     .nRows = Get number of rows
 
-    .row = 1
-    while .row <= .nRows and .needNormalize = 0
-        selectObject: .tableId
-        .cell$ = Get value: .row, .groupCol$
-        @eml_normalizeLabel: .cell$
-        if .cell$ <> eml_normalizeLabel.result$
-            .needNormalize = 1
-        endif
-        .row = .row + 1
-    endwhile
-
-    if .needNormalize = 0
-        selectObject: .tableId
-        .subsetId = Extract rows where column (text): .groupCol$,
-            ... "is equal to", .groupLabel$
-    else
-        selectObject: .tableId
-        .workId = Copy: "eml_groupNorm"
-        for .r from 1 to .nRows
-            selectObject: .workId
-            .cell$ = Get value: .r, .groupCol$
-            @eml_normalizeLabel: .cell$
-            selectObject: .workId
-            Set string value: .r, .groupCol$, eml_normalizeLabel.result$
-        endfor
-        selectObject: .workId
-        .subsetId = Extract rows where column (text): .groupCol$,
-            ... "is equal to", .wantNorm$
-        removeObject: .workId
-    endif
-
-    ; THE ROW MAP, one more O(.nRows) pass with the identical normalised
-    ; match test used above, in table order -- so the k-th match here IS the
-    ; k-th row of .subsetId. Indexed scalar during the walk, copied into the
-    ; sized vector after, same convention as @emlAuditColumn.emptyRows#.
+    .nSeen = 0
+    .nMatch = 0
     .nOrig = 0
-    selectObject: .tableId
+    ; VECTOR-EXEMPT: cat2 -- discovers the DISTINCT raw spellings of
+    ; .groupCol$ (bounded by a handful of distinct spellings, not nRows) and,
+    ; in the same pass, the source row number of every matching row; no
+    ; Table vector equivalent reads a text column's distinct values or maps
+    ; matches back to source rows. @eml_normalizeLabel is called only for a
+    ; NEWLY-seen spelling (the inner loop below it), i.e. O(k) times, not
+    ; once per row.
     for .r from 1 to .nRows
-        .cell$ = Get value: .r, .groupCol$
-        @eml_normalizeLabel: .cell$
-        if eml_normalizeLabel.result$ = .wantNorm$
+        selectObject: .tableId
+        .raw$ = Get value: .r, .groupCol$
+
+        .seenAt = 0
+        for .s from 1 to .nSeen
+            if .seenAt = 0 and .seenRaw$[.s] = .raw$
+                .seenAt = .s
+            endif
+        endfor
+        if .seenAt = 0
+            .nSeen = .nSeen + 1
+            .seenAt = .nSeen
+            .seenRaw$[.seenAt] = .raw$
+            @eml_normalizeLabel: .raw$
+            .seenIsMatch[.seenAt] = (eml_normalizeLabel.result$ = .wantNorm$)
+            if .seenIsMatch[.seenAt] = 1
+                .nMatch = .nMatch + 1
+                .matchRaw$[.nMatch] = .raw$
+            endif
+        endif
+
+        if .seenIsMatch[.seenAt] = 1
             .nOrig = .nOrig + 1
             .origRowAt[.nOrig] = .r
         endif
-        selectObject: .tableId
     endfor
+
+    selectObject: .tableId
+    if .nMatch = 0
+        .subsetId = Extract rows where: "0"
+    elsif .nMatch = 1
+        .subsetId = Extract rows where column (text): .groupCol$,
+            ... "is equal to", .matchRaw$[1]
+    else
+        .formula$ = ""
+        for .m from 1 to .nMatch
+            if .m > 1
+                .formula$ = .formula$ + " or "
+            endif
+            .formula$ = .formula$ + "self$ [""" + .groupCol$ + """] = """
+                ... + replace$ (.matchRaw$[.m], """", """""", 0) + """"
+        endfor
+        .subsetId = Extract rows where: .formula$
+    endif
+
     .origRow# = zero# (.nOrig)
     for .oi from 1 to .nOrig
         .origRow# [.oi] = .origRowAt[.oi]
@@ -2659,11 +2697,14 @@ endproc
 
 # ============================================================================
 # @eml_getGroupData
-# Extract one group's numeric data from a Table in a single pass over its
-# rows. Self-contained: filters rows by group label, removes undefined
-# values, returns auto-sized vector. No group limit, no shared state, and
-# no per-group subset Table -- the table is walked once and matching rows
-# are scattered directly into the output vector.
+# Extract one group's numeric data from a Table. Self-contained: filters
+# rows by group label, removes undefined values, returns auto-sized vector.
+# No group limit, no shared state. On the fast (strictly numeric) path the
+# group's rows are pulled with ONE native selector call via the shared
+# @eml_groupSubset helper (also used by @eml_getGroupPairedData) and its
+# data column is read directly; the slow path still walks the table once
+# and scatters matching rows into the output vector by hand, because it
+# also has to decide each cell's repair/refusal individually.
 #
 # Arguments:
 #   tableId    - ID of the Table object
@@ -2719,13 +2760,13 @@ endproc
 # .dataCol$ across every row, not per group. When it comes back strict with
 # no unreadable cell, no row of the column can be locale-mangled, coerced,
 # leading-dot or unreadable -- not in this group's rows or any other's -- so
-# a single "Get all numbers in column:" read is safe for every group at
-# once, and the loop below only has to pick out the matching rows. Only
-# when that whole-column verdict is dirty does the loop fall to deciding
-# each matching row's cell individually with @eml_cleanVerdict, which is
-# the same refuse-or-repair decision every other extraction path in this
-# file uses, so a row is dropped or repaired here for the same stated
-# reason it would be anywhere else.
+# a "Get all numbers in column:" read of just this group's own subtable
+# (built by @eml_groupSubset) is safe, with no per-row repair decision
+# needed. Only when that whole-column verdict is dirty does the loop fall
+# to deciding each matching row's cell individually with @eml_cleanVerdict,
+# which is the same refuse-or-repair decision every other extraction path
+# in this file uses, so a row is dropped or repaired here for the same
+# stated reason it would be anywhere else.
 #
 # NOT "self [col] <> undefined", which is Praat's LENIENT test: it keeps
 # "1,5" (as 1) and "30%" (as 0.3). Survivors of that filter would reach the
@@ -2830,102 +2871,18 @@ procedure eml_getGroupData: .tableId, .dataCol$, .groupCol$, .groupLabel$
     endif
 
     if .fastPath = 1
-        # Every row's data cell numericises strictly, so one C-level column
-        # read gives every group's values at once; the loop below only
-        # sorts rows into this group's vector by their (row-aligned) index.
-        selectObject: .tableId
-        .allData# = Get all numbers in column: .dataCol$
-        .data# = zero# (.nRows)
-        .n = 0
+        # Every row's data cell numericises strictly, so this group's own
+        # subtable (built with ONE native selector call -- see
+        # @eml_groupSubset, shared with @eml_getGroupPairedData) can be read
+        # directly with "Get all numbers in column": no whole-table column
+        # read, no per-row loop, no transient probe-row copy.
+        @eml_groupSubset: .tableId, .groupCol$, .groupLabel$
+        .grpSubsetId = eml_groupSubset.subsetId
+        selectObject: .grpSubsetId
+        .data# = Get all numbers in column: .dataCol$
+        .n = size (.data#)
+        removeObject: .grpSubsetId
 
-        # GROUP-MATCH SHORTCUT (10 Sep 2026 speed wave), same string-pool
-        # technique @eml_twoWayCompleteCase's empty-combination check uses
-        # (see its header comment on eml-extract.praat): on a column Praat
-        # treats as TEXT, "Get all numbers in column" does not fail or
-        # return the cells' values -- it silently returns each row's
-        # ALPHABETICAL-RANK substitute (@eml_strictNumericColumn's header),
-        # and that substitute is a PER-DISTINCT-RAW-STRING integer: two rows
-        # get the same number if and only if they hold the identical raw
-        # string (verified against Praat 6.6.30). That turns "does this
-        # row's group match?" into an O(nGroups) question instead of an
-        # O(nRows) one: decide each DISTINCT rank's match once (one "Get
-        # value" + @eml_normalizeLabel per distinct rank, not per row), then
-        # sieve every row by a pure integer compare against that verdict.
-        # TWO DIFFERENT RAW STRINGS THAT NORMALISE ALIKE (e.g. "Alpha " and
-        # "alpha") get two DIFFERENT ranks and are decided independently --
-        # each rank's own @eml_normalizeLabel call is what @eml_getGroupData
-        # already had to agree with @emlCountGroups, so this cannot select a
-        # different row set than the per-row test it replaces.
-        #
-        # That rank guarantee needs .groupCol$ to NOT be one Praat numericises
-        # in full: a fully-numeric column makes "Get all numbers in column"
-        # return the cells' actual VALUES instead of ranks, and two DIFFERENT
-        # raw strings that happen to parse to the same value ("1", "1.0",
-        # "01") would then collide onto one number -- and @eml_strictNumericColumn
-        # is not a safe test for that here: a merely LENIENT-numeric column
-        # (e.g. every cell parses under Praat's own percent-accepting reader,
-        # "30%" alongside "1" and "2") already measures as VALUES, not ranks,
-        # on Praat 6.6.30, even though @eml_strictNumericColumn.strict comes
-        # back 0 for it (its .hasPercent guard is answering a different,
-        # stricter question, for .dataCol$'s locale/coercion refusal, not
-        # this one). A column with an EMPTY cell that is otherwise all-numeric
-        # is worse still: Praat raises outright rather than falling back to
-        # ranks (also verified) -- something the untouched per-row loop below
-        # never risked, because "Get value" alone never raises on a missing
-        # cell.
-        #
-        # So rank mode is not detected here, it is FORCED, the same way
-        # @eml_strictNumericColumn forces its own sentinel verdict: copy the
-        # table, append one row whose .groupCol$ cell is a value no Praat
-        # number grammar can parse (letters), and read the ranks off that
-        # modified column. One non-numeric cell anywhere makes Praat rank
-        # the WHOLE column -- appended row included -- so this guarantees
-        # rank mode for rows 1..nRows regardless of what they hold (numeric,
-        # empty, percent, mixed), with no raise and no value-mode collision,
-        # for the cost of one more Copy + Append + probe, not a second
-        # O(nRows) column scan. The appended row's own rank (index nRows + 1)
-        # is read and discarded; it never contributes to any group's data.
-        selectObject: .tableId
-        .grpProbeId = Copy: "eml_ggdGroupRankProbe"
-        Append row
-        Set string value: .nRows + 1, .groupCol$, "EML_GGD_NONNUMERIC_RANK_PROBE"
-        .grpIdx# = Get all numbers in column: .groupCol$
-        removeObject: .grpProbeId
-
-        .nDistinctGrp = 0
-        ; VECTOR-EXEMPT: cat2 -- the per-row body below is a pure integer
-        ; compare against .distinctIdx[] (bounded by the handful of distinct
-        ; group ranks, not nRows) with no Table read in it; the only Table
-        ; reads left are one "Get value" + @eml_normalizeLabel per NEWLY-seen
-        ; rank, i.e. O(nGroups) of them, not O(nRows).
-        for .row from 1 to .nRows
-            .grpRank = .grpIdx#[.row]
-            .di = 0
-            for .d from 1 to .nDistinctGrp
-                if .distinctIdx[.d] = .grpRank
-                    .di = .d
-                endif
-            endfor
-            if .di = 0
-                .nDistinctGrp = .nDistinctGrp + 1
-                .di = .nDistinctGrp
-                .distinctIdx[.di] = .grpRank
-                selectObject: .tableId
-                .rawGrp$ = Get value: .row, .groupCol$
-                @eml_normalizeLabel: .rawGrp$
-                .distinctMatch[.di] = (eml_normalizeLabel.result$ = .wantNorm$)
-            endif
-            if .distinctMatch[.di] = 1
-                .n = .n + 1
-                .data#[.n] = .allData#[.row]
-            endif
-        endfor
-
-        if .n < .nRows and .n > 0
-            .data# = part# (.data#, 1, .n)
-        elsif .n = 0
-            .data# = zero# (0)
-        endif
         .nExcluded = 0
         .note$ = ""
     else
