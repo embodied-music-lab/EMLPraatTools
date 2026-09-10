@@ -5060,14 +5060,16 @@ endproc
 #
 # Parameters:
 #   .msg$    — the orchestrator's error string, shown verbatim and wrapped.
-#   .remedy$ — the exact "New > EML Stats & Graphs >" item that WOULD work on this
-#              table, or "" when no other tool would help (a data problem
-#              rather than a wrong-test problem). The distinction matters:
-#              telling someone to re-navigate the menu when all they need is
-#              a different column selection is worse than saying nothing.
-#              Several items may be offered, separated by "|", for the case
-#              where the parametric and nonparametric routes are both open;
-#              naming only one of them would quietly steer the choice.
+#   .remedy$ — prose on the public contract (§1b), never a delimited list: one
+#              or more sentences naming what WOULD work on this table, or ""
+#              when no other tool would help (a data problem rather than a
+#              wrong-test problem). The distinction matters: telling someone
+#              to re-navigate the menu when all they need is a different
+#              column selection is worse than saying nothing. When the
+#              parametric and nonparametric routes are both open, the
+#              producer names both in its own sentence(s) -- naming only one
+#              of them would quietly steer the choice -- and this dialog
+#              wraps and prints the whole string exactly as it arrives.
 #   .mode$   — "wizard", "menu" or "entry". Chooses the guidance and the
 #              button that is not Quit, because the three cases can offer
 #              genuinely different things.
@@ -5115,21 +5117,11 @@ endproc
 # Back that can only re-refuse is worse than offering nothing.
 # ────────────────────────────────────────────────────────────────────────────
 procedure emlErrorDialog: .msg$, .remedy$, .mode$
-    # Split the remedy on "|" up front: it is needed in two places below and
-    # form-building code should not be doing string surgery inline.
-    .nRemedy = 0
-    .rest$ = .remedy$
-    while .rest$ <> ""
-        .bar = index (.rest$, "|")
-        .nRemedy += 1
-        if .bar = 0
-            .remLine$ [.nRemedy] = .rest$
-            .rest$ = ""
-        else
-            .remLine$ [.nRemedy] = left$ (.rest$, .bar - 1)
-            .rest$ = mid$ (.rest$, .bar + 1, length (.rest$))
-        endif
-    endwhile
+    # .remedy$ is prose on the public contract (§1b) -- one or more
+    # sentences, never a delimited list. It is wrapped for the dialog's
+    # fixed width, exactly as .msg$ is below, and printed as it stands:
+    # nothing here splits it.
+    .hasRemedy = (.remedy$ <> "")
 
     # The title and the headline are computed rather than literal, because an
     # entry refusal is not an analysis that did not run — nothing has been
@@ -5159,15 +5151,13 @@ procedure emlErrorDialog: .msg$, .remedy$, .mode$
             # what to select — not a menu entry — so the sentence that follows
             # it says "select", not "pick another test".
             comment: "Nothing has been changed."
-            if .nRemedy > 0
+            if .hasRemedy
                 comment: ""
-                if .nRemedy = 1
-                    comment: "What this tool needs:"
-                else
-                    comment: "What this tool needs — either of:"
-                endif
-                for .i from 1 to .nRemedy
-                    comment: "        " + .remLine$ [.i]
+                comment: "What this tool needs:"
+                comment: ""
+                @emlWrapText: .remedy$, 54
+                for .i from 1 to emlWrapText.nLines
+                    comment: "        " + emlWrapText.line$ [.i]
                 endfor
                 comment: ""
                 comment: "Click OK, select that in the Objects window, then"
@@ -5181,30 +5171,24 @@ procedure emlErrorDialog: .msg$, .remedy$, .mode$
         elsif .mode$ = "wizard"
             comment: "Nothing has been lost. Click Back to return to the"
             comment: "wizard and choose again."
-            if .nRemedy > 0
+            if .hasRemedy
                 comment: ""
-                if .nRemedy = 1
-                    comment: "What fits this table:"
-                else
-                    comment: "What fits this table — either of:"
-                endif
-                for .i from 1 to .nRemedy
-                    comment: "        " + .remLine$ [.i]
+                comment: "What fits this table:"
+                comment: ""
+                @emlWrapText: .remedy$, 54
+                for .i from 1 to emlWrapText.nLines
+                    comment: "        " + emlWrapText.line$ [.i]
                 endfor
             endif
 
         else
-            if .nRemedy > 0
-                if .nRemedy = 1
-                    comment: "This table needs a different test. The one that"
-                    comment: "fits it is:"
-                else
-                    comment: "This table needs a different test. Either of"
-                    comment: "these fits it:"
-                endif
+            if .hasRemedy
+                comment: "This table needs a different test. The one that"
+                comment: "fits it is:"
                 comment: ""
-                for .i from 1 to .nRemedy
-                    comment: "        " + .remLine$ [.i]
+                @emlWrapText: .remedy$, 54
+                for .i from 1 to emlWrapText.nLines
+                    comment: "        " + emlWrapText.line$ [.i]
                 endfor
                 comment: ""
                 comment: "A running script cannot open a Praat menu, so this"

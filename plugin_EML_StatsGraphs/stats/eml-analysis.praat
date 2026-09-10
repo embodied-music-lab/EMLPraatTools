@@ -120,7 +120,9 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
 
     selectObject: .tableId
@@ -155,7 +157,8 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         .error$ = "Group column """ + .groupCol$ + """ has "
         ... + string$ (emlCountGroups.nGroups)
         ... + " groups. This test compares exactly 2."
-        .remedy$ = "Compare k groups (ANOVA)...|Compare k groups (Kruskal-Wallis)..."
+        .remedy$ = "Run ""Compare k groups (ANOVA)..."" for a parametric test, "
+        ... + "or ""Compare k groups (Kruskal-Wallis)..."" for a nonparametric one."
     endif
 
     if .error$ <> ""
@@ -614,7 +617,9 @@ procedure emlRunAnovaAnalysis: .tableId, .dataCol$, .groupCol$, .doTukey
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
 
     selectObject: .tableId
@@ -1148,7 +1153,9 @@ procedure emlRunKruskalWallisAnalysis: .tableId, .dataCol$, .groupCol$, .doDunn,
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
 
     selectObject: .tableId
@@ -1489,7 +1496,9 @@ procedure emlRunPairwiseAnalysis: .tableId, .dataCol$, .groupCol$, .test$, .adjM
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
 
     selectObject: .tableId
@@ -3040,7 +3049,9 @@ procedure emlRunTwoWayAnalysis: .tableId, .dataCol$, .factor1$, .factor2$,
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
 
     selectObject: .tableId
@@ -3245,7 +3256,9 @@ procedure emlRunPairedAnalysis: .tableId, .col1$, .col2$, .testType$
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
     .nExcluded = 0
 
@@ -3519,7 +3532,9 @@ procedure emlRunCorrelationAnalysis: .tableId, .colX$, .colY$, .testType$, .grou
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
     .nExcluded = 0
 
@@ -3919,7 +3934,9 @@ procedure emlRunDescriptiveAnalysis: .tableId, .dataCol$, .groupCol$, .trim
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
 
     selectObject: .tableId
@@ -4231,7 +4248,9 @@ procedure emlRunRegressionAnalysis: .tableId, .depCol$, .predCol$, .estimator$
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
 
     selectObject: .tableId
@@ -4915,7 +4934,9 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
 
     selectObject: .tableId
@@ -5113,7 +5134,9 @@ procedure emlRunReliabilityAnalysis: .tableId, .itemCols$#, .confidence, .doInfl
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
     ; INFLUENCE OUTPUTS, INITIALISED HERE AT ENTRY -- not at the
     ; @emlAlphaInfluence call site further down. A procedure local in Praat
@@ -5426,7 +5449,9 @@ procedure emlRunCategoricalAnalysis: .tableId, .rowCol$, .colCol$,
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
     ; INITIALISED AT ENTRY, NOT WHERE IT IS DECIDED. The recorder block
     ; below the end label reads .usingCounts to say whether the run was
@@ -5786,7 +5811,9 @@ procedure emlRunProportionAnalysis: .tableId, .col$, .successValue$,
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
     ; INITIALISED AT ENTRY, NOT WHERE IT IS DECIDED. The recorder block
     ; below the end label reads .usingCounts to say whether the run was
@@ -6886,7 +6913,9 @@ procedure emlRunRepeatedMeasuresAnalysis: .tableId, .format$,
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
     selectObject: .tableId
     .tableName$ = selected$ ("Table")
@@ -7169,7 +7198,9 @@ procedure emlRunFriedmanAnalysis: .tableId, .format$,
     .error$ = ""
     .warning$ = ""
     .ok = 0
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
     selectObject: .tableId
     .tableName$ = selected$ ("Table")

@@ -4643,7 +4643,9 @@ procedure emlRunLMMAnalysis: .tableId, .formula$, .contrastCoding$, .useREML, .d
     ; globals, not a second, independent cause of export honesty.
     @emlResultClearAll
     .error$ = ""
-    # Menu item that WOULD work on this table, when one exists.
+    # Prose on the public contract (§1b): one or more sentences naming what
+    # WOULD work on this table, when something does; never a delimited list.
+    # @emlErrorDialog prints it as it stands.
     .remedy$ = ""
 
     selectObject: .tableId
