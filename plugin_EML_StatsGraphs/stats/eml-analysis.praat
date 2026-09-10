@@ -5065,17 +5065,11 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
 
         # Descriptive shape measures
         @emlSkewness: .data#
-        if emlSkewness.error$ <> ""
-            .error$ = emlSkewness.error$
-            goto END_NORMALITY
-        endif
         .skewness = emlSkewness.result
+        .skewError$ = emlSkewness.error$
         @emlKurtosis: .data#
-        if emlKurtosis.error$ <> ""
-            .error$ = emlKurtosis.error$
-            goto END_NORMALITY
-        endif
         .kurtosis = emlKurtosis.result
+        .kurtError$ = emlKurtosis.error$
         @emlMean: .data#
         .mean = emlMean.result
         @emlSD: .data#
@@ -5083,10 +5077,42 @@ procedure emlRunNormalityAnalysis: .tableId, .dataCol$, .testType$
         @emlMedian: .data#
         .median = emlMedian.result
 
+        # CONSTANT-COLUMN RULING (Fable, 10 Sep 2026, ANSWER, Option B): a
+        # column whose standard deviation is zero is NOT a refusal. n, mean,
+        # sd (= 0) and median are always definable and are computed above
+        # exactly as on any other column. Skewness and kurtosis are 0/0 on a
+        # constant column -- @emlSkewness/@emlKurtosis already detected that
+        # and left .result undefined, the same standard undefined-marker
+        # mechanism every other door uses for an optional statistic that
+        # cannot be computed; this branch only stops their .error$ from
+        # being read as fatal, and adds the one disclosure line the ruling
+        # asks for. A non-constant column (.sd <> 0) is untouched below:
+        # either sub-procedure's .error$ (e.g. kurtosis needs n >= 4) still
+        # aborts the cell exactly as before.
+        if .sd = 0
+            .constantNote$ = "all values identical (sd = 0): skewness, "
+            ... + "kurtosis and the normality test are undefined."
+            if .warning$ = ""
+                .warning$ = .constantNote$
+            else
+                .warning$ = .warning$ + " " + .constantNote$
+            endif
+        elsif .skewError$ <> ""
+            .error$ = .skewError$
+            goto END_NORMALITY
+        elsif .kurtError$ <> ""
+            .error$ = .kurtError$
+            goto END_NORMALITY
+        endif
+
         # Shapiro-Wilk formal test
         ; ERROR-READ EXEMPT -- emlShapiroWilk.error$ is copied to .swError$ below and
         ; passed as an argument to @emlNormalityRecommendation, which performs the real
         ; check internally via a documented nested-if (.swUsable) gate.
+        ; On a constant column (.sd = 0, above) this call independently
+        ; detects the same zero range and leaves .w/.p undefined with its
+        ; own "All values identical (zero range)" .error$ -- no special
+        ; casing needed here.
         @emlShapiroWilk: .data#
         .swW = emlShapiroWilk.w
         .swP = emlShapiroWilk.p
