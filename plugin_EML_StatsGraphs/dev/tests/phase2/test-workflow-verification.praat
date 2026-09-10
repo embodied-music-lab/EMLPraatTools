@@ -186,6 +186,14 @@ selectObject: tableId
 @emlTestAssertTrue: "two-group report has effect size",
     ... index (.info$, "Cohen") > 0 or index (.info$, "d =") > 0
     ... or index (.info$, "effect") > 0
+@emlTestAssertTrue: "two-group door names the mean-difference interval",
+    ... emlRunTwoGroupAnalysis.meanDiff <> undefined
+    ... and emlRunTwoGroupAnalysis.diffLow <> undefined
+    ... and emlRunTwoGroupAnalysis.diffHigh <> undefined
+    ... and emlRunTwoGroupAnalysis.diffLow < emlRunTwoGroupAnalysis.diffHigh
+@emlTestAssertTrue: "two-group door's dead .p guard now fires",
+    ... emlRunTwoGroupAnalysis.recResult$ <> ""
+    ... and index (emlRunTwoGroupAnalysis.recResult$, "p = ") > 0
 
 removeObject: tableId
 

@@ -62,6 +62,13 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     ; variable". The record then reports only what was actually computed.
     .p = undefined
     .mwP = undefined
+    ; MEAN-DIFFERENCE INTERVAL, order section 4.5. Set only when the
+    ; parametric branch runs; undefined otherwise (no disclosure of its
+    ; own -- the t-test/Cohen's-d omission notes above already say why the
+    ; parametric arm did not run, and this interval is that arm's).
+    .meanDiff = undefined
+    .diffLow = undefined
+    .diffHigh = undefined
 
     ; ---------------------------------------------------------------------
     ; THE RESULT STORE'S FIELDS, INITIALISED AT ENTRY.
@@ -275,6 +282,14 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
     if .doPar
         @emlTTest: .g1#, .g2#, 2, .equalVar
         .ttErr$ = emlTTest.error$
+        ; THE DEAD GUARD (9 Sep 2026 estimate; API completion wave section
+        ; 4.5). .p was declared at entry and never assigned by the branch
+        ; that ran, so `if .doPar = 1 and .p <> undefined` below was always
+        ; false and the recorded step never carried the parametric p --
+        ; assigned here, from the same call the report and the result store
+        ; already read emlTTest.p from, so the recorder cannot disagree
+        ; with either.
+        .p = emlTTest.p
         @emlCohenD: .g1#, .g2#
         .dErr$ = emlCohenD.error$
         if .ttErr$ <> ""
@@ -324,6 +339,22 @@ procedure emlRunTwoGroupAnalysis: .tableId, .dataCol$, .groupCol$, .testType$, .
         if .doNon
             .effType$ = "both"
         endif
+    endif
+
+    ; MEAN-DIFFERENCE INTERVAL, order section 4.5. Group 1 minus group 2,
+    ; the same direction @emlTTest.meanDiff already reports and the door's
+    ; own report already states. At the alpha in force, from emlTTest.se
+    ; and .df (pooled Student or Welch, following .equalVar the same way
+    ; the t-test itself already did) -- not recovered through t, so a
+    ; genuine t = 0 (equal means) still gets an interval centred on 0.
+    if .doPar
+        @emlReportAlpha
+        .tgAlpha = emlReportAlpha.value
+        .tCritDiff = invStudentQ (.tgAlpha / 2, emlTTest.df)
+        .halfWidthDiff = abs (.tCritDiff) * emlTTest.se
+        .meanDiff = emlTTest.meanDiff
+        .diffLow = .meanDiff - .halfWidthDiff
+        .diffHigh = .meanDiff + .halfWidthDiff
     endif
 
     @emlCSVInit
