@@ -1747,7 +1747,7 @@ process_correlation <- function(row) {
         gFull <- chrcol(d, row$col_c)
         keepG <- keep & !is.na(gFull) & gFull != ""
         levs <- orderedLevels(gFull[keepG], row$group_order)
-        lines <- c(lines, "", "Per-group Pearson correlation:")
+        lines <- c(lines, "", "Per-group correlation:")
         for (lv in levs) {
             sel <- keepG & gFull == lv
             tag <- slug(lv)
@@ -1766,17 +1766,38 @@ process_correlation <- function(row) {
                 next
             }
             nRun <- nRun + 1
-            peg <- cor.test(xg, yg, method = "pearson", conf.level = confLevel)
             emit(cid, paste0("group_", tag, "_n"), ng, "base::sum")
-            emit(cid, paste0("group_", tag, "_r"), unname(peg$estimate), "stats::cor.test")
-            emit(cid, paste0("group_", tag, "_t"), unname(peg$statistic), "stats::cor.test")
-            emit(cid, paste0("group_", tag, "_df"), unname(peg$parameter), "stats::cor.test")
-            emit(cid, paste0("group_", tag, "_p"), peg$p.value, "stats::cor.test")
-            emit(cid, paste0("group_", tag, "_low"), peg$conf.int[1], "stats::cor.test")
-            emit(cid, paste0("group_", tag, "_high"), peg$conf.int[2], "stats::cor.test")
-            lines <- c(lines, sprintf("  %s (n=%d): r=%.4f t(%d)=%.4f p=%.4g [%.4f, %.4f]",
-                                       lv, ng, peg$estimate, peg$parameter, peg$statistic, peg$p.value,
-                                       peg$conf.int[1], peg$conf.int[2]))
+            # Pearson arm only (test:pearson,both) -- same gate the
+            # whole-column Pearson block above uses.
+            if (testType %in% c("pearson", "both")) {
+                peg <- cor.test(xg, yg, method = "pearson", conf.level = confLevel)
+                emit(cid, paste0("group_", tag, "_r"), unname(peg$estimate), "stats::cor.test")
+                emit(cid, paste0("group_", tag, "_t"), unname(peg$statistic), "stats::cor.test")
+                emit(cid, paste0("group_", tag, "_df"), unname(peg$parameter), "stats::cor.test")
+                emit(cid, paste0("group_", tag, "_p"), peg$p.value, "stats::cor.test")
+                emit(cid, paste0("group_", tag, "_low"), peg$conf.int[1], "stats::cor.test")
+                emit(cid, paste0("group_", tag, "_high"), peg$conf.int[2], "stats::cor.test")
+                lines <- c(lines, sprintf("  %s (n=%d): r=%.4f t(%d)=%.4f p=%.4g [%.4f, %.4f]",
+                                           lv, ng, peg$estimate, peg$parameter, peg$statistic, peg$p.value,
+                                           peg$conf.int[1], peg$conf.int[2]))
+            }
+            # Spearman arm (test:spearman,both) -- the SAME cor.test call the
+            # whole-column Spearman arm above uses (exact/AS89 p for small n
+            # without ties, matching @emlSpearmanCorrelationDispatch's own
+            # exact branch; no hand-rolled t-approximation here). p is named
+            # group_<tag>_p when Spearman is the sole test (mirroring the
+            # cell-scope p/spearman_p primary/secondary split) or
+            # group_<tag>_spearman_p under test=both, to avoid colliding with
+            # Pearson's own group_<tag>_p above.
+            if (testType %in% c("spearman", "both")) {
+                speg <- suppressWarnings(cor.test(xg, yg, method = "spearman"))
+                emit(cid, paste0("group_", tag, "_rho"), unname(speg$estimate), "stats::cor.test")
+                emit(cid, paste0("group_", tag, "_s"), unname(speg$statistic), "stats::cor.test")
+                pgName <- if (testType == "both") paste0("group_", tag, "_spearman_p") else paste0("group_", tag, "_p")
+                emit(cid, pgName, speg$p.value, "stats::cor.test")
+                lines <- c(lines, sprintf("  %s (n=%d): rho=%.4f p=%.4g (exact/AS89)",
+                                           lv, ng, speg$estimate, speg$p.value))
+            }
         }
     }
     # n_groups_run/n_groups_skipped: scope=cell, presence=always -- 0 (not

@@ -1678,92 +1678,103 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
                 endif
             endif
 
-            # PER-GROUP PEARSON CORRELATIONS (order section 4.4/8). .colC$
-            # empty = no grouping. Grouping/labels/counts come off the
-            # door's OWN per-group outputs -- .grpTotal/.grpLabel$[]/
-            # .grpN[] are @emlRunCorrelationAnalysis's own locals (stats/
-            # eml-analysis.praat's "PER-GROUP CORRELATIONS" pass 1), already
-            # computed with @emlCountGroups/@eml_getGroupPairedData once
-            # each; reading them here is the same pattern
-            # @emlRunGroupedRegressionAnalysis's .pgTotal/.pgLabel$/.pgN
-            # already use above, not a second @emlCountGroups pass.
+            # PER-GROUP CORRELATIONS (order section 4.4/8). .colC$ empty =
+            # no grouping. Grouping/labels/counts come off the door's OWN
+            # per-group outputs -- .grpTotal/.grpLabel$[]/.grpN[] are
+            # @emlRunCorrelationAnalysis's own locals (stats/eml-analysis.praat's
+            # "PER-GROUP CORRELATIONS" pass 1), already computed with
+            # @emlCountGroups/@eml_getGroupPairedData once each; reading them
+            # here is the same pattern @emlRunGroupedRegressionAnalysis's
+            # .pgTotal/.pgLabel$/.pgN already use above, not a second
+            # @emlCountGroups pass.
             #
-            # test=pearson or both: the door's own per-group loop already
-            # ran @emlPearsonCorrelation and @emlPearsonFisherInterval and
-            # wrote the result under @emlTidyRow: "<groupCol> = <label>" --
-            # read that assembly rather than re-deriving it.
+            # Both arms are read off the door's OWN tidy rows -- test=pearson
+            # or both already ran @emlPearsonCorrelation/@emlPearsonFisherInterval
+            # per group, and test=spearman or both already ran
+            # @emlSpearmanCorrelationDispatch per group (stats/eml-analysis.praat,
+            # "if .testType$ = pearson or both" / "= spearman or both") --
+            # each arm that ran wrote its row under @emlTidyRow:
+            # "<groupCol> = <label>". No hardcoded re-derivation: reading that
+            # assembly, the same pattern @emlKitTidyRowForTerm already reads
+            # for grouped descriptives/regression above.
             #
-            # test=spearman ALONE is the one case tidy cannot answer this
-            # from: the door's own per-group loop only runs the branch(es)
-            # .test$ asked for (stats/eml-analysis.praat, "if .testType$ =
-            # pearson or both"), so a spearman-only cell's tidy carries no
-            # Pearson row for any group. group_<LEVEL>_r/t/df/p/low/high are
-            # declared "always" in quantities.tsv precisely because they are
-            # NOT test-type-conditional -- run_analyses.R's own oracle
-            # computes Pearson per group unconditionally of row$test (see
-            # process_correlation) -- so matrix.tsv's spearman-only grouped
-            # cells (c0710/c0711) need the one number the door does not
-            # assemble under that test type. @eml_getGroupPairedData's own
-            # cached extraction is not exposed as a door output the way
-            # .grpN[] is (its per-group vectors are pass-local, not
-            # returned), so this is the one remaining call to it, reached
-            # only on this one branch.
+            # test=both writes TWO tidy rows under the SAME term text for one
+            # group -- the door calls @emlTidyRow: .grpTerm$ once in its
+            # Pearson branch and again in its Spearman branch, both with the
+            # unchanged .grpTerm$ -- so the Spearman search below starts from
+            # the row AFTER the one the Pearson search consumed
+            # (@emlKitTidyRowForTerm's own .fromRow parameter exists for
+            # exactly this "two rows share one term" case, its docstring
+            # above says so). group_<LEVEL>_p is the primary per-group p
+            # (Pearson's under pearson/both, Spearman's exact/AS89 p under
+            # spearman alone) mirroring the cell-scope p/spearman_p split;
+            # under test=both, Spearman's own group p is named
+            # group_<LEVEL>_spearman_p instead, so it never collides with
+            # Pearson's group_<LEVEL>_p. group_<LEVEL>_s (cor.test's S
+            # statistic) has no door output at all -- R side alone, same as
+            # the cell-scope spearman_s -- so it is never emitted here.
             if .colC$ <> ""
-                @emlReportAlpha
-                .cgAlpha = emlReportAlpha.value
                 .cgPearsonInTidy = (.test$ = "pearson" or .test$ = "both")
+                .cgSpearmanInTidy = (.test$ = "spearman" or .test$ = "both")
                 for .cgI from 1 to emlRunCorrelationAnalysis.grpTotal
                     .cgLabel$ = emlRunCorrelationAnalysis.grpLabel$ [.cgI]
                     .cgN = emlRunCorrelationAnalysis.grpN [.cgI]
                     @emlKitSlug: .cgLabel$
                     .cgTag$ = "group_" + emlKitSlug.result$
                     if .cgN >= 4
+                        .cgTerm$ = .colC$ + " = " + .cgLabel$
                         .cgHave = 0
+                        .cgPearsonRow = 0
                         if .cgPearsonInTidy
-                            @emlKitTidyRowForTerm: 1, .colC$ + " = " + .cgLabel$
-                            .cgRow = emlKitTidyRowForTerm.row
-                            if .cgRow > 0
-                                @emlKitTidyNum: .cgRow, "estimate"
+                            @emlKitTidyRowForTerm: 1, .cgTerm$
+                            .cgPearsonRow = emlKitTidyRowForTerm.row
+                            if .cgPearsonRow > 0
+                                @emlKitTidyNum: .cgPearsonRow, "estimate"
                                 .cgR = emlKitTidyNum.value
-                                @emlKitTidyNum: .cgRow, "statistic"
+                                @emlKitTidyNum: .cgPearsonRow, "statistic"
                                 .cgT = emlKitTidyNum.value
-                                @emlKitTidyNum: .cgRow, "df"
+                                @emlKitTidyNum: .cgPearsonRow, "df"
                                 .cgDf = emlKitTidyNum.value
-                                @emlKitTidyNum: .cgRow, "p.value"
+                                @emlKitTidyNum: .cgPearsonRow, "p.value"
                                 .cgP = emlKitTidyNum.value
-                                @emlKitTidyNum: .cgRow, "conf.low"
+                                @emlKitTidyNum: .cgPearsonRow, "conf.low"
                                 .cgLow = emlKitTidyNum.value
-                                @emlKitTidyNum: .cgRow, "conf.high"
+                                @emlKitTidyNum: .cgPearsonRow, "conf.high"
                                 .cgHigh = emlKitTidyNum.value
                                 .cgHave = 1
                             endif
-                        else
-                            @eml_getGroupPairedData: .tableId, .colA$, .colB$,
-                            ... .colC$, .cgLabel$
-                            if eml_getGroupPairedData.error$ = ""
-                                @emlPearsonCorrelation: eml_getGroupPairedData.dataX#,
-                                ... eml_getGroupPairedData.dataY#, 2
-                                if emlPearsonCorrelation.error$ = ""
-                                    @emlPearsonFisherInterval: emlPearsonCorrelation.r,
-                                    ... .cgN, .cgAlpha
-                                    .cgR = emlPearsonCorrelation.r
-                                    .cgT = emlPearsonCorrelation.t
-                                    .cgDf = emlPearsonCorrelation.df
-                                    .cgP = emlPearsonCorrelation.p
-                                    .cgLow = emlPearsonFisherInterval.low
-                                    .cgHigh = emlPearsonFisherInterval.high
-                                    .cgHave = 1
-                                endif
+                        endif
+                        .cgHaveSp = 0
+                        if .cgSpearmanInTidy
+                            @emlKitTidyRowForTerm: .cgPearsonRow + 1, .cgTerm$
+                            .cgSpearmanRow = emlKitTidyRowForTerm.row
+                            if .cgSpearmanRow > 0
+                                @emlKitTidyNum: .cgSpearmanRow, "estimate"
+                                .cgRho = emlKitTidyNum.value
+                                @emlKitTidyNum: .cgSpearmanRow, "p.value"
+                                .cgSpP = emlKitTidyNum.value
+                                .cgHaveSp = 1
                             endif
                         endif
-                        if .cgHave = 1
+                        if .cgHave = 1 or .cgHaveSp = 1
                             @emlKitNum: .cellId$, .cgTag$ + "_n", .cgN
+                        endif
+                        if .cgHave = 1
                             @emlKitNum: .cellId$, .cgTag$ + "_r", .cgR
                             @emlKitNum: .cellId$, .cgTag$ + "_t", .cgT
                             @emlKitNum: .cellId$, .cgTag$ + "_df", .cgDf
                             @emlKitNum: .cellId$, .cgTag$ + "_p", .cgP
                             @emlKitNum: .cellId$, .cgTag$ + "_low", .cgLow
                             @emlKitNum: .cellId$, .cgTag$ + "_high", .cgHigh
+                        endif
+                        if .cgHaveSp = 1
+                            @emlKitNum: .cellId$, .cgTag$ + "_rho", .cgRho
+                            if .test$ = "both"
+                                @emlKitNum: .cellId$, .cgTag$ + "_spearman_p",
+                                ... .cgSpP
+                            else
+                                @emlKitNum: .cellId$, .cgTag$ + "_p", .cgSpP
+                            endif
                         endif
                     else
                         @emlKitText: .cellId$, .cgTag$ + "_skipped", "1"
