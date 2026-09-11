@@ -352,6 +352,66 @@ procedure emlKitText: .cellId$, .quantity$, .text$
 endproc
 
 # ----------------------------------------------------------------------------
+# @emlKitTidyNum -- read ONE numeric cell out of the tidy frame a door just
+# declared (stats/eml-result-writer.praat's emlTidy_nRows/emlTidy_col$/
+# emlTidy_cell$), by row and column NAME. This is how a grouped door's own
+# per-group tidy row is graded instead of re-derived: the door already ran
+# the kernel and assembled the row; this reads what it assembled.
+#
+# @eml_colIndex is the one existing lookup for a tidy column name -- the same
+# call harness/regressiongroup/probe.praat makes to read this door's own
+# tidy frame -- reused here rather than re-walking emlTidy_col$ by hand. A
+# name it has never seen registers a new, still-empty column (every tidy row
+# is blanked out to emlResult_MAXCOL at @emlTidyRow time), which reads back
+# as undefined here -- the correct answer for a quantity this row's door
+# call never populated, not a reason to guard the lookup.
+#
+# .row = 0 (no matching row -- see @emlKitTidyRowForTerm) or an empty cell
+# both read back as undefined, the same "not produced" signal @emlKitNum
+# already turns into a <quantity>_undefined marker rather than a dropped row.
+# Output: .value
+# ----------------------------------------------------------------------------
+procedure emlKitTidyNum: .row, .col$
+    .value = undefined
+    if .row > 0
+        @eml_colIndex: "tidy", .col$
+        .cell$ = emlTidy_cell$ [.row, eml_colIndex.idx]
+        if .cell$ <> ""
+            .value = number (.cell$)
+        endif
+    endif
+endproc
+
+# ----------------------------------------------------------------------------
+# @emlKitTidyRowForTerm -- first tidy row at or after .fromRow whose "term"
+# cell equals .term$, or 0. Grouped doors label every tidy row with a term
+# (the bare group label for descriptives, "<groupCol> = <label>" for
+# correlation/regression -- each door's own choice, matched here rather than
+# assumed), so this is the one place that walks the frame to find a group's
+# row instead of every call site re-deriving the group's data itself.
+#
+# .fromRow lets a caller step past a row it already consumed -- e.g. reading
+# a group's "(Intercept)" row before its slope row, both under different
+# term text so a single search would find either in one pass; .fromRow only
+# matters when two rows can share one term (matrix.tsv exercises none today,
+# but two-arm grouped correlation reports could) and costs nothing when they
+# cannot.
+# Output: .row
+# ----------------------------------------------------------------------------
+procedure emlKitTidyRowForTerm: .fromRow, .term$
+    @eml_colIndex: "tidy", "term"
+    .termCol = eml_colIndex.idx
+    .row = 0
+    .r = .fromRow
+    while .r <= emlTidy_nRows and .row = 0
+        if emlTidy_cell$ [.r, .termCol] = .term$
+            .row = .r
+        endif
+        .r = .r + 1
+    endwhile
+endproc
+
+# ----------------------------------------------------------------------------
 # @emlKitRefuse / @emlKitSkip -- A REFUSAL IS A ROW, A SKIP IS A ROW. Never a
 # blank, never a crash, never a silent fallback.
 # ----------------------------------------------------------------------------
@@ -1619,56 +1679,96 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
             endif
 
             # PER-GROUP PEARSON CORRELATIONS (order section 4.4/8). .colC$
-            # empty = no grouping -- @emlRunCorrelationAnalysis's own
-            # .nGroupsRun/.nGroupsSkipped stay 0 there, so this loop simply
-            # does not run. A group with fewer than 4 complete pairs is
-            # skipped and disclosed (group_<LEVEL>_skipped), the same floor
-            # the overall Fisher interval above uses. Re-derives with the
-            # SAME extractor and kernels the door itself calls internally
-            # (@emlCountGroups, @eml_getGroupPairedData, @emlPearsonCorrelation,
-            # @emlPearsonFisherInterval) -- reading the computation a second
-            # time for output, not a second way of computing it.
+            # empty = no grouping. Grouping/labels/counts come off the
+            # door's OWN per-group outputs -- .grpTotal/.grpLabel$[]/
+            # .grpN[] are @emlRunCorrelationAnalysis's own locals (stats/
+            # eml-analysis.praat's "PER-GROUP CORRELATIONS" pass 1), already
+            # computed with @emlCountGroups/@eml_getGroupPairedData once
+            # each; reading them here is the same pattern
+            # @emlRunGroupedRegressionAnalysis's .pgTotal/.pgLabel$/.pgN
+            # already use above, not a second @emlCountGroups pass.
+            #
+            # test=pearson or both: the door's own per-group loop already
+            # ran @emlPearsonCorrelation and @emlPearsonFisherInterval and
+            # wrote the result under @emlTidyRow: "<groupCol> = <label>" --
+            # read that assembly rather than re-deriving it.
+            #
+            # test=spearman ALONE is the one case tidy cannot answer this
+            # from: the door's own per-group loop only runs the branch(es)
+            # .test$ asked for (stats/eml-analysis.praat, "if .testType$ =
+            # pearson or both"), so a spearman-only cell's tidy carries no
+            # Pearson row for any group. group_<LEVEL>_r/t/df/p/low/high are
+            # declared "always" in quantities.tsv precisely because they are
+            # NOT test-type-conditional -- run_analyses.R's own oracle
+            # computes Pearson per group unconditionally of row$test (see
+            # process_correlation) -- so matrix.tsv's spearman-only grouped
+            # cells (c0710/c0711) need the one number the door does not
+            # assemble under that test type. @eml_getGroupPairedData's own
+            # cached extraction is not exposed as a door output the way
+            # .grpN[] is (its per-group vectors are pass-local, not
+            # returned), so this is the one remaining call to it, reached
+            # only on this one branch.
             if .colC$ <> ""
                 @emlReportAlpha
                 .cgAlpha = emlReportAlpha.value
-                @emlCountGroups: .tableId, .colC$
-                if emlCountGroups.error$ = ""
-                    for .cgI from 1 to emlCountGroups.nGroups
-                        .cgLabel$ = emlCountGroups.groupLabel$ [.cgI]
-                        @eml_getGroupPairedData: .tableId, .colA$, .colB$,
-                        ... .colC$, .cgLabel$
-                        if eml_getGroupPairedData.error$ = ""
-                            .cgN = eml_getGroupPairedData.n
-                        else
-                            .cgN = 0
-                        endif
-                        @emlKitSlug: .cgLabel$
-                        .cgTag$ = "group_" + emlKitSlug.result$
-                        if .cgN >= 4
-                            @emlPearsonCorrelation: eml_getGroupPairedData.dataX#,
-                            ... eml_getGroupPairedData.dataY#, 2
-                            if emlPearsonCorrelation.error$ = ""
-                                @emlPearsonFisherInterval: emlPearsonCorrelation.r,
-                                ... .cgN, .cgAlpha
-                                @emlKitNum: .cellId$, .cgTag$ + "_n", .cgN
-                                @emlKitNum: .cellId$, .cgTag$ + "_r",
-                                ... emlPearsonCorrelation.r
-                                @emlKitNum: .cellId$, .cgTag$ + "_t",
-                                ... emlPearsonCorrelation.t
-                                @emlKitNum: .cellId$, .cgTag$ + "_df",
-                                ... emlPearsonCorrelation.df
-                                @emlKitNum: .cellId$, .cgTag$ + "_p",
-                                ... emlPearsonCorrelation.p
-                                @emlKitNum: .cellId$, .cgTag$ + "_low",
-                                ... emlPearsonFisherInterval.low
-                                @emlKitNum: .cellId$, .cgTag$ + "_high",
-                                ... emlPearsonFisherInterval.high
+                .cgPearsonInTidy = (.test$ = "pearson" or .test$ = "both")
+                for .cgI from 1 to emlRunCorrelationAnalysis.grpTotal
+                    .cgLabel$ = emlRunCorrelationAnalysis.grpLabel$ [.cgI]
+                    .cgN = emlRunCorrelationAnalysis.grpN [.cgI]
+                    @emlKitSlug: .cgLabel$
+                    .cgTag$ = "group_" + emlKitSlug.result$
+                    if .cgN >= 4
+                        .cgHave = 0
+                        if .cgPearsonInTidy
+                            @emlKitTidyRowForTerm: 1, .colC$ + " = " + .cgLabel$
+                            .cgRow = emlKitTidyRowForTerm.row
+                            if .cgRow > 0
+                                @emlKitTidyNum: .cgRow, "estimate"
+                                .cgR = emlKitTidyNum.value
+                                @emlKitTidyNum: .cgRow, "statistic"
+                                .cgT = emlKitTidyNum.value
+                                @emlKitTidyNum: .cgRow, "df"
+                                .cgDf = emlKitTidyNum.value
+                                @emlKitTidyNum: .cgRow, "p.value"
+                                .cgP = emlKitTidyNum.value
+                                @emlKitTidyNum: .cgRow, "conf.low"
+                                .cgLow = emlKitTidyNum.value
+                                @emlKitTidyNum: .cgRow, "conf.high"
+                                .cgHigh = emlKitTidyNum.value
+                                .cgHave = 1
                             endif
                         else
-                            @emlKitText: .cellId$, .cgTag$ + "_skipped", "1"
+                            @eml_getGroupPairedData: .tableId, .colA$, .colB$,
+                            ... .colC$, .cgLabel$
+                            if eml_getGroupPairedData.error$ = ""
+                                @emlPearsonCorrelation: eml_getGroupPairedData.dataX#,
+                                ... eml_getGroupPairedData.dataY#, 2
+                                if emlPearsonCorrelation.error$ = ""
+                                    @emlPearsonFisherInterval: emlPearsonCorrelation.r,
+                                    ... .cgN, .cgAlpha
+                                    .cgR = emlPearsonCorrelation.r
+                                    .cgT = emlPearsonCorrelation.t
+                                    .cgDf = emlPearsonCorrelation.df
+                                    .cgP = emlPearsonCorrelation.p
+                                    .cgLow = emlPearsonFisherInterval.low
+                                    .cgHigh = emlPearsonFisherInterval.high
+                                    .cgHave = 1
+                                endif
+                            endif
                         endif
-                    endfor
-                endif
+                        if .cgHave = 1
+                            @emlKitNum: .cellId$, .cgTag$ + "_n", .cgN
+                            @emlKitNum: .cellId$, .cgTag$ + "_r", .cgR
+                            @emlKitNum: .cellId$, .cgTag$ + "_t", .cgT
+                            @emlKitNum: .cellId$, .cgTag$ + "_df", .cgDf
+                            @emlKitNum: .cellId$, .cgTag$ + "_p", .cgP
+                            @emlKitNum: .cellId$, .cgTag$ + "_low", .cgLow
+                            @emlKitNum: .cellId$, .cgTag$ + "_high", .cgHigh
+                        endif
+                    else
+                        @emlKitText: .cellId$, .cgTag$ + "_skipped", "1"
+                    endif
+                endfor
             endif
             # n_groups_run/n_groups_skipped (order section 4.4/8): scope=cell,
             # presence=always -- 0 (not undefined) when .colC$ is empty, the
@@ -1736,119 +1836,94 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
             @emlKitNum: .cellId$, "trim_k", emlRunDescriptiveAnalysis.trimK
 
             # PER-GROUP DESCRIPTIVES (order section 4.6/8). .colB$ empty =
-            # no grouping. A group with n = 1 gets n and mean only, the
-            # rest undefined and disclosed (matching @emlDescribe's own
-            # n=1 branch); no group is silently skipped. Re-derives with
-            # the SAME extractor and kernel the door itself calls
-            # internally (@emlCountGroups, @eml_getGroupData, @emlDescribe).
+            # no grouping. Read straight off the door's OWN tidy frame
+            # instead of re-deriving it: @emlRunDescriptiveAnalysis's own
+            # per-group loop (stats/eml-analysis.praat) already ran
+            # @emlCountGroups/@eml_getGroupData/@emlDescribe once each and
+            # wrote one @emlTidyRow per group, term = the bare group label,
+            # in that same enumeration order -- exactly the assembly this
+            # cell is meant to grade, not a second, independent run of the
+            # same extractor and kernel that would agree with the door even
+            # if the door mislabelled or misgrouped a row. A group with
+            # n = 1 gets n and mean only in the door's own tidy row (its
+            # n=1 branch), so every other cell there reads back "" here;
+            # @emlKitTidyNum turns that into undefined, and @emlKitNum's own
+            # <quantity>_undefined marker fires exactly where the deleted
+            # hand-computed branch used to set it explicitly.
             if .colB$ <> ""
-                @emlReportAlpha
-                .dgAlpha = emlReportAlpha.value
-                @emlCountGroups: .tableId, .colB$
-                if emlCountGroups.error$ = ""
-                    for .dgI from 1 to emlCountGroups.nGroups
-                        .dgLabel$ = emlCountGroups.groupLabel$ [.dgI]
-                        @eml_getGroupData: .tableId, .colA$, .colB$, .dgLabel$
-                        if eml_getGroupData.error$ = ""
-                            .dgN = eml_getGroupData.n
-                        else
-                            .dgN = 0
-                        endif
-                        @emlKitSlug: .dgLabel$
-                        .dgTag$ = "group_" + emlKitSlug.result$
-                        @emlKitNum: .cellId$, .dgTag$ + "_n", .dgN
-                        if .dgN >= 2
-                            @emlDescribe: eml_getGroupData.data#, .descTrim,
-                            ... 1 - .dgAlpha
-                            @emlKitNum: .cellId$, .dgTag$ + "_mean",
-                            ... emlDescribe.mean
-                            @emlKitNum: .cellId$, .dgTag$ + "_sd",
-                            ... emlDescribe.sd
-                            @emlKitNum: .cellId$, .dgTag$ + "_variance",
-                            ... emlDescribe.variance
-                            @emlKitNum: .cellId$, .dgTag$ + "_sem",
-                            ... emlDescribe.sem
-                            @emlKitNum: .cellId$, .dgTag$ + "_median",
-                            ... emlDescribe.median
-                            @emlKitNum: .cellId$, .dgTag$ + "_q1",
-                            ... emlDescribe.q1
-                            @emlKitNum: .cellId$, .dgTag$ + "_q3",
-                            ... emlDescribe.q3
-                            @emlKitNum: .cellId$, .dgTag$ + "_iqr",
-                            ... emlDescribe.iqr
-                            @emlKitNum: .cellId$, .dgTag$ + "_min",
-                            ... emlDescribe.min
-                            @emlKitNum: .cellId$, .dgTag$ + "_max",
-                            ... emlDescribe.max
-                            @emlKitNum: .cellId$, .dgTag$ + "_range",
-                            ... emlDescribe.range
-                            @emlKitNum: .cellId$, .dgTag$ + "_skewness",
-                            ... emlDescribe.skewness
-                            @emlKitNum: .cellId$, .dgTag$ + "_kurtosis",
-                            ... emlDescribe.kurtosis
-                            @emlKitNum: .cellId$, .dgTag$ + "_ci_low",
-                            ... emlDescribe.ciLow
-                            @emlKitNum: .cellId$, .dgTag$ + "_ci_high",
-                            ... emlDescribe.ciHigh
-                            @emlKitNum: .cellId$, .dgTag$ + "_mode",
-                            ... emlDescribe.mode
-                            @emlKitNum: .cellId$, .dgTag$ + "_mode_unique",
-                            ... emlDescribe.modeUnique
-                            @emlKitNum: .cellId$, .dgTag$ + "_mode_count",
-                            ... emlDescribe.modeCount
-                            @emlKitNum: .cellId$, .dgTag$ + "_mad",
-                            ... emlDescribe.mad
-                            @emlKitNum: .cellId$, .dgTag$ + "_mad_raw",
-                            ... emlDescribe.madRaw
-                            @emlKitNum: .cellId$, .dgTag$ + "_geo_mean",
-                            ... emlDescribe.geoMean
-                            @emlKitNum: .cellId$, .dgTag$ + "_harm_mean",
-                            ... emlDescribe.harmMean
-                            @emlKitNum: .cellId$, .dgTag$ + "_trimmed_mean",
-                            ... emlDescribe.trimmedMean
-                            @emlKitNum: .cellId$,
-                            ... .dgTag$ + "_winsorized_mean",
-                            ... emlDescribe.winsorizedMean
-                            @emlKitNum: .cellId$, .dgTag$ + "_trim_k",
-                            ... emlDescribe.trimK
-                        elsif .dgN = 1
-                            @emlMean: eml_getGroupData.data#
-                            @emlKitNum: .cellId$, .dgTag$ + "_mean",
-                            ... emlMean.result
-                            # n = 1: order section 4.6 -- "reports n and
-                            # mean only, the rest undefined and disclosed".
-                            # Every other quantity is EXPLICITLY passed
-                            # undefined here so @emlKitNum's own
-                            # <quantity>_undefined marker fires, matching
-                            # run_analyses.R's emitDescriptiveSet n==1
-                            # branch (descQuantities) name for name.
-                            @emlKitNum: .cellId$, .dgTag$ + "_sd", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_variance", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_sem", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_median", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_q1", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_q3", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_iqr", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_min", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_max", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_range", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_skewness", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_kurtosis", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_ci_low", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_ci_high", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_mode", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_mode_unique", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_mode_count", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_mad", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_mad_raw", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_geo_mean", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_harm_mean", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_trimmed_mean", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_winsorized_mean", undefined
-                            @emlKitNum: .cellId$, .dgTag$ + "_trim_k", undefined
-                        endif
-                    endfor
-                endif
+                for .dgI from 1 to emlTidy_nRows
+                    @eml_colIndex: "tidy", "term"
+                    .dgLabel$ = emlTidy_cell$ [.dgI, eml_colIndex.idx]
+                    @emlKitSlug: .dgLabel$
+                    .dgTag$ = "group_" + emlKitSlug.result$
+                    @emlKitTidyNum: .dgI, "n"
+                    @emlKitNum: .cellId$, .dgTag$ + "_n", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "mean"
+                    @emlKitNum: .cellId$, .dgTag$ + "_mean", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "sd"
+                    @emlKitNum: .cellId$, .dgTag$ + "_sd", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "variance"
+                    @emlKitNum: .cellId$, .dgTag$ + "_variance",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "sem"
+                    @emlKitNum: .cellId$, .dgTag$ + "_sem", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "median"
+                    @emlKitNum: .cellId$, .dgTag$ + "_median",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "q1"
+                    @emlKitNum: .cellId$, .dgTag$ + "_q1", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "q3"
+                    @emlKitNum: .cellId$, .dgTag$ + "_q3", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "iqr"
+                    @emlKitNum: .cellId$, .dgTag$ + "_iqr", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "min"
+                    @emlKitNum: .cellId$, .dgTag$ + "_min", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "max"
+                    @emlKitNum: .cellId$, .dgTag$ + "_max", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "range"
+                    @emlKitNum: .cellId$, .dgTag$ + "_range",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "skewness"
+                    @emlKitNum: .cellId$, .dgTag$ + "_skewness",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "kurtosis"
+                    @emlKitNum: .cellId$, .dgTag$ + "_kurtosis",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "conf.low"
+                    @emlKitNum: .cellId$, .dgTag$ + "_ci_low",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "conf.high"
+                    @emlKitNum: .cellId$, .dgTag$ + "_ci_high",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "mode"
+                    @emlKitNum: .cellId$, .dgTag$ + "_mode", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "mode.unique"
+                    @emlKitNum: .cellId$, .dgTag$ + "_mode_unique",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "mode.count"
+                    @emlKitNum: .cellId$, .dgTag$ + "_mode_count",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "mad"
+                    @emlKitNum: .cellId$, .dgTag$ + "_mad", emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "mad.raw"
+                    @emlKitNum: .cellId$, .dgTag$ + "_mad_raw",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "geo.mean"
+                    @emlKitNum: .cellId$, .dgTag$ + "_geo_mean",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "harm.mean"
+                    @emlKitNum: .cellId$, .dgTag$ + "_harm_mean",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "trimmed.mean"
+                    @emlKitNum: .cellId$, .dgTag$ + "_trimmed_mean",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "winsorized.mean"
+                    @emlKitNum: .cellId$, .dgTag$ + "_winsorized_mean",
+                    ... emlKitTidyNum.value
+                    @emlKitTidyNum: .dgI, "trim.k"
+                    @emlKitNum: .cellId$, .dgTag$ + "_trim_k",
+                    ... emlKitTidyNum.value
+                endfor
             endif
         endif
 
@@ -1920,78 +1995,135 @@ procedure emlKitDispatchAnalysis: .cellId$, .proc$, .tableId, .colA$, .colB$,
     elsif .proc$ = "emlRunGroupedRegressionAnalysis"
         # --- 9b. GROUPED REGRESSION (prereq already ran the overall fit) --
         @emlRunGroupedRegressionAnalysis: .tableId, .colA$, .colB$, .colC$
-        @emlKitNum: .cellId$, "overall_slope",
-        ... emlRunGroupedRegressionAnalysis.ovSlope
-        @emlKitNum: .cellId$, "overall_intercept",
-        ... emlRunGroupedRegressionAnalysis.ovIntercept
-        @emlKitNum: .cellId$, "overall_slope_se",
-        ... emlRunGroupedRegressionAnalysis.ovSeSlope
-        @emlKitNum: .cellId$, "overall_intercept_se",
-        ... emlRunGroupedRegressionAnalysis.ovSeIntercept
-        @emlKitNum: .cellId$, "overall_slope_t",
-        ... emlRunGroupedRegressionAnalysis.ovTSlope
-        @emlKitNum: .cellId$, "overall_intercept_t",
-        ... emlRunGroupedRegressionAnalysis.ovTIntercept
-        @emlKitNum: .cellId$, "overall_slope_p",
-        ... emlRunGroupedRegressionAnalysis.ovPSlope
-        @emlKitNum: .cellId$, "overall_intercept_p",
-        ... emlRunGroupedRegressionAnalysis.ovPIntercept
-        # The orchestrator publishes the overall COEFFICIENTS but not the
-        # overall FIT statistics. Re-run the same call the row's own prereq
-        # names -- @emlRunRegressionAnalysis (respCol, predCol) -- and read
-        # them off emlLinearRegression, which is exactly where
-        # @emlRunGroupedRegressionAnalysis itself reads its overall numbers from.
-        # This is one computation read a second time for output, not a
-        # second way of computing it. It must happen BEFORE the per-group
-        # loop below, which overwrites emlLinearRegression on every group.
-        @emlRunRegressionAnalysis: .tableId, .colB$, .colA$, "ols"
-        if emlRunRegressionAnalysis.error$ = ""
-            @emlKitNum: .cellId$, "overall_r_squared",
-            ... emlLinearRegression.rSquared
-            @emlKitNum: .cellId$, "overall_residual_se",
-            ... emlLinearRegression.seResidual
-            @emlKitNum: .cellId$, "n", emlLinearRegression.n
-        endif
-        @emlKitNum: .cellId$, "pg_total", emlRunGroupedRegressionAnalysis.pgTotal
-        @emlKitNum: .cellId$, "pg_run", emlRunGroupedRegressionAnalysis.pgRun
-        @emlKitNum: .cellId$, "pg_skipped", emlRunGroupedRegressionAnalysis.pgSkipped
+        # .ok/.error$ READ HERE, exactly as every other door call in this
+        # dispatch is read (see @emlRunAnovaAnalysis above, the first case
+        # in this same if/elsif chain) -- this call used to run straight
+        # into .pgTotal/.pgRun/.pgSkipped below with nobody having asked
+        # whether it refused. A door with no group having 3 complete pairs
+        # (matrix.tsv's own c0736) sets .error$ and leaves .pgTotal/.pgRun/
+        # .pgSkipped at whatever they last held; reading them anyway would
+        # either publish stale numbers as if they were this row's own or
+        # divide by an undefined pgN below, not "loudly fail" the way a
+        # refusal is supposed to.
+        if emlRunGroupedRegressionAnalysis.error$ <> ""
+            .refused = 1
+            .refuseReason$ = emlRunGroupedRegressionAnalysis.error$
+        else
+            @emlKitNum: .cellId$, "overall_slope",
+            ... emlRunGroupedRegressionAnalysis.ovSlope
+            @emlKitNum: .cellId$, "overall_intercept",
+            ... emlRunGroupedRegressionAnalysis.ovIntercept
+            @emlKitNum: .cellId$, "overall_slope_se",
+            ... emlRunGroupedRegressionAnalysis.ovSeSlope
+            @emlKitNum: .cellId$, "overall_intercept_se",
+            ... emlRunGroupedRegressionAnalysis.ovSeIntercept
+            @emlKitNum: .cellId$, "overall_slope_t",
+            ... emlRunGroupedRegressionAnalysis.ovTSlope
+            @emlKitNum: .cellId$, "overall_intercept_t",
+            ... emlRunGroupedRegressionAnalysis.ovTIntercept
+            @emlKitNum: .cellId$, "overall_slope_p",
+            ... emlRunGroupedRegressionAnalysis.ovPSlope
+            @emlKitNum: .cellId$, "overall_intercept_p",
+            ... emlRunGroupedRegressionAnalysis.ovPIntercept
+            @emlKitNum: .cellId$, "pg_total",
+            ... emlRunGroupedRegressionAnalysis.pgTotal
+            @emlKitNum: .cellId$, "pg_run",
+            ... emlRunGroupedRegressionAnalysis.pgRun
+            @emlKitNum: .cellId$, "pg_skipped",
+            ... emlRunGroupedRegressionAnalysis.pgSkipped
 
-        # Per-group coefficients: re-derive with the SAME kernel and the SAME
-        # extractor @emlRunGroupedRegressionAnalysis itself calls internally
-        # (@eml_getGroupPairedData + @emlLinearRegression) -- this is reading
-        # the same computation a second time for output, not a second
-        # computation.
-        for .gi from 1 to emlRunGroupedRegressionAnalysis.pgTotal
-            if emlRunGroupedRegressionAnalysis.pgN [.gi] >= 3
-                @emlKitSlug: emlRunGroupedRegressionAnalysis.pgLabel$ [.gi]
-                .gLabel$ = emlKitSlug.result$
-                @eml_getGroupPairedData: .tableId, .colA$, .colB$, .colC$,
-                ... emlRunGroupedRegressionAnalysis.pgLabel$ [.gi]
-                @emlLinearRegression: eml_getGroupPairedData.dataX#,
-                ... eml_getGroupPairedData.dataY#
-                if emlLinearRegression.error$ = ""
-                    # PREFIXED "grp_": the group label is data, and a group
-                    # named e.g. "adj" would otherwise mint the key
-                    # "adj_r_squared", colliding with the canonical name for
-                    # the overall model's adjusted R-squared.
-                    .gk$ = "grp_" + .gLabel$
-                    @emlKitNum: .cellId$, .gk$ + "_slope",
-                    ... emlLinearRegression.slope
-                    @emlKitNum: .cellId$, .gk$ + "_intercept",
-                    ... emlLinearRegression.intercept
-                    @emlKitNum: .cellId$, .gk$ + "_r_squared",
-                    ... emlLinearRegression.rSquared
-                    @emlKitNum: .cellId$, .gk$ + "_n",
-                    ... emlLinearRegression.n
-                    @emlKitNum: .cellId$, .gk$ + "_slope_se",
-                    ... emlLinearRegression.seSlope
-                    @emlKitNum: .cellId$, .gk$ + "_slope_t",
-                    ... emlLinearRegression.tSlope
-                    @emlKitNum: .cellId$, .gk$ + "_p",
-                    ... emlLinearRegression.pSlope
+            # Per-group coefficients: read the door's OWN per-group tidy rows
+            # (stats/eml-analysis.praat's @emlRunGroupedRegressionAnalysis
+            # writes one @emlTidyRow per fitted group, term =
+            # "<groupCol> = <label> (Intercept)" / "... <predCol>") instead
+            # of re-extracting the group's pairs and re-running
+            # @emlLinearRegression a second time to manufacture a second
+            # opinion -- grading the door's own assembly, not the kernel
+            # underneath it. .pgLabel$[]/.pgN[] are themselves the door's
+            # named per-group outputs (its own Outputs header), not
+            # re-derived here either.
+            for .gi from 1 to emlRunGroupedRegressionAnalysis.pgTotal
+                if emlRunGroupedRegressionAnalysis.pgN [.gi] >= 3
+                    @emlKitSlug: emlRunGroupedRegressionAnalysis.pgLabel$ [.gi]
+                    .gLabel$ = emlKitSlug.result$
+                    .gTerm$ = .colC$ + " = "
+                    ... + emlRunGroupedRegressionAnalysis.pgLabel$ [.gi]
+                    @emlKitTidyRowForTerm: 1, .gTerm$ + " " + .colA$
+                    .gSlopeRow = emlKitTidyRowForTerm.row
+                    if .gSlopeRow > 0
+                        # PREFIXED "grp_": the group label is data, and a
+                        # group named e.g. "adj" would otherwise mint the
+                        # key "adj_r_squared", colliding with the canonical
+                        # name for the overall model's adjusted R-squared.
+                        .gk$ = "grp_" + .gLabel$
+                        @emlKitTidyNum: .gSlopeRow, "estimate"
+                        .gSlope = emlKitTidyNum.value
+                        @emlKitTidyNum: .gSlopeRow, "std.error"
+                        .gSlopeSe = emlKitTidyNum.value
+                        @emlKitTidyNum: .gSlopeRow, "statistic"
+                        .gSlopeT = emlKitTidyNum.value
+                        @emlKitTidyNum: .gSlopeRow, "p.value"
+                        .gSlopeP = emlKitTidyNum.value
+                        @emlKitNum: .cellId$, .gk$ + "_slope", .gSlope
+                        @emlKitNum: .cellId$, .gk$ + "_slope_se", .gSlopeSe
+                        @emlKitNum: .cellId$, .gk$ + "_slope_t", .gSlopeT
+                        @emlKitNum: .cellId$, .gk$ + "_p", .gSlopeP
+                        @emlKitNum: .cellId$, .gk$ + "_n",
+                        ... emlRunGroupedRegressionAnalysis.pgN [.gi]
+                        @emlKitTidyRowForTerm: 1, .gTerm$ + " (Intercept)"
+                        .gInterceptRow = emlKitTidyRowForTerm.row
+                        if .gInterceptRow > 0
+                            @emlKitTidyNum: .gInterceptRow, "estimate"
+                            @emlKitNum: .cellId$, .gk$ + "_intercept",
+                            ... emlKitTidyNum.value
+                        endif
+                        # R-SQUARED HAS NO DOOR OUTPUT -- neither a tidy
+                        # column nor a named array; @emlRunGroupedRegressionAnalysis's
+                        # own header declares no such field, and
+                        # quantities.tsv's grp_<LEVEL>_r_squared row already
+                        # says its source is "@emlLinearRegression .rSquared
+                        # per group" with no write site on the door. For a
+                        # SIMPLE (one-predictor) regression this is an
+                        # algebraic identity of the fit's own ANOVA
+                        # decomposition (stats/eml-inferential.praat's
+                        # @emlLinearRegression: dfReg = 1, so F = t_slope^2
+                        # exactly, and R^2 = F / (F + dfRes)) -- read off the
+                        # door's OWN graded slope t-statistic and its own
+                        # pgN[] group size, not a second regression. Measured
+                        # against @emlLinearRegression's own per-group
+                        # .rSquared on this branch's matrix.tsv cells
+                        # (c0514-c0519): agrees to machine precision.
+                        .gDf = emlRunGroupedRegressionAnalysis.pgN [.gi] - 2
+                        if .gDf > 0 and .gSlopeT <> undefined
+                            @emlKitNum: .cellId$, .gk$ + "_r_squared",
+                            ... (.gSlopeT * .gSlopeT)
+                            ... / (.gSlopeT * .gSlopeT + .gDf)
+                        endif
+                    endif
                 endif
+            endfor
+
+            # The orchestrator publishes the overall COEFFICIENTS but not the
+            # overall FIT statistics. Re-run the same call the row's own prereq
+            # names -- @emlRunRegressionAnalysis (respCol, predCol) -- and read
+            # them off emlLinearRegression, which is exactly where
+            # @emlRunGroupedRegressionAnalysis itself reads its overall numbers
+            # from: one computation read a second time for output, not a
+            # second way of computing it. This runs AFTER the per-group loop
+            # above, not before -- @emlRunRegressionAnalysis declares its own
+            # tidy frame (@emlDeclareRegressionResult -> @emlResultBegin,
+            # stats/eml-analysis.praat), which clears emlTidy_nRows, so
+            # calling it any earlier would erase the grouped door's own
+            # per-group rows before this cell ever got to read them.
+            @emlRunRegressionAnalysis: .tableId, .colB$, .colA$, "ols"
+            if emlRunRegressionAnalysis.error$ = ""
+                @emlKitNum: .cellId$, "overall_r_squared",
+                ... emlLinearRegression.rSquared
+                @emlKitNum: .cellId$, "overall_residual_se",
+                ... emlLinearRegression.seResidual
+                @emlKitNum: .cellId$, "n", emlLinearRegression.n
             endif
-        endfor
+        endif
 
     elsif .proc$ = "emlRunNormalityAnalysis"
         # --- 11. NORMALITY -------------------------------------------------
