@@ -8004,6 +8004,21 @@ procedure emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
     ; @emlOneWayAnova refuses that case before reaching here (a group needs at
     ; least 2 observations), but the guard is written anyway: an empty cell
     ; reads back as NA, which is what R prints for the same row.
+    ; Group-label -> group-index map, built ONCE with a single small pass over
+    ; the k groups (a Table row per group, in the same order as
+    ; emlOneWayAnova.groupLabel$/.groupMean/.groupN, so the row number "Search
+    ; column" returns IS the group index). The row loop below then does one
+    ; native lookup per row instead of an interpreted O(rows * groups) scan;
+    ; same labels, same ties (there are none -- group labels are distinct
+    ; factor levels), so the fitted values are bit-identical to the nested-loop
+    ; version.
+    .groupMapId = Create Table with column names: "emlOneWayAnovaGroupMap",
+    ... emlOneWayAnova.nGroups, "label"
+    selectObject: .groupMapId
+    for .g from 1 to emlOneWayAnova.nGroups
+        Set string value: .g, "label", emlOneWayAnova.groupLabel$ [.g]
+    endfor
+
     @emlAugmentFrom: .tableId
     selectObject: .tableId
     .nRows = Get number of rows
@@ -8011,8 +8026,9 @@ procedure emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
     ; VECTOR-EXEMPT: cat2 -- the data column is validated strict=0, so it may
     ; hold missing cells; the loop reads each cell as text and skips undefined
     ; (a vector "Get all numbers in column:" RAISES on a missing cell). The group
-    ; label is also read per row to look up its fitted mean, and the augment
-    ; columns are written per row through @emlAugmentNum (a results-writer change).
+    ; label is also read per row to look up its fitted mean via .groupMapId
+    ; above, and the augment columns are written per row through
+    ; @emlAugmentNum (a results-writer change).
     for .r from 1 to .nRows
         selectObject: .tableId
         .g$ = Get value: .r, .groupCol$
@@ -8020,12 +8036,12 @@ procedure emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
         .v = number (.v$)
         .fit = undefined
         .hat = undefined
-        for .g from 1 to emlOneWayAnova.nGroups
-            if emlOneWayAnova.groupLabel$ [.g] = .g$
-                .fit = emlOneWayAnova.groupMean [.g]
-                .hat = 1 / emlOneWayAnova.groupN [.g]
-            endif
-        endfor
+        selectObject: .groupMapId
+        .g = Search column: "label", .g$
+        if .g > 0
+            .fit = emlOneWayAnova.groupMean [.g]
+            .hat = 1 / emlOneWayAnova.groupN [.g]
+        endif
         if .fit <> undefined and .v <> undefined
             @emlAugmentNum: ".fitted", .r, .fit
             @emlAugmentNum: ".resid", .r, .v - .fit
@@ -8037,6 +8053,7 @@ procedure emlDeclareOneWayAnovaResult: .tableName$, .dataCol$, .groupCol$,
             @emlAugmentNum: ".std.resid", .r, .std
         endif
     endfor
+    removeObject: .groupMapId
 
     label DECLARE_ANOVA_DONE
 endproc
